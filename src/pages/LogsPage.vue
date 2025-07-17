@@ -8,14 +8,14 @@
         <log-filters @filter="onFilter" />
 
         <div class="row q-col-gutter-md q-mt-md justify-center">
-          <q-card flat bordered class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
+          <!-- <q-card flat bordered class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
             style="background-color: #1e1e2f; border-radius: 12px;">
             <div class="column items-center">
               <q-icon name="summarize" color="cyan" size="xl" />
               <div class="text-subtitle1 q-mt-sm">Total</div>
               <div class="text-h5">{{ counters.Total }}</div>
             </div>
-          </q-card>
+          </q-card> -->
 
           <q-card flat bordered class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
             style="background-color: #1e1e2f; border-radius: 12px;">
@@ -46,14 +46,14 @@
 
 
 
-          <q-card flat bordered class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
+          <!-- <q-card flat bordered class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
             style="background-color: #1e1e2f; border-radius: 12px;">
             <div class="column items-center">
               <q-icon name="lock_open" color="red" size="xl" />
               <div class="text-subtitle2 q-mt-sm">Eventos abiertos</div>
               <div class="text-h5">{{ counters.Sincronizados }}</div>
             </div>
-          </q-card>
+          </q-card> -->
         </div>
 
         <div class="row q-col-gutter-md q-mt-lg justify-center">
@@ -134,7 +134,6 @@ const counters = ref({
   Total: 0,
   Sincronizados: 0
 })
-
 
 
 // Esta función se ejecuta cuando haces clic en "Filtrar"

@@ -21,15 +21,31 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useQuasar } from 'quasar'
+
 const emit = defineEmits(['filter'])
 const start = ref('')
 const end = ref('')
 
+const $q = useQuasar()
+
+
 function emitFilter() {
+  if (!start.value || !end.value) {
+    $q.notify({
+      type: 'negative',
+      message: 'Debes seleccionar ambas fechas para filtrar',
+      position: 'top'
+    })
+    return
+  }
+
   emit('filter', {
     fechaInicio: start.value,
     fechaFin: end.value
   })
 }
+
+
 
 </script>

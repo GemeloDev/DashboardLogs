@@ -54,3 +54,6 @@ export const getPorcentajeOffline = (data) => API.post('/main/porcentaje-offline
 
 export const getTiempoRespuestaPromedio = (data) =>
   API.post('/main/tiempo-respuesta-promedio', data)
+
+export const getEventoBiometricofindAllByFilter = (data) =>
+  API.post('/eventoBiometrico/findAllByFilter', data)

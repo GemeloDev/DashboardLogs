@@ -1,7 +1,8 @@
 <template>
   <q-card class="stats-container q-pa-lg q-mt-md">
+
     <!-- KPIs Section -->
-    <div class="q-pa-md kpi-section">
+    <!-- <div class="q-pa-md kpi-section">
       <div class="row q-col-gutter-md q-mb-md">
         <q-card v-for="kpi in kpis" :key="kpi.label" flat bordered
           class="col-12 col-sm-6 col-md-3 text-center kpi-card">
@@ -12,7 +13,7 @@
           </q-card-section>
         </q-card>
       </div>
-    </div>
+    </div> -->
 
     <!-- Bar Chart Section -->
     <div class="q-pa-md">
@@ -34,27 +35,26 @@
 
     <!-- Donut Chart Section -->
     <!-- Sección inferior dividida en dos columnas -->
-    <div class="row q-col-gutter-md q-mt-md geo-func-section">
-      <!-- Donut Chart: Uso por funcionalidad -->
-      <q-card flat bordered class="col-12 col-md-6 chart-card donut-chart-card"
-        style="background-color: #1e1e2f; border-radius: 12px; color: white;">
-        <q-card-section>
-          <div class="text-subtitle1 text-center q-mb-sm">Uso por Funcionalidad</div>
-          <div class="flex flex-center">
-            <canvas ref="chart" class="donut-canvas" />
-          </div>
-        </q-card-section>
-      </q-card>
+    <!-- Donut Chart: Uso por funcionalidad -->
+    <q-card flat bordered class="col-12 col-md-6 chart-card donut-chart-card"
+      style="background-color: #1e1e2f; border-radius: 12px; color: white;">
+      <q-card-section>
+        <div class="text-subtitle1 text-center q-mb-sm">Uso por Funcionalidad</div>
+        <div class="flex flex-center">
+          <canvas ref="chart" class="donut-canvas" />
+        </div>
+      </q-card-section>
+    </q-card>
+    <br>
 
-      <!-- Mapa con Geolocalización -->
-      <q-card flat bordered class="col-12 col-md-6"
-        style="background-color: #1e1e2f; border-radius: 12px; color: white;">
-        <q-card-section>
-          <div class="text-subtitle1 text-center">Ubicación de eventos</div>
-          <div id="mapaEventos" style="height: 300px; border-radius: 12px;"></div>
-        </q-card-section>
-      </q-card>
-    </div>
+    <!-- Mapa con Geolocalización -->
+
+    <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f;">
+      <q-card-section>
+        <div class="text-h6 text-center">Mapa de Eventos Biométricos</div>
+        <div id="mapaEventos" style="height: 400px;"></div>
+      </q-card-section>
+    </q-card>
 
 
   </q-card>
@@ -69,17 +69,18 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getDuracionPromedioFuncionalidad } from 'src/services/api' // 👈 nuevo servicio
 import { getDispositivosMasUsados } from 'src/services/api'
+import { getEventoBiometricofindAllByFilter } from 'src/services/api'
 
 Chart.register(BarController, BarElement, CategoryScale, DoughnutController, LinearScale, Tooltip, ArcElement)
 
 const tiemposFuncionalidad = ref([])
 
-const kpis = [
-  { label: 'Duración Promedio', value: '520 seg', icon: 'schedule', color: 'text-info' },
-  { label: 'Funcionalidad más usada', value: 'Validación Facial', icon: 'insights', color: 'text-accent' },
-  { label: 'Día con más uso', value: '2025-06-28', icon: 'event', color: 'text-positive' },
-  { label: 'Repeticiones por Día', value: '12', icon: 'repeat', color: 'text-warning' }
-]
+// const kpis = [
+//   { label: 'Duración Promedio', value: '520 seg', icon: 'schedule', color: 'text-info' },
+//   { label: 'Funcionalidad más usada', value: 'Validación Facial', icon: 'insights', color: 'text-accent' },
+//   { label: 'Día con más uso', value: '2025-06-28', icon: 'event', color: 'text-positive' },
+//   { label: 'Repeticiones por Día', value: '12', icon: 'repeat', color: 'text-warning' }
+// ]
 
 const barChart = ref(null)
 const chart = ref(null)
@@ -91,8 +92,13 @@ function tiempoASegundos(tiempoStr) {
   return (hh * 3600) + (mm * 60) + ss
 }
 
+
+
+
 onMounted(async () => {
   await renderDeviceChart()
+
+  // Cargar gráfica de funcionalidad
   try {
     const respuesta = await getDuracionPromedioFuncionalidad({
       fechaInicio: '2025-01-01',
@@ -100,23 +106,60 @@ onMounted(async () => {
     })
 
     tiemposFuncionalidad.value = respuesta.map(item => ({
-      funcionalidad: item.funcionalidad.replace(/_/g, ' '), // Opcional: reemplaza _ por espacio
+      funcionalidad: item.funcionalidad.replace(/_/g, ' '),
       totalSegundos: tiempoASegundos(item.duracion)
     }))
 
     renderCharts()
   } catch (error) {
-    console.error('Error al obtener datos:', error)
+    console.error('Error al obtener datos de funcionalidad:', error)
   }
 
-  // Mapa con Leaflet
-  const map = L.map('mapaEventos').setView([19.4326, -99.1332], 5)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
-    maxZoom: 18
-  }).addTo(map)
-  L.marker([19.4326, -99.1332]).addTo(map).bindPopup('Evento en CDMX').openPopup()
+  // Cargar eventos con GPS para mapa
+  try {
+
+    const eventos = await getEventoBiometricofindAllByFilter()
+
+    // Filtrar y mapear eventos con GPS válido
+    const eventosConGps = eventos
+      .filter(e => typeof e.gps === 'string' && e.gps.includes(','))
+      .map(e => {
+        const [lat, lng] = e.gps.split(',').map(parseFloat)
+        return {
+          lat,
+          lng,
+          usuario: e.usuario?.usuario || 'Desconocido',
+          detalle: e.tipoEvento?.detalle || '',
+          descripcion: e.resultadoDescripcion || '',
+          fecha: new Date(e.fechaHoraDia).toLocaleString()
+        }
+      })
+
+    // Inicializar mapa
+    const map = L.map('mapaEventos').setView([19.4326, -99.1332], 5)
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 18
+    }).addTo(map)
+
+    // Agregar marcadores
+    eventosConGps.forEach(e => {
+      L.marker([e.lat, e.lng])
+        .addTo(map)
+        .bindPopup(`
+          <strong>${e.usuario}</strong><br>
+          ${e.detalle}<br>
+          ${e.descripcion}<br>
+          ${e.fecha}
+        `)
+    })
+  } catch (error) {
+    console.error('Error al cargar eventos para el mapa:', error)
+  }
 })
+
+
 
 // Función para renderizar gráficas
 function renderCharts() {

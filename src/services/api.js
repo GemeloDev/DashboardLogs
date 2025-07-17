@@ -117,6 +117,12 @@ export const getMayorTiempoUsoFuncionalidad = async (payload) => {
 
 export const getFuncionalidadesMultiplesUsos = async () => {
   console.log('Llamando endpoint a: /main/funcionalidades-multiples-usos')
-  const response = await axios.post(`${API_BASE_URL}/main/funcionalidades-multiples-usos`, null)
+  const response = await axios.post(`${API_BASE_URL}/main/funcionalidades-multiples-usos`, {})
+  return response.data
+}
+
+export const getEventoBiometricofindAllByFilter = async (payload) => {
+  console.log(`${API_BASE_URL}/eventoBiometrico/findAllByFilter`)
+  const response = await axios.post(`${API_BASE_URL}/eventoBiometrico/findAllByFilter`, payload)
   return response.data
 }

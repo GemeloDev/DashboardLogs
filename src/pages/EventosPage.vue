@@ -62,10 +62,19 @@
       </div>
 
       <div class="col-12 col-md-6">
-        <q-card flat bordered class="col-12 col-md-12 q-mx-sm text-white" style="background-color: #1e1e2f;">
+        <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f;">
           <q-card-section>
-            <div class="text-h6 text-center">Duración de Uso por Día</div>
+            <div class="text-h6 text-center q-mb-md">Funcionalidades más Usadas</div>
             <EventosAbiertosTable :eventos="eventosAbiertos" />
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f;">
+          <q-card-section>
+            <div class="text-h6 text-center q-mb-md">Funcionalidades Múltiples Usos</div>
+            <FuncionalidadesMulTable :logs="funcionalidadesMultiplesUsos" />
           </q-card-section>
         </q-card>
       </div>
@@ -86,8 +95,9 @@ import {
   CategoryScale, LinearScale, Tooltip, Title,
   Filler
 } from 'chart.js'
-import { getEventosPorDia, getEventosPorMes, getEventosPorSemana, getEventosPorTipo, getEventosTiempoRespuesta, getMayorTiempoUsoFuncionalidad, getEventosAbiertos } from 'src/services/api'
+import { getEventosPorDia, getEventosPorMes, getEventosPorSemana, getEventosPorTipo, getEventosTiempoRespuesta, getMayorTiempoUsoFuncionalidad, getEventosAbiertos, getFuncionalidadesMultiplesUsos } from 'src/services/api'
 import EventosAbiertosTable from 'src/components/EventosAbiertosTable.vue'
+import FuncionalidadesMulTable from 'src/components/FuncionalidadesMulTable.vue'
 
 // Registramos los componentes necesarios
 Chart.register(
@@ -109,6 +119,8 @@ const tiempoUsoPorDia = ref([])
 let chartTiempoUsoInstance = null
 const chartTiempoUsoRef = ref(null)
 const eventosAbiertos = ref([])
+const funcionalidadesMultiplesUsos = ref([])
+
 
 
 
@@ -499,6 +511,16 @@ async function cargarEventosAbiertos() {
   }
 }
 
+async function cargarFuncionalidadesMultiplesUsos() {
+  try {
+    const data = await getFuncionalidadesMultiplesUsos()
+    funcionalidadesMultiplesUsos.value = data
+    console.log('Funcionalidades múltiples usos cargadas:', data)
+  } catch (error) {
+    console.error('Error al obtener funcionalidades múltiples usos:', error)
+  }
+}
+
 
 
 onMounted(() => {
@@ -509,5 +531,6 @@ onMounted(() => {
   cargarEventosTiempoRespuesta()
   cargarTiempoUsoPorDia()
   cargarEventosAbiertos()
+  cargarFuncionalidadesMultiplesUsos()
 })
 </script>
