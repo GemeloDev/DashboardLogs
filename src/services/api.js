@@ -55,9 +55,9 @@ export const getUsuariosOffline = async (payload) => {
   return response.data
 }
 
-export const getUsuariosDispositivosDia = async (payload) => {
+export const getUsuariosDispositivosDia = async () => {
   console.log('Llamando endpoint a:', '/main/usuarios-dispositivos-dia')
-  const response = await axios.post(`${API_BASE_URL}/main/usuarios-dispositivos-dia`, payload)
+  const response = await axios.post(`${API_BASE_URL}/main/usuarios-dispositivos-dia`, {})
   return response.data
 }
 
@@ -124,5 +124,11 @@ export const getFuncionalidadesMultiplesUsos = async () => {
 export const getEventoBiometricofindAllByFilter = async (payload) => {
   console.log(`${API_BASE_URL}/eventoBiometrico/findAllByFilter`)
   const response = await axios.post(`${API_BASE_URL}/eventoBiometrico/findAllByFilter`, payload)
+  return response.data
+}
+
+export const getFuncionalidadesEstado = async (payload) => {
+  console.log('Llamando endpoint a:', '/main/funcionalidades-estado')
+  const response = await axios.post(`${API_BASE_URL}/main/funcionalidades-estado`, payload)
   return response.data
 }

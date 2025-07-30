@@ -20,32 +20,36 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { useFiltroFechasStore } from 'src/stores/filtroFechasStore'
 
-const emit = defineEmits(['filter'])
+const store = useFiltroFechasStore()
 const start = ref('')
 const end = ref('')
 
 const $q = useQuasar()
+const emit = defineEmits(['filter'])
 
 
 function emitFilter() {
   if (!start.value || !end.value) {
-    $q.notify({
-      type: 'negative',
-      message: 'Debes seleccionar ambas fechas para filtrar',
-      position: 'top'
-    })
+    $q.notify({ type: 'negative', message: 'Selecciona ambas fechas' })
     return
   }
 
-  emit('filter', {
-    fechaInicio: start.value,
-    fechaFin: end.value
-  })
+  store.setFechas(start.value, end.value)
+  emit('filter')
 }
 
-
+onMounted(() => {
+  if (store.fechaInicio && store.fechaFin) {
+    start.value = store.fechaInicio
+    end.value = store.fechaFin
+    emitFilter()
+  }
+})
 
 </script>

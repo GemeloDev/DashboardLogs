@@ -1,90 +1,97 @@
 <template>
-  <div class="q-pa-md">
-    <div class="row q-col-gutter-md q-mb-md">
-      <!-- Eventos por MES -->
-      <div class="col-12 col-md-6">
-        <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
-          <q-card-section class="text-subtitle1 text-center">Eventos por Mes</q-card-section>
-          <q-card-section style="height: 500px;">
-            <canvas ref="eventosPorMesChart" />
-          </q-card-section>
-        </q-card>
+  <q-page class="q-pa-md" style="background-color: #121826;">
+    <div class="q-pa-md">
+      <div class="row q-col-gutter-md q-mb-md">
+        <!-- Eventos por MES -->
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
+            <q-card-section class="text-subtitle1 text-center">Eventos por Mes</q-card-section>
+            <q-card-section style="height: 500px;">
+              <canvas ref="eventosPorMesChart" />
+            </q-card-section>
+          </q-card>
+        </div>
+        <!--Fin eventos por MES-->
+        <!-- Eventos por SEMANA -->
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
+            <q-card-section class="text-subtitle1 text-center">Eventos por Semana</q-card-section>
+            <q-card-section style="height: 500px;">
+              <canvas ref="chartSemana" />
+            </q-card-section>
+          </q-card>
+        </div>
+        <!--Fin eventos por SEMANA-->
       </div>
-
-      <!-- Eventos por SEMANA -->
-      <div class="col-12 col-md-6">
-        <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
-          <q-card-section class="text-subtitle1 text-center">Eventos por Semana</q-card-section>
-          <q-card-section style="height: 500px;">
-            <canvas ref="chartSemana" />
-          </q-card-section>
-        </q-card>
+      <div class="row q-col-gutter-md">
+        <!-- Eventos por DÍA -->
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
+            <q-card-section class="text-subtitle1 text-center">Eventos por Día</q-card-section>
+            <q-card-section style="height: 500px;">
+              <canvas ref="chartDia" />
+            </q-card-section>
+          </q-card>
+        </div>
+        <!--Fin eventos por DÍA-->
+        <!-- Eventos por TIPO -->
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
+            <q-card-section class="text-subtitle1 text-center">Eventos por Tipo</q-card-section>
+            <q-card-section style="height: 500px;">
+              <canvas ref="chartPorTipo" />
+            </q-card-section>
+          </q-card>
+        </div>
+        <!--Fin eventos por TIPO-->
+        <!--Eventos con alta respuesta-->
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
+            <q-card-section>
+              <div class="text-h6 text-center">Eventos con Alta Respuesta</div>
+              <canvas ref="eventosTiempoChartRef" style="height: 400px; max-width: 100%;"></canvas>
+            </q-card-section>
+          </q-card>
+        </div>
+        <!--Fin eventos con alta respuesta-->
+        <!--Duración de uso por día-->
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="col-12 col-md-12 q-mx-sm text-white" style="background-color: #1e1e2f;">
+            <q-card-section>
+              <div class="text-h6 text-center">Duración de Uso por Día</div>
+              <canvas ref="chartTiempoUsoRef" style="height: 400px; max-width: 100%;"></canvas>
+            </q-card-section>
+          </q-card>
+        </div>
+        <!--Fin duración de uso por día-->
+        <!-- Funcionalidades más Usadas-->
+        <div class="col-12 col-md-6">
+          <div class="table-wrapper">
+            <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f;">
+              <q-card-section>
+                <div class="text-h6 text-center q-mb-md">Funcionalidades más Usadas</div>
+                <EventosAbiertosTable :eventos="eventosAbiertos" />
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+        <!--Fin Funcionalidades más Usadas-->
+        <!-- Funcionalidades Múltiples Usos -->
+        <div class="col-12 col-md-6">
+          <div class="table-wrapper">
+            <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f;">
+              <q-card-section>
+                <div class="text-h6 text-center q-mb-md">Funcionalidades Múltiples Usos</div>
+                <FuncionalidadesMulTable :logs="funcionalidadesMultiplesUsos" />
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+        <!--Fin Funcionalidades Múltiples Usos-->
       </div>
     </div>
-
-    <div class="row q-col-gutter-md">
-      <!-- Eventos por DÍA -->
-      <div class="col-12 col-md-6">
-        <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
-          <q-card-section class="text-subtitle1 text-center">Eventos por Día</q-card-section>
-          <q-card-section style="height: 500px;">
-            <canvas ref="chartDia" />
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- Eventos ABIERTOS -->
-      <div class="col-12 col-md-6">
-        <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
-          <q-card-section class="text-subtitle1 text-center">Eventos por Tipo</q-card-section>
-          <q-card-section style="height: 500px;">
-            <canvas ref="chartPorTipo" />
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <q-card flat bordered class="col-12 col-md-6 q-mx-sm text-white" style="background-color: #1e1e2f;">
-          <q-card-section>
-            <div class="text-h6 text-center">Eventos con Alta Respuesta</div>
-            <canvas ref="eventosTiempoChartRef" style="height: 400px; max-width: 100%;"></canvas>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <q-card flat bordered class="col-12 col-md-12 q-mx-sm text-white" style="background-color: #1e1e2f;">
-          <q-card-section>
-            <div class="text-h6 text-center">Duración de Uso por Día</div>
-            <canvas ref="chartTiempoUsoRef" style="height: 400px; max-width: 100%;"></canvas>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f;">
-          <q-card-section>
-            <div class="text-h6 text-center q-mb-md">Funcionalidades más Usadas</div>
-            <EventosAbiertosTable :eventos="eventosAbiertos" />
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f;">
-          <q-card-section>
-            <div class="text-h6 text-center q-mb-md">Funcionalidades Múltiples Usos</div>
-            <FuncionalidadesMulTable :logs="funcionalidadesMultiplesUsos" />
-          </q-card-section>
-        </q-card>
-      </div>
-
-
-
-    </div>
-  </div>
+  </q-page>
 </template>
-
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -122,35 +129,31 @@ const eventosAbiertos = ref([])
 const funcionalidadesMultiplesUsos = ref([])
 
 
-
-
-// Convierte "2025-01" a "Ene 2025"
+// Funcion para formatear el mes
 function formatearMes(mesISO) {
   const fecha = new Date(mesISO + '-01')
   return fecha.toLocaleString('es-MX', { month: 'short', year: 'numeric' }).replace('.', '')
 }
 
+// Convertir duración en formato HH:MM:SS a segundos
 function convertirDuracionASegundos(duracionStr) {
   const [hh, mm, ss] = duracionStr.split(':').map(Number)
   return hh * 3600 + mm * 60 + ss
 }
 
-
+//Funcion para obtener eventos por mes
 async function renderEventosPorMesChart() {
   try {
     const payload = {
       fechaInicio: '2025-01-01',
       fechaFin: '2025-12-31'
     }
-
     const data = await getEventosPorMes(payload)
-
     const labels = data.map(item => formatearMes(item.mes))
     const valoresBarras = data.map(item => item.total)
     const valoresLinea = valoresBarras.map((v, i) =>
       valoresBarras.slice(0, i + 1).reduce((a, b) => a + b, 0)
-    ) // acumulado
-
+    )
     new Chart(eventosPorMesChart.value, {
       type: 'bar',
       data: {
@@ -210,28 +213,22 @@ async function renderEventosPorMesChart() {
   } catch (error) {
     console.error('Error al renderizar eventos por mes:', error)
   }
-
-
 }
 
+// Funcion para obtener eventos por día
 async function renderEventosDia() {
   try {
     const payload = {
       fechaInicio: '2025-01-01',
       fechaFin: '2025-06-30'
     }
-
     const datos = await getEventosPorDia(payload)
-
-    const labels = datos.map(d => d.fecha) // asegúrate que el campo se llama así
+    const labels = datos.map(d => d.fecha)
     const valores = datos.map(d => d.total)
-
-    // Datos acumulados
     const acumulado = valores.reduce((acc, curr, idx) => {
       acc.push((acc[idx - 1] || 0) + curr)
       return acc
     }, [])
-
     new Chart(chartDia.value, {
       type: 'bar',
       data: {
@@ -284,6 +281,7 @@ async function renderEventosDia() {
   }
 }
 
+// Funcion para obtener eventos por semana
 async function renderEventosSemana() {
   try {
     const payload = {
@@ -291,11 +289,9 @@ async function renderEventosSemana() {
       fechaFin: '2025-06-30'
     }
     const datos = await getEventosPorSemana(payload)
-
     const labels = datos.map(d => d.semana_iso) // ajusta según tu JSON
     const valores = datos.map(d => d.total)
     console.log('Datos por semana:', datos)
-
     new Chart(chartSemana.value, {
       type: 'line',
       data: {
@@ -337,6 +333,7 @@ async function renderEventosSemana() {
   }
 }
 
+// Funcion para obtener eventos por tipo
 async function renderEventosPorTipoChart() {
   try {
     const payload = {
@@ -344,10 +341,8 @@ async function renderEventosPorTipoChart() {
       fechaFin: '2025-06-30'
     }
     const data = await getEventosPorTipo(payload)
-
     const labels = data.map(d => d.tipoEvento)
     const valores = data.map(d => d.total_eventos)
-
     new Chart(chartPorTipo.value, {
       type: 'bar',
       data: {
@@ -384,6 +379,7 @@ async function renderEventosPorTipoChart() {
   }
 }
 
+// Funcion para obtener eventos por tiempo de respuesta
 async function cargarEventosTiempoRespuesta(start_date, end_date) {
   try {
     const payload = {
@@ -391,12 +387,9 @@ async function cargarEventosTiempoRespuesta(start_date, end_date) {
       fechaInicio: start_date,
       fechaFin: end_date
     }
-
     const data = await getEventosTiempoRespuesta(payload)
-
     console.log('Eventos por tiempo de respuesta:', data)
     eventosTiempoRespuesta.value = data
-
     renderChartEventosTiempo()
   } catch (e) {
     console.error('Error al obtener eventos tiempo respuesta:', e)
@@ -404,23 +397,19 @@ async function cargarEventosTiempoRespuesta(start_date, end_date) {
   }
 }
 
+// Renderizar el gráfico de eventos con alta respuesta
 function renderChartEventosTiempo() {
   const ctx = eventosTiempoChartRef.value.getContext('2d')
-
   if (eventosTiempoChartInstance) {
     eventosTiempoChartInstance.destroy()
   }
-
-  // Agrupar por tipoEvento
   const agrupados = {}
   for (const evento of eventosTiempoRespuesta.value) {
     const tipo = evento.tipoEvento || 'UNKNOWN'
     agrupados[tipo] = (agrupados[tipo] || 0) + 1
   }
-
   const labels = Object.keys(agrupados)
   const values = Object.values(agrupados)
-
   eventosTiempoChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -442,6 +431,7 @@ function renderChartEventosTiempo() {
   })
 }
 
+// Cargar el tiempo de uso por día para una funcionalidad específica
 async function cargarTiempoUsoPorDia(funcionalidad, start_date, end_date) {
   try {
     const payload = {
@@ -449,30 +439,25 @@ async function cargarTiempoUsoPorDia(funcionalidad, start_date, end_date) {
       fechaInicio: start_date,
       fechaFin: end_date
     }
-
     const data = await getMayorTiempoUsoFuncionalidad(payload)
-
     tiempoUsoPorDia.value = data.map(d => ({
       fecha: d.fecha,
       segundos: convertirDuracionASegundos(d.total)
     }))
-
     renderChartTiempoUso()
   } catch (e) {
     console.error('Error al obtener tiempo de uso por día:', e)
   }
 }
 
+// Renderizar el gráfico de duración de uso por día
 function renderChartTiempoUso() {
   const ctx = chartTiempoUsoRef.value.getContext('2d')
-
   if (chartTiempoUsoInstance) {
     chartTiempoUsoInstance.destroy()
   }
-
   const labels = tiempoUsoPorDia.value.map(d => d.fecha)
   const values = tiempoUsoPorDia.value.map(d => d.segundos)
-
   chartTiempoUsoInstance = new Chart(ctx, {
     type: 'line',
     data: {
@@ -497,6 +482,7 @@ function renderChartTiempoUso() {
   })
 }
 
+// Funcion Cargar eventos abiertos
 async function cargarEventosAbiertos() {
   try {
     const payload = {
@@ -511,6 +497,7 @@ async function cargarEventosAbiertos() {
   }
 }
 
+// Funcion Cargar funcionalidades múltiples usos
 async function cargarFuncionalidadesMultiplesUsos() {
   try {
     const data = await getFuncionalidadesMultiplesUsos()
@@ -520,8 +507,6 @@ async function cargarFuncionalidadesMultiplesUsos() {
     console.error('Error al obtener funcionalidades múltiples usos:', error)
   }
 }
-
-
 
 onMounted(() => {
   renderEventosPorMesChart()
@@ -534,3 +519,10 @@ onMounted(() => {
   cargarFuncionalidadesMultiplesUsos()
 })
 </script>
+
+<style scoped>
+.table-wrapper {
+  width: 100%;
+  height: 530px;
+}
+</style>

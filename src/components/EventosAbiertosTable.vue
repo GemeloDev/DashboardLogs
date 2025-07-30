@@ -1,7 +1,8 @@
 <template>
-  <div class="q-pa-md">
-    <q-table :rows="eventos" :columns="columns" row-key="usuario" flat bordered dense class="text-white"
-      style="background-color: #1e1e2f;" />
+  <div class="chart-wrappe">
+    <q-table :rows="eventos" :columns="columns" row-key="usuario" flat bordered dense class="my-table text-white"
+      :pagination="{ rowsPerPage: 10 }" :rows-per-page-options="[5, 10, 25, 50]"
+      style="max-height: 350px; min-width: 100%;" virtual-scroll />
   </div>
 </template>
 
@@ -19,3 +20,13 @@ const columns = [
   { name: 'usuario', label: 'Usuario', field: 'usuario', align: 'left' }
 ]
 </script>
+<style scoped>
+.my-table {
+  background-color: #1e1e2f;
+  border-radius: 12px;
+}
+
+.chart-wrappe {
+  max-width: 100%;
+}
+</style>

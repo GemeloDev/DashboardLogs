@@ -10,7 +10,7 @@
     </q-header>
 
     <!-- MENÚ LATERAL -->
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-dark text-white">
+    <q-drawer v-model="leftDrawerOpen" show-if-above bordered style="background-color: #121826; color: white;">
       <q-item clickable v-ripple to="/logs" exact>
         <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
         <q-item-section>Dashboard</q-item-section>
@@ -18,21 +18,21 @@
 
       <q-item clickable v-ripple to="/estadisticas">
         <q-item-section avatar>
-          <q-icon name="bar_chart" />
+          <q-icon name="insert_chart" />
         </q-item-section>
         <q-item-section>Estadísticas</q-item-section>
       </q-item>
 
       <q-item clickable v-ripple to="/eventos">
         <q-item-section avatar>
-          <q-icon name="bar_chart" />
+          <q-icon name="event" />
         </q-item-section>
         <q-item-section>Eventos</q-item-section>
       </q-item>
 
       <q-item clickable v-ripple to="/eventos-fallidos">
         <q-item-section avatar>
-          <q-icon name="bar_chart" />
+          <q-icon name="report_problem" />
         </q-item-section>
         <q-item-section>Eventos Fallidos</q-item-section>
       </q-item>

@@ -57,3 +57,5 @@ export const getTiempoRespuestaPromedio = (data) =>
 
 export const getEventoBiometricofindAllByFilter = (data) =>
   API.post('/eventoBiometrico/findAllByFilter', data)
+
+export const getFuncionalidadesEstado = (data) => API.post('/main/funcionalidades-estado', data)

@@ -1,5 +1,5 @@
 <template>
-  <div class="chart-wrapper">
+  <div class="chart-wrappr">
     <q-table :rows="logs" :columns="columns" row-key="usuario" dense flat bordered class="my-table"
       :pagination="{ rowsPerPage: 10 }" :rows-per-page-options="[5, 10, 25, 50]" />
 
@@ -22,3 +22,14 @@ const columns = [
   { name: 'android', label: 'Versión Android', field: 'versionAndroidDispositivo' }
 ]
 </script>
+<style scoped>
+.my-table {
+  background-color: #1e1e2f;
+  border-radius: 12px;
+}
+
+.chart-wrappr {
+  max-width: 100%;
+  overflow-x: auto;
+}
+</style>
