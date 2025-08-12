@@ -1,4 +1,8 @@
 // app global css in SCSS form
+
+// Importar estilos de gráficas mejoradas
+@import './chart-enhancements.scss';
+
 .chart-wrapper {
   background: #1e1e2f;
   padding: 12px;

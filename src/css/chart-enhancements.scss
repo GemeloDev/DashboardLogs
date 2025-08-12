@@ -1,0 +1,89 @@
+/* Estilos globales para tooltips de gráficas mejoradas */
+.custom-tooltip {
+  background: rgba(30, 30, 47, 0.95);
+  border: 1px solid #3f51b5;
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  font-family: 'Roboto', sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.custom-tooltip h4 {
+  margin: 0 0 8px 0;
+  color: #3f51b5;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(63, 81, 181, 0.3);
+  padding-bottom: 4px;
+}
+
+.tooltip-item {
+  margin: 6px 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tooltip-item strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.tooltip-item small {
+  color: #b0b0b0;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Animaciones para gráficas */
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-animation {
+  animation: chartFadeIn 0.6s ease-out;
+}
+
+/* Estilos para estados de loading en gráficas */
+.chart-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(30, 30, 47, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  z-index: 10;
+}
+
+.chart-loading-text {
+  margin-top: 12px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Mejoras para chips informativos */
+.info-chip {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.info-chip:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-1px);
+  transition: all 0.3s ease;
+}
