@@ -284,7 +284,7 @@
     </q-card-section>
 
     <!-- Consola de Logs Mejorada -->
-//    <EscritorioConsola ref="consolaRef" :filtros="filtros" />
+    <EscritorioConsola ref="consolaRef" :filtros="filtros" />
   </q-card>
 </template>
 
@@ -468,7 +468,13 @@ const abrirConsolaGeneral = (tipo) => {
       detalle.person?.curp ||
       detalle.person?.nombres ||
       'No especificado',
-    Dispositivo: detalle.device || detalle.Dispositivo || detalle.scanDevice || 'No especificado',
+    Dispositivo: detalle.device || detalle.Dispositivo || detalle.device || 'No especificado',
+    Escaner:
+      detalle.scanDevice ||
+      detalle.ScanDevice ||
+      detalle.escaner ||
+      detalle.scanner ||
+      'No especificado',
     // Información adicional para mejor contexto
     PersonaCompleta: detalle.person
       ? {
@@ -480,6 +486,9 @@ const abrirConsolaGeneral = (tipo) => {
       : null,
     TrackingCode: detalle.trackingCode || detalle.TrackingCode || null,
     ID: detalle.id || detalle.ID || null,
+    // Campos adicionales útiles
+    Proceso: detalle.proceso || detalle.Process || 'No especificado',
+    Hora: detalle.hora || 'No especificada',
   }))
 
   consolaRef.value.abrirConsola(logsFormateados, titulo)
@@ -1331,6 +1340,7 @@ const crearGraficaErrores = async () => {
 // Función para abrir la consola con datos específicos de un punto de la gráfica
 const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
   console.log('🎯 CLICK DETECTADO EN GRÁFICA:', { fecha, tipoGrafica, detalles: detalles?.length })
+  console.log('📋 MUESTRA DE DATOS RECIBIDOS:', detalles?.slice(0, 2))
 
   if (!consolaRef.value) {
     console.warn('❌ Referencia de consola no disponible')
@@ -1340,6 +1350,7 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
   // Filtrar los logs de la fecha específica
   const logsFecha = detalles.filter((detalle) => detalle.fecha === fecha)
   console.log(`📊 Logs encontrados para ${fecha}:`, logsFecha.length)
+  console.log('🔍 DETALLE DE LOGS FILTRADOS:', logsFecha.slice(0, 2))
 
   if (logsFecha.length === 0) {
     // Si no hay logs específicos de esa fecha, mostrar mensaje
@@ -1376,7 +1387,13 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
       detalle.person?.curp ||
       detalle.person?.nombres ||
       'No especificado',
-    Dispositivo: detalle.device || detalle.Dispositivo || detalle.scanDevice || 'No especificado',
+    Dispositivo: detalle.device || detalle.Dispositivo || detalle.device || 'No especificado',
+    Escaner:
+      detalle.scanDevice ||
+      detalle.ScanDevice ||
+      detalle.escaner ||
+      detalle.scanner ||
+      'No especificado',
     // Información adicional para mejor contexto
     PersonaCompleta: detalle.person
       ? {
@@ -1388,7 +1405,13 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
       : null,
     TrackingCode: detalle.trackingCode || detalle.TrackingCode || null,
     ID: detalle.id || detalle.ID || null,
+    // Campos adicionales útiles
+    Proceso: detalle.proceso || detalle.Process || 'No especificado',
+    Hora: detalle.hora || 'No especificada',
   }))
+
+  console.log('🔄 LOGS FORMATEADOS PARA CONSOLA:', logsFormateados.slice(0, 2))
+  console.log('📋 CAMPOS DISPONIBLES EN PRIMER LOG:', Object.keys(logsFormateados[0] || {}))
 
   // Determinar el título del filtro
   const tipoLabel =

@@ -387,13 +387,25 @@ export class ChartDataService {
         fecha: fechaStr,
         proceso,
         duracion,
-        oficina: log.oficina?.nombre || 'No especificada',
-        usuario: log.person?.curp || log.person?.nombres || 'No especificado',
-        dispositivo: log.device || 'No especificado',
+        oficina: log.oficina?.nombre || log.Oficina?.Nombre || 'No especificada',
+        usuario: log.person?.curp || log.person?.nombres || log.Person?.Curp || log.usuario || 'No especificado',
+        dispositivo: log.device || log.Device || log.dispositivo || 'No especificado',
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
         fechaInicio: log.startDate || log.date,
-        fechaFin: log.endDate || log.date
+        fechaFin: log.endDate || log.date,
+        mensaje: log.message || log.Message || `Procesamiento ${proceso} completado`,
+        tipo: log.type || log.Type || 'PROCESS',
+        // Información completa del dispositivo y escáner
+        device: log.device || log.Device || log.dispositivo || 'No especificado',
+        scanDevice: log.scanDevice || log.ScanDevice || log.escaner || log.scanner || 'No especificado',
+        // Información adicional de la persona
+        person: log.person || log.Person || null,
+        // Tracking y otros datos útiles
+        trackingCode: log.trackingCode || log.TrackingCode || null,
+        id: log.id || log.ID || null,
+        // Preservar datos originales
+        ...log
       })
     })
 
@@ -581,14 +593,26 @@ export class ChartDataService {
       detalles.push({
         fecha: fechaStr,
         proceso,
-        oficina: log.oficina?.nombre || 'No especificada',
-        usuario: log.person?.curp || log.person?.nombres || 'No especificado',
-        dispositivo: log.device || 'No especificado',
+        oficina: log.oficina?.nombre || log.Oficina?.Nombre || 'No especificada',
+        usuario: log.person?.curp || log.person?.nombres || log.Person?.Curp || log.usuario || 'No especificado',
+        dispositivo: log.device || log.Device || log.dispositivo || 'No especificado',
         duracion: log.durationSeconds || 0,
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
         fechaInicio: log.startDate || log.date,
-        fechaFin: log.endDate || log.date
+        fechaFin: log.endDate || log.date,
+        mensaje: log.message || log.Message || `Escaneo ${proceso}`,
+        tipo: log.type || log.Type || 'SCAN',
+        // Información completa del dispositivo y escáner
+        device: log.device || log.Device || log.dispositivo || 'No especificado',
+        scanDevice: log.scanDevice || log.ScanDevice || log.escaner || log.scanner || 'No especificado',
+        // Información adicional de la persona
+        person: log.person || log.Person || null,
+        // Tracking y otros datos útiles
+        trackingCode: log.trackingCode || log.TrackingCode || null,
+        id: log.id || log.ID || null,
+        // Preservar datos originales
+        ...log
       })
     })
 
@@ -783,11 +807,20 @@ export class ChartDataService {
         fecha: fechaStr,
         tipo,
         // Los datos reales tienen estructura diferente a los de ejemplo
-        usuario: item.person?.curp || item.Person?.Curp || 'No especificado',
-        oficina: item.oficina?.nombre || item.Oficina?.Nombre || 'No especificada',
+        usuario: item.person?.curp || item.Person?.Curp || item.usuario || item.Usuario || 'No especificado',
+        oficina: item.oficina?.nombre || item.Oficina?.Nombre || item.OficinaNombre || 'No especificada',
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
-        proceso: item.process || item.Process || 'LOGIN'
+        proceso: item.process || item.Process || 'LOGIN',
+        mensaje: item.Message || item.message || item.descripcion || (tipo === 'SUCCESS' ? 'Login exitoso' : 'Login fallido'),
+        // Información completa del dispositivo y escáner
+        device: item.device || item.Device || item.dispositivo || 'No especificado',
+        scanDevice: item.scanDevice || item.ScanDevice || item.escaner || item.scanner || 'No especificado',
+        // Información adicional de la persona
+        person: item.person || item.Person || null,
+        // Tracking y otros datos útiles
+        trackingCode: item.trackingCode || item.TrackingCode || null,
+        id: item.id || item.ID || null
       })
     })
 
@@ -918,11 +951,20 @@ export class ChartDataService {
         fecha: fechaStr,
         tipo,
         // Los datos reales tienen estructura diferente a los de ejemplo
-        usuario: item.person?.curp || item.Person?.Curp || 'No especificado',
-        oficina: item.oficina?.nombre || item.Oficina?.Nombre || 'No especificada',
+        usuario: item.person?.curp || item.Person?.Curp || item.usuario || item.Usuario || 'No especificado',
+        oficina: item.oficina?.nombre || item.Oficina?.Nombre || item.OficinaNombre || 'No especificada',
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
-        mensaje: item.Message || 'Sin mensaje'
+        mensaje: item.Message || item.message || item.descripcion || 'Registro completado',
+        // Información completa del dispositivo y escáner
+        device: item.device || item.Device || item.dispositivo || 'No especificado',
+        scanDevice: item.scanDevice || item.ScanDevice || item.escaner || item.scanner || 'No especificado',
+        process: item.process || item.Process || 'REGISTER',
+        // Información adicional de la persona
+        person: item.person || item.Person || null,
+        // Tracking y otros datos útiles
+        trackingCode: item.trackingCode || item.TrackingCode || null,
+        id: item.id || item.ID || null
       })
     })
 
@@ -1056,12 +1098,22 @@ export class ChartDataService {
 
       detalles.push({
         fecha: fechaStr,
+        tipo: 'ERROR',
         // Los datos reales tienen estructura diferente a los de ejemplo
         proceso: item.process || item.Process || 'Proceso no especificado',
-        mensaje: item.message || item.Message || 'Error sin descripción',
-        oficina: item.oficina?.nombre || item.Oficina?.Nombre || 'No especificada',
+        mensaje: item.message || item.Message || item.descripcion || 'Error sin descripción',
+        usuario: item.person?.curp || item.Person?.Curp || item.usuario || item.Usuario || 'No especificado',
+        oficina: item.oficina?.nombre || item.Oficina?.Nombre || item.OficinaNombre || 'No especificada',
         hora: fecha.toLocaleTimeString(),
-        fechaCompleta: fecha.toLocaleString()
+        fechaCompleta: fecha.toLocaleString(),
+        // Información completa del dispositivo y escáner
+        device: item.device || item.Device || item.dispositivo || 'No especificado',
+        scanDevice: item.scanDevice || item.ScanDevice || item.escaner || item.scanner || 'No especificado',
+        // Información adicional de la persona
+        person: item.person || item.Person || null,
+        // Tracking y otros datos útiles
+        trackingCode: item.trackingCode || item.TrackingCode || null,
+        id: item.id || item.ID || null
       })
     })
 

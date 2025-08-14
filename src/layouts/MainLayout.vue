@@ -8,7 +8,50 @@
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
         <q-toolbar-title>Consola Logs</q-toolbar-title>
-        <div>Console v1.0</div>
+
+        <!-- Información del usuario y logout -->
+        <div class="row items-center q-gutter-sm">
+          <q-chip
+            :icon="selectedFlow === 'escritorio' ? 'desktop_windows' : 'smartphone'"
+            :label="selectedFlow === 'escritorio' ? 'Escritorio' : 'Mobile'"
+            outline
+            color="white"
+            text-color="white"
+            size="sm"
+          />
+
+          <!-- Menú de usuario -->
+          <q-btn-dropdown
+            flat
+            dense
+            no-caps
+            :label="userInfo.nombre"
+            icon="account_circle"
+            dropdown-icon="expand_more"
+          >
+            <q-list>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="email" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label caption>{{ userInfo.email }}</q-item-label>
+                </q-item-section>
+              </q-item>
+
+              <q-separator />
+
+              <q-item clickable v-close-popup @click="logout">
+                <q-item-section avatar>
+                  <q-icon name="logout" color="red" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Cerrar Sesión</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+        </div>
       </q-toolbar>
     </q-header>
 
@@ -221,20 +264,28 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
 import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGraficasEnhanced.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 
 const $q = useQuasar()
+const router = useRouter()
 const leftDrawerOpen = ref(false)
 const selectedFlow = ref('mobile')
 const filtros = ref({})
 const modalVisible = ref(false)
 const detalleModal = ref(null)
 const showFilters = ref(false)
+
+// Información del usuario
+const userInfo = ref({
+  nombre: 'Usuario',
+  email: 'usuario@ejemplo.com',
+})
 const showConsole = ref(false)
 const consolaRef = ref(null)
 
@@ -290,6 +341,82 @@ function toggleConsole() {
     }
   }
 }
+
+// Función para cargar información del usuario
+const loadUserInfo = () => {
+  try {
+    const sessionData =
+      localStorage.getItem('dashboardLogsSession') || sessionStorage.getItem('dashboardLogsSession')
+
+    if (sessionData) {
+      const session = JSON.parse(sessionData)
+      if (session.user) {
+        userInfo.value = {
+          nombre: session.user.nombre || 'Usuario',
+          email: session.user.email || 'usuario@ejemplo.com',
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando información del usuario:', error)
+  }
+}
+
+// Función para cerrar sesión
+const logout = () => {
+  try {
+    if (!$q.dialog) {
+      console.error('Dialog plugin no está disponible')
+      // Fallback: cerrar sesión directamente
+      cerrarSesionDirectamente()
+      return
+    }
+
+    $q.dialog({
+      title: 'Cerrar Sesión',
+      message: '¿Estás seguro de que deseas cerrar sesión?',
+      cancel: true,
+      persistent: true,
+    })
+      .onOk(() => {
+        cerrarSesionDirectamente()
+      })
+      .onCancel(() => {
+        console.log('Logout cancelado')
+      })
+  } catch (error) {
+    console.error('Error en logout:', error)
+    cerrarSesionDirectamente()
+  }
+}
+
+// Función auxiliar para cerrar sesión
+const cerrarSesionDirectamente = () => {
+  try {
+    // Limpiar sesión
+    localStorage.removeItem('dashboardLogsSession')
+    sessionStorage.removeItem('dashboardLogsSession')
+
+    // Mostrar notificación
+    $q.notify({
+      type: 'positive',
+      message: 'Sesión cerrada exitosamente',
+      position: 'top',
+    })
+
+    // Redirigir al login
+    router.push('/login')
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error)
+    // Forzar redirección aunque haya error
+    window.location.href = '/login'
+  }
+}
+
+// Cargar información del usuario al montar
+onMounted(() => {
+  loadUserInfo()
+})
 </script>
 
 <style lang="scss">

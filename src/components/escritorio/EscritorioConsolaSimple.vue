@@ -97,8 +97,8 @@
             <q-btn color="warning" icon="clear_all" label="Limpiar" @click="limpiarConsola" flat />
           </div>
 
-          <!-- Segunda fila: Filtros avanzados -->
-          <div class="col-12 col-md-3">
+          <!-- Segunda fila: Filtros avanzados - Fila 1 -->
+          <div class="col-12 col-lg-3 col-md-4">
             <q-select
               v-model="filtroOficina"
               :options="opcionesOficinas"
@@ -120,7 +120,7 @@
             </q-select>
           </div>
 
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-lg-3 col-md-4">
             <q-select
               v-model="filtroUsuario"
               :options="opcionesUsuarios"
@@ -142,27 +142,92 @@
             </q-select>
           </div>
 
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-lg-3 col-md-4">
             <q-select
-              v-model="filtroTipo"
-              :options="opcionesTipos"
+              v-model="filtroTipoLog"
+              :options="opcionesTiposLog"
               option-label="label"
               option-value="value"
               emit-value
               map-options
-              label="Filtrar por Tipo"
+              label="Tipo de Log"
               filled
               dark
               color="primary"
               clearable
             >
               <template v-slot:prepend>
-                <q-icon name="category" color="blue" />
+                <q-icon name="article" color="blue" />
               </template>
             </q-select>
           </div>
 
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-lg-3 col-md-4">
+            <q-select
+              v-model="filtroProceso"
+              :options="opcionesProcesos"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              label="Tipo de Proceso"
+              filled
+              dark
+              color="primary"
+              clearable
+            >
+              <template v-slot:prepend>
+                <q-icon name="settings" color="purple" />
+              </template>
+            </q-select>
+          </div>
+
+          <!-- Tercera fila: Filtros de dispositivos -->
+          <div class="col-12 col-lg-3 col-md-4">
+            <q-select
+              v-model="filtroDispositivo"
+              :options="opcionesDispositivos"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              label="Filtrar por Dispositivo"
+              filled
+              dark
+              color="primary"
+              clearable
+              use-input
+              @filter="filtrarDispositivos"
+            >
+              <template v-slot:prepend>
+                <q-icon name="smartphone" color="cyan" />
+              </template>
+            </q-select>
+          </div>
+
+          <div class="col-12 col-lg-3 col-md-4">
+            <q-select
+              v-model="filtroEscaner"
+              :options="opcionesEscaners"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              label="Filtrar por Escáner"
+              filled
+              dark
+              color="primary"
+              clearable
+              use-input
+              @filter="filtrarEscaners"
+            >
+              <template v-slot:prepend>
+                <q-icon name="qr_code_scanner" color="pink" />
+              </template>
+            </q-select>
+          </div>
+
+          <div class="col-12 col-lg-3 col-md-4">
             <q-input
               v-model="textoRangoFechas"
               label="Filtrar por Rango de Fechas"
@@ -173,7 +238,7 @@
               readonly
             >
               <template v-slot:prepend>
-                <q-icon name="date_range" color="purple" />
+                <q-icon name="date_range" color="amber" />
               </template>
               <template v-slot:append>
                 <q-icon name="calendar_month" class="cursor-pointer">
@@ -195,6 +260,17 @@
                 </q-icon>
               </template>
             </q-input>
+          </div>
+
+          <div class="col-12 col-lg-3 col-md-4">
+            <q-btn
+              color="negative"
+              icon="filter_alt_off"
+              label="Limpiar Filtros"
+              @click="limpiarFiltros"
+              outline
+              class="full-width"
+            />
           </div>
         </div>
 
@@ -292,7 +368,9 @@
 
                 <!-- Dispositivo y Escáner - Solo mostrar si hay datos reales -->
                 <div
-                  v-if="obtenerInfoDispositivo(log).hasDevice || obtenerInfoDispositivo(log).hasScanner"
+                  v-if="
+                    obtenerInfoDispositivo(log).hasDevice || obtenerInfoDispositivo(log).hasScanner
+                  "
                   class="log-device-info q-mt-xs"
                 >
                   <div class="device-details">
@@ -579,7 +657,10 @@ const datosDesdeGrafica = ref(false)
 // Filtros avanzados
 const filtroOficina = ref(null)
 const filtroUsuario = ref(null)
-const filtroTipo = ref(null)
+const filtroTipoLog = ref(null) // Renombrado de filtroTipo
+const filtroProceso = ref(null) // Nuevo filtro de proceso
+const filtroDispositivo = ref(null) // Nuevo filtro de dispositivo
+const filtroEscaner = ref(null) // Nuevo filtro de escáner
 const rangoFechas = ref(null)
 
 // 📅 VALIDAR Y FORMATEAR FECHA A ISO (YYYY-MM-DD)
@@ -618,25 +699,38 @@ const validarYFormatearFecha = (fecha) => {
 
 const opcionesOficinas = ref([])
 const opcionesUsuarios = ref([])
-const opcionesTipos = ref([
-  { label: 'Todos', value: null },
-  { label: 'Login', value: 'Login' },
-  { label: 'Registro', value: 'Registro' },
-  { label: 'Error', value: 'Error' },
-  { label: 'Exportación', value: 'Exportacion' },
-  { label: 'Sincronización', value: 'Sincronizacion' },
-  { label: 'Operación', value: 'Operacion' },
-  { label: 'Autenticación', value: 'Autenticacion' },
-  { label: 'Validación', value: 'Validacion' },
-  { label: 'Info', value: 'Info' },
-  { label: 'Warning', value: 'Warning' },
-  { label: 'Success', value: 'Success' },
+const opcionesTiposLog = ref([
+  { label: 'Todos los tipos', value: null },
+  { label: 'INFO', value: 'INFO' },
+  { label: 'ERROR', value: 'ERROR' },
+  { label: 'SUCCESS', value: 'SUCCESS' },
+  { label: 'WARNING', value: 'WARNING' },
+  { label: 'DEBUG', value: 'DEBUG' },
 ])
+
+// Nuevas opciones para procesos
+const opcionesProcesos = ref([
+  { label: 'Todos los procesos', value: null },
+  { label: 'LOGIN', value: 'LOGIN' },
+  { label: 'REGISTER', value: 'REGISTER' },
+  { label: 'EXPORT', value: 'EXPORT' },
+  { label: 'QR', value: 'QR' },
+  { label: 'MRZ', value: 'MRZ' },
+  { label: 'INE', value: 'INE' },
+  { label: 'SYNC', value: 'SYNC' },
+  { label: 'VALIDATION', value: 'VALIDATION' },
+])
+
+// Opciones dinámicas para dispositivos y escáneres
+const opcionesDispositivos = ref([])
+const opcionesEscaners = ref([])
 // 🗂️ MAPEO DE OFICINAS Y PERSONAS: Para convertir nombres a IDs
 const mapaOficinas = ref(new Map()) // nombre -> id
 const mapaPersonas = ref(new Map()) // nombre -> id
 const oficinasFull = ref([])
 const usuariosFull = ref([])
+const dispositivosFull = ref([])
+const escanersFull = ref([])
 
 // Computed para el texto del rango de fechas
 const textoRangoFechas = computed(() => {
@@ -666,7 +760,7 @@ const logsFiltrados = computed(() => {
   const hayBusqueda = busqueda.value && busqueda.value.trim() !== ''
   const hayFiltroOficina = filtroOficina.value && filtroOficina.value.trim() !== ''
   const hayFiltroUsuario = filtroUsuario.value && filtroUsuario.value.trim() !== ''
-  const hayFiltroTipo = filtroTipo.value && filtroTipo.value.trim() !== ''
+  const hayFiltroTipo = filtroTipoLog.value && filtroTipoLog.value.trim() !== ''
   const hayFiltroFechas = rangoFechas.value && (rangoFechas.value.from || rangoFechas.value.to)
 
   // ✅ SOLUCIÓN: Si no hay ningún filtro aplicado, mostrar TODOS los logs
@@ -711,10 +805,10 @@ const logsFiltrados = computed(() => {
   }
 
   // Filtro por tipo mejorado
-  if (filtroTipo.value) {
+  if (filtroTipoLog.value) {
     resultado = resultado.filter((log) => {
       const tipo = log.Type || log.Tipo || log.EventType || ''
-      return tipo.toLowerCase() === filtroTipo.value.toLowerCase()
+      return tipo.toLowerCase() === filtroTipoLog.value.toLowerCase()
     })
   }
 
@@ -750,6 +844,42 @@ const logsFiltrados = computed(() => {
     })
   }
 
+  // Filtro por proceso
+  if (filtroProceso.value) {
+    resultado = resultado.filter((log) => {
+      const proceso = log.Proceso || log.Process || log.TipoProceso || log.procesType || ''
+      return proceso.toLowerCase().includes(filtroProceso.value.toLowerCase())
+    })
+  }
+
+  // Filtro por dispositivo
+  if (filtroDispositivo.value) {
+    resultado = resultado.filter((log) => {
+      const dispositivo =
+        log.Dispositivo ||
+        log.Device ||
+        log.NombreDispositivo ||
+        log.deviceName ||
+        log.nombreDispositivo ||
+        ''
+      return dispositivo.toLowerCase().includes(filtroDispositivo.value.toLowerCase())
+    })
+  }
+
+  // Filtro por escáner
+  if (filtroEscaner.value) {
+    resultado = resultado.filter((log) => {
+      const escaner =
+        log.Escaner ||
+        log.Scanner ||
+        log.NombreEscaner ||
+        log.scannerName ||
+        log.nombreEscaner ||
+        ''
+      return escaner.toLowerCase().includes(filtroEscaner.value.toLowerCase())
+    })
+  }
+
   return resultado
 })
 
@@ -777,11 +907,11 @@ const filtrosActivos = computed(() => {
     })
   }
 
-  if (filtroTipo.value) {
-    const tipo = opcionesTipos.value.find((t) => t.value === filtroTipo.value)
+  if (filtroTipoLog.value) {
+    const tipo = opcionesTiposLog.value.find((t) => t.value === filtroTipoLog.value)
     filtros.push({
       key: 'tipo',
-      label: `Tipo: ${tipo?.label || filtroTipo.value}`,
+      label: `Tipo: ${tipo?.label || filtroTipoLog.value}`,
       color: 'blue',
       icon: 'category',
     })
@@ -796,6 +926,33 @@ const filtrosActivos = computed(() => {
     })
   }
 
+  if (filtroProceso.value) {
+    filtros.push({
+      key: 'proceso',
+      label: `Proceso: ${filtroProceso.value}`,
+      color: 'orange',
+      icon: 'settings',
+    })
+  }
+
+  if (filtroDispositivo.value) {
+    filtros.push({
+      key: 'dispositivo',
+      label: `Dispositivo: ${filtroDispositivo.value}`,
+      color: 'teal',
+      icon: 'devices',
+    })
+  }
+
+  if (filtroEscaner.value) {
+    filtros.push({
+      key: 'escaner',
+      label: `Escáner: ${filtroEscaner.value}`,
+      color: 'cyan',
+      icon: 'scanner',
+    })
+  }
+
   return filtros
 })
 
@@ -807,7 +964,7 @@ const obtenerNombreOficina = (log) => {
     log.oficina?.Descripcion || // ← Respaldo alternativo
     log.Oficina?.Nombre || // ← Respaldo estructura anterior
     log.Oficina?.Descripcion || // ← Respaldo estructura anterior
-    log.Oficina  // ← Valor por defecto
+    log.Oficina // ← Valor por defecto
   )
 }
 
@@ -1001,7 +1158,11 @@ const abrirConsola = (logsData = null, filtroTexto = '') => {
 
 // 🔧 NUEVA FUNCIÓN: Normalizar datos de gráficas SIN GENERAR DATOS FAKE
 const normalizarDatosLogs = (logsOriginales) => {
-  console.log('🔄 NORMALIZANDO DATOS DE GRÁFICAS (SOLO DATOS REALES):', logsOriginales.length, 'registros')
+  console.log(
+    '🔄 NORMALIZANDO DATOS DE GRÁFICAS (SOLO DATOS REALES):',
+    logsOriginales.length,
+    'registros'
+  )
 
   // 📊 DEBUG: Mostrar estructura de los primeros 3 logs para análisis
   console.log('📊 ANÁLISIS DE ESTRUCTURA DE DATOS DESDE GRÁFICAS:')
@@ -1015,7 +1176,7 @@ const normalizarDatosLogs = (logsOriginales) => {
       ScanDevice: log.ScanDevice,
       escaner: log.escaner,
       Escaner: log.Escaner,
-      TrackingCode: log.TrackingCode
+      TrackingCode: log.TrackingCode,
     })
   })
 
@@ -1037,14 +1198,27 @@ const normalizarDatosLogs = (logsOriginales) => {
     // 🔧 NORMALIZAR DISPOSITIVO: SOLO si existe un valor real
     if (!logNormalizado.device) {
       if (log.Dispositivo) {
-        if (typeof log.Dispositivo === 'object' && log.Dispositivo.Nombre && log.Dispositivo.Nombre !== 'No especificado') {
+        if (
+          typeof log.Dispositivo === 'object' &&
+          log.Dispositivo.Nombre &&
+          log.Dispositivo.Nombre !== 'No especificado'
+        ) {
           logNormalizado.device = log.Dispositivo.Nombre
-        } else if (typeof log.Dispositivo === 'string' && log.Dispositivo !== 'No especificado' && log.Dispositivo.trim() !== '') {
+        } else if (
+          typeof log.Dispositivo === 'string' &&
+          log.Dispositivo !== 'No especificado' &&
+          log.Dispositivo.trim() !== ''
+        ) {
           logNormalizado.device = log.Dispositivo
         }
       }
       // SOLO usar Device o TrackingCode si son valores reales
-      if (!logNormalizado.device && log.Device && log.Device !== 'No especificado' && log.Device.trim() !== '') {
+      if (
+        !logNormalizado.device &&
+        log.Device &&
+        log.Device !== 'No especificado' &&
+        log.Device.trim() !== ''
+      ) {
         logNormalizado.device = log.Device
       }
       if (!logNormalizado.device && log.TrackingCode && log.TrackingCode.trim() !== '') {
@@ -1153,8 +1327,8 @@ const cargarLogsDesdeAPI = async (rangoExtendido = false) => {
     console.log('📅 Rango de fechas final:', `${payload.fechaInicio} al ${payload.fechaFin}`)
 
     // Agregar otros filtros con validación
-    if (filtroTipo.value && filtroTipo.value.trim() !== '') {
-      payload.tipo = filtroTipo.value.trim()
+    if (filtroTipoLog.value && filtroTipoLog.value.trim() !== '') {
+      payload.tipo = filtroTipoLog.value.trim()
     }
 
     if (filtroOficina.value && filtroOficina.value.trim() !== '') {
@@ -1334,7 +1508,7 @@ window.debugConsola = () => {
   console.log('├── Filtro actual:', filtroActual.value)
   console.log('├── Rango fechas:', rangoFechas.value)
   console.log('├── Filtros aplicados:', {
-    tipo: filtroTipo.value,
+    tipo: filtroTipoLog.value,
     oficina: filtroOficina.value,
     usuario: filtroUsuario.value,
   })
@@ -1518,6 +1692,20 @@ const obtenerOpcionesUnicas = () => {
 
   console.log('🔍 ScanDevices encontrados:', scanDevicesUnicos.length, '→', scanDevicesUnicos)
 
+  // Asignar dispositivos a las variables Full y opciones
+  dispositivosFull.value = devicesUnicos.map((dispositivo) => ({
+    label: dispositivo,
+    value: dispositivo,
+  }))
+  opcionesDispositivos.value = [...dispositivosFull.value]
+
+  // Asignar escáneres a las variables Full y opciones
+  escanersFull.value = scanDevicesUnicos.map((escaner) => ({
+    label: escaner,
+    value: escaner,
+  }))
+  opcionesEscaners.value = [...escanersFull.value]
+
   console.log(
     '✅ OPCIONES FINALES:',
     '\n├── Oficinas:',
@@ -1557,6 +1745,32 @@ const filtrarUsuarios = (val, update) => {
   })
 }
 
+const filtrarDispositivos = (val, update) => {
+  update(() => {
+    if (val === '') {
+      opcionesDispositivos.value = dispositivosFull.value
+    } else {
+      const needle = val.toLowerCase()
+      opcionesDispositivos.value = dispositivosFull.value.filter(
+        (dispositivo) => dispositivo.label.toLowerCase().indexOf(needle) > -1
+      )
+    }
+  })
+}
+
+const filtrarEscaners = (val, update) => {
+  update(() => {
+    if (val === '') {
+      opcionesEscaners.value = escanersFull.value
+    } else {
+      const needle = val.toLowerCase()
+      opcionesEscaners.value = escanersFull.value.filter(
+        (escaner) => escaner.label.toLowerCase().indexOf(needle) > -1
+      )
+    }
+  })
+}
+
 const limpiarFiltro = (key) => {
   switch (key) {
     case 'oficina':
@@ -1566,7 +1780,16 @@ const limpiarFiltro = (key) => {
       filtroUsuario.value = null
       break
     case 'tipo':
-      filtroTipo.value = null
+      filtroTipoLog.value = null
+      break
+    case 'proceso':
+      filtroProceso.value = null
+      break
+    case 'dispositivo':
+      filtroDispositivo.value = null
+      break
+    case 'escaner':
+      filtroEscaner.value = null
       break
     case 'fecha':
       rangoFechas.value = null
@@ -1582,7 +1805,10 @@ const limpiarFiltro = (key) => {
 const limpiarTodosFiltros = () => {
   filtroOficina.value = null
   filtroUsuario.value = null
-  filtroTipo.value = null
+  filtroTipoLog.value = null
+  filtroProceso.value = null
+  filtroDispositivo.value = null
+  filtroEscaner.value = null
   rangoFechas.value = null
   busqueda.value = ''
 
@@ -1784,13 +2010,19 @@ const abrirConsolaDirecta = async () => {
   rangoFechas.value = null
   filtroOficina.value = null
   filtroUsuario.value = null
-  filtroTipo.value = null
+  filtroTipoLog.value = null
+  filtroProceso.value = null
+  filtroDispositivo.value = null
+  filtroEscaner.value = null
   busqueda.value = ''
 
   // Limpiar otros filtros pero mantener fechas
   filtroOficina.value = null
   filtroUsuario.value = null
-  filtroTipo.value = null
+  filtroTipoLog.value = null
+  filtroProceso.value = null
+  filtroDispositivo.value = null
+  filtroEscaner.value = null
   busqueda.value = ''
 
   // Cargar datos frescos desde API con el rango de fechas inicializado
