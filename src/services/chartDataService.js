@@ -114,10 +114,11 @@ export class ChartDataService {
     const detalles = []
 
     rawData.forEach(item => {
+      console.log(item.oficina.nombre, 'xddddddddddddd');
       // Manejar tanto formato real (minúsculas) como formato de muestra (mayúsculas)
       const dateField = item.date || item.Date
       const messageField = item.message || item.Message
-      const oficinaField = item.oficina || item.Oficina
+      const oficinaField = item.oficina?.nombre
       const personField = item.person || item.Person
 
       // Validar que el item tenga la estructura esperada
@@ -166,13 +167,14 @@ export class ChartDataService {
         agrupados[fechaStr].json += 1 // Default a json
       }
 
+      console.log(oficinaField);
       // Guardar detalles COMPLETOS preservando todos los datos originales de la API
       detalles.push({
         // Datos procesados para visualización
         fecha: fechaStr,
         formato: formato in agrupados[fechaStr] ? formato : 'json',
-        oficina: oficinaField?.nombre || oficinaField?.Nombre || 'No especificada',
-        usuario: personField?.curp || personField?.Curp || 'No especificado',
+        oficina: oficinaField || 'No especificada',
+        usuario: personField?.nombres + ' ' + personField?.primerApellido + ' ' + personField?.segundoApellido || 'No especificado',
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
 
@@ -383,12 +385,16 @@ export class ChartDataService {
 
       agrupados[fechaStr][proceso].push(duracion)
 
+      const usuario = log.person && log.person.nombres
+        ? `${log.person.nombres} ${log.person.primerApellido || ''} ${log.person.segundoApellido || ''}`.trim()
+        : 'Sin usuario'
+
       detalles.push({
         fecha: fechaStr,
         proceso,
         duracion,
-        oficina: log.oficina?.nombre || log.Oficina?.Nombre || 'No especificada',
-        usuario: log.person?.curp || log.person?.nombres || log.Person?.Curp || log.usuario || 'No especificado',
+        oficina: log.oficina?.nombre || 'No especificada',
+        usuario,
         dispositivo: log.device || log.Device || log.dispositivo || 'No especificado',
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
@@ -594,7 +600,9 @@ export class ChartDataService {
         fecha: fechaStr,
         proceso,
         oficina: log.oficina?.nombre || log.Oficina?.Nombre || 'No especificada',
-        usuario: log.person?.curp || log.person?.nombres || log.Person?.Curp || log.usuario || 'No especificado',
+        usuario: log.person?.nombres
+          ? `${log.person.nombres} ${log.person.primerApellido || ''} ${log.person.segundoApellido || ''}`.trim()
+          : 'Sin usuario',
         dispositivo: log.device || log.Device || log.dispositivo || 'No especificado',
         duracion: log.durationSeconds || 0,
         hora: fecha.toLocaleTimeString(),
@@ -800,15 +808,15 @@ export class ChartDataService {
       if (!agrupados[fechaStr]) {
         agrupados[fechaStr] = { SUCCESS: 0, ERROR: 0 }
       }
-
       agrupados[fechaStr][tipo] += 1
-
       detalles.push({
         fecha: fechaStr,
         tipo,
         // Los datos reales tienen estructura diferente a los de ejemplo
-        usuario: item.person?.curp || item.Person?.Curp || item.usuario || item.Usuario || 'No especificado',
-        oficina: item.oficina?.nombre || item.Oficina?.Nombre || item.OficinaNombre || 'No especificada',
+        usuario: item.person?.nombres
+          ? `${item.person.nombres} ${item.person.primerApellido || ''} ${item.person.segundoApellido || ''}`.trim()
+          : 'Sin usuario',
+        oficina: item.oficina?.nombre || 'No especificada',
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
         proceso: item.process || item.Process || 'LOGIN',
@@ -820,7 +828,10 @@ export class ChartDataService {
         person: item.person || item.Person || null,
         // Tracking y otros datos útiles
         trackingCode: item.trackingCode || item.TrackingCode || null,
-        id: item.id || item.ID || null
+        id: item.id || item.ID || null,
+
+        // IMPORTANTE: Preservar TODOS los datos originales de la API
+        ...item // Incluir el item completo original
       })
     })
 
@@ -951,7 +962,9 @@ export class ChartDataService {
         fecha: fechaStr,
         tipo,
         // Los datos reales tienen estructura diferente a los de ejemplo
-        usuario: item.person?.curp || item.Person?.Curp || item.usuario || item.Usuario || 'No especificado',
+        usuario: item.person?.nombres
+          ? `${item.person.nombres} ${item.person?.primerApellido || ''} ${item.person?.segundoApellido || ''}`.trim()
+          : 'Sin usuario',
         oficina: item.oficina?.nombre || item.Oficina?.Nombre || item.OficinaNombre || 'No especificada',
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
@@ -964,7 +977,10 @@ export class ChartDataService {
         person: item.person || item.Person || null,
         // Tracking y otros datos útiles
         trackingCode: item.trackingCode || item.TrackingCode || null,
-        id: item.id || item.ID || null
+        id: item.id || item.ID || null,
+
+        // IMPORTANTE: Preservar TODOS los datos originales de la API
+        ...item // Incluir el item completo original
       })
     })
 
@@ -1102,7 +1118,9 @@ export class ChartDataService {
         // Los datos reales tienen estructura diferente a los de ejemplo
         proceso: item.process || item.Process || 'Proceso no especificado',
         mensaje: item.message || item.Message || item.descripcion || 'Error sin descripción',
-        usuario: item.person?.curp || item.Person?.Curp || item.usuario || item.Usuario || 'No especificado',
+        usuario: item.person?.nombres
+          ? `${item.person.nombres} ${item.person?.primerApellido || ''} ${item.person?.segundoApellido || ''}`.trim()
+          : 'Sin usuario',
         oficina: item.oficina?.nombre || item.Oficina?.Nombre || item.OficinaNombre || 'No especificada',
         hora: fecha.toLocaleTimeString(),
         fechaCompleta: fecha.toLocaleString(),
@@ -1113,7 +1131,10 @@ export class ChartDataService {
         person: item.person || item.Person || null,
         // Tracking y otros datos útiles
         trackingCode: item.trackingCode || item.TrackingCode || null,
-        id: item.id || item.ID || null
+        id: item.id || item.ID || null,
+
+        // IMPORTANTE: Preservar TODOS los datos originales de la API
+        ...item // Incluir el item completo original
       })
     })
 

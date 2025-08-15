@@ -92,7 +92,7 @@
             />
           </div>
 
-          <!-- Acciones -->
+          <!-- Acciones mejoradas -->
           <div class="col-12 col-md-2">
             <div class="console-actions">
               <q-btn
@@ -102,11 +102,21 @@
                 @click="exportarLogs"
                 :disable="!logsFiltrados.length"
                 class="full-width q-mb-xs"
+                size="sm"
+              />
+              <q-btn
+                color="secondary"
+                icon="filter_alt_off"
+                label="Limpiar Filtros"
+                @click="limpiarFiltros"
+                :disable="!hayFiltrosActivos"
+                class="full-width q-mb-xs"
+                size="sm"
               />
               <q-btn
                 color="warning"
                 icon="clear_all"
-                label="Limpiar"
+                label="Limpiar Todo"
                 @click="limpiarConsola"
                 flat
                 :disable="!logs.length"
@@ -195,8 +205,18 @@
             />
           </div>
 
-          <!-- Lista de logs mejorada -->
+          <!-- Lista de logs mejorada con optimización de rendimiento -->
           <div v-else class="enhanced-logs-list">
+            <!-- Información de rendimiento -->
+            <div
+              v-if="logsFiltrados.length > 1000"
+              class="performance-info q-pa-sm bg-orange-1 text-orange-8 rounded-borders q-mb-md"
+            >
+              <q-icon name="info" class="q-mr-sm" />
+              Mostrando {{ logsFiltrados.length }} logs. Para mejor rendimiento, considera usar
+              filtros más específicos.
+            </div>
+
             <q-virtual-scroll
               :items="logsFiltrados"
               separator
@@ -205,6 +225,9 @@
               :virtual-scroll-item-size="120"
               :virtual-scroll-sticky-size-start="0"
               :virtual-scroll-sticky-size-end="0"
+              :virtual-scroll-slice-ratio-before="2"
+              :virtual-scroll-slice-ratio-after="2"
+              style="max-height: 70vh"
             >
               <div
                 :class="[
@@ -337,7 +360,7 @@
           </div>
           <div class="log-detail-item" v-if="logSeleccionado.Oficina">
             <strong>Oficina:</strong>
-            <span>{{ logSeleccionado.Oficina.Nombre }}</span>
+            <span>{{ logSeleccionado.oficina.nombre }}</span>
           </div>
           <div class="log-detail-item log-detail-message">
             <strong>Mensaje:</strong>
@@ -389,20 +412,30 @@ const filtroProceso = ref('')
 const filtroFecha = ref('')
 const filtroActual = ref('')
 
-// Computed principal con filtros mejorados
+// Computed principal con filtros mejorados y optimizados
 const logsFiltrados = computed(() => {
+  console.log('🔍 Aplicando filtros locales:', {
+    busqueda: busqueda.value,
+    filtroTipo: filtroTipo.value,
+    filtroOficina: filtroOficina.value,
+    filtroProceso: filtroProceso.value,
+    filtroFecha: filtroFecha.value,
+    totalLogs: logs.value.length,
+  })
+
   let logsResultado = [...logs.value]
 
   // Filtro de búsqueda de texto
-  if (busqueda.value) {
-    const needle = busqueda.value.toLowerCase()
+  if (busqueda.value && busqueda.value.trim()) {
+    const needle = busqueda.value.toLowerCase().trim()
     logsResultado = logsResultado.filter(
       (log) =>
         (log.Message || '').toLowerCase().includes(needle) ||
         (log.Type || '').toLowerCase().includes(needle) ||
         (log.Process || '').toLowerCase().includes(needle) ||
         (log.Oficina?.Nombre || log.oficina || '').toLowerCase().includes(needle) ||
-        (log.Usuario || log.usuario || '').toLowerCase().includes(needle)
+        (log.Usuario || log.usuario || '').toLowerCase().includes(needle) ||
+        (log.Dispositivo || log.device || '').toLowerCase().includes(needle)
     )
   }
 
@@ -414,16 +447,16 @@ const logsFiltrados = computed(() => {
   }
 
   // Filtro por oficina
-  if (filtroOficina.value) {
-    const oficinaFilter = filtroOficina.value.toLowerCase()
+  if (filtroOficina.value && filtroOficina.value.trim()) {
+    const oficinaFilter = filtroOficina.value.toLowerCase().trim()
     logsResultado = logsResultado.filter((log) =>
       (log.Oficina?.Nombre || log.oficina || '').toLowerCase().includes(oficinaFilter)
     )
   }
 
   // Filtro por proceso
-  if (filtroProceso.value) {
-    const procesoFilter = filtroProceso.value.toLowerCase()
+  if (filtroProceso.value && filtroProceso.value.trim()) {
+    const procesoFilter = filtroProceso.value.toLowerCase().trim()
     logsResultado = logsResultado.filter((log) =>
       (log.Process || log.proceso || '').toLowerCase().includes(procesoFilter)
     )
@@ -434,9 +467,26 @@ const logsFiltrados = computed(() => {
     logsResultado = logsResultado.filter((log) => {
       const logDate = new Date(log.Date || log.fecha)
       const filterDate = new Date(filtroFecha.value)
+
+      if (isNaN(logDate.getTime()) || isNaN(filterDate.getTime())) {
+        return false
+      }
+
       return logDate.toDateString() === filterDate.toDateString()
     })
   }
+
+  console.log('✅ Filtros aplicados:', {
+    resultados: logsResultado.length,
+    original: logs.value.length,
+    filtrosActivos: {
+      busqueda: !!busqueda.value,
+      tipo: !!(filtroTipo.value && filtroTipo.value.length),
+      oficina: !!filtroOficina.value,
+      proceso: !!filtroProceso.value,
+      fecha: !!filtroFecha.value,
+    },
+  })
 
   return logsResultado
 })
@@ -453,16 +503,46 @@ const tiposDisponibles = computed(() => {
   }))
 })
 
-// Watchers
+// Computed para verificar si hay filtros activos
+const hayFiltrosActivos = computed(() => {
+  return !!(
+    busqueda.value ||
+    (filtroTipo.value && filtroTipo.value.length > 0) ||
+    filtroOficina.value ||
+    filtroProceso.value ||
+    filtroFecha.value
+  )
+})
+
+// Watchers mejorados
 watch(
   () => props.filtros,
   () => {
     if (mostrarConsola.value) {
+      console.log('🔄 Filtros del prop cambiaron, recargando logs...')
       cargarLogs()
     }
   },
   { deep: true }
 )
+
+// Watcher para filtros de la UI que requieren nueva petición
+watch(
+  [filtroTipo],
+  () => {
+    if (mostrarConsola.value && logs.value.length > 0) {
+      console.log('🔄 Filtro de tipo cambió, recargando logs para aplicar en servidor...')
+      // Debounce para evitar muchas peticiones
+      setTimeout(() => {
+        cargarLogs()
+      }, 500)
+    }
+  },
+  { deep: true }
+)
+
+// Los filtros locales (búsqueda, oficina, proceso, fecha) se aplican en tiempo real
+// sin necesidad de recargar datos del servidor
 
 // Funciones principales
 const abrirConsola = (logsData = null, filtroTexto = '') => {
@@ -482,6 +562,8 @@ const cerrarConsola = () => {
 }
 
 const limpiarFiltros = () => {
+  console.log('🧹 Limpiando filtros de la consola...')
+
   busqueda.value = ''
   filtroTipo.value = []
   filtroOficina.value = ''
@@ -489,6 +571,20 @@ const limpiarFiltros = () => {
   filtroFecha.value = ''
   filtroActual.value = ''
   mostrarFiltrosAvanzados.value = false
+
+  // Notificar al usuario
+  $q.notify({
+    type: 'info',
+    message: 'Filtros limpiados',
+    position: 'top',
+    timeout: 1500,
+  })
+
+  // Si la consola está abierta y no tiene logs de gráfica, recargar
+  if (mostrarConsola.value && (!props.logsIniciales || props.logsIniciales.length === 0)) {
+    console.log('🔄 Recargando logs después de limpiar filtros...')
+    cargarLogs()
+  }
 }
 
 // Funciones de formato mejoradas
@@ -544,25 +640,69 @@ const cargarLogs = async () => {
 
   loading.value = true
   try {
-    const { url, params } = buildConsolaLogsQuery(props.filtros)
-    console.log('Cargando logs consola:', { url, params })
+    // Combinar filtros del prop con filtros de la UI
+    const filtrosCombinados = {
+      ...props.filtros,
+      // Agregar filtros de la UI a la petición
+      tipoLog: filtroTipo.value && filtroTipo.value.length === 1 ? filtroTipo.value[0] : undefined,
+      // proceso: filtroProceso.value || props.filtros.proceso,
+      // oficinaId se mantiene del props.filtros
+    }
+
+    const { url, params } = buildConsolaLogsQuery(filtrosCombinados)
+
+    console.log('🔄 Cargando logs consola con filtros combinados:', {
+      url,
+      params,
+      filtrosUI: {
+        busqueda: busqueda.value,
+        filtroTipo: filtroTipo.value,
+        filtroOficina: filtroOficina.value,
+        filtroProceso: filtroProceso.value,
+      },
+      filtrosProp: props.filtros,
+    })
 
     const response = await axios.get(url, { params })
-    logs.value = Array.isArray(response.data) ? response.data : []
 
-    if (logs.value.length) {
+    if (Array.isArray(response.data)) {
+      logs.value = response.data
+      console.log('✅ Logs cargados:', {
+        total: response.data.length,
+        muestra: response.data.slice(0, 3).map((log) => ({
+          Date: log.Date || log.fecha,
+          Type: log.Type,
+          Process: log.Process,
+          Oficina: log.Oficina?.Nombre || log.oficina,
+        })),
+      })
+    } else {
+      logs.value = []
+      console.warn('⚠️ Respuesta no es array:', response.data)
+    }
+
+    if (logs.value.length > 0) {
       $q.notify({
         type: 'success',
-        message: 'Logs cargados correctamente',
+        message: `${logs.value.length} logs cargados correctamente`,
         position: 'top',
+        timeout: 2000,
+      })
+    } else {
+      $q.notify({
+        type: 'info',
+        message: 'No se encontraron logs con los filtros seleccionados',
+        position: 'top',
+        timeout: 3000,
       })
     }
   } catch (error) {
-    console.error('Error cargando logs:', error)
+    console.error('❌ Error cargando logs:', error)
     logs.value = []
     $q.notify({
       type: 'negative',
       message: 'Error cargando logs de consola',
+      caption: error.message || 'Error de conexión',
       position: 'top',
     })
   } finally {
@@ -892,4 +1032,6 @@ onMounted(() => {
     flex-direction: column;
     gap: 8px;
   }
+}
+</style>
 

@@ -460,14 +460,9 @@ const abrirConsolaGeneral = (tipo) => {
     Oficina: {
       Nombre:
         detalle.oficina || detalle.Oficina?.Nombre || detalle.Oficina?.nombre || 'No especificada',
-      Direccion: detalle.Oficina?.direccion || detalle.Oficina?.Direccion || 'No especificada',
+      Direccion: detalle.oficina?.direccion || 'No especificada',
     },
-    Usuario:
-      detalle.usuario ||
-      detalle.Usuario ||
-      detalle.person?.curp ||
-      detalle.person?.nombres ||
-      'No especificado',
+    Usuario: detalle.usuario || detalle.Usuario || detalle.person?.nombres || 'No especificado',
     Dispositivo: detalle.device || detalle.Dispositivo || detalle.device || 'No especificado',
     Escaner:
       detalle.scanDevice ||
@@ -537,7 +532,13 @@ const getChartConfig = (type, data, detalles) => {
 
             if (detallesFecha.length > 0 && type !== 'tiempos') {
               const sample = detallesFecha.slice(0, 3)
-              return sample.map((d) => `🕐 ${d.hora} - ${d.oficina || 'N/A'}`).join('\n')
+              return sample
+                .map((d) => {
+                  const oficinaNombre =
+                    typeof d.oficina === 'string' ? d.oficina : d.oficina?.nombre || 'N/A'
+                  return `🕐 ${d.hora} - ${oficinaNombre}`
+                })
+                .join('\n')
             }
             return ''
           },
@@ -551,6 +552,7 @@ const getChartConfig = (type, data, detalles) => {
       if (elements.length > 0) {
         const clickedElement = elements[0]
         const fecha = data.categorias[clickedElement.index]
+        console.log(detalles)
         abrirConsolaConDatos(fecha, type, detalles)
       }
     },
@@ -899,7 +901,13 @@ const crearGraficaLogin = async () => {
                 const detallesFecha = datosLogin.value.detalles.filter((d) => d.fecha === fecha)
                 if (detallesFecha.length > 0) {
                   const sample = detallesFecha.slice(0, 2)
-                  return sample.map((d) => `🕐 ${d.hora} - ${d.oficina}`).join('\n')
+                  return sample
+                    .map((d) => {
+                      const oficinaNombre =
+                        typeof d.oficina === 'string' ? d.oficina : d.oficina?.nombre || 'N/A'
+                      return `🕐 ${d.hora} - ${oficinaNombre}`
+                    })
+                    .join('\n')
                 }
                 return '💡 Haz click en un punto para ver los logs detallados'
               },
@@ -1079,7 +1087,13 @@ const crearGraficaRegistro = async () => {
                 const detallesFecha = datosRegistro.value.detalles.filter((d) => d.fecha === fecha)
                 if (detallesFecha.length > 0) {
                   const sample = detallesFecha.slice(0, 2)
-                  return sample.map((d) => `🕐 ${d.hora} - ${d.oficina}`).join('\n')
+                  return sample
+                    .map((d) => {
+                      const oficinaNombre =
+                        typeof d.oficina === 'string' ? d.oficina : d.oficina?.nombre || 'N/A'
+                      return `🕐 ${d.hora} - ${oficinaNombre}`
+                    })
+                    .join('\n')
                 }
                 return '💡 Haz click en una barra para ver los logs detallados'
               },
@@ -1378,8 +1392,9 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
     Message: detalle.mensaje || detalle.Message || `Evento de ${tipoGrafica}`,
     Oficina: {
       Nombre:
-        detalle.oficina || detalle.Oficina?.Nombre || detalle.Oficina?.nombre || 'No especificada',
-      Direccion: detalle.Oficina?.direccion || detalle.Oficina?.Direccion || 'No especificada',
+        (typeof detalle.oficina === 'string' ? detalle.oficina : detalle.oficina?.nombre) ||
+        'No especificada',
+      Direccion: detalle.oficina?.direccion || detalle.Oficina?.Direccion || 'No especificada',
     },
     Usuario:
       detalle.usuario ||
