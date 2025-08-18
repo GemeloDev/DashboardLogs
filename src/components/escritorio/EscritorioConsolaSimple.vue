@@ -97,8 +97,8 @@
             <q-btn color="warning" icon="clear_all" label="Limpiar" @click="limpiarConsola" flat />
           </div>
 
-          <!-- Segunda fila: Filtros avanzados - Fila 1 -->
-          <div class="col-12 col-lg-3 col-md-4">
+          <!-- Segunda fila: Filtros avanzados - Optimizado para responsive -->
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
             <q-select
               v-model="filtroOficina"
               :options="opcionesOficinas"
@@ -106,13 +106,14 @@
               option-value="value"
               emit-value
               map-options
-              label="Filtrar por Oficina"
+              label="Oficina"
               filled
               dark
               color="primary"
               clearable
               use-input
               @filter="filtrarOficinas"
+              dense
             >
               <template v-slot:prepend>
                 <q-icon name="business" color="orange" />
@@ -120,7 +121,7 @@
             </q-select>
           </div>
 
-          <div class="col-12 col-lg-3 col-md-4">
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
             <q-select
               v-model="filtroUsuario"
               :options="opcionesUsuarios"
@@ -128,13 +129,14 @@
               option-value="value"
               emit-value
               map-options
-              label="Filtrar por Usuario"
+              label="Usuario"
               filled
               dark
               color="primary"
               clearable
               use-input
               @filter="filtrarUsuarios"
+              dense
             >
               <template v-slot:prepend>
                 <q-icon name="person" color="green" />
@@ -142,7 +144,7 @@
             </q-select>
           </div>
 
-          <div class="col-12 col-lg-3 col-md-4">
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
             <q-select
               v-model="filtroTipoLog"
               :options="opcionesTiposLog"
@@ -150,11 +152,12 @@
               option-value="value"
               emit-value
               map-options
-              label="Tipo de Log"
+              label="Tipo"
               filled
               dark
               color="primary"
               clearable
+              dense
             >
               <template v-slot:prepend>
                 <q-icon name="article" color="blue" />
@@ -162,7 +165,7 @@
             </q-select>
           </div>
 
-          <div class="col-12 col-lg-3 col-md-4">
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
             <q-select
               v-model="filtroProceso"
               :options="opcionesProcesos"
@@ -170,11 +173,12 @@
               option-value="value"
               emit-value
               map-options
-              label="Tipo de Proceso"
+              label="Proceso"
               filled
               dark
               color="primary"
               clearable
+              dense
             >
               <template v-slot:prepend>
                 <q-icon name="settings" color="purple" />
@@ -182,8 +186,8 @@
             </q-select>
           </div>
 
-          <!-- Tercera fila: Filtros de dispositivos -->
-          <div class="col-12 col-lg-3 col-md-4">
+          <!-- Tercera fila: Filtros adicionales - Optimizado -->
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
             <q-select
               v-model="filtroDispositivo"
               :options="opcionesDispositivos"
@@ -191,13 +195,14 @@
               option-value="value"
               emit-value
               map-options
-              label="Filtrar por Dispositivo"
+              label="Dispositivo"
               filled
               dark
               color="primary"
               clearable
               use-input
               @filter="filtrarDispositivos"
+              dense
             >
               <template v-slot:prepend>
                 <q-icon name="smartphone" color="cyan" />
@@ -205,7 +210,7 @@
             </q-select>
           </div>
 
-          <div class="col-12 col-lg-3 col-md-4">
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
             <q-select
               v-model="filtroEscaner"
               :options="opcionesEscaners"
@@ -213,13 +218,14 @@
               option-value="value"
               emit-value
               map-options
-              label="Filtrar por Escáner"
+              label="Escáner"
               filled
               dark
               color="primary"
               clearable
               use-input
               @filter="filtrarEscaners"
+              dense
             >
               <template v-slot:prepend>
                 <q-icon name="qr_code_scanner" color="pink" />
@@ -227,15 +233,16 @@
             </q-select>
           </div>
 
-          <div class="col-12 col-lg-3 col-md-4">
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
             <q-input
               v-model="textoRangoFechas"
-              label="Filtrar por Rango de Fechas"
+              label="Fechas"
               filled
               dark
               color="primary"
               clearable
               readonly
+              dense
             >
               <template v-slot:prepend>
                 <q-icon name="date_range" color="amber" />
@@ -262,15 +269,16 @@
             </q-input>
           </div>
 
-          <div class="col-12 col-lg-3 col-md-4">
-            <q-btn
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+            <!-- <q-btn
               color="negative"
               icon="filter_alt_off"
-              label="Limpiar Filtros"
+              label="Limpiar"
               @click="limpiarFiltros"
               outline
               class="full-width"
-            />
+              dense
+            /> -->
           </div>
         </div>
 
@@ -306,9 +314,18 @@
 
       <!-- Contenido -->
       <q-card-section class="console-body">
+        <!-- Loader principal -->
         <div v-if="loading" class="text-center q-pa-xl">
           <q-spinner-grid color="primary" size="80px" />
           <div class="q-mt-lg text-h6">Cargando logs...</div>
+        </div>
+
+        <!-- Loader de filtros elegante -->
+        <div v-else-if="loadingFiltros" class="filter-loader-overlay">
+          <div class="filter-loader-content">
+            <q-spinner-dots color="primary" size="40px" />
+            <div class="q-mt-sm text-subtitle2 text-primary">Aplicando filtros...</div>
+          </div>
         </div>
 
         <div v-else-if="!logs.length" class="text-center q-pa-xl">
@@ -316,103 +333,191 @@
           <div class="q-mt-lg text-h5 text-grey-4">No hay logs disponibles</div>
         </div>
 
-        <div v-else class="logs-container">
-          <div
-            v-for="(log, index) in logsFiltrados"
-            :key="index"
-            :class="['log-item', `log-${(log.Type || 'info').toLowerCase()}`]"
-            @click="mostrarDetalleLog(log)"
-          >
-            <div class="log-header">
-              <!-- <div class="log-time">
-                <q-icon name="access_time" size="16px" class="q-mr-xs" />
-                {{ formatearFechaCompleta(log.date || log.Fecha || log.FechaCreacion) }}
-              </div> -->
-              <q-chip
-                :color="getColorTipo(log.Type || log.Tipo || log.EventType)"
-                text-color="white"
-                size="sm"
-                dense
-              >
-                {{ log.Type || log.Tipo || log.EventType || 'INFO' }}
-              </q-chip>
-            </div>
+        <div v-else>
+          <!-- Loader de paginación -->
+          <div v-if="loadingPaginacion" class="pagination-loader">
+            <q-linear-progress color="primary" indeterminate class="q-mb-md" />
+            <div class="text-center text-caption text-primary">Cargando página...</div>
+          </div>
 
-            <div class="log-content">
-              <div class="log-process" v-if="log.Process || log.Proceso">
-                <q-icon name="settings" size="16px" class="q-mr-xs text-blue-4" />
-                <strong>{{ log.Process || log.Proceso }}</strong>
-              </div>
+          <!-- Grid responsivo de cards -->
+          <div class="responsive-logs-grid" :class="{ 'loading-opacity': loadingPaginacion }">
+            <q-card
+              v-for="(log, index) in logsPaginados"
+              :key="`${log.id || index}-${paginaActual}`"
+              :class="[
+                'log-card',
+                `log-card-${(log.Type || log.Tipo || 'info').toLowerCase()}`,
+                'cursor-pointer',
+              ]"
+              @click="mostrarDetalleLog(log)"
+              bordered
+              flat
+            >
+              <!-- Header de la card -->
+              <q-card-section class="log-card-header">
+                <div class="row items-center justify-between">
+                  <div class="col-auto">
+                    <q-chip
+                      :color="getColorTipo(log.Type || log.Tipo || log.EventType)"
+                      text-color="white"
+                      size="md"
+                      :icon="getIconoTipo(log.Type || log.Tipo || log.EventType)"
+                    >
+                      {{ log.Type || log.Tipo || log.EventType || 'INFO' }}
+                    </q-chip>
+                  </div>
+                  <div class="col-auto">
+                    <q-badge
+                      :color="log.Process === 'LOGIN' ? 'green' : 'blue'"
+                      :label="log.Process || log.Proceso || 'SYSTEM'"
+                      class="text-weight-bold"
+                    />
+                  </div>
+                </div>
+              </q-card-section>
 
-              <!-- Información del usuario y oficina mejorada -->
-              <div class="log-info-grid q-mt-sm">
-                <!-- Usuario -->
-                <div v-if="obtenerNombreUsuario(log)" class="log-user-info">
-                  <div class="user-details">
-                    <q-icon name="person" size="14px" class="q-mr-xs text-green-4" />
-                    <strong>Usuario:</strong>
-                    {{ obtenerNombreUsuario(log) }}
+              <!-- Contenido principal de la card -->
+              <q-card-section class="log-card-content">
+                <!-- Información del usuario -->
+                <div v-if="obtenerNombreUsuario(log)" class="log-user-section">
+                  <div class="row items-center q-mb-sm">
+                    <q-icon name="person" color="green-4" size="20px" class="q-mr-sm" />
+                    <div class="text-weight-bold text-green-4">
+                      {{ obtenerNombreUsuario(log) }}
+                    </div>
+                  </div>
+                  <div v-if="obtenerCurpUsuario(log)" class="text-caption text-grey-5 q-ml-md">
+                    Username: {{ obtenerCurpUsuario(log) }}
                   </div>
                 </div>
 
-                <!-- Oficina -->
-                <div v-if="obtenerNombreOficina(log)" class="office-info q-mt-xs">
-                  <div class="office-details">
-                    <q-icon name="business" size="14px" class="q-mr-xs text-orange-4" />
-                    <strong>Oficina:</strong> {{ obtenerNombreOficina(log) }}
-                    <span v-if="obtenerDireccionOficina(log)" class="text-grey-5 q-ml-xs">
-                      - {{ obtenerDireccionOficina(log) }}
-                    </span>
+                <!-- Información de la oficina -->
+                <div v-if="obtenerNombreOficina(log)" class="log-office-section q-mt-sm">
+                  <div class="row items-center q-mb-xs">
+                    <q-icon name="business" color="orange-4" size="18px" class="q-mr-sm" />
+                    <div class="text-weight-medium text-orange-4">
+                      {{ obtenerNombreOficina(log) }}
+                    </div>
+                  </div>
+                  <div v-if="obtenerDireccionOficina(log)" class="text-caption text-grey-5 q-ml-md">
+                    {{ obtenerDireccionOficina(log) }}
                   </div>
                 </div>
 
-                <!-- Dispositivo y Escáner - Solo mostrar si hay datos reales -->
+                <!-- Información del dispositivo -->
                 <div
                   v-if="
                     obtenerInfoDispositivo(log).hasDevice || obtenerInfoDispositivo(log).hasScanner
                   "
-                  class="log-device-info q-mt-xs"
+                  class="log-device-section q-mt-sm"
                 >
-                  <div class="device-details">
-                    <q-icon name="devices" size="14px" class="q-mr-xs text-purple-4" />
-                    <span v-if="obtenerInfoDispositivo(log).hasDevice">
-                      <strong>Dispositivo:</strong> {{ obtenerInfoDispositivo(log).device }}
-                    </span>
-                    <span v-if="obtenerInfoDispositivo(log).hasScanner" class="q-ml-sm">
-                      <span v-if="obtenerInfoDispositivo(log).hasDevice"> | </span>
-                      <q-icon name="qr_code_scanner" size="12px" class="q-mr-xs text-cyan-4" />
-                      <strong>Escáner:</strong> {{ obtenerInfoDispositivo(log).scanner }}
-                    </span>
+                  <div class="row items-center q-mb-xs">
+                    <q-icon name="devices" color="purple-4" size="18px" class="q-mr-sm" />
+                    <div class="text-weight-medium text-purple-4">Dispositivos</div>
+                  </div>
+                  <div class="device-info q-ml-md">
+                    <div v-if="obtenerInfoDispositivo(log).hasDevice" class="text-caption">
+                      <q-icon name="computer" size="12px" class="q-mr-xs" />
+                      {{ obtenerInfoDispositivo(log).device }}
+                    </div>
+                    <div v-if="obtenerInfoDispositivo(log).hasScanner" class="text-caption q-mt-xs">
+                      <q-icon name="qr_code_scanner" size="12px" class="q-mr-xs" />
+                      Escáner: {{ obtenerInfoDispositivo(log).scanner }}
+                    </div>
                   </div>
                 </div>
 
-                <!-- Fecha completa y detallada -->
-                <div class="log-datetime-info q-mt-xs">
-                  <div class="datetime-details">
-                    <q-icon name="schedule" size="14px" class="q-mr-xs text-indigo-4" />
-                    <strong>Fecha:</strong>
-                    {{
-                      formatearFechaCompleta(log.date || log.Date || log.Fecha || log.FechaCreacion)
-                    }}
+                <!-- Mensaje del log -->
+                <div v-if="obtenerMensajeCompleto(log)" class="log-message-section q-mt-sm">
+                  <div class="row items-center q-mb-xs">
+                    <q-icon name="message" color="amber-4" size="18px" class="q-mr-sm" />
+                    <div class="text-weight-medium text-amber-4">Mensaje</div>
+                  </div>
+                  <div class="message-content q-ml-md text-caption">
+                    {{ obtenerMensajeCompleto(log) }}
                   </div>
                 </div>
+              </q-card-section>
 
-                <!-- Mensaje completo -->
-                <div v-if="obtenerMensajeCompleto(log)" class="log-full-message q-mt-xs">
-                  <div class="message-details">
-                    <q-icon name="message" size="14px" class="q-mr-xs text-amber-4" />
-                    <strong>Mensaje:</strong>
-                    <span class="message-text">{{ obtenerMensajeCompleto(log) }}</span>
+              <!-- Footer con fecha -->
+              <q-card-section class="log-card-footer">
+                <div class="row items-center justify-between">
+                  <div class="col">
+                    <div class="text-caption text-grey-5">
+                      <q-icon name="schedule" size="14px" class="q-mr-xs" />
+                      {{
+                        formatearFechaCompleta(
+                          log.date || log.Date || log.Fecha || log.FechaCreacion
+                        )
+                      }}
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-btn
+                      icon="visibility"
+                      size="sm"
+                      flat
+                      round
+                      color="primary"
+                      @click.stop="mostrarDetalleLog(log)"
+                    >
+                      <q-tooltip>Ver detalles</q-tooltip>
+                    </q-btn>
                   </div>
                 </div>
+              </q-card-section>
+            </q-card>
+          </div>
 
-                <!-- Información adicional si está disponible -->
-                <div v-if="log.Estado || log.Status" class="log-status-info q-mt-xs">
-                  <div class="status-details">
-                    <q-icon name="info" size="14px" class="q-mr-xs text-blue-4" />
-                    <strong>Estado:</strong> {{ log.Estado || log.Status }}
-                  </div>
+          <!-- Paginación -->
+          <div class="pagination-section q-mt-lg">
+            <div class="row items-center justify-between q-col-gutter-md">
+              <div class="col-12 col-sm-6 col-md-4">
+                <div class="pagination-info text-caption text-grey-4">
+                  Mostrando {{ (paginaActual - 1) * registrosPorPagina + 1 }} -
+                  {{ Math.min(paginaActual * registrosPorPagina, logsFiltrados.length) }}
+                  de {{ logsFiltrados.length }} registros
+                  <span v-if="logs.length !== logsFiltrados.length" class="q-ml-sm">
+                    ({{ logs.length }} total)
+                  </span>
                 </div>
+              </div>
+              <div class="col-12 col-sm-6 col-md-4 text-center">
+                <q-select
+                  v-model="registrosPorPagina"
+                  :options="[
+                    { label: '25 por página', value: 25 },
+                    { label: '50 por página', value: 50 },
+                    { label: '100 por página', value: 100 },
+                  ]"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  dense
+                  dark
+                  outlined
+                  color="primary"
+                  style="max-width: 150px; margin: 0 auto"
+                  @update:model-value="paginaActual = 1"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="view_list" size="16px" color="primary" />
+                  </template>
+                </q-select>
+              </div>
+              <div class="col-12 col-md-4 text-right">
+                <q-pagination
+                  v-model="paginaActual"
+                  :max="totalPaginas"
+                  :max-pages="7"
+                  direction-links
+                  boundary-links
+                  color="primary"
+                  size="sm"
+                  @update:model-value="cambiarPagina"
+                />
               </div>
             </div>
           </div>
@@ -424,7 +529,10 @@
         <div class="row items-center">
           <div class="col">
             <span class="text-caption text-grey-4">
-              Mostrando {{ logsFiltrados.length }} de {{ logs.length }} logs
+              Total: {{ logsFiltrados.length }} registros
+              <span v-if="logs.length !== logsFiltrados.length" class="q-ml-sm">
+                ({{ logs.length }} sin filtrar)
+              </span>
             </span>
           </div>
           <div class="col-auto">
@@ -537,7 +645,7 @@
                     <q-item-label>Usuario</q-item-label>
                     <q-item-label caption>{{ obtenerNombreUsuario(logSeleccionado) }}</q-item-label>
                     <q-item-label caption v-if="logSeleccionado.person?.curp" class="text-grey-5">
-                      CURP: {{ logSeleccionado.person.curp }}
+                      Username: {{ logSeleccionado.person.curp }}
                     </q-item-label>
                   </q-item-section>
                 </q-item>
@@ -662,6 +770,14 @@ const filtroProceso = ref(null) // Nuevo filtro de proceso
 const filtroDispositivo = ref(null) // Nuevo filtro de dispositivo
 const filtroEscaner = ref(null) // Nuevo filtro de escáner
 const rangoFechas = ref(null)
+
+// Variables de paginación
+const paginaActual = ref(1)
+const registrosPorPagina = ref(50) // 50 registros por página para mejor rendimiento
+
+// Variables de loading
+const loadingFiltros = ref(false)
+const loadingPaginacion = ref(false)
 
 // 📅 VALIDAR Y FORMATEAR FECHA A ISO (YYYY-MM-DD)
 const validarYFormatearFecha = (fecha) => {
@@ -956,6 +1072,17 @@ const filtrosActivos = computed(() => {
   return filtros
 })
 
+// Computed para paginación
+const totalPaginas = computed(() => {
+  return Math.ceil(logsFiltrados.value.length / registrosPorPagina.value)
+})
+
+const logsPaginados = computed(() => {
+  const inicio = (paginaActual.value - 1) * registrosPorPagina.value
+  const fin = inicio + registrosPorPagina.value
+  return logsFiltrados.value.slice(inicio, fin)
+})
+
 // Funciones auxiliares para obtener información de logs
 const obtenerNombreOficina = (log) => {
   return (
@@ -1130,6 +1257,93 @@ const obtenerMensajeCompleto = (log) => {
 
   return mensaje.trim()
 }
+
+// Función para obtener el icono según el tipo de log
+const getIconoTipo = (tipo) => {
+  const tipoLower = (tipo || '').toLowerCase()
+  switch (tipoLower) {
+    case 'success':
+      return 'check_circle'
+    case 'error':
+      return 'error'
+    case 'warning':
+      return 'warning'
+    case 'info':
+      return 'info'
+    case 'debug':
+      return 'bug_report'
+    default:
+      return 'circle'
+  }
+}
+
+// Función para obtener CURP del usuario
+const obtenerCurpUsuario = (log) => {
+  return log.person?.curp || log.Usuario?.curp || log.user?.curp || ''
+}
+
+// Funciones de paginación
+const cambiarPagina = (nuevaPagina) => {
+  paginaActual.value = nuevaPagina
+}
+
+// Watch para resetear la página cuando cambien los filtros
+watch(
+  [
+    busqueda,
+    filtroOficina,
+    filtroUsuario,
+    filtroTipoLog,
+    filtroProceso,
+    filtroDispositivo,
+    filtroEscaner,
+    rangoFechas,
+  ],
+  () => {
+    paginaActual.value = 1
+  }
+)
+
+// Watch para mostrar loader cuando hay muchos logs y se aplican filtros
+let timeoutFiltros = null
+watch(
+  [
+    busqueda,
+    filtroOficina,
+    filtroUsuario,
+    filtroTipoLog,
+    filtroProceso,
+    filtroDispositivo,
+    filtroEscaner,
+    rangoFechas,
+  ],
+  () => {
+    if (logs.value.length > 500) {
+      loadingFiltros.value = true
+
+      // Limpiar timeout anterior
+      if (timeoutFiltros) {
+        clearTimeout(timeoutFiltros)
+      }
+
+      // Ocultar loader después de un breve delay
+      timeoutFiltros = setTimeout(() => {
+        loadingFiltros.value = false
+      }, 300)
+    }
+  },
+  { immediate: false }
+)
+
+// Watch para loader de paginación
+watch(paginaActual, () => {
+  if (logsFiltrados.value.length > 100) {
+    loadingPaginacion.value = true
+    setTimeout(() => {
+      loadingPaginacion.value = false
+    }, 200)
+  }
+})
 
 // Funciones principales mejoradas
 const abrirConsola = (logsData = null, filtroTexto = '') => {
@@ -2299,5 +2513,289 @@ defineExpose({
   margin: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+// Estilos para el grid responsivo de cards
+.responsive-logs-grid {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+
+  // Mobile: 1 columna
+  grid-template-columns: 1fr;
+
+  // Tablet: 2 columnas
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  // Desktop pequeño: 3 columnas
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  // Desktop grande: 4 columnas
+  @media (min-width: 1440px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  // Desktop extra grande: 5 columnas
+  @media (min-width: 1920px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+// Estilos para las cards de logs
+.log-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: rgba(25, 118, 210, 0.5);
+    box-shadow: 0 8px 32px rgba(25, 118, 210, 0.15);
+    background: linear-gradient(
+      135deg,
+      rgba(25, 118, 210, 0.08) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+
+  // Colores específicos por tipo
+  &.log-card-success {
+    border-left: 4px solid #4caf50;
+    &:hover {
+      border-color: rgba(76, 175, 80, 0.5);
+      box-shadow: 0 8px 32px rgba(76, 175, 80, 0.15);
+    }
+  }
+
+  &.log-card-error {
+    border-left: 4px solid #f44336;
+    &:hover {
+      border-color: rgba(244, 67, 54, 0.5);
+      box-shadow: 0 8px 32px rgba(244, 67, 54, 0.15);
+    }
+  }
+
+  &.log-card-warning {
+    border-left: 4px solid #ff9800;
+    &:hover {
+      border-color: rgba(255, 152, 0, 0.5);
+      box-shadow: 0 8px 32px rgba(255, 152, 0, 0.15);
+    }
+  }
+
+  &.log-card-info {
+    border-left: 4px solid #2196f3;
+    &:hover {
+      border-color: rgba(33, 150, 243, 0.5);
+      box-shadow: 0 8px 32px rgba(33, 150, 243, 0.15);
+    }
+  }
+}
+
+.log-card-header {
+  padding: 12px 16px 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.log-card-content {
+  flex: 1;
+  padding: 16px;
+
+  .log-user-section,
+  .log-office-section,
+  .log-device-section,
+  .log-message-section {
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .device-info,
+  .message-content {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.4;
+  }
+
+  .message-content {
+    max-height: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+}
+
+.log-card-footer {
+  padding: 8px 16px 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.1);
+  margin-top: auto;
+}
+
+// Estilos para la paginación
+.pagination-section {
+  padding: 20px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+
+  .pagination-info {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    margin-bottom: 8px;
+
+    @media (min-width: 768px) {
+      margin-bottom: 0;
+    }
+  }
+
+  .q-pagination {
+    color: white;
+
+    .q-btn {
+      color: rgba(255, 255, 255, 0.8);
+
+      &.q-btn--active {
+        background: rgba(25, 118, 210, 0.8);
+        color: white;
+      }
+
+      &:hover {
+        background: rgba(25, 118, 210, 0.3);
+      }
+    }
+  }
+}
+
+// Estilos para loaders elegantes
+.filter-loader-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  border-radius: 8px;
+}
+
+.filter-loader-content {
+  background: rgba(25, 118, 210, 0.1);
+  border: 1px solid rgba(25, 118, 210, 0.3);
+  border-radius: 12px;
+  padding: 24px 32px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.pagination-loader {
+  background: rgba(25, 118, 210, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.loading-opacity {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(25, 118, 210, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(25, 118, 210, 0.5);
+  }
+}
+
+// Optimizaciones responsive para filtros compactos
+.console-controls {
+  // Reducir padding en dispositivos medianos
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .q-field--dense {
+      .q-field__control {
+        min-height: 40px;
+      }
+
+      .q-field__label {
+        font-size: 13px;
+      }
+    }
+  }
+}
+
+// Mejorar responsive para tablets
+@media (min-width: 768px) and (max-width: 1024px) {
+  .responsive-logs-grid {
+    // En tablets, máximo 2 columnas para dar más espacio a cada card
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px;
+    padding: 12px;
+  }
+
+  .console-controls {
+    padding: 12px 16px;
+
+    .row {
+      margin: -6px;
+
+      > div {
+        padding: 6px;
+      }
+    }
+  }
+
+  .log-card {
+    min-height: 260px;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .responsive-logs-grid {
+    padding: 8px;
+    gap: 12px;
+  }
+
+  .log-card {
+    min-height: 250px;
+  }
+
+  .log-card-content {
+    padding: 12px;
+  }
+
+  .pagination-section {
+    .row {
+      flex-direction: column;
+      gap: 12px;
+
+      .col-12 {
+        text-align: center;
+      }
+    }
+  }
 }
 </style>

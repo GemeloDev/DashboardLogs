@@ -125,7 +125,7 @@
             </q-item-section>
             <q-item-section><span style="font-weight: 600">Filtros Avanzados</span></q-item-section>
           </q-item>
-          <q-item clickable v-ripple @click="toggleConsole">
+          <q-item clickable v-ripple @click="openConsole">
             <q-item-section avatar>
               <q-icon name="terminal" color="purple" />
             </q-item-section>
@@ -234,23 +234,12 @@
 
           <div class="row q-col-gutter-md">
             <div class="col-12">
-              <EscritorioGraficasEnhanced
-                :filtros="filtros"
-                :class="{ 'with-console': showConsole }"
-              />
+              <EscritorioGraficasEnhanced :filtros="filtros" />
             </div>
           </div>
 
-          <q-drawer
-            v-model="showConsole"
-            side="right"
-            overlay
-            behavior="desktop"
-            bordered
-            class="console-drawer"
-          >
-            <EscritorioConsolaSimple ref="consolaRef" />
-          </q-drawer>
+          <!-- Componente de consola que se abre como modal -->
+          <EscritorioConsolaSimple ref="consolaRef" />
 
           <EscritorioDetalleModal
             :model-value="modalVisible"
@@ -280,14 +269,13 @@ const filtros = ref({})
 const modalVisible = ref(false)
 const detalleModal = ref(null)
 const showFilters = ref(false)
+const consolaRef = ref(null)
 
 // Información del usuario
 const userInfo = ref({
   nombre: 'Usuario',
   email: 'usuario@ejemplo.com',
 })
-const showConsole = ref(false)
-const consolaRef = ref(null)
 
 // Observar cambios en el flujo seleccionado
 watch(selectedFlow, (newFlow) => {
@@ -313,32 +301,17 @@ function onFiltrar(val) {
   })
 }
 
-function toggleConsole() {
-  if (!showConsole.value) {
-    // Si la consola se está abriendo
-    showConsole.value = true
-
-    // Esperar a que el componente se monte y luego abrir la consola directa
-    setTimeout(() => {
-      if (consolaRef.value && consolaRef.value.abrirConsolaDirecta) {
-        consolaRef.value.abrirConsolaDirecta()
-      }
-    }, 100)
+function openConsole() {
+  if (consolaRef.value && consolaRef.value.abrirConsolaDirecta) {
+    consolaRef.value.abrirConsolaDirecta()
 
     $q.notify({
-      message: 'Consola abierta - Cargando todos los logs desde API',
+      message: 'Abriendo consola de logs...',
       color: 'info',
       icon: 'terminal',
       position: 'top-right',
-      timeout: 3000,
+      timeout: 2000,
     })
-  } else {
-    // Si la consola se está cerrando
-    showConsole.value = false
-
-    if (consolaRef.value && consolaRef.value.cerrarConsola) {
-      consolaRef.value.cerrarConsola()
-    }
   }
 }
 
@@ -468,12 +441,6 @@ onMounted(() => {
       }
     }
   }
-}
-
-.console-drawer {
-  background: #1e1e2f;
-  width: 500px;
-  max-width: 100vw;
 }
 
 // Animaciones
