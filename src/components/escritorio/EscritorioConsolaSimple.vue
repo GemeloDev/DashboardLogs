@@ -1,10 +1,12 @@
-<template>
+﻿<template>
   <!-- Modal de Consola Mejorada -->
   <q-dialog
     v-model="mostrarConsola"
     maximized
     transition-show="slide-up"
     transition-hide="slide-down"
+    @escape-key="cerrarConsola"
+    persistent
   >
     <q-card class="console-modal-card bg-dark text-white">
       <!-- Header -->
@@ -30,7 +32,29 @@
             </div>
           </div>
           <div class="col-auto">
-            <q-btn icon="close" flat round color="white" @click="cerrarConsola" />
+            <!-- 🔬 Centro de Diagnóstico Técnico Mejorado -->
+            <q-btn
+              icon="medical_services"
+              flat
+              round
+              color="cyan-4"
+              @click="abrirDiagnosticoManual"
+              class="q-mr-sm diagnostic-btn"
+              style="animation: pulse-glow 2s infinite"
+            >
+              <q-tooltip class="bg-cyan-8 text-white">
+                <div class="text-center">
+                  <div class="text-subtitle2">🔬 Centro de Diagnóstico Técnico</div>
+                  <div class="text-caption">Análisis avanzado de errores y sesiones</div>
+                </div>
+              </q-tooltip>
+            </q-btn>
+            <q-btn icon="minimize" flat round color="grey-4" @click="cerrarConsola" class="q-mr-sm">
+              <q-tooltip>Minimizar consola</q-tooltip>
+            </q-btn>
+            <q-btn icon="close" flat round color="red-4" @click="cerrarConsola">
+              <q-tooltip>Cerrar consola</q-tooltip>
+            </q-btn>
           </div>
         </div>
       </q-card-section>
@@ -269,16 +293,53 @@
             </q-input>
           </div>
 
+          <!-- Filtros avanzados de código de error y sesión -->
           <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <!-- <q-btn
+            <q-input
+              v-model="filtroErrorCode"
+              label="Código Error"
+              filled
+              dark
+              color="primary"
+              clearable
+              dense
+              debounce="300"
+            >
+              <template v-slot:prepend>
+                <q-icon name="error_outline" color="red-4" />
+              </template>
+              <template v-slot:hint> Ej: USR02808141525-INF017 </template>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+            <q-input
+              v-model="filtroSessionToken"
+              label="Token Sesión"
+              filled
+              dark
+              color="primary"
+              clearable
+              dense
+              debounce="300"
+            >
+              <template v-slot:prepend>
+                <q-icon name="vpn_key" color="green-4" />
+              </template>
+              <template v-slot:hint> Ej: HNh0vhSPeQ9e </template>
+            </q-input>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+            <q-btn
               color="negative"
               icon="filter_alt_off"
               label="Limpiar"
-              @click="limpiarFiltros"
+              @click="limpiarTodosFiltros"
               outline
               class="full-width"
               dense
-            /> -->
+            />
           </div>
         </div>
 
@@ -347,7 +408,7 @@
               :key="`${log.id || index}-${paginaActual}`"
               :class="[
                 'log-card',
-                `log-card-${(log.Type || log.Tipo || 'info').toLowerCase()}`,
+                `log-card-${(log.type || log.Tipo || 'info').toLowerCase()}`,
                 'cursor-pointer',
               ]"
               @click="mostrarDetalleLog(log)"
@@ -359,18 +420,18 @@
                 <div class="row items-center justify-between">
                   <div class="col-auto">
                     <q-chip
-                      :color="getColorTipo(log.Type || log.Tipo || log.EventType)"
+                      :color="getColorTipo(log.type || log.Tipo || log.EventType)"
                       text-color="white"
                       size="md"
-                      :icon="getIconoTipo(log.Type || log.Tipo || log.EventType)"
+                      :icon="getIconoTipo(log.type || log.Tipo || log.EventType)"
                     >
-                      {{ log.Type || log.Tipo || log.EventType || 'INFO' }}
+                      {{ log.type || log.Tipo || log.EventType || 'INFO' }}
                     </q-chip>
                   </div>
                   <div class="col-auto">
-                    <q-badge
-                      :color="log.Process === 'LOGIN' ? 'green' : 'blue'"
-                      :label="log.Process || log.Proceso || 'SYSTEM'"
+                    <q-badgetype
+                      :color="log.process === 'LOGIN' ? 'green' : 'blue'"
+                      :label="log.process || log.Proceso || 'SYSTEM'"
                       class="text-weight-bold"
                     />
                   </div>
@@ -425,6 +486,31 @@
                       <q-icon name="qr_code_scanner" size="12px" class="q-mr-xs" />
                       Escáner: {{ obtenerInfoDispositivo(log).scanner }}
                     </div>
+                  </div>
+                </div>
+
+                <!-- Información del código de error -->
+                <div v-if="log.errorCode || log.ErrorCode" class="log-error-section q-mt-sm">
+                  <div class="row items-center q-mb-xs">
+                    <q-icon name="error_outline" color="red-4" size="18px" class="q-mr-sm" />
+                    <div class="text-weight-medium text-red-4">Código de Error</div>
+                  </div>
+                  <div class="error-content q-ml-md text-caption">
+                    {{ log.errorCode || log.ErrorCode }}
+                  </div>
+                </div>
+
+                <!-- Información del token de sesión -->
+                <div
+                  v-if="log.sessionToken || log.SessionToken"
+                  class="log-session-section q-mt-sm"
+                >
+                  <div class="row items-center q-mb-xs">
+                    <q-icon name="vpn_key" color="cyan-4" size="18px" class="q-mr-sm" />
+                    <div class="text-weight-medium text-cyan-4">Token de Sesión</div>
+                  </div>
+                  <div class="session-content q-ml-md text-caption">
+                    {{ log.sessionToken || log.SessionToken }}
                   </div>
                 </div>
 
@@ -582,12 +668,12 @@
 
                 <q-item>
                   <q-item-section avatar>
-                    <q-icon :color="getColorTipo(logSeleccionado.Type)" name="label" />
+                    <q-icon :color="getColorTipo(logSeleccionado.type)" name="label" />
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>Tipo</q-item-label>
                     <q-item-label caption>{{
-                      logSeleccionado.Type ||
+                      logSeleccionado.type ||
                       logSeleccionado.Tipo ||
                       logSeleccionado.EventType ||
                       'INFO'
@@ -595,14 +681,14 @@
                   </q-item-section>
                 </q-item>
 
-                <q-item v-if="logSeleccionado.Process || logSeleccionado.Proceso">
+                <q-item v-if="logSeleccionado.process || logSeleccionado.Proceso">
                   <q-item-section avatar>
                     <q-icon color="green" name="settings" />
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>Proceso</q-item-label>
                     <q-item-label caption>{{
-                      logSeleccionado.Process || logSeleccionado.Proceso
+                      logSeleccionado.process || logSeleccionado.Proceso
                     }}</q-item-label>
                   </q-item-section>
                 </q-item>
@@ -709,7 +795,11 @@
               logSeleccionado.TrackingCode ||
               logSeleccionado.ID ||
               logSeleccionado.Estado ||
-              logSeleccionado.Status
+              logSeleccionado.Status ||
+              logSeleccionado.errorCode ||
+              logSeleccionado.ErrorCode ||
+              logSeleccionado.sessionToken ||
+              logSeleccionado.SessionToken
             "
             class="q-mt-lg"
           >
@@ -720,18 +810,134 @@
             <q-card dark class="bg-grey-8">
               <q-card-section>
                 <div class="row q-col-gutter-md">
-                  <div v-if="logSeleccionado.TrackingCode" class="col-6">
-                    <strong>Tracking Code:</strong> {{ logSeleccionado.TrackingCode }}
+                  <div v-if="logSeleccionado.TrackingCode" class="col-12 col-md-6">
+                    <div class="detail-tech-item">
+                      <q-icon name="code" size="16px" color="blue-4" class="q-mr-xs" />
+                      <strong>Tracking Code:</strong>
+                      <span class="tech-value">{{ logSeleccionado.TrackingCode }}</span>
+                    </div>
                   </div>
-                  <div v-if="logSeleccionado.ID" class="col-6">
-                    <strong>ID:</strong> {{ logSeleccionado.ID }}
+                  <div v-if="logSeleccionado.ID" class="col-12 col-md-6">
+                    <div class="detail-tech-item">
+                      <q-icon name="fingerprint" size="16px" color="purple-4" class="q-mr-xs" />
+                      <strong>ID:</strong>
+                      <span class="tech-value">{{ logSeleccionado.ID }}</span>
+                    </div>
                   </div>
-                  <div v-if="logSeleccionado.Estado || logSeleccionado.Status" class="col-6">
-                    <strong>Estado:</strong> {{ logSeleccionado.Estado || logSeleccionado.Status }}
+                  <div
+                    v-if="logSeleccionado.Estado || logSeleccionado.Status"
+                    class="col-12 col-md-6"
+                  >
+                    <div class="detail-tech-item">
+                      <q-icon name="flag" size="16px" color="green-4" class="q-mr-xs" />
+                      <strong>Estado:</strong>
+                      <span class="tech-value">{{
+                        logSeleccionado.Estado || logSeleccionado.Status
+                      }}</span>
+                    </div>
+                  </div>
+                  <!-- Nuevo: Código de Error -->
+                  <div
+                    v-if="logSeleccionado.errorCode || logSeleccionado.ErrorCode"
+                    class="col-12 col-md-6"
+                  >
+                    <div class="detail-tech-item error-code-item">
+                      <q-icon name="error_outline" size="16px" color="red-4" class="q-mr-xs" />
+                      <strong>Código de Error:</strong>
+                      <span class="tech-value error-code">{{
+                        logSeleccionado.errorCode || logSeleccionado.ErrorCode
+                      }}</span>
+                      <q-btn
+                        @click="
+                          abrirDiagnosticoError(
+                            logSeleccionado.errorCode || logSeleccionado.ErrorCode
+                          )
+                        "
+                        round
+                        dense
+                        flat
+                        icon="bug_report"
+                        color="red-5"
+                        size="sm"
+                        class="q-ml-sm"
+                      >
+                        <q-tooltip>Diagnosticar código de error</q-tooltip>
+                      </q-btn>
+                    </div>
+                  </div>
+                  <!-- Nuevo: Token de Sesión -->
+                  <div
+                    v-if="logSeleccionado.sessionToken || logSeleccionado.SessionToken"
+                    class="col-12"
+                  >
+                    <div class="detail-tech-item session-token-item">
+                      <q-icon name="vpn_key" size="16px" color="cyan-4" class="q-mr-xs" />
+                      <strong>Token de Sesión:</strong>
+                      <div class="tech-value session-token q-mt-xs">
+                        {{ logSeleccionado.sessionToken || logSeleccionado.SessionToken }}
+                        <q-btn
+                          @click="
+                            abrirDiagnosticoSesion(
+                              logSeleccionado.sessionToken || logSeleccionado.SessionToken
+                            )
+                          "
+                          round
+                          dense
+                          flat
+                          icon="account_circle"
+                          color="blue-5"
+                          size="sm"
+                          class="q-ml-sm"
+                        >
+                          <q-tooltip>Diagnosticar sesión</q-tooltip>
+                        </q-btn>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </q-card-section>
             </q-card>
+          </div>
+
+          <!-- Sección de Debugging: Mostrar TODOS los campos del log -->
+          <div class="q-mt-lg">
+            <q-expansion-item
+              icon="bug_report"
+              label="🔍 Vista técnica - Todos los campos disponibles"
+              class="debug-section"
+            >
+              <q-card dark class="bg-grey-8">
+                <q-card-section>
+                  <div class="text-caption text-grey-4 q-mb-md">
+                    Esta sección muestra TODOS los campos que vienen del API para este log
+                    específico. Útil para identificar dónde están los códigos de error y tokens de
+                    sesión.
+                  </div>
+                  <div class="debug-fields">
+                    <div
+                      v-for="[key, value] in Object.entries(logSeleccionado)"
+                      :key="key"
+                      class="debug-field-item"
+                      :class="{
+                        'highlight-error':
+                          key.toLowerCase().includes('error') || key.toLowerCase().includes('code'),
+                        'highlight-token':
+                          key.toLowerCase().includes('token') ||
+                          key.toLowerCase().includes('session'),
+                      }"
+                    >
+                      <div class="field-key">{{ key }}:</div>
+                      <div class="field-value">
+                        <span v-if="typeof value === 'object' && value !== null">
+                          {{ JSON.stringify(value, null, 2) }}
+                        </span>
+                        <span v-else>{{ value }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
           </div>
         </q-card-section>
 
@@ -741,6 +947,9 @@
       </q-card>
     </q-dialog>
   </q-dialog>
+
+  <!-- 🔍 Componente de Diagnóstico Técnico -->
+  <EscritorioDiagnostico ref="diagnosticoRef" @cerrar="cerrarDiagnostico" />
 </template>
 
 <script setup>
@@ -749,6 +958,7 @@ import { useQuasar } from 'quasar'
 import axios from 'axios'
 import { API_BASE_URL } from '../../services/apiConfig.js'
 import { CatalogService } from '../../services/catalogService.js'
+import EscritorioDiagnostico from './EscritorioDiagnostico.vue'
 
 const $q = useQuasar()
 
@@ -762,6 +972,13 @@ const logSeleccionado = ref(null)
 const filtroActual = ref('')
 const datosDesdeGrafica = ref(false)
 
+// 🚀 [NUEVO] Variables para control de origen y filtros
+const origenConsola = ref('') // 'sidebar' | 'graficas' | 'kpis'
+const filtroTimeout = ref(null) // Para debounce de filtros
+
+// 🔍 Referencia al componente de diagnóstico
+const diagnosticoRef = ref(null)
+
 // Filtros avanzados
 const filtroOficina = ref(null)
 const filtroUsuario = ref(null)
@@ -769,6 +986,8 @@ const filtroTipoLog = ref(null) // Renombrado de filtroTipo
 const filtroProceso = ref(null) // Nuevo filtro de proceso
 const filtroDispositivo = ref(null) // Nuevo filtro de dispositivo
 const filtroEscaner = ref(null) // Nuevo filtro de escáner
+const filtroErrorCode = ref('') // Nuevo filtro de código de error (string vacío)
+const filtroSessionToken = ref('') // Nuevo filtro de token de sesión (string vacío)
 const rangoFechas = ref(null)
 
 // Variables de paginación
@@ -821,25 +1040,71 @@ const opcionesTiposLog = ref([
   { label: 'ERROR', value: 'ERROR' },
   { label: 'SUCCESS', value: 'SUCCESS' },
   { label: 'WARNING', value: 'WARNING' },
-  { label: 'DEBUG', value: 'DEBUG' },
+  { label: 'START', value: 'START' },
+  { label: 'END', value: 'END' },
+  { label: 'EXPORT', value: 'EXPORT' },
+  { label: 'DETAIL', value: 'DETAIL' },
 ])
 
 // Nuevas opciones para procesos
 const opcionesProcesos = ref([
   { label: 'Todos los procesos', value: null },
-  { label: 'LOGIN', value: 'LOGIN' },
-  { label: 'REGISTER', value: 'REGISTER' },
-  { label: 'EXPORT', value: 'EXPORT' },
-  { label: 'QR', value: 'QR' },
-  { label: 'MRZ', value: 'MRZ' },
   { label: 'INE', value: 'INE' },
-  { label: 'SYNC', value: 'SYNC' },
-  { label: 'VALIDATION', value: 'VALIDATION' },
+  { label: 'REGISTER', value: 'REGISTER' },
+  { label: 'PASSPORT', value: 'PASSPORT' },
+  { label: 'LOGIN', value: 'LOGIN' },
 ])
+
+// 🆕 [NUEVO] Mapeo de tipos para la API
+const mapeoTipos = {
+  SUCCESS: 'SUC',
+  ERROR: 'ERR',
+  INFO: 'INF',
+  START: 'STR',
+  END: 'END',
+  FIN: 'FIN',
+  EXPORT: 'EXP',
+}
 
 // Opciones dinámicas para dispositivos y escáneres
 const opcionesDispositivos = ref([])
 const opcionesEscaners = ref([])
+
+// 🆕 Opciones computadas para errorCode y sessionToken
+const opcionesErrorCodes = computed(() => {
+  if (!logs.value.length) return []
+
+  const errorCodes = [
+    ...new Set(
+      logs.value
+        .map((log) => log.errorCode || log.ErrorCode || log.codigo_error)
+        .filter((code) => code && code.trim() !== '')
+    ),
+  ].sort()
+
+  return errorCodes.map((code) => ({
+    label: code,
+    value: code,
+  }))
+})
+
+const opcionesSessionTokens = computed(() => {
+  if (!logs.value.length) return []
+
+  const tokens = [
+    ...new Set(
+      logs.value
+        .map((log) => log.sessionToken || log.SessionToken || log.token_sesion)
+        .filter((token) => token && token.trim() !== '')
+    ),
+  ].sort()
+
+  return tokens.map((token) => ({
+    label: token.length > 20 ? `${token.substring(0, 20)}...` : token,
+    value: token,
+  }))
+})
+
 // 🗂️ MAPEO DE OFICINAS Y PERSONAS: Para convertir nombres a IDs
 const mapaOficinas = ref(new Map()) // nombre -> id
 const mapaPersonas = ref(new Map()) // nombre -> id
@@ -863,21 +1128,83 @@ const textoRangoFechas = computed(() => {
   return rangoFechas.value.from || rangoFechas.value.to || ''
 })
 
-// Computed para logs filtrados - CORREGIDO
+// 🧪 FUNCIÓN DE DEBUG TEMPORAL PARA DIAGNOSTICAR FILTROS
+const debugearEstadoFiltros = (contexto = 'DEBUG') => {
+  const estado = {
+    contexto,
+    timestamp: new Date().toISOString(),
+    logs_totales: logs.value.length,
+    logs_filtrados: logsFiltrados.value.length,
+    filtros: {
+      busqueda: busqueda.value,
+      oficina: filtroOficina.value,
+      usuario: filtroUsuario.value,
+      tipoLog: filtroTipoLog.value,
+      proceso: filtroProceso.value,
+      dispositivo: filtroDispositivo.value,
+      escaner: filtroEscaner.value,
+      errorCode: filtroErrorCode.value,
+      sessionToken: filtroSessionToken.value,
+      fechas: rangoFechas.value,
+    },
+    opciones_disponibles: {
+      oficinas: opcionesOficinas.value.length,
+      usuarios: opcionesUsuarios.value.length,
+      tiposLog: opcionesTiposLog.value.length,
+      procesos: opcionesProcesos.value.length,
+      dispositivos: opcionesDispositivos.value.length,
+      escaners: opcionesEscaners.value.length,
+      errorCodes: opcionesErrorCodes.value.length,
+      sessionTokens: opcionesSessionTokens.value.length,
+    },
+    datos_origen: {
+      datosDesdeGrafica: datosDesdeGrafica.value,
+      filtroActual: filtroActual.value,
+    },
+  }
+
+  console.log(`🔍 [${contexto}] ESTADO COMPLETO DE FILTROS:`, estado)
+  return estado
+}
+
+// Computed para logs filtrados - CORREGIDO Y DEBUGGEADO
 const logsFiltrados = computed(() => {
   let resultado = logs.value
 
   // ✅ VERIFICACIÓN SEGURA: Si no hay logs, devolver array vacío
   if (!resultado || resultado.length === 0) {
+    console.log('🚨 [logsFiltrados] No hay logs para filtrar')
     return []
   }
 
-  // ✅ VERIFICACIÓN DE FILTROS ACTIVOS (solo los que realmente filtran)
+  // ✅ VERIFICACIÓN DE FILTROS ACTIVOS (TODOS LOS FILTROS)
   const hayBusqueda = busqueda.value && busqueda.value.trim() !== ''
   const hayFiltroOficina = filtroOficina.value && filtroOficina.value.trim() !== ''
   const hayFiltroUsuario = filtroUsuario.value && filtroUsuario.value.trim() !== ''
   const hayFiltroTipo = filtroTipoLog.value && filtroTipoLog.value.trim() !== ''
   const hayFiltroFechas = rangoFechas.value && (rangoFechas.value.from || rangoFechas.value.to)
+
+  // 🆕 NUEVOS FILTROS AGREGADOS A LA VERIFICACIÓN
+  const hayFiltroProceso = filtroProceso.value && filtroProceso.value.trim() !== ''
+  const hayFiltroDispositivo = filtroDispositivo.value && filtroDispositivo.value.trim() !== ''
+  const hayFiltroEscaner = filtroEscaner.value && filtroEscaner.value.trim() !== ''
+  const hayFiltroErrorCode = filtroErrorCode.value && filtroErrorCode.value.trim() !== ''
+  const hayFiltroSessionToken = filtroSessionToken.value && filtroSessionToken.value.trim() !== ''
+
+  // 🔍 LOGS DE DEBUG PARA IDENTIFICAR ESTADO DE FILTROS
+  console.log('🔍 [logsFiltrados] Estado de filtros:', {
+    logs: resultado.length,
+    busqueda: hayBusqueda ? busqueda.value : 'N/A',
+    oficina: hayFiltroOficina ? filtroOficina.value : 'N/A',
+    usuario: hayFiltroUsuario ? filtroUsuario.value : 'N/A',
+    tipo: hayFiltroTipo ? filtroTipoLog.value : 'N/A',
+    fechas: hayFiltroFechas ? rangoFechas.value : 'N/A',
+    proceso: hayFiltroProceso ? filtroProceso.value : 'N/A',
+    dispositivo: hayFiltroDispositivo ? filtroDispositivo.value : 'N/A',
+    escaner: hayFiltroEscaner ? filtroEscaner.value : 'N/A',
+    errorCode: hayFiltroErrorCode ? filtroErrorCode.value : 'N/A',
+    sessionToken: hayFiltroSessionToken ? filtroSessionToken.value : 'N/A',
+  })
 
   // ✅ SOLUCIÓN: Si no hay ningún filtro aplicado, mostrar TODOS los logs
   if (
@@ -885,8 +1212,17 @@ const logsFiltrados = computed(() => {
     !hayFiltroOficina &&
     !hayFiltroUsuario &&
     !hayFiltroTipo &&
-    !hayFiltroFechas
+    !hayFiltroFechas &&
+    !hayFiltroProceso &&
+    !hayFiltroDispositivo &&
+    !hayFiltroEscaner &&
+    !hayFiltroErrorCode &&
+    !hayFiltroSessionToken
   ) {
+    console.log(
+      '✅ [logsFiltrados] Sin filtros activos, mostrando todos los logs:',
+      resultado.length
+    )
     return resultado // Mostrar todos sin limitación
   }
 
@@ -896,11 +1232,11 @@ const logsFiltrados = computed(() => {
     resultado = resultado.filter(
       (log) =>
         (log.Message || log.Mensaje || '').toLowerCase().includes(needle) ||
-        (log.Type || log.Tipo || log.EventType || '').toLowerCase().includes(needle) ||
-        (log.Process || log.Proceso || '').toLowerCase().includes(needle) ||
+        (log.type || log.Tipo || log.EventType || '').toLowerCase().includes(needle) ||
+        (log.process || log.Proceso || '').toLowerCase().includes(needle) ||
         obtenerNombreOficina(log).toLowerCase().includes(needle) ||
         obtenerNombreUsuario(log).toLowerCase().includes(needle) ||
-        (log.TrackingCode || log.Device || log.Dispositivo || '').toLowerCase().includes(needle)
+        (log.device || '').toLowerCase().includes(needle)
     )
   }
 
@@ -923,7 +1259,7 @@ const logsFiltrados = computed(() => {
   // Filtro por tipo mejorado
   if (filtroTipoLog.value) {
     resultado = resultado.filter((log) => {
-      const tipo = log.Type || log.Tipo || log.EventType || ''
+      const tipo = log.type || log.Tipo || log.EventType || ''
       return tipo.toLowerCase() === filtroTipoLog.value.toLowerCase()
     })
   }
@@ -962,28 +1298,37 @@ const logsFiltrados = computed(() => {
 
   // Filtro por proceso
   if (filtroProceso.value) {
+    const antesFiltro = resultado.length
     resultado = resultado.filter((log) => {
-      const proceso = log.Proceso || log.Process || log.TipoProceso || log.procesType || ''
+      const proceso = log.Proceso || log.process || log.TipoProceso || log.procesType || ''
       return proceso.toLowerCase().includes(filtroProceso.value.toLowerCase())
     })
+    console.log(
+      `🔍 [Filtro Proceso] "${filtroProceso.value}": ${antesFiltro} → ${resultado.length}`
+    )
   }
 
   // Filtro por dispositivo
   if (filtroDispositivo.value) {
+    const antesFiltro = resultado.length
     resultado = resultado.filter((log) => {
       const dispositivo =
+        log.device ||
         log.Dispositivo ||
-        log.Device ||
         log.NombreDispositivo ||
         log.deviceName ||
         log.nombreDispositivo ||
         ''
       return dispositivo.toLowerCase().includes(filtroDispositivo.value.toLowerCase())
     })
+    console.log(
+      `🔍 [Filtro Dispositivo] "${filtroDispositivo.value}": ${antesFiltro} → ${resultado.length}`
+    )
   }
 
   // Filtro por escáner
   if (filtroEscaner.value) {
+    const antesFiltro = resultado.length
     resultado = resultado.filter((log) => {
       const escaner =
         log.Escaner ||
@@ -994,8 +1339,36 @@ const logsFiltrados = computed(() => {
         ''
       return escaner.toLowerCase().includes(filtroEscaner.value.toLowerCase())
     })
+    console.log(
+      `🔍 [Filtro Escáner] "${filtroEscaner.value}": ${antesFiltro} → ${resultado.length}`
+    )
   }
 
+  // Filtro por código de error
+  if (filtroErrorCode.value) {
+    const antesFiltro = resultado.length
+    resultado = resultado.filter((log) => {
+      const errorCode = log.errorCode || log.ErrorCode || log.codigo_error || ''
+      return errorCode.toLowerCase().includes(filtroErrorCode.value.toLowerCase())
+    })
+    console.log(
+      `🔍 [Filtro ErrorCode] "${filtroErrorCode.value}": ${antesFiltro} → ${resultado.length}`
+    )
+  }
+
+  // Filtro por token de sesión
+  if (filtroSessionToken.value) {
+    const antesFiltro = resultado.length
+    resultado = resultado.filter((log) => {
+      const sessionToken = log.sessionToken || log.SessionToken || log.token_sesion || ''
+      return sessionToken.toLowerCase().includes(filtroSessionToken.value.toLowerCase())
+    })
+    console.log(
+      `🔍 [Filtro SessionToken] "${filtroSessionToken.value}": ${antesFiltro} → ${resultado.length}`
+    )
+  }
+
+  console.log(`✅ [logsFiltrados] Resultado final: ${resultado.length} logs filtrados`)
   return resultado
 })
 
@@ -1069,6 +1442,24 @@ const filtrosActivos = computed(() => {
     })
   }
 
+  if (filtroErrorCode.value) {
+    filtros.push({
+      key: 'errorCode',
+      label: `Error: ${filtroErrorCode.value}`,
+      color: 'red-6',
+      icon: 'error_outline',
+    })
+  }
+
+  if (filtroSessionToken.value) {
+    filtros.push({
+      key: 'sessionToken',
+      label: `Sesión: ${filtroSessionToken.value}`,
+      color: 'green-6',
+      icon: 'vpn_key',
+    })
+  }
+
   return filtros
 })
 
@@ -1136,17 +1527,8 @@ const obtenerNombreUsuario = (log) => {
 // Función mejorada para obtener información completa del dispositivo y escáner
 const obtenerInfoDispositivo = (log) => {
   // 🔧 PRIORIDAD: Datos de API directa (estructura moderna)
-  let device = log.device || log.Device
-  let scanner = log.scanDevice || log.ScanDevice
-
-  // 🔧 FALLBACK: Datos de gráficas (estructura legacy)
-  if (!device && log.Dispositivo) {
-    if (typeof log.Dispositivo === 'object' && log.Dispositivo.Nombre) {
-      device = log.Dispositivo.Nombre
-    } else if (typeof log.Dispositivo === 'string') {
-      device = log.Dispositivo
-    }
-  }
+  let device = log.device
+  let scanner = log.scanDevice
 
   // 🔧 FALLBACK ADICIONAL: SOLO campos reales
   if (!device && log.TrackingCode && log.TrackingCode.trim() !== '') {
@@ -1154,8 +1536,8 @@ const obtenerInfoDispositivo = (log) => {
   }
 
   if (!scanner) {
-    if (log.escaner && log.escaner.trim() !== '') {
-      scanner = log.escaner
+    if (log.scanDevice && log.scanDevice.trim() !== '') {
+      scanner = log.scanDevice
     } else if (log.Escaner && log.Escaner.trim() !== '') {
       scanner = log.Escaner
     } else if (log.scanner && log.scanner.trim() !== '') {
@@ -1245,9 +1627,9 @@ const obtenerMensajeCompleto = (log) => {
     log.description ||
     log.Description ||
     log.Descripcion ||
-    log.Process || // Fallback al proceso si no hay mensaje
+    log.process || // Fallback al proceso si no hay mensaje
     log.Proceso ||
-    log.Type || // Último recurso: el tipo
+    log.type || // Último recurso: el tipo
     log.Tipo ||
     log.EventType
 
@@ -1297,6 +1679,8 @@ watch(
     filtroProceso,
     filtroDispositivo,
     filtroEscaner,
+    filtroErrorCode,
+    filtroSessionToken,
     rangoFechas,
   ],
   () => {
@@ -1305,6 +1689,7 @@ watch(
 )
 
 // Watch para mostrar loader cuando hay muchos logs y se aplican filtros
+// También maneja el debounce para filtros API desde sidebar
 let timeoutFiltros = null
 watch(
   [
@@ -1315,10 +1700,31 @@ watch(
     filtroProceso,
     filtroDispositivo,
     filtroEscaner,
+    filtroErrorCode,
+    filtroSessionToken,
     rangoFechas,
   ],
   () => {
-    if (logs.value.length > 500) {
+    // 🔄 Si el origen es sidebar, usar debounce para API
+    if (origenConsola.value === 'sidebar') {
+      console.log('🔄 [SIDEBAR] Filtro cambiado - Aplicando debounce para API')
+
+      // Limpiar timeout anterior
+      if (filtroTimeout.value) {
+        clearTimeout(filtroTimeout.value)
+      }
+
+      // Aplicar debounce de 500ms para filtros API
+      filtroTimeout.value = setTimeout(() => {
+        if (mostrarConsola.value && !loading.value) {
+          console.log('🚀 [SIDEBAR] Ejecutando filtrado con API después de debounce')
+          cargarLogsConFiltrosAPI()
+        }
+      }, 500)
+    }
+    // 🎯 Si el origen es gráficas, usar filtrado cliente como antes
+    else if (logs.value.length > 500) {
+      console.log('📊 [GRAFICAS] Aplicando filtrado cliente')
       loadingFiltros.value = true
 
       // Limpiar timeout anterior
@@ -1348,6 +1754,7 @@ watch(paginaActual, () => {
 // Funciones principales mejoradas
 const abrirConsola = (logsData = null, filtroTexto = '') => {
   mostrarConsola.value = true
+  origenConsola.value = 'graficas' // Marcar origen desde gráficas
 
   if (logsData && logsData.length > 0) {
     // 🔧 NORMALIZAR DATOS: Detectar si vienen de gráficas y convertir campos
@@ -1384,10 +1791,8 @@ const normalizarDatosLogs = (logsOriginales) => {
     console.log(`📋 Log ${index + 1} completo:`, JSON.stringify(log, null, 2))
     console.log(`🔍 Campos de dispositivo en Log ${index + 1}:`, {
       device: log.device,
-      Device: log.Device,
       Dispositivo: log.Dispositivo,
       scanDevice: log.scanDevice,
-      ScanDevice: log.ScanDevice,
       escaner: log.escaner,
       Escaner: log.Escaner,
       TrackingCode: log.TrackingCode,
@@ -1429,11 +1834,11 @@ const normalizarDatosLogs = (logsOriginales) => {
       // SOLO usar Device o TrackingCode si son valores reales
       if (
         !logNormalizado.device &&
-        log.Device &&
-        log.Device !== 'No especificado' &&
-        log.Device.trim() !== ''
+        log.device &&
+        log.device !== 'No especificado' &&
+        log.device.trim() !== ''
       ) {
-        logNormalizado.device = log.Device
+        logNormalizado.device = log.device
       }
       if (!logNormalizado.device && log.TrackingCode && log.TrackingCode.trim() !== '') {
         logNormalizado.device = log.TrackingCode
@@ -1444,8 +1849,6 @@ const normalizarDatosLogs = (logsOriginales) => {
     if (!logNormalizado.scanDevice) {
       if (log.scanDevice && log.scanDevice.trim() !== '') {
         logNormalizado.scanDevice = log.scanDevice
-      } else if (log.ScanDevice && log.ScanDevice.trim() !== '') {
-        logNormalizado.scanDevice = log.ScanDevice
       } else if (log.escaner && log.escaner.trim() !== '') {
         logNormalizado.scanDevice = log.escaner
       } else if (log.Escaner && log.Escaner.trim() !== '') {
@@ -1456,8 +1859,8 @@ const normalizarDatosLogs = (logsOriginales) => {
 
     // 🔧 NORMALIZAR OTROS CAMPOS
     logNormalizado.message = logNormalizado.message || log.Message || log.Mensaje
-    logNormalizado.process = logNormalizado.process || log.Process || log.Proceso
-    logNormalizado.type = logNormalizado.type || log.Type || log.Tipo
+    logNormalizado.process = logNormalizado.process || log.process || log.Proceso
+    logNormalizado.type = logNormalizado.type || log.type || log.Tipo
 
     // 🔧 NORMALIZAR FECHA: Mantener ambas para compatibilidad
     if (log.Date && !logNormalizado.date) {
@@ -1467,13 +1870,14 @@ const normalizarDatosLogs = (logsOriginales) => {
     if (index < 3) {
       console.log(`🔄 Log ${index + 1} normalizado:`, {
         original: {
-          Dispositivo: log.Dispositivo,
-          Device: log.Device,
+          Dispositivo: log.scanDevice,
+          Device: log.scanDevice,
           Date: log.Date,
           Message: log.Message,
         },
         normalizado: {
-          device: logNormalizado.device,
+          dispositivo: log.scanDevice,
+          device: logNormalizado.scanDevice,
           scanDevice: logNormalizado.scanDevice,
           date: logNormalizado.date,
           message: logNormalizado.message,
@@ -1483,6 +1887,139 @@ const normalizarDatosLogs = (logsOriginales) => {
 
     return logNormalizado
   })
+}
+
+// 🆕 [NUEVA FUNCIÓN] Cargar logs con filtros desde API (para sidebar)
+const cargarLogsConFiltrosAPI = async () => {
+  console.log('🚀 [SIDEBAR] CARGANDO LOGS CON FILTROS DESDE API')
+
+  loading.value = true
+
+  try {
+    // 🔧 Construir parámetros de la petición
+    const params = new URLSearchParams()
+
+    // 📅 Fechas (siempre incluir rango básico)
+    if (rangoFechas.value?.from && rangoFechas.value?.to) {
+      params.append('fromDate', rangoFechas.value.from)
+      params.append('toDate', rangoFechas.value.to)
+    } else {
+      // Rango por defecto si no hay fechas
+      const fechaFin = new Date().toISOString().split('T')[0]
+      const fechaInicio = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0]
+      params.append('fromDate', fechaInicio)
+      params.append('toDate', fechaFin)
+    }
+
+    // 🏢 Oficina (enviar ID)
+    if (filtroOficina.value) {
+      const oficinaSeleccionada = oficinasFull.value.find((o) => o.label === filtroOficina.value)
+      if (oficinaSeleccionada && oficinaSeleccionada.id) {
+        params.append('oficinaId', oficinaSeleccionada.id)
+      }
+    }
+
+    // 👤 Usuario (enviar ID)
+    if (filtroUsuario.value) {
+      const usuarioSeleccionado = usuariosFull.value.find((u) => u.label === filtroUsuario.value)
+      if (usuarioSeleccionado && usuarioSeleccionado.id) {
+        params.append('personId', usuarioSeleccionado.id)
+      }
+    }
+
+    // 🏷️ Tipo (mapear a códigos de API)
+    if (filtroTipoLog.value && filtroTipoLog.value.length > 0) {
+      filtroTipoLog.value.forEach((tipo) => {
+        const tipoMapeado = mapeoTipos[tipo] || tipo
+        params.append('type', tipoMapeado)
+      })
+    }
+
+    // ⚙️ Proceso (string directo)
+    if (filtroProceso.value) {
+      params.append('process', filtroProceso.value)
+    }
+
+    // 📱 Dispositivo (string directo)
+    if (filtroDispositivo.value) {
+      params.append('device', filtroDispositivo.value)
+    }
+
+    // 🔍 Escáner (string directo)
+    if (filtroEscaner.value) {
+      params.append('scanDevice', filtroEscaner.value)
+    }
+
+    // 🚨 Código de error (si existe y no está vacío)
+    if (filtroErrorCode.value && filtroErrorCode.value.trim() !== '') {
+      params.append('errorCode', filtroErrorCode.value.trim())
+    }
+
+    // 🎫 Token de sesión (si existe y no está vacío)
+    if (filtroSessionToken.value && filtroSessionToken.value.trim() !== '') {
+      params.append('sessionToken', filtroSessionToken.value.trim())
+    }
+
+    // 🔍 Búsqueda de texto (si existe)
+    if (busqueda.value && busqueda.value.trim() !== '') {
+      params.append('search', busqueda.value.trim())
+    }
+
+    console.log('📋 [SIDEBAR] Parámetros construidos:', Object.fromEntries(params))
+
+    // 🌐 Hacer petición a la API
+    const url = `${API_BASE_URL}/logs/filter?${params.toString()}`
+    console.log('🔗 [SIDEBAR] URL de petición:', url)
+
+    const response = await axios.get(url)
+    console.log('📦 [SIDEBAR] Respuesta recibida:', response.data?.length || 0, 'logs')
+
+    // 🔄 Procesar respuesta
+    if (response.data && Array.isArray(response.data)) {
+      logs.value = response.data
+
+      // 📊 Extraer opciones de filtros dinámicamente de los nuevos datos
+      obtenerOpcionesUnicas()
+
+      // 📝 Actualizar estado
+      filtroActual.value = `Filtros aplicados (${logs.value.length} resultados)`
+
+      console.log('✅ [SIDEBAR] Logs cargados exitosamente:', logs.value.length)
+
+      // 🔔 Notificación de éxito
+      $q.notify({
+        type: 'positive',
+        message: `Se encontraron ${logs.value.length} logs con los filtros aplicados`,
+        position: 'top-right',
+        timeout: 2000,
+      })
+    } else {
+      console.warn('⚠️ [SIDEBAR] Respuesta inesperada de la API:', response.data)
+      logs.value = []
+
+      $q.notify({
+        type: 'warning',
+        message: 'No se encontraron logs con los filtros aplicados',
+        position: 'top-right',
+        timeout: 3000,
+      })
+    }
+  } catch (error) {
+    console.error('❌ [SIDEBAR] Error al cargar logs con filtros:', error)
+
+    $q.notify({
+      type: 'negative',
+      message: 'Error al aplicar filtros. Intenta de nuevo.',
+      position: 'top-right',
+      timeout: 4000,
+    })
+
+    // En caso de error, mantener los logs actuales
+  } finally {
+    loading.value = false
+  }
 }
 
 const cerrarConsola = () => {
@@ -1635,7 +2172,7 @@ const cargarLogsDesdeAPI = async (rangoExtendido = false) => {
       console.log('└── Dispositivos encontrados:')
       response.data.slice(0, 5).forEach((log, index) => {
         console.log(
-          `    ${index + 1}. Device: "${log.device || 'N/A'}" | ScanDevice: "${
+          `    ${index + 1}. Device: "${log.device || 'N/A'}" | scanDevice: "${
             log.scanDevice || 'N/A'
           }"`
         )
@@ -1650,6 +2187,51 @@ const cargarLogsDesdeAPI = async (rangoExtendido = false) => {
     ) {
       logs.value = response.data
       console.log('✅ Logs cargados desde API:', logs.value.length, 'registros')
+
+      // 🔍 DEBUG: Analizar campos errorCode y sessionToken
+      console.log('🔍 ANÁLISIS DE ERROR CODES Y SESSION TOKENS:')
+
+      // Buscar logs que tengan errorCode o ErrorCode
+      const logsConErrorCode = response.data.filter((log) => log.errorCode || log.ErrorCode)
+      console.log('├── Logs con errorCode/ErrorCode:', logsConErrorCode.length)
+      if (logsConErrorCode.length > 0) {
+        console.log(
+          '├── Ejemplos de errorCode:',
+          logsConErrorCode.slice(0, 3).map((log) => ({
+            errorCode: log.errorCode,
+            ErrorCode: log.ErrorCode,
+            allFields: Object.keys(log),
+          }))
+        )
+      }
+
+      // Buscar logs que tengan sessionToken o SessionToken
+      const logsConSessionToken = response.data.filter(
+        (log) => log.sessionToken || log.SessionToken
+      )
+      console.log('├── Logs con sessionToken/SessionToken:', logsConSessionToken.length)
+      if (logsConSessionToken.length > 0) {
+        console.log(
+          '├── Ejemplos de sessionToken:',
+          logsConSessionToken.slice(0, 3).map((log) => ({
+            sessionToken: log.sessionToken,
+            SessionToken: log.SessionToken,
+            allFields: Object.keys(log),
+          }))
+        )
+      }
+
+      // Buscar campos que contengan "error", "code", "token", "session"
+      const allFields = [...new Set(response.data.flatMap((log) => Object.keys(log)))]
+      const errorFields = allFields.filter(
+        (field) => field.toLowerCase().includes('error') || field.toLowerCase().includes('code')
+      )
+      const tokenFields = allFields.filter(
+        (field) => field.toLowerCase().includes('token') || field.toLowerCase().includes('session')
+      )
+
+      console.log('├── Campos relacionados con error/code:', errorFields)
+      console.log('└── Campos relacionados con token/session:', tokenFields)
 
       // 🔍 DEBUG: Analizar fechas en los logs cargados
       console.log('📅 ANÁLISIS DE FECHAS EN LOGS CARGADOS:')
@@ -1680,11 +2262,11 @@ const cargarLogsDesdeAPI = async (rangoExtendido = false) => {
       // Actualizar opciones de filtros
       obtenerOpcionesUnicas()
 
-      $q.notify({
-        type: 'positive',
-        message: `${logs.value.length} logs cargados desde la API`,
-        position: 'top',
-      })
+      // $q.notify({
+      //   type: 'positive',
+      //   message: `${logs.value.length} logs cargados desde la API`,
+      //   position: 'top',
+      // })
     } else {
       // Sin datos válidos de la API - mostrar mensaje sin datos
       console.log('⚠️ API sin datos válidos, mostrando mensaje de no hay datos')
@@ -2017,14 +2599,20 @@ const limpiarFiltro = (key) => {
 }
 
 const limpiarTodosFiltros = () => {
+  console.log('🧹 LIMPIANDO TODOS LOS FILTROS')
+
   filtroOficina.value = null
   filtroUsuario.value = null
   filtroTipoLog.value = null
   filtroProceso.value = null
   filtroDispositivo.value = null
   filtroEscaner.value = null
+  filtroErrorCode.value = '' // 🆕 NUEVO FILTRO
+  filtroSessionToken.value = '' // 🆕 NUEVO FILTRO
   rangoFechas.value = null
   busqueda.value = ''
+
+  console.log('✅ Todos los filtros limpiados incluyendo errorCode y sessionToken')
 
   // Si no hay datos de gráfica, recargar desde API
   if (!datosDesdeGrafica.value) {
@@ -2104,6 +2692,48 @@ const getColorTipo = (tipo) => {
 const mostrarDetalleLog = (log) => {
   logSeleccionado.value = log
   modalDetalle.value = true
+
+  // 🔍 DEBUG: Inspeccionar estructura de datos para errorCode y sessionToken
+  console.log('🔍 ESTRUCTURA DEL LOG SELECCIONADO:')
+  console.log('├── Log completo:', log)
+  console.log('├── errorCode:', log.errorCode)
+  console.log('├── ErrorCode:', log.ErrorCode)
+  console.log('├── sessionToken:', log.sessionToken)
+  console.log('├── SessionToken:', log.SessionToken)
+  console.log('├── Todas las propiedades:', Object.keys(log))
+
+  // Verificar propiedades que podrían contener códigos de error
+  const errorProps = Object.keys(log).filter(
+    (key) =>
+      key.toLowerCase().includes('error') ||
+      key.toLowerCase().includes('code') ||
+      key.toLowerCase().includes('status')
+  )
+  console.log('├── Propiedades con "error/code/status":', errorProps)
+  errorProps.forEach((prop) => {
+    console.log(`    ${prop}: ${log[prop]}`)
+  })
+
+  // Verificar propiedades que podrían contener tokens
+  const tokenProps = Object.keys(log).filter(
+    (key) =>
+      key.toLowerCase().includes('token') ||
+      key.toLowerCase().includes('session') ||
+      key.toLowerCase().includes('auth')
+  )
+  console.log('├── Propiedades con "token/session/auth":', tokenProps)
+  tokenProps.forEach((prop) => {
+    console.log(`    ${prop}: ${log[prop]}`)
+  })
+
+  // Buscar en el mensaje si contiene información de error o token
+  const mensaje = obtenerMensajeCompleto(log)
+  if (mensaje) {
+    const contieneError = /error|fail|exception/i.test(mensaje)
+    const contieneToken = /token|session|auth/i.test(mensaje)
+    console.log('├── Mensaje contiene "error":', contieneError)
+    console.log('└── Mensaje contiene "token":', contieneToken)
+  }
 }
 
 const limpiarConsola = () => {
@@ -2128,12 +2758,12 @@ const exportarLogs = (formato = 'json') => {
   try {
     const datosExport = logsFiltrados.value.map((log) => ({
       Fecha: formatearFecha(log.Date || log.Fecha || log.FechaCreacion),
-      Tipo: log.Type || log.Tipo || log.EventType || 'INFO',
-      Proceso: log.Process || log.Proceso || '',
+      Tipo: log.type || log.Tipo || log.EventType || 'INFO',
+      Proceso: log.process || log.Proceso || '',
       Mensaje: log.Message || log.Mensaje || '',
       Usuario: obtenerNombreUsuario(log),
       Oficina: obtenerNombreOficina(log),
-      Dispositivo: log.TrackingCode || log.Device || log.Dispositivo || '',
+      Dispositivo: log.device || log.Dispositivo || '',
     }))
 
     const timestamp = new Date().toISOString().split('T')[0]
@@ -2208,9 +2838,13 @@ const exportarLogs = (formato = 'json') => {
 
 // Función específica para abrir desde sidebar con datos frescos de API
 const abrirConsolaDirecta = async () => {
-  console.log('🚀 ABRIENDO CONSOLA DIRECTA DESDE SIDEBAR - versión mejorada con fechas automáticas')
+  console.log('🚀 ABRIENDO CONSOLA DIRECTA DESDE SIDEBAR - versión con carga API')
+
+  // 🔧 Establecer origen como sidebar para usar filtrado API
+  origenConsola.value = 'sidebar'
+
   mostrarConsola.value = true
-  filtroActual.value = 'Consola directa - Logs con rango de fechas automático'
+  filtroActual.value = 'Consola directa - Datos cargados desde API'
   datosDesdeGrafica.value = false
 
   // 🏢 Cargar oficinas del catálogo para el mapeo ID-nombre
@@ -2219,8 +2853,8 @@ const abrirConsolaDirecta = async () => {
   // 👥 Cargar personas del catálogo para el mapeo ID-nombre
   await cargarPersonasDelCatalogo()
 
-  // � DEBUG: Limpiar TODOS los filtros para verificar problema
-  console.log('🧹 LIMPIANDO TODOS LOS FILTROS PARA DEBUGGING')
+  // 🧹 LIMPIAR TODOS LOS FILTROS INCLUYENDO LOS NUEVOS
+  console.log('🧹 [SIDEBAR] LIMPIANDO TODOS LOS FILTROS PARA DEBUGGING')
   rangoFechas.value = null
   filtroOficina.value = null
   filtroUsuario.value = null
@@ -2228,19 +2862,27 @@ const abrirConsolaDirecta = async () => {
   filtroProceso.value = null
   filtroDispositivo.value = null
   filtroEscaner.value = null
+  filtroErrorCode.value = '' // 🆕 NUEVO FILTRO
+  filtroSessionToken.value = '' // 🆕 NUEVO FILTRO
   busqueda.value = ''
 
-  // Limpiar otros filtros pero mantener fechas
-  filtroOficina.value = null
-  filtroUsuario.value = null
-  filtroTipoLog.value = null
-  filtroProceso.value = null
-  filtroDispositivo.value = null
-  filtroEscaner.value = null
-  busqueda.value = ''
+  // 🔍 LOG DE ESTADO INICIAL DE FILTROS
+  console.log('🧹 [SIDEBAR] Estado después de limpiar filtros:', {
+    filtroErrorCode: filtroErrorCode.value,
+    filtroSessionToken: filtroSessionToken.value,
+    filtroProceso: filtroProceso.value,
+    filtroDispositivo: filtroDispositivo.value,
+    filtroEscaner: filtroEscaner.value,
+    filtroOficina: filtroOficina.value,
+    filtroUsuario: filtroUsuario.value,
+    filtroTipoLog: filtroTipoLog.value,
+  })
 
-  // Cargar datos frescos desde API con el rango de fechas inicializado
-  await cargarLogsDesdeAPI(true)
+  // Cargar datos frescos desde API usando filtros con parámetros
+  await cargarLogsConFiltrosAPI()
+
+  // 🔍 DEBUG FINAL
+  debugearEstadoFiltros('SIDEBAR - POST CARGA API')
 }
 
 const obtenerIdPersona = (nombrePersona) => {
@@ -2263,7 +2905,14 @@ watch(
       // Recargar datos con un pequeño delay para evitar múltiples llamadas
       setTimeout(() => {
         if (!loading.value) {
-          cargarLogsDesdeAPI(false)
+          // 🔄 Usar la función correcta según el origen
+          if (origenConsola.value === 'sidebar') {
+            console.log('📅 [SIDEBAR] Recargando con API por cambio de fechas')
+            cargarLogsConFiltrosAPI()
+          } else {
+            console.log('📅 [GRAFICAS] Recargando con filtrado cliente por cambio de fechas')
+            cargarLogsDesdeAPI(false)
+          }
         }
       }, 300)
     }
@@ -2271,12 +2920,67 @@ watch(
   { deep: true } // Para detectar cambios en objetos anidados
 )
 
+// 🔍 MÉTODOS DE DIAGNÓSTICO TÉCNICO
+const abrirDiagnosticoError = (errorCode) => {
+  console.log('🔍 Abriendo diagnóstico para código de error:', errorCode)
+
+  if (diagnosticoRef.value) {
+    diagnosticoRef.value.abrirDiagnostico(errorCode)
+  }
+
+  $q.notify({
+    type: 'info',
+    message: 'Diagnóstico iniciado',
+    caption: `Analizando código: ${errorCode}`,
+    icon: 'bug_report',
+    position: 'top-right',
+  })
+}
+
+const abrirDiagnosticoSesion = (sessionToken) => {
+  console.log('👤 Abriendo diagnóstico para sesión:', sessionToken)
+
+  if (diagnosticoRef.value) {
+    diagnosticoRef.value.abrirDiagnostico(sessionToken)
+  }
+
+  $q.notify({
+    type: 'info',
+    message: 'Diagnóstico de sesión iniciado',
+    caption: `Analizando token: ${sessionToken.substring(0, 15)}...`,
+    icon: 'account_circle',
+    position: 'top-right',
+  })
+}
+
+const cerrarDiagnostico = () => {
+  console.log('✅ Diagnóstico cerrado')
+}
+
+// Función auxiliar para debuggear el diagnóstico
+const abrirDiagnosticoManual = () => {
+  console.log('🔍 Intentando abrir diagnóstico...')
+  console.log('🔍 diagnosticoRef:', diagnosticoRef.value)
+
+  if (diagnosticoRef.value) {
+    console.log('✅ Referencia encontrada, llamando abrirDiagnostico...')
+    diagnosticoRef.value.abrirDiagnostico()
+  } else {
+    console.error('❌ No se encontró la referencia al componente de diagnóstico')
+  }
+}
+
 // Exposición de funciones
 defineExpose({
   abrirConsola,
   abrirConsolaDirecta,
   cerrarConsola,
   mostrarConsola,
+  // 🔍 Nuevos métodos de diagnóstico
+  abrirDiagnosticoError,
+  abrirDiagnosticoSesion,
+  abrirDiagnosticoManual,
+  cerrarDiagnostico,
 })
 </script>
 
@@ -2515,6 +3219,46 @@ defineExpose({
   word-wrap: break-word;
 }
 
+// Estilos para información técnica en modal de detalle
+.detail-tech-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 8px;
+
+  .tech-value {
+    font-family: 'Courier New', monospace;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+  }
+
+  &.error-code-item {
+    border-left: 3px solid #f44336;
+
+    .error-code {
+      color: #f44336;
+      font-weight: 600;
+    }
+  }
+
+  &.session-token-item {
+    border-left: 3px solid #00bcd4;
+
+    .session-token {
+      color: #00bcd4;
+      background: rgba(0, 188, 212, 0.1);
+      border: 1px solid rgba(0, 188, 212, 0.3);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      word-break: break-all;
+      line-height: 1.3;
+    }
+  }
+}
+
 // Estilos para el grid responsivo de cards
 .responsive-logs-grid {
   display: grid;
@@ -2615,6 +3359,8 @@ defineExpose({
   .log-user-section,
   .log-office-section,
   .log-device-section,
+  .log-error-section,
+  .log-session-section,
   .log-message-section {
     margin-bottom: 12px;
 
@@ -2624,9 +3370,33 @@ defineExpose({
   }
 
   .device-info,
+  .error-content,
+  .session-content,
   .message-content {
     color: rgba(255, 255, 255, 0.8);
     line-height: 1.4;
+  }
+
+  .error-content {
+    background: rgba(244, 67, 54, 0.1);
+    border-left: 2px solid rgba(244, 67, 54, 0.3);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+    color: #f44336;
+  }
+
+  .session-content {
+    background: rgba(0, 188, 212, 0.1);
+    border-left: 2px solid rgba(0, 188, 212, 0.3);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-weight: 400;
+    color: #00bcd4;
+    word-break: break-all;
+    font-size: 11px;
   }
 
   .message-content {
@@ -2795,6 +3565,52 @@ defineExpose({
       .col-12 {
         text-align: center;
       }
+    }
+  }
+}
+
+// Estilos para sección de debugging
+.debug-section {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.debug-fields {
+  max-height: 400px;
+  overflow-y: auto;
+
+  .debug-field-item {
+    display: flex;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.03);
+
+    &.highlight-error {
+      background: rgba(244, 67, 54, 0.1);
+      border-left: 3px solid #f44336;
+    }
+
+    &.highlight-token {
+      background: rgba(0, 188, 212, 0.1);
+      border-left: 3px solid #00bcd4;
+    }
+
+    .field-key {
+      font-weight: 600;
+      color: #90caf9;
+      min-width: 120px;
+      font-size: 12px;
+    }
+
+    .field-value {
+      flex: 1;
+      color: rgba(255, 255, 255, 0.8);
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      word-break: break-all;
+      white-space: pre-wrap;
     }
   }
 }

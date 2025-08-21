@@ -131,6 +131,12 @@
             </q-item-section>
             <q-item-section><span style="font-weight: 600">Consola</span></q-item-section>
           </q-item>
+          <q-item clickable v-ripple to="/diagnostico">
+            <q-item-section avatar>
+              <q-icon name="bug_report" color="red" />
+            </q-item-section>
+            <q-item-section><span style="font-weight: 600">Diagnóstico</span></q-item-section>
+          </q-item>
         </q-list>
         <div style="margin-top: 32px; text-align: center">
           <q-avatar size="64px" icon="desktop_windows" color="primary" text-color="white" />

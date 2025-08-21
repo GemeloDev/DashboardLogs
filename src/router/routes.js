@@ -19,6 +19,7 @@ const routes = [
       { path: 'estadisticas', component: () => import('pages/EstadisticasPage.vue') },
       { path: 'eventos', component: () => import('pages/EventosPage.vue') },
       { path: 'eventos-fallidos', component: () => import('pages/EventosFallidos.vue') },
+      { path: 'diagnostico', component: () => import('pages/DiagnosticoPage.vue') },
     ],
   },
 
