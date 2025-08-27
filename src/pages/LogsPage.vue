@@ -174,7 +174,6 @@
           </div>
           <escritorio-flujo />
         </div>
-        import EscritorioFlujo from 'components/escritorio/FlujoEscritorio.vue'
         <div class="text-h3 text-white text-center">Logs Biométricos</div>
         <log-filters @filter="onFilter" />
         <div class="row q-col-gutter-md q-mt-md justify-center">

@@ -482,11 +482,11 @@ const abrirConsolaGeneral = (tipo) => {
     TrackingCode: detalle.trackingCode || detalle.TrackingCode || null,
     ID: detalle.id || detalle.ID || null,
     // Campos adicionales útiles
-    Proceso: detalle.proceso || detalle.Process || 'No especificado',
+    Proceso: detalle.process || 'No especificado',
     Hora: detalle.hora || 'No especificada',
   }))
 
-  consolaRef.value.abrirConsola(logsFormateados, titulo)
+  consolaRef.value.abrirConsola(logsFormateados, titulo, props.filtros)
 }
 
 // Configuraciones de Chart.js con tooltips mejorados
@@ -1380,7 +1380,11 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
       },
     ]
 
-    consolaRef.value.abrirConsola(mensajeNoData, `${tipoGrafica} - ${fecha} (Sin datos detallados)`)
+    consolaRef.value.abrirConsola(
+      mensajeNoData,
+      `${tipoGrafica} - ${fecha} (Sin datos detallados)`,
+      props.filtros
+    )
     return
   }
 
@@ -1441,8 +1445,8 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
 
   const filtroTexto = `${tipoLabel} - ${fecha} (${logsFormateados.length} registros)`
 
-  // Abrir la consola con los datos filtrados
-  consolaRef.value.abrirConsola(logsFormateados, filtroTexto)
+  // Abrir la consola con los datos filtrados Y los filtros originales
+  consolaRef.value.abrirConsola(logsFormateados, filtroTexto, props.filtros)
 }
 
 // Función para actualizar todas las gráficas

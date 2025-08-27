@@ -28,7 +28,7 @@
               </q-chip>
             </div>
             <div class="text-subtitle2 text-cyan-3 q-mt-sm diagnostic-subtitle">
-              🛡️ Sistema de Soporte Técnico en Tiempo Real | 🔍 Análisis de Errores & Sesiones | 🚀 IA Integrada
+              🛡️ Sistema de Soporte Técnico en Tiempo Real | 🔍 Análisis de Errores & Sesiones
             </div>
 
             <!-- Indicadores de Estado -->
@@ -42,15 +42,7 @@
               >
                 🟢 API Conectada
               </q-chip>
-              <q-chip
-                dense
-                color="blue-6"
-                text-color="white"
-                icon="psychology"
-                class="diagnostic-status-chip"
-              >
-                🧠 IA Activa
-              </q-chip>
+         
               <q-chip
                 dense
                 color="purple-6"

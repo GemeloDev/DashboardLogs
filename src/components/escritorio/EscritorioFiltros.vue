@@ -6,7 +6,7 @@
           <q-icon name="filter_list" size="28px" class="q-mr-sm" color="primary" />
           Filtros Avanzados
         </div>
-        <q-btn flat color="negative" icon="close" label="Cerrar" @click="$emit('close')" />
+        <q-btn flat color="negative" icon="close" label="Cerrar" v-close-popup />
       </div>
 
       <div v-if="resumenFiltros.length" class="q-mt-sm text-caption text-grey-4">
@@ -33,9 +33,9 @@
               <q-icon name="calendar_today" class="cursor-pointer" color="primary">
                 <q-popup-proxy cover>
                   <q-date v-model="filtro.rangoFechas" range dark color="primary">
-                    <div class="row items-center justify-end q-pa-sm">
+                    <!-- <div class="row items-center justify-end q-pa-sm">
                       <q-btn v-close-popup label="Cerrar" color="primary" flat />
-                    </div>
+                    </div> -->
                   </q-date>
                 </q-popup-proxy>
               </q-icon>
@@ -160,7 +160,7 @@
         </div>
 
         <!-- Tipo de Proceso -->
-        <div class="col-12 col-md-6">
+        <!-- <div class="col-12 col-md-6">
           <q-select
             v-model="filtro.proceso"
             :options="procesosOptions"
@@ -177,10 +177,10 @@
               <q-icon name="settings" color="primary" />
             </template>
           </q-select>
-        </div>
+        </div> -->
 
         <!-- Tipo de Log -->
-        <div class="col-12 col-md-6">
+        <!-- <div class="col-12 col-md-6">
           <q-select
             v-model="filtro.tipoLog"
             :options="tiposLogOptions"
@@ -197,7 +197,7 @@
               <q-icon name="bug_report" color="primary" />
             </template>
           </q-select>
-        </div>
+        </div> -->
       </div>
 
       <div class="q-mt-xl text-center">

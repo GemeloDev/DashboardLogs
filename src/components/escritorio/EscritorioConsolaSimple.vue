@@ -429,8 +429,8 @@
                     </q-chip>
                   </div>
                   <div class="col-auto">
-                    <q-badgetype
-                      :color="log.process === 'LOGIN' ? 'green' : 'blue'"
+                    <q-badge
+                      :color="getColorProceso(log.process || log.Proceso)"
                       :label="log.process || log.Proceso || 'SYSTEM'"
                       class="text-weight-bold"
                     />
@@ -683,7 +683,10 @@
 
                 <q-item v-if="logSeleccionado.process || logSeleccionado.Proceso">
                   <q-item-section avatar>
-                    <q-icon color="green" name="settings" />
+                    <q-icon
+                      :color="getColorProceso(logSeleccionado.process || logSeleccionado.Proceso)"
+                      name="settings"
+                    />
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>Proceso</q-item-label>
@@ -1044,6 +1047,8 @@ const opcionesTiposLog = ref([
   { label: 'END', value: 'END' },
   { label: 'EXPORT', value: 'EXPORT' },
   { label: 'DETAIL', value: 'DETAIL' },
+  { label: 'CONECTADO', value: 'CONECTADO' },
+  { label: 'DESCONECTADO', value: 'DESCONECTADO' },
 ])
 
 // Nuevas opciones para procesos
@@ -1053,6 +1058,7 @@ const opcionesProcesos = ref([
   { label: 'REGISTER', value: 'REGISTER' },
   { label: 'PASSPORT', value: 'PASSPORT' },
   { label: 'LOGIN', value: 'LOGIN' },
+  { label: 'SESSION', value: 'SESSION' },
 ])
 
 // 🆕 [NUEVO] Mapeo de tipos para la API
@@ -1300,7 +1306,7 @@ const logsFiltrados = computed(() => {
   if (filtroProceso.value) {
     const antesFiltro = resultado.length
     resultado = resultado.filter((log) => {
-      const proceso = log.Proceso || log.process || log.TipoProceso || log.procesType || ''
+      const proceso = log.process || log.TipoProceso || log.procesType || ''
       return proceso.toLowerCase().includes(filtroProceso.value.toLowerCase())
     })
     console.log(
@@ -1331,6 +1337,7 @@ const logsFiltrados = computed(() => {
     const antesFiltro = resultado.length
     resultado = resultado.filter((log) => {
       const escaner =
+        log.scanDevice ||
         log.Escaner ||
         log.Scanner ||
         log.NombreEscaner ||
@@ -1340,7 +1347,8 @@ const logsFiltrados = computed(() => {
       return escaner.toLowerCase().includes(filtroEscaner.value.toLowerCase())
     })
     console.log(
-      `🔍 [Filtro Escáner] "${filtroEscaner.value}": ${antesFiltro} → ${resultado.length}`
+      `🔍 [Filtro 5
+      ] "${filtroEscaner.value}": ${antesFiltro} → ${resultado.length}`
     )
   }
 
@@ -1538,10 +1546,6 @@ const obtenerInfoDispositivo = (log) => {
   if (!scanner) {
     if (log.scanDevice && log.scanDevice.trim() !== '') {
       scanner = log.scanDevice
-    } else if (log.Escaner && log.Escaner.trim() !== '') {
-      scanner = log.Escaner
-    } else if (log.scanner && log.scanner.trim() !== '') {
-      scanner = log.scanner
     }
   }
 
@@ -1654,6 +1658,14 @@ const getIconoTipo = (tipo) => {
       return 'info'
     case 'debug':
       return 'bug_report'
+    case 'conectado':
+    case 'connected':
+    case 'online':
+      return 'wifi'
+    case 'desconectado':
+    case 'disconnected':
+    case 'offline':
+      return 'wifi_off'
     default:
       return 'circle'
   }
@@ -1752,7 +1764,7 @@ watch(paginaActual, () => {
 })
 
 // Funciones principales mejoradas
-const abrirConsola = (logsData = null, filtroTexto = '') => {
+const abrirConsola = (logsData = null, filtroTexto = '', filtrosGrafica = null) => {
   mostrarConsola.value = true
   origenConsola.value = 'graficas' // Marcar origen desde gráficas
 
@@ -1763,6 +1775,13 @@ const abrirConsola = (logsData = null, filtroTexto = '') => {
     logs.value = datosNormalizados
     filtroActual.value = filtroTexto
     datosDesdeGrafica.value = true
+
+    // 🎯 APLICAR FILTROS DESDE GRÁFICAS
+    if (filtrosGrafica) {
+      console.log('🎯 Aplicando filtros desde gráficas:', filtrosGrafica)
+      aplicarFiltrosDesdeGraficas(filtrosGrafica)
+    }
+
     console.log(
       '📊 Consola abierta desde gráfica con',
       datosNormalizados.length,
@@ -1889,7 +1908,63 @@ const normalizarDatosLogs = (logsOriginales) => {
   })
 }
 
-// 🆕 [NUEVA FUNCIÓN] Cargar logs con filtros desde API (para sidebar)
+const aplicarFiltrosDesdeGraficas = (filtrosGrafica) => {
+  console.log('Aplicando filtros desde gráficas:', filtrosGrafica)
+
+  // Resetear filtros primero
+  filtroOficina.value = null
+  filtroUsuario.value = null
+  filtroTipoLog.value = null
+  filtroProceso.value = null
+  filtroDispositivo.value = null
+  filtroEscaner.value = null
+  rangoFechas.value = null
+  busqueda.value = ''
+
+  // Aplicar filtros desde las gráficas
+  if (filtrosGrafica.fechaInicio && filtrosGrafica.fechaFin) {
+    rangoFechas.value = {
+      from: filtrosGrafica.fechaInicio,
+      to: filtrosGrafica.fechaFin,
+    }
+  }
+
+  if (filtrosGrafica.oficina) {
+    filtroOficina.value = filtrosGrafica.oficina
+  }
+
+  if (filtrosGrafica.usuario) {
+    filtroUsuario.value = filtrosGrafica.usuario
+  }
+
+  if (filtrosGrafica.tipoLog) {
+    filtroTipoLog.value = filtrosGrafica.tipoLog
+  }
+
+  if (filtrosGrafica.proceso) {
+    filtroProceso.value = filtrosGrafica.proceso
+  }
+
+  if (filtrosGrafica.dispositivo) {
+    filtroDispositivo.value = filtrosGrafica.dispositivo
+  }
+
+  if (filtrosGrafica.escaner) {
+    filtroEscaner.value = filtrosGrafica.escaner
+  }
+
+  console.log('Filtros aplicados desde gráficas:', {
+    rangoFechas: rangoFechas.value,
+    filtroOficina: filtroOficina.value,
+    filtroUsuario: filtroUsuario.value,
+    filtroTipoLog: filtroTipoLog.value,
+    filtroProceso: filtroProceso.value,
+    filtroDispositivo: filtroDispositivo.value,
+    filtroEscaner: filtroEscaner.value,
+  })
+}
+
+//  [NUEVA FUNCIÓN] Cargar logs con filtros desde API (para sidebar)
 const cargarLogsConFiltrosAPI = async () => {
   console.log('🚀 [SIDEBAR] CARGANDO LOGS CON FILTROS DESDE API')
 
@@ -2685,8 +2760,30 @@ const getColorTipo = (tipo) => {
     AUTENTICACION: 'indigo',
     VALIDACION: 'teal',
     OPERACION: 'brown',
+    CONECTADO: 'positive',
+    DESCONECTADO: 'negative',
+    ONLINE: 'positive',
+    OFFLINE: 'negative',
+    CONNECTED: 'positive',
+    DISCONNECTED: 'negative',
   }
   return colores[(tipo || 'INFO').toUpperCase()] || 'info'
+}
+
+const getColorProceso = (proceso) => {
+  const colores = {
+    LOGIN: 'green',
+    REGISTER: 'blue',
+    SCAN: 'orange',
+    EXPORT: 'purple',
+    VALIDATION: 'teal',
+    SYSTEM: 'grey',
+    QR: 'indigo',
+    MRZ: 'brown',
+    FACIAL: 'pink',
+    BIOMETRIC: 'cyan',
+  }
+  return colores[(proceso || 'SYSTEM').toUpperCase()] || 'blue'
 }
 
 const mostrarDetalleLog = (log) => {
@@ -3615,3 +3712,4 @@ defineExpose({
   }
 }
 </style>
+

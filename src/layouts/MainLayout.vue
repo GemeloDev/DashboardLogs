@@ -226,9 +226,9 @@
         <div v-else class="flow-container desktop-flow">
           <q-dialog v-model="showFilters" persistent>
             <q-card style="min-width: 350px; background: #1e1e2f">
-              <q-card-section>
+              <!-- <q-card-section>
                 <div class="text-h6">Filtros Avanzados</div>
-              </q-card-section>
+              </q-card-section> -->
               <q-card-section>
                 <EscritorioFiltros @filtrar="onFiltrar" />
               </q-card-section>

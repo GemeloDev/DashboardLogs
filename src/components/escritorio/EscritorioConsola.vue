@@ -257,9 +257,9 @@
 
                 <div class="log-entry-content">
                   <div class="log-main-info">
-                    <div class="log-process" v-if="log.Process">
+                    <div class="log-process" v-if="log.process">
                       <q-icon name="settings" size="16px" class="q-mr-xs text-blue-4" />
-                      <span class="process-name">{{ log.Process }}</span>
+                      <span class="process-name">{{ log.process }}</span>
                     </div>
                   </div>
 
@@ -354,17 +354,17 @@
               {{ logSeleccionado.Type }}
             </q-chip>
           </div>
-          <div class="log-detail-item" v-if="logSeleccionado.Process">
+          <div class="log-detail-item" v-if="logSeleccionado.process">
             <strong>Proceso:</strong>
-            <span>{{ logSeleccionado.Process }}</span>
+            <span>{{ logSeleccionado.process }}</span>
           </div>
-          <div class="log-detail-item" v-if="logSeleccionado.Oficina">
+          <div class="log-detail-item" v-if="logSeleccionado.oficina">
             <strong>Oficina:</strong>
             <span>{{ logSeleccionado.oficina.nombre }}</span>
           </div>
           <div class="log-detail-item log-detail-message">
             <strong>Mensaje:</strong>
-            <pre>{{ logSeleccionado.Message }}</pre>
+            <pre>{{ logSeleccionado.message }}</pre>
           </div>
         </div>
       </q-card-section>

@@ -38,6 +38,12 @@ export default defineConfig((/* ctx */) => {
       },
 
       vueRouterMode: 'hash', // available values: 'hash', 'history'
+      // Configuración para producción
+      env: {
+        API_BASE_URL: process.env.NODE_ENV === 'production'
+          ? 'http://187.188.66.56:8024/api'
+          : '/api'
+      },
       // vueRouterBase,
       // vueDevtools,
       // vueOptionsAPI: false,
@@ -79,7 +85,7 @@ export default defineConfig((/* ctx */) => {
           target: 'http://187.188.66.56:8024',
           changeOrigin: true,
           secure: false,
-          logLevel: 'debug'
+          // logLevel: 'production'
         }
       }
     },
