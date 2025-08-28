@@ -1,7 +1,6 @@
 // Servicio para diagnósticos de códigos de error, sesiones y soporte
 import axios from 'axios'
 
-// Usar proxy del devServer para evitar problemas de CORS
 const API_BASE_URL = '/api'
 
 export class DiagnosticService {

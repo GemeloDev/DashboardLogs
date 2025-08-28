@@ -1093,7 +1093,7 @@ const consultarCodigoError = async (codigo = null) => {
     $q.notify({
       type: 'warning',
       message: 'Usando datos de ejemplo',
-      caption: 'Error al conectar con el servidor (CORS)',
+      caption: 'Error al conectar con el servidor',
       position: 'top-right',
     })
   } finally {
@@ -1124,7 +1124,7 @@ const consultarSesion = async (codigo = null) => {
     $q.notify({
       type: 'warning',
       message: 'Usando datos de ejemplo',
-      caption: 'Error al conectar con el servidor (CORS)',
+      caption: 'Error al conectar con el servidor',
       position: 'top-right',
     })
   } finally {
@@ -1169,7 +1169,7 @@ const enviarSoporte = async () => {
   } catch (error) {
     console.log('🔄 Error en solicitud de soporte:', error.message)
 
-    // Crear respuesta de ejemplo para mostrar en caso de error CORS
+    // Crear respuesta de ejemplo para mostrar en caso de error de conexión
     resultadoSoporte.value = {
       success: true,
       requestParams: {
@@ -1182,8 +1182,8 @@ const enviarSoporte = async () => {
 
     $q.notify({
       type: 'warning',
-      message: 'Error de CORS - Usando datos de ejemplo',
-      caption: 'No se puede conectar con el servidor desde localhost',
+      message: 'Error de conexión - Usando datos de ejemplo',
+      caption: 'No se puede conectar con el servidor',
       position: 'top-right',
     })
   } finally {

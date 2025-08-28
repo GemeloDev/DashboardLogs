@@ -12,10 +12,8 @@
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
     "build": "quasar build",
-    "build:prod": "quasar build && npm run copy-server",
-    "copy-server": "copy server-production-esm.js dist\\spa\\server.js",
-    "start": "node dist/spa/server.js",
-    "prod": "npm run build:prod && npm run start",
+    "build:prod": "quasar build",
+    "start": "quasar dev",
     "postinstall": "quasar prepare"
   },
   "dependencies": {
@@ -23,10 +21,7 @@
     "axios": "^1.10.0",
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
-    "cors": "^2.8.5",
     "esri-leaflet": "^3.0.17",
-    "express": "^4.21.2",
-    "http-proxy-middleware": "^2.0.9",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "pinia": "^3.0.3",
