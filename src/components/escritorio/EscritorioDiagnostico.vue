@@ -42,7 +42,7 @@
               >
                 🟢 API Conectada
               </q-chip>
-         
+
               <q-chip
                 dense
                 color="purple-6"
@@ -145,9 +145,7 @@
 
                     <!-- Ejemplos de códigos reales -->
                     <div class="q-mb-md">
-                      <div class="text-caption text-grey-4 q-mb-sm">
-                        Ejemplos de códigos reales:
-                      </div>
+                      <div class="text-caption text-grey-4 q-mb-sm">Ejemplos de códigos :</div>
                       <div class="row q-gutter-sm">
                         <q-chip
                           clickable
@@ -642,30 +640,42 @@
                     </q-input>
                   </div>
                   <div class="col-12 col-md-4">
-                    <q-input
+                    <q-select
                       v-model="formulario.device"
+                      :options="opcionesSoporteDispositivos"
                       label="Dispositivo"
-                      placeholder="DELL"
+                      placeholder="Selecciona un dispositivo"
                       dark
                       outlined
+                      use-input
+                      input-debounce="300"
+                      @filter="filtrarSoporteDispositivos"
+                      emit-value
+                      map-options
                     >
                       <template v-slot:prepend>
                         <q-icon name="computer" color="green-5" />
                       </template>
-                    </q-input>
+                    </q-select>
                   </div>
                   <div class="col-12 col-md-4">
-                    <q-input
+                    <q-select
                       v-model="formulario.user"
+                      :options="opcionesSoporteUsuarios"
                       label="Usuario"
-                      placeholder="1"
+                      placeholder="Selecciona un usuario"
                       dark
                       outlined
+                      use-input
+                      input-debounce="300"
+                      @filter="filtrarSoporteUsuarios"
+                      emit-value
+                      map-options
                     >
                       <template v-slot:prepend>
                         <q-icon name="person" color="green-5" />
                       </template>
-                    </q-input>
+                    </q-select>
                   </div>
                 </div>
 
@@ -727,6 +737,60 @@
                         </q-list>
                       </q-card-section>
                     </q-card>
+
+                    <!-- Resultados devueltos por /support -->
+                    <div
+                      v-if="resultadoSoporte.data && resultadoSoporte.data.length"
+                      class="q-mt-md"
+                    >
+                      <div class="text-subtitle2 q-mb-sm">🔎 Resultados:</div>
+                      <div class="row q-col-gutter-md">
+                        <div
+                          v-for="(r, i) in resultadoSoporte.data"
+                          :key="r.id || i"
+                          class="col-12 col-md-6"
+                        >
+                          <q-card class="bg-grey-9 text-white q-mb-sm">
+                            <q-card-section>
+                              <div class="row items-start">
+                                <div class="col-auto">
+                                  <q-chip dense color="primary" text-color="white">{{
+                                    formatearFecha(r.date)
+                                  }}</q-chip>
+                                </div>
+                                <div class="col">
+                                  <div class="text-subtitle1 q-mb-xs">
+                                    {{ r.type || r.proceso || 'Evento' }}
+                                  </div>
+                                  <div class="text-body2 log-message">
+                                    {{ r.message || r.detail || r.data || 'Sin mensaje' }}
+                                  </div>
+
+                                  <div class="text-caption q-mt-sm log-metadata">
+                                    <div class="log-item">
+                                      <q-icon name="person" size="xs" class="q-mr-xs" />
+                                      {{ r.person || r.persona || r.baseCode || 'N/A' }}
+                                    </div>
+                                    <div class="log-item">
+                                      <q-icon name="apartment" size="xs" class="q-mr-xs" />
+                                      {{ r.oficina || r.office || 'N/A' }}
+                                    </div>
+                                    <div class="log-item">
+                                      <q-icon name="computer" size="xs" class="q-mr-xs" />
+                                      {{ r.device || r.dispositivo || 'N/A' }}
+                                    </div>
+                                    <div class="log-item">
+                                      <q-icon name="qr_code_scanner" size="xs" class="q-mr-xs" />
+                                      {{ r.scanDevice || r.scan_device || r.scanner || 'N/A' }}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </q-card-section>
+                          </q-card>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div v-else class="text-center">
@@ -827,6 +891,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { DiagnosticService } from '../../services/diagnosticService.js'
+import { CatalogService } from '../../services/catalogService.js'
 
 // Props y emits
 const props = defineProps({
@@ -867,6 +932,60 @@ const resultadoError = ref(null)
 const resultadoSesion = ref(null)
 const resultadoSoporte = ref(null)
 
+// Opciones locales para Soporte
+const opcionesSoporteDispositivos = ref([])
+const opcionesSoporteUsuarios = ref([])
+
+const cargarCatalogosSoporte = async () => {
+  try {
+    const [dispositivos, personas] = await Promise.all([
+      CatalogService.cargarDispositivos(),
+      CatalogService.cargarPersonas(),
+    ])
+
+    opcionesSoporteDispositivos.value = dispositivos
+    opcionesSoporteUsuarios.value = personas
+    return true
+  } catch (error) {
+    console.warn('Error cargando catálogos de soporte:', error)
+    opcionesSoporteDispositivos.value = [
+      { label: 'PC-01', value: 'PC-01' },
+      { label: 'PC-02', value: 'PC-02' },
+    ]
+    opcionesSoporteUsuarios.value = [
+      { label: 'Usuario Demo (123)', value: 123 },
+      { label: 'Usuario Demo (456)', value: 456 },
+    ]
+    return false
+  }
+}
+
+const filtrarSoporteDispositivos = (val, update) => {
+  update(() => {
+    if (!val || val === '') {
+      // no-op, mantener lista
+    } else {
+      const needle = val.toLowerCase()
+      opcionesSoporteDispositivos.value = opcionesSoporteDispositivos.value.filter(
+        (d) => String(d.label).toLowerCase().indexOf(needle) > -1
+      )
+    }
+  })
+}
+
+const filtrarSoporteUsuarios = (val, update) => {
+  update(() => {
+    if (!val || val === '') {
+      // no-op
+    } else {
+      const needle = val.toLowerCase()
+      opcionesSoporteUsuarios.value = opcionesSoporteUsuarios.value.filter(
+        (u) => String(u.label).toLowerCase().indexOf(needle) > -1
+      )
+    }
+  })
+}
+
 // Computed
 const hayResultados = computed(() => {
   return (
@@ -890,6 +1009,8 @@ watch(
 // Métodos
 const abrirDiagnostico = (codigo = '') => {
   mostrarDiagnostico.value = true
+  // cargar catálogos de soporte
+  cargarCatalogosSoporte()
 
   if (codigo) {
     busquedaRapida.value = codigo
@@ -1026,7 +1147,18 @@ const enviarSoporte = async () => {
 
   try {
     console.log(`🛠️ Enviando solicitud de soporte`)
-    resultadoSoporte.value = await DiagnosticService.sendSupportRequest(supportCode, device, user)
+    // Normalizar si vienen como objetos { label, value }
+    let deviceParam = device
+    if (device && typeof device === 'object' && device.value !== undefined)
+      deviceParam = device.value
+    let userParam = user
+    if (user && typeof user === 'object' && user.value !== undefined) userParam = user.value
+
+    resultadoSoporte.value = await DiagnosticService.sendSupportRequest(
+      supportCode,
+      deviceParam,
+      userParam
+    )
 
     $q.notify({
       type: 'positive',

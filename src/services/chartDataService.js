@@ -826,7 +826,6 @@ export class ChartDataService {
     const detalles = []
 
     rawData.forEach(item => {
-      // Los datos reales tienen 'date', los de ejemplo tienen 'Date'
       const dateField = item.date || item.Date
       if (!dateField) return
 
@@ -844,7 +843,6 @@ export class ChartDataService {
       detalles.push({
         fecha: fechaStr,
         tipo,
-        // Los datos reales tienen estructura diferente a los de ejemplo
         usuario: item.person?.nombres
           ? `${item.person.nombres} ${item.person.primerApellido || ''} ${item.person.segundoApellido || ''}`.trim()
           : 'Sin usuario',

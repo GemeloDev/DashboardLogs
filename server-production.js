@@ -35,15 +35,13 @@ app.use('/api', createProxyMiddleware({
     proxyReq.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
 
     // Log para debug
-    console.log('🔄 Proxy request:', req.method, req.url)
   },
-  onProxyRes: (proxyRes, req, res) => {
+  onProxyRes: (proxyRes, req) => {
     // Agregar headers CORS a la respuesta
     proxyRes.headers['Access-Control-Allow-Origin'] = '*'
     proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
 
-    console.log('✅ Proxy response:', req.method, req.url, proxyRes.statusCode)
   },
   onError: (err, req, res) => {
     console.error('❌ Proxy error:', err.message, 'for', req.method, req.url)
@@ -61,9 +59,6 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor de producción corriendo en puerto ${PORT}`)
-  console.log(`📡 Proxy API configurado: /api -> http://187.188.66.56:8024`)
-  console.log(`🌐 CORS habilitado para todos los orígenes`)
-  console.log(`🔗 URL: http://187.188.66.56:${PORT}`)
 })
 
 // Manejo de rutas SPA
@@ -72,7 +67,5 @@ app.get('*', (req, res) => {
 })
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor de producción corriendo en puerto ${PORT}`)
-  console.log(`📡 Proxy API configurado: /api -> http://187.188.66.56:8024`)
-  console.log(`🌐 CORS habilitado para todos los orígenes`)
+
 })

@@ -220,15 +220,12 @@
     <!-- CONTENIDO -->
     <q-page-container>
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-        <div v-if="selectedFlow === 'mobile'" class="flow-container mobile-flow">
+        <div class="flow-container" style="min-height: 100vh">
           <router-view />
-        </div>
-        <div v-else class="flow-container desktop-flow">
+
+          <!-- Diálogo global de filtros (se mantiene para rutas que lo usen) -->
           <q-dialog v-model="showFilters" persistent>
             <q-card style="min-width: 350px; background: #1e1e2f">
-              <!-- <q-card-section>
-                <div class="text-h6">Filtros Avanzados</div>
-              </q-card-section> -->
               <q-card-section>
                 <EscritorioFiltros @filtrar="onFiltrar" />
               </q-card-section>
@@ -238,13 +235,7 @@
             </q-card>
           </q-dialog>
 
-          <div class="row q-col-gutter-md">
-            <div class="col-12">
-              <EscritorioGraficasEnhanced :filtros="filtros" />
-            </div>
-          </div>
-
-          <!-- Componente de consola que se abre como modal -->
+          <!-- Componentes globales accesibles desde cualquier página -->
           <EscritorioConsolaSimple ref="consolaRef" />
 
           <EscritorioDetalleModal
@@ -263,7 +254,6 @@ import { ref, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
-import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGraficasEnhanced.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 

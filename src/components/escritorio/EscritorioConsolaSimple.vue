@@ -1045,6 +1045,7 @@ const opcionesTiposLog = ref([
   { label: 'WARNING', value: 'WARNING' },
   { label: 'START', value: 'START' },
   { label: 'END', value: 'END' },
+  { label: 'FIN (Error de escaneo)', value: 'FIN' },
   { label: 'EXPORT', value: 'EXPORT' },
   { label: 'DETAIL', value: 'DETAIL' },
   { label: 'CONECTADO', value: 'CONECTADO' },
@@ -1909,7 +1910,7 @@ const normalizarDatosLogs = (logsOriginales) => {
 }
 
 const aplicarFiltrosDesdeGraficas = (filtrosGrafica) => {
-  console.log('Aplicando filtros desde gráficas:', filtrosGrafica)
+  console.log('🎯 Aplicando filtros desde gráficas:', filtrosGrafica)
 
   // Resetear filtros primero
   filtroOficina.value = null
@@ -1937,12 +1938,34 @@ const aplicarFiltrosDesdeGraficas = (filtrosGrafica) => {
     filtroUsuario.value = filtrosGrafica.usuario
   }
 
+  // 🎯 FILTROS ESPECÍFICOS MEJORADOS
   if (filtrosGrafica.tipoLog) {
-    filtroTipoLog.value = filtrosGrafica.tipoLog
+    // Mapear tipos específicos a los valores exactos del select
+    const tipoMap = {
+      ERROR: 'ERROR', // Errores de cualquier proceso
+      SUCCESS: 'SUCCESS', // Éxitos (principalmente login)
+      EXPORT: 'EXPORT', // Exportaciones
+      START: 'START', // Inicio de escaneo
+      END: 'END', // Fin exitoso de escaneo
+      FIN: 'FIN', // Fin con error de escaneo
+      INFO: 'INFO',
+      WARNING: 'WARNING',
+    }
+    filtroTipoLog.value = tipoMap[filtrosGrafica.tipoLog] || filtrosGrafica.tipoLog
+    console.log(`🎯 Filtro tipo aplicado: ${filtrosGrafica.tipoLog} → ${filtroTipoLog.value}`)
   }
 
   if (filtrosGrafica.proceso) {
-    filtroProceso.value = filtrosGrafica.proceso
+    // Mapear procesos específicos a los valores exactos del select
+    const procesoMap = {
+      LOGIN: 'LOGIN', // Proceso de autenticación
+      REGISTER: 'REGISTER', // Proceso de registro
+      INE: 'INE', // Proceso de escaneo INE
+      PASSPORT: 'PASSPORT', // Proceso de escaneo PASAPORTE
+      SESSION: 'SESSION', // Sesiones
+    }
+    filtroProceso.value = procesoMap[filtrosGrafica.proceso] || filtrosGrafica.proceso
+    console.log(`🎯 Filtro proceso aplicado: ${filtrosGrafica.proceso} → ${filtroProceso.value}`)
   }
 
   if (filtrosGrafica.dispositivo) {
@@ -1953,7 +1976,7 @@ const aplicarFiltrosDesdeGraficas = (filtrosGrafica) => {
     filtroEscaner.value = filtrosGrafica.escaner
   }
 
-  console.log('Filtros aplicados desde gráficas:', {
+  console.log('✅ Filtros aplicados desde gráficas:', {
     rangoFechas: rangoFechas.value,
     filtroOficina: filtroOficina.value,
     filtroUsuario: filtroUsuario.value,
@@ -2497,7 +2520,7 @@ const obtenerOpcionesUnicas = () => {
   }))
   opcionesOficinas.value = [...oficinasFull.value]
 
-  // Obtener usuarios únicos con múltiples campos
+  // Obtener usuarios únicos with múltiples campos
   const usuariosUnicos = [
     ...new Set(
       logs.value

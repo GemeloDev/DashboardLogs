@@ -41,14 +41,14 @@
                   <q-icon name="verified_user" size="32px" class="kpi-icon" />
                 </div>
                 <div class="kpi-data">
-                  <div class="kpi-title">Logins Exitosos</div>
-                  <div class="kpi-value">{{ totalLoginExitosos }}</div>
+                  <div class="kpi-title">Logins</div>
+                  <div class="kpi-value">{{ totalLogin }}</div>
                   <div class="kpi-subtitle">Autenticaciones</div>
                 </div>
               </div>
               <q-tooltip>
                 <div class="text-body2">
-                  <div class="text-weight-bold">Logins Exitosos</div>
+                  <div class="text-weight-bold">Logins del Sistema</div>
                   <div>Click para ver detalles de autenticación</div>
                 </div>
               </q-tooltip>
@@ -80,8 +80,35 @@
           </q-card>
         </div>
 
-        <!-- KPI Exportaciones -->
+        <!-- KPI Escaneos -->
         <div class="col-12 col-sm-6 col-md-3">
+          <q-card class="kpi-card gradient-cyan" @click="abrirConsolaGeneral('escaneos')">
+            <q-card-section class="q-pa-md">
+              <div class="kpi-content">
+                <div class="kpi-icon-container">
+                  <q-icon name="qr_code_scanner" size="32px" class="kpi-icon" />
+                </div>
+                <div class="kpi-data">
+                  <div class="kpi-title">Escaneos</div>
+                  <div class="kpi-value">{{ totalEscaneos }}</div>
+                  <div class="kpi-subtitle">INE y Pasaporte</div>
+                </div>
+              </div>
+              <q-tooltip>
+                <div class="text-body2">
+                  <div class="text-weight-bold">Total de Escaneos</div>
+                  <div>Click para ver historial de escaneos</div>
+                </div>
+              </q-tooltip>
+            </q-card-section>
+          </q-card>
+        </div>
+      </div>
+
+      <!-- Segunda fila: KPIs adicionales -->
+      <div class="row q-col-gutter-md q-mb-lg">
+        <!-- KPI Exportaciones -->
+        <div class="col-12 col-sm-6 col-md-6">
           <q-card class="kpi-card gradient-orange" @click="abrirConsolaGeneral('exportaciones')">
             <q-card-section class="q-pa-md">
               <div class="kpi-content">
@@ -98,6 +125,30 @@
                 <div class="text-body2">
                   <div class="text-weight-bold">Total de Exportaciones</div>
                   <div>Click para ver historial de exportaciones</div>
+                </div>
+              </q-tooltip>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- KPI Logins Exitosos -->
+        <div class="col-12 col-sm-6 col-md-6">
+          <q-card class="kpi-card gradient-green" @click="abrirConsolaGeneral('login')">
+            <q-card-section class="q-pa-md">
+              <div class="kpi-content">
+                <div class="kpi-icon-container">
+                  <q-icon name="verified_user" size="32px" class="kpi-icon" />
+                </div>
+                <div class="kpi-data">
+                  <div class="kpi-title">Logins Exitosos</div>
+                  <div class="kpi-value">{{ totalLoginExitosos }}</div>
+                  <div class="kpi-subtitle">Autenticaciones</div>
+                </div>
+              </div>
+              <q-tooltip>
+                <div class="text-body2">
+                  <div class="text-weight-bold">Logins Exitosos</div>
+                  <div>Click para ver detalles de autenticación exitosa</div>
                 </div>
               </q-tooltip>
             </q-card-section>
@@ -413,6 +464,7 @@ const abrirConsolaGeneral = (tipo) => {
 
   let datos = []
   let titulo = ''
+  let filtrosEspecificos = {}
 
   switch (tipo) {
     case 'todos':
@@ -421,20 +473,43 @@ const abrirConsolaGeneral = (tipo) => {
         ...datosRegistro.value.detalles,
         ...datosErrores.value.detalles,
         ...(datosExportaciones.value.detalles || []),
+        ...(datosEscaneos.value.detalles || []),
       ]
       titulo = 'Todos los Logs del Sistema'
+      // Sin filtros específicos - mostrar todo
       break
     case 'login':
-      datos = datosLogin.value.detalles.filter((d) => d.tipo === 'SUCCESS')
-      titulo = 'Logins Exitosos'
+      // Login incluye SUCCESS y ERROR del proceso LOGIN
+      datos = datosLogin.value.detalles
+      titulo = 'Logs de Autenticación'
+      filtrosEspecificos = {
+        proceso: 'LOGIN', // Filtrar solo por proceso LOGIN
+      }
       break
     case 'errores':
+      // Errores incluye todos los ERROR de cualquier proceso
       datos = datosErrores.value.detalles
       titulo = 'Errores del Sistema'
+      filtrosEspecificos = {
+        tipoLog: 'ERROR', // Filtrar solo por tipo ERROR
+      }
       break
     case 'exportaciones':
+      // Exportaciones incluye los de tipo EXPORT (usualmente proceso INE)
       datos = datosExportaciones.value.detalles || []
       titulo = 'Historial de Exportaciones'
+      filtrosEspecificos = {
+        tipoLog: 'EXPORT',
+      }
+      break
+    case 'escaneos':
+      // Escaneos incluye START, END, FIN de procesos INE y PASSPORT
+      datos = datosEscaneos.value.detalles || []
+      titulo = 'Actividad de Escaneos'
+      filtrosEspecificos = {
+        // Filtrar escaneos: tipos START, END, FIN
+        proceso: 'INE', // Principalmente INE, pero pueden ser PASSPORT también
+      }
       break
   }
 
@@ -486,7 +561,20 @@ const abrirConsolaGeneral = (tipo) => {
     Hora: detalle.hora || 'No especificada',
   }))
 
-  consolaRef.value.abrirConsola(logsFormateados, titulo, props.filtros)
+  // 🎯 Combinar filtros del padre con filtros específicos del tipo
+  const filtrosFinales = {
+    ...props.filtros,
+    ...filtrosEspecificos,
+  }
+
+  console.log(`🎯 Abriendo consola para ${tipo}:`, {
+    datos: datos.length,
+    titulo,
+    filtrosEspecificos,
+    filtrosFinales,
+  })
+
+  consolaRef.value.abrirConsola(logsFormateados, titulo, filtrosFinales)
 }
 
 // Configuraciones de Chart.js con tooltips mejorados
@@ -1445,8 +1533,37 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
 
   const filtroTexto = `${tipoLabel} - ${fecha} (${logsFormateados.length} registros)`
 
-  // Abrir la consola con los datos filtrados Y los filtros originales
-  consolaRef.value.abrirConsola(logsFormateados, filtroTexto, props.filtros)
+  // 🎯 Crear filtros específicos basados en el tipo de gráfica
+  let filtrosEspecificos = {}
+  switch (tipoGrafica) {
+    case 'login':
+      filtrosEspecificos = { proceso: 'LOGIN' }
+      break
+    case 'errores':
+      filtrosEspecificos = { tipoLog: 'ERROR' }
+      break
+    case 'exportaciones':
+      filtrosEspecificos = { tipoLog: 'EXPORT' }
+      break
+    case 'escaneos':
+      filtrosEspecificos = {
+        // Los escaneos pueden incluir múltiples tipos: START, END, FIN
+        proceso: 'INE', // Principalmente INE, puede ser PASSPORT también
+      }
+      break
+    case 'registro':
+      filtrosEspecificos = { proceso: 'REGISTER' }
+      break
+  }
+
+  // Combinar filtros originales con específicos
+  const filtrosFinales = {
+    ...props.filtros,
+    ...filtrosEspecificos,
+  }
+
+  // Abrir la consola con los datos filtrados Y los filtros específicos
+  consolaRef.value.abrirConsola(logsFormateados, filtroTexto, filtrosFinales)
 }
 
 // Función para actualizar todas las gráficas
@@ -1665,6 +1782,11 @@ onBeforeUnmount(() => {
   &.gradient-orange {
     background: linear-gradient(145deg, rgba(255, 152, 0, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
     border-color: rgba(255, 152, 0, 0.3);
+  }
+
+  &.gradient-cyan {
+    background: linear-gradient(145deg, rgba(0, 188, 212, 0.2) 0%, rgba(0, 150, 136, 0.1) 100%);
+    border-color: rgba(0, 188, 212, 0.3);
   }
 }
 
