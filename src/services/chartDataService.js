@@ -52,11 +52,6 @@ export class ChartDataService {
         return this.getEmptyChartData()
       }
 
-      // Si es PRO FEATURE ONLY, usar datos de ejemplo temporalmente para debugging
-      if (response.data === 'PRO FEATURE ONLY') {
-        return this.getSampleExportacionesData()
-      }
-
       // Si no es array o está vacío, retornar estado vacío
       if (!Array.isArray(response.data) || response.data.length === 0) {
         console.log('⚠️ API sin datos de exportaciones válidos (no array o vacío) - retornando estado vacío')
@@ -68,11 +63,6 @@ export class ChartDataService {
       console.error('❌ Error al obtener datos de exportaciones:', error)
 
       // Retornar estado vacío en caso de error
-      if (error.response?.status === 500) {
-        console.log('🔄 Error 500, retornando estado vacío para exportaciones')
-        return this.getEmptyChartData()
-      }
-
       return this.getEmptyChartData()
     }
   }
@@ -111,16 +101,17 @@ export class ChartDataService {
       categorias,
       detalles: [],
       isEmpty: false,
-      isSample: true
+      esDatosDeMuestra: true
     }
   }
 
   // Procesar datos de exportaciones
   static processExportacionesData(rawData) {
-    console.log('Raw data para exportaciones:', rawData)
+    console.log('🔄 Procesando datos de exportaciones. Cantidad de items:', rawData.length)
+    console.log('📋 Primeros 3 items:', rawData.slice(0, 3))
 
     if (!Array.isArray(rawData) || rawData.length === 0) {
-      console.log('No hay datos válidos para exportaciones')
+      console.log('❌ No hay datos válidos para exportaciones')
       return this.getEmptyChartData()
     }
 
@@ -233,7 +224,16 @@ export class ChartDataService {
       }
     ]
 
-    return { series, categorias, detalles }
+    console.log('📊 Datos finales procesados - Series:', series.length, 'Categorías:', categorias.length, 'Detalles:', detalles.length)
+    console.log('📈 Series data:', series.map(s => ({ name: s.name, data: s.data })))
+
+    return {
+      series,
+      categorias,
+      detalles,
+      isEmpty: false,
+      esDatosDeMuestra: false
+    }
   }
 
   // Función helper para retornar datos vacíos
@@ -324,10 +324,6 @@ export class ChartDataService {
 
       // Verificar si la respuesta es válida y tiene datos
       if (!Array.isArray(response.data)) {
-        if (response.data === 'PRO FEATURE ONLY') {
-          console.log('⚠️ API retornó PRO FEATURE ONLY para tiempos - usando datos de ejemplo temporalmente')
-          return this.generateSampleTiemposData()
-        }
         console.log('⚠️ API sin datos de tiempos válidos - retornando estado vacío')
         return this.getEmptyChartData()
       }
@@ -341,12 +337,6 @@ export class ChartDataService {
       return this.processTiemposData({ matchedLogs: response.data })
     } catch (error) {
       console.error('❌ Error obteniendo datos de tiempos:', error)
-
-      if (error.response?.status === 500) {
-        console.log('🔄 Error 500, usando datos de ejemplo temporalmente para tiempos')
-        return this.generateSampleTiemposData()
-      }
-
       return this.getEmptyChartData()
     }
   }
@@ -364,8 +354,7 @@ export class ChartDataService {
     if (!Array.isArray(matchedLogs) || matchedLogs.length === 0) {
       console.log('⚠️ No hay matchedLogs válidos para tiempos')
       console.log('⚠️ matchedLogs length:', matchedLogs?.length)
-      console.log('⚠️ Usando datos de ejemplo temporalmente...')
-      return this.generateSampleTiemposData()
+      return this.getEmptyChartData()
     }
 
     const agrupados = {}
@@ -471,7 +460,14 @@ export class ChartDataService {
       promedios
     })
 
-    return { series, categorias, detalles, promedios }
+    return {
+      series,
+      categorias,
+      detalles,
+      promedios,
+      isEmpty: false,
+      esDatosDeMuestra: false
+    }
   }
 
   // Generar datos de ejemplo para tiempos
@@ -559,10 +555,6 @@ export class ChartDataService {
 
       // Verificar si la respuesta es válida y tiene datos
       if (!Array.isArray(response.data)) {
-        if (response.data === 'PRO FEATURE ONLY') {
-          console.log('⚠️ API retornó PRO FEATURE ONLY para escaneos - usando datos de ejemplo temporalmente')
-          return this.generateSampleEscaneosData()
-        }
         console.log('⚠️ API sin datos de escaneos válidos - retornando estado vacío')
         return this.getEmptyChartData()
       }
@@ -576,12 +568,6 @@ export class ChartDataService {
       return this.processEscaneosData({ matchedLogs: response.data })
     } catch (error) {
       console.error('❌ Error obteniendo datos de escaneos:', error)
-
-      if (error.response?.status === 500) {
-        console.log('🔄 Error 500, usando datos de ejemplo temporalmente para escaneos')
-        return this.generateSampleEscaneosData()
-      }
-
       return this.getEmptyChartData()
     }
   }
@@ -599,8 +585,7 @@ export class ChartDataService {
     if (!Array.isArray(matchedLogs) || matchedLogs.length === 0) {
       console.log('⚠️ No hay matchedLogs válidos para escaneos')
       console.log('⚠️ matchedLogs length:', matchedLogs?.length)
-      console.log('⚠️ Usando datos de ejemplo temporalmente...')
-      return this.generateSampleEscaneosData()
+      return this.getEmptyChartData()
     }
 
     const agrupados = {}
@@ -731,7 +716,13 @@ export class ChartDataService {
       }
     ]
 
-    return { series, categorias, detalles }
+    return {
+      series,
+      categorias,
+      detalles,
+      isEmpty: false,
+      esDatosDeMuestra: false
+    }
   }
 
   // 4. Gráfica de Login con manejo robusto de errores
@@ -791,10 +782,10 @@ export class ChartDataService {
         errorStatus: results[1].status
       })
 
-      // Solo usar datos de ejemplo temporalmente si AMBOS endpoints fallan completamente
+      // Solo retornar vacío si AMBOS endpoints fallan completamente
       if (successData.length === 0 && errorData.length === 0) {
-        console.log('⚠️ API sin datos de login válidos - usando datos de ejemplo temporalmente')
-        return this.generateSampleLoginData()
+        console.log('⚠️ API sin datos de login válidos - retornando estado vacío')
+        return this.getEmptyChartData()
       }
 
       const combinedData = [...successData, ...errorData]
@@ -803,12 +794,6 @@ export class ChartDataService {
       return this.processLoginData(combinedData)
     } catch (error) {
       console.error('❌ Error obteniendo datos de login:', error)
-
-      if (error.response?.status === 500) {
-        console.log('🔄 Error 500, usando datos de ejemplo temporalmente para login')
-        return this.generateSampleLoginData()
-      }
-
       return this.getEmptyChartData()
     }
   }
@@ -883,7 +868,13 @@ export class ChartDataService {
       }
     ]
 
-    return { series, categorias, detalles }
+    return {
+      series,
+      categorias,
+      detalles,
+      isEmpty: false,
+      esDatosDeMuestra: false
+    }
   }
 
   // Generar datos de ejemplo para login
@@ -1032,7 +1023,13 @@ export class ChartDataService {
       }
     ].filter(serie => serie.data.some(valor => valor > 0))
 
-    return { series, categorias, detalles }
+    return {
+      series,
+      categorias,
+      detalles,
+      isEmpty: false,
+      esDatosDeMuestra: false
+    }
   }
 
   // Generar datos de ejemplo para registro
@@ -1178,7 +1175,13 @@ export class ChartDataService {
       }
     ]
 
-    return { series, categorias, detalles }
+    return {
+      series,
+      categorias,
+      detalles,
+      isEmpty: false,
+      esDatosDeMuestra: false
+    }
   }
 
   // Generar datos de ejemplo para errores

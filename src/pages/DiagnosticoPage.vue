@@ -13,7 +13,7 @@
               Análisis de códigos de error, sesiones y soporte técnico especializado
             </p>
           </div>
-          <div class="col-auto">
+          <!-- <div class="col-auto">
             <q-btn
               color="primary"
               icon="dashboard"
@@ -21,7 +21,7 @@
               @click="$router.push('/logs')"
               outline
             />
-          </div>
+          </div> -->
         </div>
       </div>
 

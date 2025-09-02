@@ -250,7 +250,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, provide } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
@@ -267,6 +267,10 @@ const detalleModal = ref(null)
 const showFilters = ref(false)
 const consolaRef = ref(null)
 
+// Proporcionar el estado del flujo a los componentes hijos
+provide('selectedFlow', selectedFlow)
+provide('filtrosGlobales', filtros)
+
 // Información del usuario
 const userInfo = ref({
   nombre: 'Usuario',
@@ -274,14 +278,23 @@ const userInfo = ref({
 })
 
 // Observar cambios en el flujo seleccionado
-watch(selectedFlow, (newFlow) => {
-  const message = newFlow === 'mobile' ? 'Cambiado a vista móvil' : 'Cambiado a vista de escritorio'
+watch(selectedFlow, (newFlow, oldFlow) => {
+  if (newFlow !== oldFlow) {
+    const message =
+      newFlow === 'mobile' ? 'Cambiado a vista móvil' : 'Cambiado a vista de escritorio'
 
-  $q.notify({
-    message,
-    color: 'info',
-    icon: newFlow === 'mobile' ? 'smartphone' : 'desktop_windows',
-  })
+    $q.notify({
+      message,
+      color: 'info',
+      icon: newFlow === 'mobile' ? 'smartphone' : 'desktop_windows',
+    })
+
+    // Emitir evento personalizado para comunicar el cambio a componentes hijos
+    window.dispatchEvent(new CustomEvent('cambiar-flujo', { detail: newFlow }))
+
+    // También actualizar el localStorage para persistencia
+    localStorage.setItem('selectedFlow', newFlow)
+  }
 })
 
 function toggleLeftDrawer() {
@@ -289,7 +302,9 @@ function toggleLeftDrawer() {
 }
 
 function onFiltrar(val) {
+  console.log('🔄 MainLayout: Aplicando filtros:', val)
   filtros.value = val
+  console.log('📋 MainLayout: Filtros globales actualizados:', filtros.value)
   showFilters.value = false
   $q.notify({
     message: 'Filtros aplicados',
@@ -385,6 +400,12 @@ const cerrarSesionDirectamente = () => {
 // Cargar información del usuario al montar
 onMounted(() => {
   loadUserInfo()
+
+  // Cargar el flujo seleccionado desde localStorage
+  const savedFlow = localStorage.getItem('selectedFlow')
+  if (savedFlow && (savedFlow === 'mobile' || savedFlow === 'escritorio')) {
+    selectedFlow.value = savedFlow
+  }
 })
 </script>
 

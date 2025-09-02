@@ -3,282 +3,255 @@
     <q-page class="q-pa-md" style="background-color: #121826">
       <q-card flat bordered class="q-pa-md" style="background-color: #121826">
         <div v-if="!modoSeleccionado">
-          <!-- <div class="row q-col-gutter-md q-mt-xl justify-center">
-            <q-card
-              flat
-              bordered
-              class="col-12 col-md-4 q-pa-xl text-white q-mx-md selector-card"
-              @click="seleccionarModo('mobile')"
-              style="
-                background: linear-gradient(135deg, #1e1e2f 80%, #2c2c44 100%);
-                border-radius: 24px;
-                cursor: pointer;
-                transition: box-shadow 0.2s;
-                box-shadow: 0 2px 16px #0004;
-              "
-            >
-              <div class="column items-center">
-                <q-icon name="smartphone" color="primary" size="100px" />
-                <div class="text-h4 q-mt-md">Mobile</div>
-                <div class="text-body1 q-mt-md text-center">
-                  Accede desde tu dispositivo móvil para visualizar logs y estadísticas en tiempo
-                  real.
+          <transition name="fade" mode="out-in">
+            <div class="row q-col-gutter-md q-mt-xl justify-center" v-if="!modoSeleccionado">
+              <q-card
+                flat
+                bordered
+                class="col-12 col-md-4 q-pa-xl text-white q-mx-md selector-card"
+                @click="seleccionarModo('mobile')"
+                style="
+                  background: linear-gradient(135deg, #1e1e2f 80%, #2c2c44 100%);
+                  border-radius: 24px;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                  box-shadow: 0 2px 16px #0004;
+                "
+                onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 32px #0008'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 16px #0004'"
+              >
+                <div class="column items-center">
+                  <q-icon name="smartphone" color="primary" size="100px" />
+                  <div class="text-h4 q-mt-md">Mobile</div>
+                  <div class="text-body1 q-mt-md text-center">
+                    Accede desde tu dispositivo móvil para visualizar logs y estadísticas en tiempo
+                    real.
+                  </div>
                 </div>
-              </div>
-            </q-card>
-            <q-card
-              flat
-              bordered
-              class="col-12 col-md-4 q-pa-xl text-white q-mx-md selector-card"
-              @click="seleccionarModo('escritorio')"
-              style="
-                background: linear-gradient(135deg, #232345 80%, #2c2c44 100%);
-                border-radius: 24px;
-                cursor: pointer;
-                transition: box-shadow 0.2s;
-                box-shadow: 0 2px 16px #0004;
-              "
-            >
-              <div class="column items-center">
-                <q-icon name="desktop_windows" color="secondary" size="100px" />
-                <div class="text-h4 q-mt-md">Escritorio</div>
-                <div class="text-body1 q-mt-md text-center">
-                  Visualiza el flujo completo del plan de desarrollo y funcionalidades avanzadas.
+              </q-card>
+              <q-card
+                flat
+                bordered
+                class="col-12 col-md-4 q-pa-xl text-white q-mx-md selector-card"
+                @click="seleccionarModo('escritorio')"
+                style="
+                  background: linear-gradient(135deg, #232345 80%, #2c2c44 100%);
+                  border-radius: 24px;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                  box-shadow: 0 2px 16px #0004;
+                "
+                onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 32px #0008'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 16px #0004'"
+              >
+                <div class="column items-center">
+                  <q-icon name="desktop_windows" color="secondary" size="100px" />
+                  <div class="text-h4 q-mt-md">Escritorio</div>
+                  <div class="text-body1 q-mt-md text-center">
+                    Visualiza el flujo completo del plan de desarrollo y funcionalidades avanzadas.
+                  </div>
                 </div>
-              </div>
-            </q-card>
-          </div> -->
+              </q-card>
+            </div>
+          </transition>
         </div>
         <div v-else-if="modoSeleccionado === 'mobile'">
-          <div class="row q-mt-md justify-end">
-            <q-btn
-              color="accent"
-              icon="arrow_back"
-              label="Regresar al selector"
-              @click="modoSeleccionado = null"
-              flat
-              rounded
-              class="q-mb-md"
-            />
-          </div>
-          <!-- Aquí va el flujo actual de la app -->
-          <div class="text-h3 text-white text-center">Logs Biométricos</div>
-          <log-filters @filter="onFilter" />
-          <div class="row q-col-gutter-md q-mt-md justify-center">
-            <!-- Usuarios Offline -->
-            <q-card
-              flat
-              bordered
-              class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
-              style="background-color: #1e1e2f; border-radius: 12px"
-            >
-              <div class="column items-center">
-                <q-icon name="cloud_off" color="orange" size="xl" />
-                <div class="text-subtitle1 q-mt-sm">Offline</div>
-                <div class="text-h5">{{ counters.Offline }}</div>
-              </div>
-            </q-card>
-            <!-- Fin usuarios Offline -->
-            <!-- Usuarios validados de TFLIFE -->
-            <q-card
-              flat
-              bordered
-              class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
-              style="background-color: #1e1e2f; border-radius: 12px"
-            >
-              <div class="column items-center">
-                <q-icon name="check_circle_outline" size="xl" class="text-positive q-mb-sm" />
-                <div class="text-subtitle2 q-mt-sm">Validados TFLIFE</div>
-                <div class="text-h5">{{ validadosTFLITE }}</div>
-              </div>
-            </q-card>
-            <!-- Fin Usuarios validados de TFLIFE -->
-            <!-- Porcentaje Offline -->
-            <q-card
-              flat
-              bordered
-              class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
-              style="background-color: #1e1e2f; border-radius: 12px"
-            >
-              <div class="column items-center">
-                <q-icon name="percent" color="blue" size="xl" />
-                <div class="text-subtitle1 q-mt-sm">% Offline</div>
-                <div class="text-h5">{{ porcentajeOffline.toFixed(1) }}%</div>
-              </div>
-            </q-card>
-            <!-- Fin Porcentaje Offline -->
-          </div>
-          <div class="row q-col-gutter-md q-mt-lg justify-center">
-            <br />
-            <div class="col-12 col-lg-6 q-mx-sm text-white">
-              <!-- Funcionalidades más usadas -->
-              <q-card style="background-color: #1e1e2f">
-                <q-card-section>
-                  <div class="text-h6 text-center">Funcionalidades más usadas</div>
-                  <div class="chart-wrapper">
-                    <canvas
-                      ref="funcionalidadesChartRef"
-                      style="height: 420px; max-width: 100%"
-                    ></canvas>
+
+          <transition name="slide-fade" mode="out-in">
+            <div class="mobile-content" v-if="modoSeleccionado === 'mobile'">
+              <!-- Aquí va el flujo actual de la app -->
+              <div class="text-h3 text-white text-center">Logs Biométricos</div>
+
+              <!-- Mensaje cuando no hay datos -->
+              <!-- <div v-if="noHayDatos" class="q-mb-lg">
+                <NoDataMessage
+                  title="No hay datos disponibles"
+                  subtitle="No se encontraron registros en el período seleccionado"
+                  description="Intenta cambiar las fechas en los filtros para ver más información"
+                  icon="analytics"
+                  icon-color="primary"
+                  :animated="true"
+                />
+              </div> -->
+
+              <div >
+                <log-filters @filter="onFilter" />
+                <div class="row q-col-gutter-md q-mt-md justify-center">
+                  <!-- Usuarios Offline -->
+                  <q-card
+                    flat
+                    bordered
+                    class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
+                    style="background-color: #1e1e2f; border-radius: 12px"
+                  >
+                    <div class="column items-center">
+                      <q-icon name="cloud_off" color="orange" size="xl" />
+                      <div class="text-subtitle1 q-mt-sm">Offline</div>
+                      <div class="text-h5">{{ counters.Offline }}</div>
+                    </div>
+                  </q-card>
+                  <!-- Fin usuarios Offline -->
+                  <!-- Usuarios validados de TFLIFE -->
+                  <q-card
+                    flat
+                    bordered
+                    class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
+                    style="background-color: #1e1e2f; border-radius: 12px"
+                  >
+                    <div class="column items-center">
+                      <q-icon name="check_circle_outline" size="xl" class="text-positive q-mb-sm" />
+                      <div class="text-subtitle2 q-mt-sm">Validados TFLIFE</div>
+                      <div class="text-h5">{{ validadosTFLITE }}</div>
+                    </div>
+                  </q-card>
+                  <!-- Fin Usuarios validados de TFLIFE -->
+                  <!-- Porcentaje Offline -->
+                  <q-card
+                    flat
+                    bordered
+                    class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
+                    style="background-color: #1e1e2f; border-radius: 12px"
+                  >
+                    <div class="column items-center">
+                      <q-icon name="percent" color="blue" size="xl" />
+                      <div class="text-subtitle1 q-mt-sm">% Offline</div>
+                      <div class="text-h5">{{ porcentajeOffline.toFixed(1) }}%</div>
+                    </div>
+                  </q-card>
+                  <!-- Fin Porcentaje Offline -->
+                </div>
+                <div class="row q-col-gutter-md q-mt-lg justify-center">
+                  <br />
+                  <div class="col-12 col-lg-6 q-mx-sm text-white">
+                    <!-- Funcionalidades más usadas -->
+                    <q-card style="background-color: #1e1e2f">
+                      <q-card-section>
+                        <div class="text-h6 text-center">Funcionalidades más usadas</div>
+                        <div class="chart-wrapper">
+                          <canvas
+                            ref="funcionalidadesChartRef"
+                            style="height: 420px; max-width: 100%"
+                          ></canvas>
+                          <div
+                            v-if="!funcionalidadesData || funcionalidadesData.length === 0"
+                            class="no-data-overlay"
+                          >
+                            <NoDataMessage
+                              title="Sin datos de funcionalidades"
+                              subtitle="No se encontraron registros de uso de funcionalidades"
+                              description="Los datos aparecerán aquí cuando se utilicen las diferentes funcionalidades del sistema"
+                              icon="apps"
+                              icon-color="blue"
+                              :animated="true"
+                            />
+                          </div>
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                    <!--Fin de la grafica resultado De-->
                   </div>
-                </q-card-section>
-              </q-card>
-              <!--Fin de la grafica resultado De-->
-            </div>
-            <br />
-            <div class="col-12 col-lg-6 q-mx-sm text-white">
-              <!-- Tiempo de Respuesta Promedio -->
-              <q-card style="background-color: #1e1e2f">
-                <q-card-section>
-                  <div class="text-h6 text-center">Tiempo de Respuesta Promedio</div>
-                  <div class="chart-wrapper">
-                    <canvas ref="chartTiempoRef" style="height: 420px; max-width: 100%"></canvas>
+                  <br />
+                  <div class="col-12 col-lg-6 q-mx-sm text-white">
+                    <!-- Tiempo de Respuesta Promedio -->
+                    <q-card style="background-color: #1e1e2f">
+                      <q-card-section>
+                        <div class="text-h6 text-center">Tiempo de Respuesta Promedio</div>
+                        <div class="chart-wrapper">
+                          <canvas
+                            ref="chartTiempoRef"
+                            style="height: 420px; max-width: 100%"
+                          ></canvas>
+                          <div
+                            v-if="!tiempoPromedioData || tiempoPromedioData.length === 0"
+                            class="no-data-overlay"
+                          >
+                            <NoDataMessage
+                              title="Sin datos de rendimiento"
+                              subtitle="No se encontraron mediciones de tiempo de respuesta"
+                              description="Los datos de rendimiento aparecerán aquí cuando se realicen operaciones en el sistema"
+                              icon="speed"
+                              icon-color="green"
+                              :animated="true"
+                            />
+                          </div>
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                    <!--Fin de la grafica timpo de respuesta promedio-->
                   </div>
-                </q-card-section>
-              </q-card>
-              <!--Fin de la grafica timpo de respuesta promedio-->
-            </div>
-            <br />
-            <div class="col-12 col-lg-6 q-mx-sm text-white">
-              <!-- Resultado del Evento -->
-              <q-card style="background-color: #1e1e2f">
-                <q-card-section>
-                  <div class="text-h6 text-center">Resultado del Evento</div>
-                  <div class="chart-wrapper">
-                    <canvas ref="ovalChartRef" style="height: 420px; max-width: 100%"></canvas>
+                  <br />
+                  <div class="col-12 col-lg-6 q-mx-sm text-white">
+                    <!-- Resultado del Evento -->
+                    <q-card style="background-color: #1e1e2f">
+                      <q-card-section>
+                        <div class="text-h6 text-center">Resultado del Evento</div>
+                        <div class="chart-wrapper">
+                          <canvas
+                            ref="ovalChartRef"
+                            style="height: 420px; max-width: 100%"
+                          ></canvas>
+                          <div
+                            v-if="!ovalAlineadoData || ovalAlineadoData.length === 0"
+                            class="no-data-overlay"
+                          >
+                            <NoDataMessage
+                              title="Sin datos de eventos"
+                              subtitle="No se encontraron resultados de eventos"
+                              description="Los resultados de eventos aparecerán aquí cuando se procesen operaciones"
+                              icon="event"
+                              icon-color="purple"
+                              :animated="true"
+                            />
+                          </div>
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                    <!--Fin de la grafica resultado Del evento-->
                   </div>
-                </q-card-section>
-              </q-card>
-              <!--Fin de la grafica resultado Del evento-->
+                </div>
+                <br />
+                <!-- Tabla de logs de dispositivos de usuarios -->
+                <div class="col-12 col-lg-6 q-mx-sm text-white">
+                  <div class="text-h6 text-center">Dispositivos de Usuarios</div>
+                  <div v-if="!logs || logs.length === 0" class="q-mt-lg">
+                    <NoDataMessage
+                      title="Sin registros de dispositivos"
+                      subtitle="No se encontraron logs de dispositivos de usuarios"
+                      description="Los registros aparecerán aquí cuando los usuarios utilicen sus dispositivos"
+                      icon="devices"
+                      icon-color="orange"
+                      :animated="true"
+                    />
+                  </div>
+                  <log-table v-else :logs="logs" class="q-mt-lg" />
+                </div>
+                <!-- Fin de la tabla de logs de dispositivos de usuarios -->
+              </div>
             </div>
-          </div>
-          <br />
-          <!-- Tabla de logs de dispositivos de usuarios -->
-          <div class="col-12 col-lg-6 q-mx-sm text-white">
-            <div class="text-h6 text-center">Dispositivos de Usuarios</div>
-            <log-table :logs="logs" class="q-mt-lg" />
-          </div>
-          <!-- Fin de la tabla de logs de dispositivos de usuarios -->
+          </transition>
         </div>
         <div v-else-if="modoSeleccionado === 'escritorio'">
-          <div class="row q-mt-md justify-end">
-            <q-btn
-              color="accent"
-              icon="arrow_back"
-              label="Regresar al selector"
-              @click="modoSeleccionado = null"
-              flat
-              rounded
-              class="q-mb-md"
-            />
-          </div>
-          <escritorio-flujo />
-        </div>
-        <div class="text-h3 text-white text-center">Logs Biométricos</div>
-        <log-filters @filter="onFilter" />
-        <div class="row q-col-gutter-md q-mt-md justify-center">
-          <!-- Usuarios Offline -->
-          <q-card
-            flat
-            bordered
-            class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
-            style="background-color: #1e1e2f; border-radius: 12px"
-          >
-            <div class="column items-center">
-              <q-icon name="cloud_off" color="orange" size="xl" />
-              <div class="text-subtitle1 q-mt-sm">Offline</div>
-              <div class="text-h5">{{ counters.Offline }}</div>
+
+          <transition name="slide-fade" mode="out-in">
+            <div class="escritorio-content" v-if="modoSeleccionado === 'escritorio'">
+              <FlujoEscritorio />
             </div>
-          </q-card>
-          <!-- Fin usuarios Offline -->
-          <!-- Usuarios validados de TFLIFE -->
-          <q-card
-            flat
-            bordered
-            class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
-            style="background-color: #1e1e2f; border-radius: 12px"
-          >
-            <div class="column items-center">
-              <q-icon name="check_circle_outline" size="xl" class="text-positive q-mb-sm" />
-              <div class="text-subtitle2 q-mt-sm">Validados TFLIFE</div>
-              <div class="text-h5">{{ validadosTFLITE }}</div>
-            </div>
-          </q-card>
-          <!-- Fin Usuarios validados de TFLIFE -->
-          <!-- Porcentaje Offline -->
-          <q-card
-            flat
-            bordered
-            class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
-            style="background-color: #1e1e2f; border-radius: 12px"
-          >
-            <div class="column items-center">
-              <q-icon name="percent" color="blue" size="xl" />
-              <div class="text-subtitle1 q-mt-sm">% Offline</div>
-              <div class="text-h5">{{ porcentajeOffline.toFixed(1) }}%</div>
-            </div>
-          </q-card>
-          <!-- Fin Porcentaje Offline -->
+          </transition>
         </div>
-        <div class="row q-col-gutter-md q-mt-lg justify-center">
-          <br />
-          <div class="col-12 col-lg-6 q-mx-sm text-white">
-            <!-- Funcionalidades más usadas -->
-            <q-card style="background-color: #1e1e2f">
-              <q-card-section>
-                <div class="text-h6 text-center">Funcionalidades más usadas</div>
-                <div class="chart-wrapper">
-                  <canvas
-                    ref="funcionalidadesChartRef"
-                    style="height: 420px; max-width: 100%"
-                  ></canvas>
-                </div>
-              </q-card-section>
-            </q-card>
-            <!--Fin de la grafica resultado De-->
-          </div>
-          <br />
-          <div class="col-12 col-lg-6 q-mx-sm text-white">
-            <!-- Tiempo de Respuesta Promedio -->
-            <q-card style="background-color: #1e1e2f">
-              <q-card-section>
-                <div class="text-h6 text-center">Tiempo de Respuesta Promedio</div>
-                <div class="chart-wrapper">
-                  <canvas ref="chartTiempoRef" style="height: 420px; max-width: 100%"></canvas>
-                </div>
-              </q-card-section>
-            </q-card>
-            <!--Fin de la grafica timpo de respuesta promedio-->
-          </div>
-          <br />
-          <div class="col-12 col-lg-6 q-mx-sm text-white">
-            <!-- Resultado del Evento -->
-            <q-card style="background-color: #1e1e2f">
-              <q-card-section>
-                <div class="text-h6 text-center">Resultado del Evento</div>
-                <div class="chart-wrapper">
-                  <canvas ref="ovalChartRef" style="height: 420px; max-width: 100%"></canvas>
-                </div>
-              </q-card-section>
-            </q-card>
-            <!--Fin de la grafica resultado Del evento-->
-          </div>
-        </div>
-        <br />
-        <!-- Tabla de logs de dispositivos de usuarios -->
-        <div class="col-12 col-lg-6 q-mx-sm text-white">
-          <div class="text-h6 text-center">Dispositivos de Usuarios</div>
-          <log-table :logs="logs" class="q-mt-lg" />
-        </div>
-        <!-- Fin de la tabla de logs de dispositivos de usuarios -->
       </q-card>
     </q-page>
+
+    <!-- Indicador de carga al cambiar de modo -->
+    <q-inner-loading :showing="loading">
+      <q-spinner-gears size="50px" color="primary" />
+      <div class="q-mt-md text-white">Cambiando de vista...</div>
+    </q-inner-loading>
   </q-layout>
 </template>
 
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, inject, computed, onMounted } from 'vue'
 import { Chart } from 'chart.js/auto'
 import {
   getUsuariosOffline,
@@ -291,6 +264,8 @@ import {
 } from 'src/services/api'
 import LogFilters from 'components/LogFilters.vue'
 import LogTable from 'components/LogTable.vue'
+import FlujoEscritorio from '../components/escritorio/FlujoEscritorio.vue'
+import NoDataMessage from 'components/NoDataMessage.vue'
 import { useFiltroFechasStore } from 'src/stores/filtroFechasStore'
 
 const logs = ref([])
@@ -307,25 +282,62 @@ let chartFuncionalidadesInstance = null
 const funcionalidadesChartRef = ref(null)
 const filtroFechasStore = useFiltroFechasStore()
 
+// Inyectar el estado del flujo desde el layout padre
+const selectedFlow = inject('selectedFlow', ref('mobile'))
+
+// Usar computed para determinar el modo seleccionado basado en el flujo inyectado
+const modoSeleccionado = computed(() =>
+  selectedFlow.value === 'escritorio' ? 'escritorio' : 'mobile'
+)
+
+const loading = ref(false)
+
+// Función para volver al selector de modos
+// function volverAlSelector() {
+//   selectedFlow.value = null
+// }
+
+// Función para seleccionar el modo
+function seleccionarModo(modo) {
+  loading.value = true
+  selectedFlow.value = modo
+  setTimeout(() => {
+    loading.value = false
+  }, 500)
+}
+
 const counters = ref({
   Offline: 0,
   Total: 0,
   Sincronizados: 0,
 })
 
-const modoSeleccionado = ref(null)
+// Computed para verificar si no hay datos
+// const noHayDatos = computed(() => {
+//   return (
+//     counters.value.Offline === 0 &&
+//     validadosTFLITE.value === 0 &&
+//     porcentajeOffline.value === 0 &&
+//     (!logs.value || logs.value.length === 0) &&
+//     (!tiempoPromedioData.value || tiempoPromedioData.value.length === 0) &&
+//     (!ovalAlineadoData.value || ovalAlineadoData.value.length === 0) &&
+//     (!funcionalidadesData.value || funcionalidadesData.value.length === 0)
+//   )
+// })
 
-// function seleccionarModo(modo) {
-//   modoSeleccionado.value = modo
-// }
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('cambiar-flujo', (e) => {
-    modoSeleccionado.value = e.detail
-  })
-}
-
-// Esta función se ejecuta cuando haces clic en "Filtrar"
+// Inicializar con modo mobile por defecto
+onMounted(() => {
+  if (!selectedFlow.value) {
+    selectedFlow.value = 'mobile'
+    setTimeout(() => {
+      onFilter()
+      // Inicializar gráficas vacías
+      renderChartTiempo()
+      renderChartOval()
+      renderChartFuncionalidades([], [])
+    }, 500)
+  }
+})
 async function onFilter() {
   const start_date = filtroFechasStore.fechaInicio
   const end_date = filtroFechasStore.fechaFin
@@ -362,6 +374,19 @@ async function onFilter() {
     console.error('Error al obtener datos:', error)
     counters.value.Offline = 0
   }
+
+  // Siempre renderizar las gráficas, incluso si hay errores
+  setTimeout(() => {
+    renderChartTiempo()
+    renderChartOval()
+    renderChartFuncionalidades(
+      funcionalidadesData.value?.map((d) => d.funcionalidad) || [],
+      funcionalidadesData.value?.map((d) => {
+        const [h, m, s] = d.duracion.split(':').map(Number)
+        return h * 3600 + m * 60 + s
+      }) || []
+    )
+  }, 100)
 }
 
 // Funcion cargar validados TFLITE
@@ -426,6 +451,7 @@ async function cargarTiempoRespuestaPromedio() {
   } catch (e) {
     console.error('Error al obtener tiempo promedio:', e)
     tiempoPromedioData.value = []
+    await renderChartTiempo()
   }
 }
 
@@ -435,17 +461,26 @@ async function renderChartTiempo() {
   await nextTick()
   const ctx = chartTiempoRef.value?.getContext?.('2d')
   if (!ctx) return
-  if (!Array.isArray(tiempoPromedioData.value)) {
-    console.warn('⚠️ No es un array válido:', tiempoPromedioData.value)
-    return
+
+  let labels = []
+  let valores = []
+  let backgroundColors = []
+
+  if (Array.isArray(tiempoPromedioData.value) && tiempoPromedioData.value.length > 0) {
+    labels = tiempoPromedioData.value.map((e) => e.tipoEvento)
+    valores = tiempoPromedioData.value.map((e) => e.tiempoPromedioMs)
+    backgroundColors = valores.map((ms) => {
+      if (ms < 300) return '#66bb6a' // verde
+      if (ms < 400) return '#ffa726' // naranja
+      return '#ef5350' // rojo
+    })
+  } else {
+    // Datos por defecto cuando no hay información
+    labels = ['Sin datos']
+    valores = [0]
+    backgroundColors = ['#666']
   }
-  const labels = tiempoPromedioData.value.map((e) => e.tipoEvento)
-  const valores = tiempoPromedioData.value.map((e) => e.tiempoPromedioMs)
-  const backgroundColors = valores.map((ms) => {
-    if (ms < 300) return '#66bb6a' // verde
-    if (ms < 400) return '#ffa726' // naranja
-    return '#ef5350' // rojo
-  })
+
   chartTiempoInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -467,6 +502,9 @@ async function renderChartTiempo() {
           callbacks: {
             label: (context) => {
               const ms = context.parsed.y
+              if (ms === 0 && labels[0] === 'Sin datos') {
+                return 'No hay datos disponibles'
+              }
               return `Tiempo Promedio: ${ms.toFixed(0)} ms (${(ms / 1000).toFixed(2)} s)`
             },
           },
@@ -517,6 +555,8 @@ async function cargarOvalAlineado() {
   } catch (e) {
     console.error('Error al obtener oval alineado:', e)
     ovalAlineadoData.value = []
+    await nextTick()
+    renderChartOval()
   }
 }
 
@@ -529,8 +569,19 @@ function renderChartOval() {
   if (ovalChartInstance) {
     ovalChartInstance.destroy()
   }
-  const labels = ovalAlineadoData.value.map((d) => d.ovalAlineado)
-  const values = ovalAlineadoData.value.map((d) => d.total)
+
+  let labels = []
+  let values = []
+
+  if (Array.isArray(ovalAlineadoData.value) && ovalAlineadoData.value.length > 0) {
+    labels = ovalAlineadoData.value.map((d) => d.ovalAlineado)
+    values = ovalAlineadoData.value.map((d) => d.total)
+  } else {
+    // Datos por defecto cuando no hay información
+    labels = ['Sin datos']
+    values = [0]
+  }
+
   ovalChartInstance = new Chart(ovalChartRef.value, {
     type: 'bar',
     data: {
@@ -539,7 +590,7 @@ function renderChartOval() {
         {
           label: 'Oval Alineado',
           data: values,
-          backgroundColor: ['#4CAF50', '#FFC107', '#F44336'],
+          backgroundColor: values[0] === 0 ? ['#666'] : ['#4CAF50', '#FFC107', '#F44336'],
         },
       ],
     },
@@ -549,7 +600,16 @@ function renderChartOval() {
         legend: {
           labels: { color: '#ffffff' },
         },
-        tooltip: { enabled: true },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              if (values[0] === 0 && labels[0] === 'Sin datos') {
+                return 'No hay datos disponibles'
+              }
+              return `${ctx.label}: ${ctx.parsed.y}`
+            },
+          },
+        },
       },
       scales: {
         x: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
@@ -583,6 +643,7 @@ async function cargarFuncionalidadesMasUsadas() {
   } catch (e) {
     console.error('Error al obtener funcionalidades más usadas:', e)
     funcionalidadesData.value = []
+    renderChartFuncionalidades([], [])
   }
 }
 
@@ -595,15 +656,25 @@ function renderChartFuncionalidades(labels, data) {
   if (chartFuncionalidadesInstance) {
     chartFuncionalidadesInstance.destroy()
   }
+
+  let finalLabels = labels || []
+  let finalData = data || []
+
+  if (!finalLabels.length || !finalData.length) {
+    // Datos por defecto cuando no hay información
+    finalLabels = ['Sin datos']
+    finalData = [0]
+  }
+
   chartFuncionalidadesInstance = new Chart(funcionalidadesChartRef.value, {
     type: 'bar',
     data: {
-      labels,
+      labels: finalLabels,
       datasets: [
         {
           label: 'Duración (segundos)',
-          data,
-          backgroundColor: '#42A5F5',
+          data: finalData,
+          backgroundColor: finalData[0] === 0 ? '#666' : '#42A5F5',
         },
       ],
     },
@@ -614,6 +685,9 @@ function renderChartFuncionalidades(labels, data) {
         tooltip: {
           callbacks: {
             label: (ctx) => {
+              if (finalData[0] === 0 && finalLabels[0] === 'Sin datos') {
+                return 'No hay datos disponibles'
+              }
               const val = ctx.raw
               const minutes = Math.floor(val / 60)
               const seconds = val % 60
@@ -630,3 +704,84 @@ function renderChartFuncionalidades(labels, data) {
   })
 }
 </script>
+
+<style scoped>
+/* Transiciones suaves entre modos */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.6s ease;
+}
+
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+/* Estilos para las tarjetas del selector */
+.selector-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Animaciones para los iconos */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.selector-card:hover .q-icon {
+  animation: pulse 0.6s ease-in-out;
+}
+
+/* Estilos para las gráficas */
+.chart-wrapper {
+  position: relative;
+  min-height: 420px;
+}
+
+/* Overlay para mensajes de no hay datos */
+.no-data-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(18, 24, 38, 0.9);
+  z-index: 10;
+}
+
+/* Mejoras visuales para las tarjetas KPI */
+.kpi-card {
+  transition: all 0.3s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+</style>

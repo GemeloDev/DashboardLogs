@@ -168,8 +168,23 @@
                   <div class="text-caption text-grey-6">Análisis de formatos de exportación</div>
                 </div>
                 <q-space />
-                <q-chip color="orange" text-color="white" size="sm" icon="assessment">
+                <q-chip
+                  v-if="!datosExportaciones.isEmpty && totalExportaciones > 0"
+                  color="orange"
+                  text-color="white"
+                  size="sm"
+                  icon="assessment"
+                >
                   {{ totalExportaciones }} exportaciones
+                </q-chip>
+                <q-chip
+                  v-else-if="datosExportaciones.isEmpty"
+                  color="grey"
+                  text-color="white"
+                  size="sm"
+                  icon="info"
+                >
+                  Sin datos
                 </q-chip>
                 <q-spinner v-if="loadingExportaciones" color="orange" size="20px" class="q-ml-sm" />
               </div>
@@ -219,8 +234,23 @@
                   <div class="text-caption text-grey-6">Volumen de escaneos QR y MRZ por día</div>
                 </div>
                 <q-space />
-                <q-chip color="cyan" text-color="white" size="sm" icon="qr_code">
+                <q-chip
+                  v-if="!datosEscaneos.isEmpty && totalEscaneos > 0"
+                  color="cyan"
+                  text-color="white"
+                  size="sm"
+                  icon="qr_code"
+                >
                   {{ totalEscaneos }} escaneos
+                </q-chip>
+                <q-chip
+                  v-else-if="datosEscaneos.isEmpty"
+                  color="grey"
+                  text-color="white"
+                  size="sm"
+                  icon="info"
+                >
+                  Sin datos
                 </q-chip>
                 <q-spinner v-if="loadingEscaneos" color="cyan" size="20px" class="q-ml-sm" />
               </div>
@@ -246,8 +276,23 @@
                 </div>
                 <q-space />
                 <div class="row items-center q-gutter-xs">
-                  <q-chip color="green" text-color="white" size="sm" icon="verified_user">
+                  <q-chip
+                    v-if="!datosLogin.isEmpty && totalLogin > 0"
+                    color="green"
+                    text-color="white"
+                    size="sm"
+                    icon="verified_user"
+                  >
                     {{ totalLogin }} logins
+                  </q-chip>
+                  <q-chip
+                    v-else-if="datosLogin.isEmpty"
+                    color="grey"
+                    text-color="white"
+                    size="sm"
+                    icon="info"
+                  >
+                    Sin datos
                   </q-chip>
                   <q-spinner v-if="loadingLogin" color="green" size="20px" />
                 </div>
@@ -275,8 +320,23 @@
                 </div>
                 <q-space />
                 <div class="row items-center q-gutter-xs">
-                  <q-chip color="blue" text-color="white" size="sm" icon="person_add">
+                  <q-chip
+                    v-if="!datosRegistro.isEmpty && totalRegistro > 0"
+                    color="blue"
+                    text-color="white"
+                    size="sm"
+                    icon="person_add"
+                  >
                     {{ totalRegistro }} registros
+                  </q-chip>
+                  <q-chip
+                    v-else-if="datosRegistro.isEmpty"
+                    color="grey"
+                    text-color="white"
+                    size="sm"
+                    icon="info"
+                  >
+                    Sin datos
                   </q-chip>
                   <q-spinner v-if="loadingRegistro" color="blue" size="20px" />
                 </div>
@@ -309,8 +369,23 @@
                 </div>
                 <q-space />
                 <div class="row items-center q-gutter-xs">
-                  <q-chip color="red" text-color="white" size="sm" icon="bug_report">
+                  <q-chip
+                    v-if="!datosErrores.isEmpty && totalErrores > 0"
+                    color="red"
+                    text-color="white"
+                    size="sm"
+                    icon="bug_report"
+                  >
                     {{ totalErrores }} errores
+                  </q-chip>
+                  <q-chip
+                    v-else-if="datosErrores.isEmpty"
+                    color="grey"
+                    text-color="white"
+                    size="sm"
+                    icon="info"
+                  >
+                    Sin datos
                   </q-chip>
                   <q-spinner v-if="loadingErrores" color="red" size="20px" />
                 </div>
@@ -340,11 +415,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, nextTick, onBeforeUnmount, inject } from 'vue'
 import { useQuasar } from 'quasar'
 import Chart from 'chart.js/auto'
 import { ChartDataService } from '../../services/chartDataService'
 import EscritorioConsola from './EscritorioConsolaSimple.vue'
+
+// Inyectar filtros globales desde el layout padre
+const filtrosGlobales = inject('filtrosGlobales', ref({}))
 
 // Props
 const props = defineProps({
@@ -754,16 +832,28 @@ const getChartConfig = (type, data, detalles) => {
 }
 
 // Funciones para crear gráficas
-const crearGraficaExportaciones = async () => {
-  if (!exportacionesChart.value) return
+const crearGraficaExportaciones = async (filtros = null) => {
+  if (!exportacionesChart.value) {
+    console.log('❌ No hay referencia al canvas de exportaciones')
+    return
+  }
 
+  const filtrosAUsar = filtros || { ...props.filtros, ...filtrosGlobales.value }
+  console.log('🔄 Creando gráfica de exportaciones con filtros:', filtrosAUsar)
   loadingExportaciones.value = true
   try {
-    const data = await ChartDataService.getExportacionesData(props.filtros)
+    const data = await ChartDataService.getExportacionesData(filtrosAUsar)
+    console.log('📊 Datos obtenidos para exportaciones:', data)
     datosExportaciones.value = data
 
     // Mostrar notificación apropiada según el estado de los datos
     if (data.isEmpty) {
+      console.log('⚠️ Datos vacíos para exportaciones - destruyendo gráfica anterior')
+      // Destruir gráfica anterior para mostrar estado vacío
+      if (chartInstances.value.exportaciones) {
+        chartInstances.value.exportaciones.destroy()
+        chartInstances.value.exportaciones = null
+      }
       $q.notify({
         type: 'info',
         message: 'Sin datos de Exportaciones',
@@ -774,6 +864,7 @@ const crearGraficaExportaciones = async () => {
       })
       return // No crear gráfica si no hay datos
     } else if (data.esDatosDeMuestra) {
+      console.log('⚠️ Mostrando datos de muestra para exportaciones')
       $q.notify({
         type: 'warning',
         message: 'Datos de Exportaciones',
@@ -784,14 +875,17 @@ const crearGraficaExportaciones = async () => {
       })
     }
 
+    console.log('🗑️ Destruyendo gráfica anterior de exportaciones')
     if (chartInstances.value.exportaciones) {
       chartInstances.value.exportaciones.destroy()
     }
 
+    console.log('📈 Creando nueva gráfica de exportaciones con datos:', data.series)
     const config = getChartConfig('exportaciones', data, data.detalles)
     chartInstances.value.exportaciones = new Chart(exportacionesChart.value, config)
+    console.log('✅ Gráfica de exportaciones creada exitosamente')
   } catch (error) {
-    console.error('Error creando gráfica de exportaciones:', error)
+    console.error('❌ Error creando gráfica de exportaciones:', error)
     $q.notify({
       type: 'negative',
       message: 'Error al cargar datos de exportaciones',
@@ -802,16 +896,23 @@ const crearGraficaExportaciones = async () => {
   }
 }
 
-const crearGraficaTiempos = async () => {
+const crearGraficaTiempos = async (filtros = null) => {
   if (!tiemposChart.value) return
 
+  const filtrosAUsar = filtros || { ...props.filtros, ...filtrosGlobales.value }
   loadingTiempos.value = true
   try {
-    const data = await ChartDataService.getTiemposData(props.filtros)
+    const data = await ChartDataService.getTiemposData(filtrosAUsar)
     datosTiempos.value = data
 
     // Notificar sobre el estado de los datos
     if (data.isEmpty) {
+      console.log('⚠️ Datos vacíos para tiempos - destruyendo gráfica anterior')
+      // Destruir gráfica anterior para mostrar estado vacío
+      if (chartInstances.value.tiempos) {
+        chartInstances.value.tiempos.destroy()
+        chartInstances.value.tiempos = null
+      }
       $q.notify({
         type: 'info',
         message: 'Sin datos de Tiempos',
@@ -846,16 +947,23 @@ const crearGraficaTiempos = async () => {
   }
 }
 
-const crearGraficaEscaneos = async () => {
+const crearGraficaEscaneos = async (filtros = null) => {
   if (!escaneosChart.value) return
 
+  const filtrosAUsar = filtros || { ...props.filtros, ...filtrosGlobales.value }
   loadingEscaneos.value = true
   try {
-    const data = await ChartDataService.getEscaneosData(props.filtros)
+    const data = await ChartDataService.getEscaneosData(filtrosAUsar)
     datosEscaneos.value = data
 
     // Notificar sobre el estado de los datos
     if (data.isEmpty) {
+      console.log('⚠️ Datos vacíos para escaneos - destruyendo gráfica anterior')
+      // Destruir gráfica anterior para mostrar estado vacío
+      if (chartInstances.value.escaneos) {
+        chartInstances.value.escaneos.destroy()
+        chartInstances.value.escaneos = null
+      }
       $q.notify({
         type: 'info',
         message: 'Sin datos de Escaneos',
@@ -891,16 +999,17 @@ const crearGraficaEscaneos = async () => {
 }
 
 // Función para crear gráfica de login
-const crearGraficaLogin = async () => {
+const crearGraficaLogin = async (filtros = null) => {
   if (!loginChart.value) return
 
+  const filtrosAUsar = filtros || { ...props.filtros, ...filtrosGlobales.value }
   loadingLogin.value = true
   try {
     if (chartInstances.value.login) {
       chartInstances.value.login.destroy()
     }
 
-    datosLogin.value = await ChartDataService.getLoginData(props.filtros)
+    datosLogin.value = await ChartDataService.getLoginData(filtrosAUsar)
     console.log('Datos login recibidos:', datosLogin.value)
 
     // Notificar sobre el estado de los datos
@@ -914,7 +1023,7 @@ const crearGraficaLogin = async () => {
         timeout: 3000,
       })
       return // No crear gráfica si no hay datos
-    } else if (datosLogin.value.esSampleData) {
+    } else if (datosLogin.value.esDatosDeMuestra) {
       $q.notify({
         type: 'warning',
         message: 'Datos de Login',
@@ -1082,16 +1191,17 @@ const crearGraficaLogin = async () => {
 }
 
 // Función para crear gráfica de registro
-const crearGraficaRegistro = async () => {
+const crearGraficaRegistro = async (filtros = null) => {
   if (!registroChart.value) return
 
+  const filtrosAUsar = filtros || { ...props.filtros, ...filtrosGlobales.value }
   loadingRegistro.value = true
   try {
     if (chartInstances.value.registro) {
       chartInstances.value.registro.destroy()
     }
 
-    datosRegistro.value = await ChartDataService.getRegistroData(props.filtros)
+    datosRegistro.value = await ChartDataService.getRegistroData(filtrosAUsar)
     console.log('Datos registro recibidos:', datosRegistro.value)
 
     // Notificar sobre el estado de los datos
@@ -1105,7 +1215,7 @@ const crearGraficaRegistro = async () => {
         timeout: 3000,
       })
       return // No crear gráfica si no hay datos
-    } else if (datosRegistro.value.esSampleData) {
+    } else if (datosRegistro.value.esDatosDeMuestra) {
       $q.notify({
         type: 'warning',
         message: 'Datos de Registro',
@@ -1268,20 +1378,32 @@ const crearGraficaRegistro = async () => {
 }
 
 // Función para crear gráfica de errores
-const crearGraficaErrores = async () => {
+const crearGraficaErrores = async (filtros = null) => {
   if (!erroresChart.value) return
 
+  const filtrosAUsar = filtros || { ...props.filtros, ...filtrosGlobales.value }
   loadingErrores.value = true
   try {
     if (chartInstances.value.errores) {
       chartInstances.value.errores.destroy()
     }
 
-    datosErrores.value = await ChartDataService.getErroresData(props.filtros)
+    datosErrores.value = await ChartDataService.getErroresData(filtrosAUsar)
     console.log('Datos errores recibidos:', datosErrores.value)
 
     // Notificar sobre el estado de los datos
-    if (datosErrores.value.esSampleData) {
+    if (datosErrores.value.isEmpty) {
+      console.log('⚠️ Datos vacíos para errores')
+      $q.notify({
+        type: 'info',
+        message: 'Sin datos de Errores',
+        caption: 'No se encontraron errores para el período seleccionado',
+        icon: 'info',
+        position: 'top-right',
+        timeout: 3000,
+      })
+      return // No crear gráfica si no hay datos
+    } else if (datosErrores.value.esDatosDeMuestra) {
       $q.notify({
         type: 'warning',
         message: 'Datos de Errores',
@@ -1299,6 +1421,7 @@ const crearGraficaErrores = async () => {
         position: 'top-right',
         timeout: 3000,
       })
+      return // No crear gráfica si no hay datos
     }
 
     const config = {
@@ -1567,16 +1690,18 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
 }
 
 // Función para actualizar todas las gráficas
-const actualizarGraficas = async () => {
-  console.log('🔄 ACTUALIZANDO GRÁFICAS CON NUEVOS ENDPOINTS - TESTING')
+const actualizarGraficas = async (filtrosPersonalizados = null) => {
+  const filtrosAUsar = filtrosPersonalizados || { ...props.filtros, ...filtrosGlobales.value }
+  console.log('🔄 ACTUALIZANDO GRÁFICAS CON FILTROS:', filtrosAUsar)
+
   await nextTick()
   await Promise.all([
-    crearGraficaExportaciones(),
-    crearGraficaTiempos(),
-    crearGraficaEscaneos(),
-    crearGraficaLogin(),
-    crearGraficaRegistro(),
-    crearGraficaErrores(),
+    crearGraficaExportaciones(filtrosAUsar),
+    crearGraficaTiempos(filtrosAUsar),
+    crearGraficaEscaneos(filtrosAUsar),
+    crearGraficaLogin(filtrosAUsar),
+    crearGraficaRegistro(filtrosAUsar),
+    crearGraficaErrores(filtrosAUsar),
   ])
   console.log('✅ GRÁFICAS ACTUALIZADAS COMPLETAMENTE')
 }
@@ -1608,7 +1733,21 @@ const limpiarGraficas = () => {
 }
 
 // Watchers
-watch(() => props.filtros, actualizarGraficas, { deep: true })
+watch(
+  [() => props.filtros, () => filtrosGlobales.value],
+  async ([newFiltros, newFiltrosGlobales]) => {
+    console.log('🔄 WATCHER: Filtros cambiaron en EscritorioGraficasEnhanced')
+    console.log('📋 Props filtros:', newFiltros)
+    console.log('🌐 Filtros globales:', newFiltrosGlobales)
+
+    // Combinar filtros de props y globales
+    const filtrosCombinados = { ...newFiltros, ...newFiltrosGlobales }
+    console.log('🔀 Filtros combinados:', filtrosCombinados)
+
+    await actualizarGraficas(filtrosCombinados)
+  },
+  { deep: true }
+)
 
 // Lifecycle
 onMounted(async () => {
