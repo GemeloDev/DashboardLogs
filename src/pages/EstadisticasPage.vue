@@ -1,5 +1,14 @@
 <template>
   <q-page class="q-pa-md" style="background-color: #121826">
+    <!-- Indicador de carga general para mobile -->
+    <q-inner-loading
+      :showing="loadingCharts && modoSeleccionado === 'mobile'"
+      label="Cargando estadísticas..."
+      label-class="text-white"
+      color="primary"
+      size="50px"
+    />
+
     <!-- Componente de filtros de fechas -->
     <LogFilters @filter="actualizarDatos" />
 
@@ -26,6 +35,13 @@
           style="background-color: #1e1e2f; border-radius: 12px"
         >
           <div class="text-subtitle1 text-center q-mb-sm">Tiempo total por Funcionalidad</div>
+          <q-inner-loading
+            :showing="loadingCharts && modoSeleccionado === 'mobile'"
+            label="Cargando..."
+            label-class="text-white"
+            color="primary"
+            size="30px"
+          />
           <canvas ref="barChart" height="200" />
         </q-card>
       </div>
@@ -39,6 +55,13 @@
           style="background-color: #1e1e2f; border-radius: 12px"
         >
           <div class="text-subtitle1 text-center">Dispositivos más usados</div>
+          <q-inner-loading
+            :showing="loadingCharts && modoSeleccionado === 'mobile'"
+            label="Cargando..."
+            label-class="text-white"
+            color="primary"
+            size="30px"
+          />
           <canvas ref="deviceChart" height="300" />
         </q-card>
       </div>
@@ -54,6 +77,13 @@
       >
         <q-card-section>
           <div class="text-subtitle1 text-center q-mb-sm">Uso por Funcionalidad</div>
+          <q-inner-loading
+            :showing="loadingCharts && modoSeleccionado === 'mobile'"
+            label="Cargando..."
+            label-class="text-white"
+            color="primary"
+            size="30px"
+          />
           <div class="flex flex-center">
             <canvas ref="chart" class="donut-canvas" />
           </div>
@@ -73,6 +103,13 @@
         >
           <q-card-section>
             <div class="text-subtitle1 text-center q-mb-sm">{{ func.clave }}</div>
+            <q-inner-loading
+              :showing="loadingCharts && modoSeleccionado === 'mobile'"
+              label="Cargando..."
+              label-class="text-white"
+              color="primary"
+              size="30px"
+            />
             <div class="flex flex-center">
               <canvas
                 :ref="(el) => setPieRef(func.clave, el)"
@@ -130,6 +167,13 @@
             </q-chip>
           </div>
 
+          <q-inner-loading
+            :showing="loadingCharts && modoSeleccionado === 'mobile'"
+            label="Cargando mapa..."
+            label-class="text-white"
+            color="primary"
+            size="30px"
+          />
           <div
             id="mapaEventos"
             style="
@@ -949,7 +993,7 @@ o con mejor control -->
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch, computed, inject } from 'vue'
 import {
   Chart,
   BarController,
@@ -995,40 +1039,59 @@ const tiemposFuncionalidad = ref([])
 
 const filtroFechasStore = useFiltroFechasStore()
 
+// Estados de carga
+const loadingCharts = ref(false)
+
+// Inyectar el estado del flujo desde el layout padre
+const selectedFlow = inject('selectedFlow', ref('mobile'))
+
+// Usar computed para determinar el modo seleccionado basado en el flujo inyectado
+const modoSeleccionado = computed(() =>
+  selectedFlow.value === 'escritorio' ? 'escritorio' : 'mobile'
+)
+
 // Función para actualizar todos los datos cuando cambien los filtros
 const actualizarDatos = async () => {
-  console.log(
-    '📅 Actualizando datos con nuevas fechas:',
-    filtroFechasStore.obtenerFechasFormateadas()
-  )
+  if (loadingCharts.value) return // Evitar múltiples llamadas simultáneas
 
-  // Actualizar eventos primero para el timeline
+  loadingCharts.value = true
+
   try {
-    const filtros = filtroFechasStore.obtenerFechasFormateadas()
-    const eventosData = await getEventosBiometricosPorFiltro(filtros)
-    eventos.value = eventosData
-    console.log('📊 Eventos actualizados para timeline:', eventosData?.length || 0)
-  } catch (error) {
-    console.error('Error al cargar eventos:', error)
-  }
-
-  // Actualizar gráficos y datos
-  await renderDeviceChart()
-  renderPiePorFuncionalidad()
-  crearGraficoTimeline() // Agregar el timeline
-
-  // Actualizar datos de duración promedio
-  try {
-    const respuesta = await getDuracionPromedioFuncionalidad(
+    console.log(
+      '📅 Actualizando datos con nuevas fechas:',
       filtroFechasStore.obtenerFechasFormateadas()
     )
-    tiemposFuncionalidad.value = respuesta.map((item) => ({
-      funcionalidad: item.funcionalidad.replace(/_/g, ' '),
-      totalSegundos: tiempoASegundos(item.duracion),
-    }))
-    renderCharts()
-  } catch (error) {
-    console.error('Error al obtener datos de funcionalidad:', error)
+
+    // Actualizar eventos primero para el timeline
+    try {
+      const filtros = filtroFechasStore.obtenerFechasFormateadas()
+      const eventosData = await getEventosBiometricosPorFiltro(filtros)
+      eventos.value = eventosData
+      console.log('📊 Eventos actualizados para timeline:', eventosData?.length || 0)
+    } catch (error) {
+      console.error('Error al cargar eventos:', error)
+    }
+
+    // Actualizar gráficos y datos
+    await renderDeviceChart()
+    renderPiePorFuncionalidad()
+    crearGraficoTimeline() // Agregar el timeline
+
+    // Actualizar datos de duración promedio
+    try {
+      const respuesta = await getDuracionPromedioFuncionalidad(
+        filtroFechasStore.obtenerFechasFormateadas()
+      )
+      tiemposFuncionalidad.value = respuesta.map((item) => ({
+        funcionalidad: item.funcionalidad.replace(/_/g, ' '),
+        totalSegundos: tiempoASegundos(item.duracion),
+      }))
+      renderCharts()
+    } catch (error) {
+      console.error('Error al obtener datos de funcionalidad:', error)
+    }
+  } finally {
+    loadingCharts.value = false
   }
 }
 
@@ -2113,6 +2176,24 @@ onMounted(async () => {
   console.log('✅ Mapa y eventos cargados correctamente')
 })
 
+// Watcher para actualizar gráficas automáticamente cuando cambien las fechas
+watch(
+  () => [filtroFechasStore.fechaInicio, filtroFechasStore.fechaFin],
+  async (newDates, oldDates) => {
+    if (
+      modoSeleccionado.value === 'mobile' &&
+      (newDates[0] !== oldDates[0] || newDates[1] !== oldDates[1])
+    ) {
+      console.log('📅 Fechas cambiadas en mobile, actualizando gráficas:', {
+        old: oldDates,
+        new: newDates,
+      })
+      await actualizarDatos()
+    }
+  },
+  { immediate: false }
+)
+
 // Función para renderizar gráficas
 function renderCharts() {
   new Chart(barChart.value, {
@@ -2656,6 +2737,39 @@ function renderPiePorFuncionalidad() {
   .text-h5 {
     font-size: 1.25rem !important;
   }
+
+  /* Mejoras específicas para gráficas en móvil */
+  .chart-card {
+    margin-bottom: 16px !important;
+    padding: 12px !important;
+  }
+
+  .donut-chart-card {
+    margin-bottom: 20px !important;
+  }
+
+  .mapa-card {
+    margin-bottom: 16px !important;
+  }
+
+  .mapa-container {
+    height: 300px !important;
+  }
+
+  /* Ajustes para indicadores de carga en móvil */
+  .q-inner-loading {
+    z-index: 10;
+  }
+
+  /* Mejoras para las tarjetas de funcionalidades */
+  .chart-card .q-card-section {
+    padding: 12px !important;
+  }
+
+  .pie-canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2667,6 +2781,28 @@ function renderPiePorFuncionalidad() {
 
   .text-h5 {
     align-self: flex-end;
+  }
+
+  /* Ajustes adicionales para móviles pequeños */
+  .stats-container {
+    padding: 12px !important;
+  }
+
+  .chart-card {
+    padding: 8px !important;
+  }
+
+  .mapa-container {
+    height: 250px !important;
+  }
+
+  /* Mejorar espaciado en móviles */
+  .q-pa-md {
+    padding: 8px !important;
+  }
+
+  .q-mt-md {
+    margin-top: 8px !important;
   }
 }
 

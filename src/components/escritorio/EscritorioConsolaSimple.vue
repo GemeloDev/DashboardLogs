@@ -2082,7 +2082,7 @@ const cargarLogsConFiltrosAPI = async () => {
       obtenerOpcionesUnicas()
 
       // 📝 Actualizar estado
-      filtroActual.value = `Filtros aplicados (${logs.value.length} resultados)`
+      // filtroActual.value = `Filtros aplicados (${logs.value.length} resultados)`
 
       console.log('✅ [SIDEBAR] Logs cargados exitosamente:', logs.value.length)
 

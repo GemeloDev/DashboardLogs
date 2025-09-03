@@ -56,7 +56,6 @@
           </transition>
         </div>
         <div v-else-if="modoSeleccionado === 'mobile'">
-
           <transition name="slide-fade" mode="out-in">
             <div class="mobile-content" v-if="modoSeleccionado === 'mobile'">
               <!-- Aquí va el flujo actual de la app -->
@@ -74,7 +73,7 @@
                 />
               </div> -->
 
-              <div >
+              <div>
                 <log-filters @filter="onFilter" />
                 <div class="row q-col-gutter-md q-mt-md justify-center">
                   <!-- Usuarios Offline -->
@@ -231,7 +230,6 @@
           </transition>
         </div>
         <div v-else-if="modoSeleccionado === 'escritorio'">
-
           <transition name="slide-fade" mode="out-in">
             <div class="escritorio-content" v-if="modoSeleccionado === 'escritorio'">
               <FlujoEscritorio />
@@ -251,7 +249,7 @@
 
 
 <script setup>
-import { ref, nextTick, inject, computed, onMounted } from 'vue'
+import { ref, nextTick, inject, computed, onMounted, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 import {
   getUsuariosOffline,
@@ -291,6 +289,7 @@ const modoSeleccionado = computed(() =>
 )
 
 const loading = ref(false)
+const loadingCharts = ref(false)
 
 // Función para volver al selector de modos
 // function volverAlSelector() {
@@ -338,55 +337,152 @@ onMounted(() => {
     }, 500)
   }
 })
+
+// Watcher para actualizar gráficas automáticamente cuando cambien las fechas
+watch(
+  () => [filtroFechasStore.fechaInicio, filtroFechasStore.fechaFin],
+  async (newDates, oldDates) => {
+    if (
+      modoSeleccionado.value === 'mobile' &&
+      (newDates[0] !== oldDates[0] || newDates[1] !== oldDates[1])
+    ) {
+      console.log('📅 Fechas cambiadas en mobile, actualizando gráficas:', {
+        old: oldDates,
+        new: newDates,
+      })
+      await actualizarContadoresYGraficas(newDates[0], newDates[1])
+    }
+  },
+  { immediate: false }
+)
 async function onFilter() {
-  const start_date = filtroFechasStore.fechaInicio
-  const end_date = filtroFechasStore.fechaFin
-  await cargarValidadosTFLITE()
-  await cargarPorcentajeOffline(start_date, end_date)
-  await cargarTiempoRespuestaPromedio(start_date, end_date)
-  await cargarOvalAlineado()
-  await cargarFuncionalidadesMasUsadas()
-  const payload = {
-    offline: true,
-    fechaInicio: start_date,
-    fechaFin: end_date,
-  }
+  if (loadingCharts.value) return // Evitar múltiples llamadas simultáneas
+
+  loadingCharts.value = true
+
   try {
-    console.log('Payload enviado:', payload)
-    // 🔸 Usuarios Offline
-    const respuesta = await getUsuariosOffline(payload)
-    console.log('Respuesta offline:', respuesta)
-    if (Array.isArray(respuesta) && respuesta.length > 0) {
-      counters.value.Offline = respuesta[0].total
-      console.log('Nuevo valor offline:', counters.value.Offline)
-    } else {
+    const start_date = filtroFechasStore.fechaInicio
+    const end_date = filtroFechasStore.fechaFin
+    await cargarValidadosTFLITE()
+    await cargarPorcentajeOffline(start_date, end_date)
+    await cargarTiempoRespuestaPromedio(start_date, end_date)
+    await cargarOvalAlineado(start_date, end_date)
+    await cargarFuncionalidadesMasUsadas(start_date, end_date)
+    const payload = {
+      offline: true,
+      fechaInicio: start_date,
+      fechaFin: end_date,
+    }
+    try {
+      console.log('Payload enviado:', payload)
+      // 🔸 Usuarios Offline
+      const respuesta = await getUsuariosOffline(payload)
+      console.log('Respuesta offline:', respuesta)
+      if (Array.isArray(respuesta) && respuesta.length > 0) {
+        counters.value.Offline = respuesta[0].total
+        console.log('Nuevo valor offline:', counters.value.Offline)
+      } else {
+        counters.value.Offline = 0
+      }
+      // 🔸 Usuarios por dispositivo (solo con la fecha de inicio)
+      const respuestaDispositivos = await getUsuariosDispositivosDia()
+      console.log('Respuesta dispositivos (sin filtrar):', respuestaDispositivos)
+      const datosFiltrados = respuestaDispositivos.filter((item) => {
+        const fechaItem = new Date(item.fecha)
+        return fechaItem >= new Date(start_date) && fechaItem <= new Date(end_date)
+      })
+      logs.value = datosFiltrados
+    } catch (error) {
+      console.error('Error al obtener datos:', error)
       counters.value.Offline = 0
     }
-    // 🔸 Usuarios por dispositivo (solo con la fecha de inicio)
-    const respuestaDispositivos = await getUsuariosDispositivosDia()
-    console.log('Respuesta dispositivos (sin filtrar):', respuestaDispositivos)
-    const datosFiltrados = respuestaDispositivos.filter((item) => {
-      const fechaItem = new Date(item.fecha)
-      return fechaItem >= new Date(start_date) && fechaItem <= new Date(end_date)
-    })
-    logs.value = datosFiltrados
-  } catch (error) {
-    console.error('Error al obtener datos:', error)
-    counters.value.Offline = 0
-  }
 
-  // Siempre renderizar las gráficas, incluso si hay errores
-  setTimeout(() => {
-    renderChartTiempo()
-    renderChartOval()
-    renderChartFuncionalidades(
-      funcionalidadesData.value?.map((d) => d.funcionalidad) || [],
-      funcionalidadesData.value?.map((d) => {
-        const [h, m, s] = d.duracion.split(':').map(Number)
-        return h * 3600 + m * 60 + s
-      }) || []
-    )
-  }, 100)
+    // Siempre renderizar las gráficas, incluso si hay errores
+    setTimeout(() => {
+      renderChartTiempo()
+      renderChartOval()
+      renderChartFuncionalidades(
+        funcionalidadesData.value?.map((d) => d.funcionalidad) || [],
+        funcionalidadesData.value?.map((d) => {
+          const [h, m, s] = d.duracion.split(':').map(Number)
+          return h * 3600 + m * 60 + s
+        }) || []
+      )
+    }, 100)
+  } finally {
+    loadingCharts.value = false
+  }
+}
+
+// Función para actualizar contadores y gráficas cuando cambien las fechas
+async function actualizarContadoresYGraficas(start_date, end_date) {
+  if (loadingCharts.value) return // Evitar múltiples llamadas simultáneas
+
+  loadingCharts.value = true
+
+  try {
+    console.log('🔄 Actualizando contadores y gráficas con fechas:', { start_date, end_date })
+
+    // Actualizar contadores
+    await Promise.all([
+      cargarValidadosTFLITE(),
+      cargarPorcentajeOffline(start_date, end_date),
+      // Actualizar usuarios offline
+      (async () => {
+        const payload = { offline: true, fechaInicio: start_date, fechaFin: end_date }
+        const respuesta = await getUsuariosOffline(payload)
+        if (Array.isArray(respuesta) && respuesta.length > 0) {
+          counters.value.Offline = respuesta[0].total
+        } else {
+          counters.value.Offline = 0
+        }
+      })(),
+      // Actualizar logs de dispositivos
+      (async () => {
+        const respuestaDispositivos = await getUsuariosDispositivosDia()
+        const datosFiltrados = respuestaDispositivos.filter((item) => {
+          const fechaItem = new Date(item.fecha)
+          return fechaItem >= new Date(start_date) && fechaItem <= new Date(end_date)
+        })
+        logs.value = datosFiltrados
+      })(),
+    ])
+
+    // Actualizar gráficas
+    await actualizarGraficasConFechas(start_date, end_date)
+  } catch (error) {
+    console.error('❌ Error al actualizar contadores y gráficas:', error)
+  } finally {
+    loadingCharts.value = false
+  }
+}
+
+// Función separada para actualizar gráficas con fechas específicas
+async function actualizarGraficasConFechas(start_date, end_date) {
+  try {
+    console.log('🔄 Actualizando gráficas con fechas específicas:', { start_date, end_date })
+
+    await Promise.all([
+      cargarTiempoRespuestaPromedio(start_date, end_date),
+      cargarOvalAlineado(start_date, end_date),
+      cargarFuncionalidadesMasUsadas(start_date, end_date),
+    ])
+
+    // Re-renderizar gráficas con delay para asegurar que los datos estén listos
+    setTimeout(() => {
+      renderChartTiempo()
+      renderChartOval()
+      renderChartFuncionalidades(
+        funcionalidadesData.value?.map((d) => d.funcionalidad) || [],
+        funcionalidadesData.value?.map((d) => {
+          const [h, m, s] = d.duracion.split(':').map(Number)
+          return h * 3600 + m * 60 + s
+        }) || []
+      )
+    }, 200)
+  } catch (error) {
+    console.error('❌ Error al actualizar gráficas con fechas:', error)
+  }
 }
 
 // Funcion cargar validados TFLITE
@@ -431,9 +527,7 @@ async function cargarPorcentajeOffline() {
 }
 
 // Funcion cargar tiempo de respuesta promedio
-async function cargarTiempoRespuestaPromedio() {
-  const start_date = filtroFechasStore.fechaInicio
-  const end_date = filtroFechasStore.fechaFin
+async function cargarTiempoRespuestaPromedio(start_date, end_date) {
   try {
     const data = await getTiempoRespuestaPromedio({
       fechaInicio: start_date,
@@ -537,9 +631,7 @@ async function renderChartTiempo() {
 }
 
 // Función para cargar los datos de Oval Alineado
-async function cargarOvalAlineado() {
-  const start_date = filtroFechasStore.fechaInicio
-  const end_date = filtroFechasStore.fechaFin
+async function cargarOvalAlineado(start_date, end_date) {
   try {
     const data = await getOvalAlineado({
       fechaInicio: start_date,
@@ -620,9 +712,7 @@ function renderChartOval() {
 }
 
 // Función para cargar las funcionalidades más usadas
-async function cargarFuncionalidadesMasUsadas() {
-  const start_date = filtroFechasStore.fechaInicio
-  const end_date = filtroFechasStore.fechaFin
+async function cargarFuncionalidadesMasUsadas(start_date, end_date) {
   try {
     const data = await getFuncionalidadesMasUsadas({
       fechaInicio: start_date,
