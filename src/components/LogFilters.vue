@@ -28,42 +28,39 @@
 
     <!-- Filtros de fecha responsivos -->
     <div class="row q-col-gutter-md">
-      <!-- Fecha de inicio -->
-      <div class="col-12 col-sm-6">
+      <!-- Rango de Fechas -->
+      <div class="col-12">
         <q-input
-          v-model="fechaInicio"
-          label="Fecha de inicio"
-          type="date"
+          v-model="rangoFechasTexto"
+          label="Rango de Fechas"
           filled
           dense
           color="blue-4"
           label-color="blue-4"
           input-class="text-white text-weight-medium"
           class="fecha-input"
-          :rules="[validarFechaInicio]"
+          readonly
         >
           <template v-slot:prepend>
-            <q-icon name="event" color="blue-4" />
+            <q-icon name="date_range" color="blue-4" />
           </template>
-        </q-input>
-      </div>
-
-      <!-- Fecha de fin -->
-      <div class="col-12 col-sm-6">
-        <q-input
-          v-model="fechaFin"
-          label="Fecha de fin"
-          type="date"
-          filled
-          dense
-          color="blue-4"
-          label-color="blue-4"
-          input-class="text-white text-weight-medium"
-          class="fecha-input"
-          :rules="[validarFechaFin]"
-        >
-          <template v-slot:prepend>
-            <q-icon name="event" color="blue-4" />
+          <template v-slot:append>
+            <q-icon name="calendar_today" class="cursor-pointer" color="blue-4">
+              <q-popup-proxy cover>
+                <q-date
+                  v-model="rangoFechas"
+                  range
+                  color="blue-4"
+                  :options="validarFecha"
+                  @update:model-value="actualizarFechasDesdeRango"
+                  :class="{ 'q-pa-sm': $q.screen.lt.sm }"
+                >
+                  <div class="row items-center justify-end q-pa-sm">
+                    <q-btn v-close-popup label="Cerrar" color="blue-4" flat />
+                  </div>
+                </q-date>
+              </q-popup-proxy>
+            </q-icon>
           </template>
         </q-input>
       </div>
@@ -104,41 +101,42 @@
           color="blue-4"
           dropdown-icon="expand_more"
           class="q-px-md"
+          :class="{ 'q-pa-sm': $q.screen.lt.sm }"
         >
-          <q-list dense>
+          <q-list dense class="q-pa-none">
             <q-item clickable v-close-popup @click="seleccionarPeriodo('hoy')">
               <q-item-section avatar>
-                <q-icon name="today" color="blue-4" />
+                <q-icon name="today" color="blue-4" size="sm" />
               </q-item-section>
               <q-item-section>
-                <q-item-label class="text-white">Hoy</q-item-label>
+                <q-item-label class="text-white text-caption">Hoy</q-item-label>
               </q-item-section>
             </q-item>
 
             <q-item clickable v-close-popup @click="seleccionarPeriodo('ayer')">
               <q-item-section avatar>
-                <q-icon name="yesterday" color="blue-4" />
+                <q-icon name="yesterday" color="blue-4" size="sm" />
               </q-item-section>
               <q-item-section>
-                <q-item-label class="text-white">Ayer</q-item-label>
+                <q-item-label class="text-white text-caption">Ayer</q-item-label>
               </q-item-section>
             </q-item>
 
             <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos7')">
               <q-item-section avatar>
-                <q-icon name="date_range" color="blue-4" />
+                <q-icon name="date_range" color="blue-4" size="sm" />
               </q-item-section>
               <q-item-section>
-                <q-item-label class="text-white">Últimos 7 días</q-item-label>
+                <q-item-label class="text-white text-caption">Últimos 7 días</q-item-label>
               </q-item-section>
             </q-item>
 
             <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos30')">
               <q-item-section avatar>
-                <q-icon name="calendar_month" color="blue-4" />
+                <q-icon name="calendar_month" color="blue-4" size="sm" />
               </q-item-section>
               <q-item-section>
-                <q-item-label class="text-white">Últimos 30 días</q-item-label>
+                <q-item-label class="text-white text-caption">Últimos 30 días</q-item-label>
               </q-item-section>
             </q-item>
 
@@ -146,10 +144,10 @@
 
             <q-item clickable v-close-popup @click="seleccionarPeriodo('mesActual')">
               <q-item-section avatar>
-                <q-icon name="calendar_today" color="green-4" />
+                <q-icon name="calendar_today" color="green-4" size="sm" />
               </q-item-section>
               <q-item-section>
-                <q-item-label class="text-white">Mes actual</q-item-label>
+                <q-item-label class="text-white text-caption">Mes actual</q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -170,46 +168,42 @@ const $q = useQuasar()
 const emit = defineEmits(['filter'])
 
 // Estados reactivos
-const fechaInicio = ref('')
-const fechaFin = ref('')
+const rangoFechas = ref(null)
 const cargando = ref(false)
 
 // Computed properties
 const fechasValidas = computed(() => {
-  return (
-    fechaInicio.value && fechaFin.value && new Date(fechaInicio.value) <= new Date(fechaFin.value)
-  )
+  return rangoFechas.value && rangoFechas.value.from && rangoFechas.value.to
+})
+
+const rangoFechasTexto = computed(() => {
+  if (!rangoFechas.value) return ''
+  if (typeof rangoFechas.value === 'string') return rangoFechas.value
+  if (rangoFechas.value.from && rangoFechas.value.to) {
+    return `${rangoFechas.value.from} - ${rangoFechas.value.to}`
+  }
+  return rangoFechas.value.from || ''
 })
 
 // Funciones de validación
-const validarFechaInicio = (val) => {
-  if (!val) return 'Fecha requerida'
-  if (fechaFin.value && new Date(val) > new Date(fechaFin.value)) {
-    return 'La fecha de inicio debe ser anterior a la fecha de fin'
-  }
-  return true
-}
-
-const validarFechaFin = (val) => {
-  if (!val) return 'Fecha requerida'
-  if (fechaInicio.value && new Date(val) < new Date(fechaInicio.value)) {
-    return 'La fecha de fin debe ser posterior a la fecha de inicio'
-  }
-  if (new Date(val) > new Date()) {
-    return 'La fecha no puede ser futura'
-  }
-  return true
+const validarFecha = (date) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const selectedDate = new Date(date)
+  selectedDate.setHours(0, 0, 0, 0)
+  return selectedDate <= today
 }
 
 // Funciones de utilidad
 const formatearPeriodo = () => {
-  if (!fechaInicio.value || !fechaFin.value) return 'No seleccionado'
+  if (!rangoFechas.value || !rangoFechas.value.from || !rangoFechas.value.to)
+    return 'No seleccionado'
 
-  const inicio = new Date(fechaInicio.value).toLocaleDateString('es-ES', {
+  const inicio = new Date(rangoFechas.value.from).toLocaleDateString('es-ES', {
     day: '2-digit',
     month: 'short',
   })
-  const fin = new Date(fechaFin.value).toLocaleDateString('es-ES', {
+  const fin = new Date(rangoFechas.value.to).toLocaleDateString('es-ES', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -219,10 +213,10 @@ const formatearPeriodo = () => {
 }
 
 const calcularDiasSeleccionados = () => {
-  if (!fechaInicio.value || !fechaFin.value) return 0
+  if (!rangoFechas.value || !rangoFechas.value.from || !rangoFechas.value.to) return 0
 
-  const inicio = new Date(fechaInicio.value)
-  const fin = new Date(fechaFin.value)
+  const inicio = new Date(rangoFechas.value.from)
+  const fin = new Date(rangoFechas.value.to)
   const diferencia = fin.getTime() - inicio.getTime()
 
   return Math.ceil(diferencia / (1000 * 3600 * 24)) + 1
@@ -233,7 +227,7 @@ const aplicarFiltros = async () => {
   if (!fechasValidas.value) {
     $q.notify({
       type: 'negative',
-      message: 'Por favor, selecciona fechas válidas',
+      message: 'Por favor, selecciona un rango de fechas válido',
       position: 'top',
     })
     return
@@ -243,7 +237,7 @@ const aplicarFiltros = async () => {
     cargando.value = true
 
     // Actualizar el store
-    store.setFechas(fechaInicio.value, fechaFin.value)
+    store.setFechas(rangoFechas.value.from, rangoFechas.value.to)
 
     // Mostrar notificación de éxito
     $q.notify({
@@ -255,8 +249,8 @@ const aplicarFiltros = async () => {
 
     // Emitir evento para que el componente padre actualice los datos
     emit('filter', {
-      fechaInicio: fechaInicio.value,
-      fechaFin: fechaFin.value,
+      fechaInicio: rangoFechas.value.from,
+      fechaFin: rangoFechas.value.to,
     })
   } catch (error) {
     console.error('Error al aplicar filtros:', error)
@@ -273,9 +267,16 @@ const aplicarFiltros = async () => {
 // Función para resetear al mes actual
 const resetearAMesActual = () => {
   store.resetearAMesActual()
-  fechaInicio.value = store.fechaInicio
-  fechaFin.value = store.fechaFin
+  rangoFechas.value = {
+    from: store.fechaInicio,
+    to: store.fechaFin,
+  }
   aplicarFiltros()
+}
+
+// Función para actualizar fechas desde rango
+const actualizarFechasDesdeRango = (nuevoRango) => {
+  rangoFechas.value = nuevoRango
 }
 
 // Función para seleccionar períodos predefinidos
@@ -322,13 +323,12 @@ const seleccionarPeriodo = (periodo) => {
       return
   }
 
-  fechaInicio.value = inicio
-  fechaFin.value = fin
+  rangoFechas.value = { from: inicio, to: fin }
   aplicarFiltros()
 }
 
 // Watchers para sincronización automática
-watch([fechaInicio, fechaFin], () => {
+watch(rangoFechas, () => {
   if (fechasValidas.value) {
     // Auto-aplicar filtros después de 1 segundo de inactividad
     clearTimeout(window.filtroTimeout)
@@ -342,8 +342,10 @@ watch([fechaInicio, fechaFin], () => {
 onMounted(() => {
   // Cargar fechas desde el store o usar fechas del mes actual
   if (store.fechaInicio && store.fechaFin) {
-    fechaInicio.value = store.fechaInicio
-    fechaFin.value = store.fechaFin
+    rangoFechas.value = {
+      from: store.fechaInicio,
+      to: store.fechaFin,
+    }
   } else {
     // Si no hay fechas en el store, usar mes actual
     resetearAMesActual()
@@ -383,6 +385,14 @@ onMounted(() => {
 
   .text-h6 {
     font-size: 1.2rem !important;
+  }
+
+  .q-btn-dropdown {
+    padding: 0.5rem !important;
+  }
+
+  .q-item {
+    min-height: 40px !important;
   }
 }
 
