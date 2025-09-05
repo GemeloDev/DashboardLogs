@@ -363,16 +363,16 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.fecha-input >>> .q-field__control {
+.fecha-input :deep(.q-field__control) {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
 }
 
-.fecha-input >>> .q-field__control:hover {
+.fecha-input :deep(.q-field__control:hover) {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.fecha-input >>> .q-field__control:focus-within {
+.fecha-input :deep(.q-field__control:focus-within) {
   background: rgba(59, 130, 246, 0.1);
   border: 1px solid #3b82f6;
 }

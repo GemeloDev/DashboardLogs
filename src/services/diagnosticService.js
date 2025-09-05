@@ -108,7 +108,6 @@ export class DiagnosticService {
 
             const response = await axios.get(`${API_BASE_URL}/support?${params.toString()}`)
 
-            console.log('✅ Solicitud de soporte enviada:', response.data)
 
             // La API de soporte también devuelve arrays de información relacionada
             const data = Array.isArray(response.data) ? response.data : [response.data]
@@ -126,7 +125,6 @@ export class DiagnosticService {
                 }
             }
         } catch (error) {
-            console.error('❌ Error al enviar solicitud de soporte:', error)
             return {
                 success: false,
                 error: error.message,
@@ -162,7 +160,6 @@ export class DiagnosticService {
 
             return results
         } catch (error) {
-            console.error('❌ Error en diagnóstico completo:', error)
             return {
                 error: error.message,
                 params

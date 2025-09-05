@@ -6,7 +6,6 @@
     transition-show="slide-up"
     transition-hide="slide-down"
     @escape-key="cerrarConsola"
-    persistent
   >
     <q-card class="console-modal-card bg-dark text-white">
       <!-- Header -->

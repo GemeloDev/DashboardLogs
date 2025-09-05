@@ -1194,7 +1194,6 @@ const enviarSoporte = async () => {
 const limpiarCodigoSoporte = () => {
   if (formulario.value.supportCode && formulario.value.supportCode.includes('-')) {
     // Remover el sufijo del código (ej: USR02808190918-INF019 -> USR02808190918)
-    formulario.value.supportCode = formulario.value.supportCode.split('-')[0]
 
     $q.notify({
       type: 'info',
