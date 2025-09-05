@@ -266,7 +266,7 @@
                   <div class="log-metadata" v-if="log.Oficina || log.Usuario">
                     <div class="metadata-item" v-if="log.Oficina">
                       <q-icon name="business" size="14px" class="q-mr-xs text-green-4" />
-                      <span>{{ log.Oficina.Nombre || log.Oficina }}</span>
+                      <span>{{ log.Oficina.nombre }}</span>
                     </div>
                     <div class="metadata-item" v-if="log.Usuario">
                       <q-icon name="person" size="14px" class="q-mr-xs text-purple-4" />

@@ -120,7 +120,6 @@ export class ChartDataService {
     const detalles = []
 
     rawData.forEach(item => {
-      console.log(item.oficina.nombre, 'xddddddddddddd');
       // Manejar tanto formato real (minúsculas) como formato de muestra (mayúsculas)
       const dateField = item.date || item.Date
       const messageField = item.message || item.Message

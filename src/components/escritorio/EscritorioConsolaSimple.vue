@@ -962,6 +962,14 @@ import { API_BASE_URL } from '../../services/apiConfig.js'
 import { CatalogService } from '../../services/catalogService.js'
 import EscritorioDiagnostico from './EscritorioDiagnostico.vue'
 
+// 📝 Props
+defineProps({
+  filtros: {
+    type: Object,
+    default: () => ({}),
+  },
+})
+
 const $q = useQuasar()
 
 // Estado

@@ -249,6 +249,13 @@
 
     <!-- 🤖 SANTORO IA ASSISTANT - Chat Flotante Global -->
     <SantoroChat />
+
+    <!-- 🔧 MODAL DE CONFIGURACIÓN GEMINI AI -->
+    <GeminiConfigModal
+      ref="geminiConfigRef"
+      id="gemini-config"
+      @configurado="onGeminiConfigurado"
+    />
   </q-layout>
 </template>
 
@@ -260,6 +267,8 @@ import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 import SantoroChat from '../components/SantoroChat.vue'
+import GeminiConfigModal from '../components/GeminiConfigModal.vue'
+import { santoroContextService } from '../services/santoroContextService.js'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -270,6 +279,7 @@ const modalVisible = ref(false)
 const detalleModal = ref(null)
 const showFilters = ref(false)
 const consolaRef = ref(null)
+const geminiConfigRef = ref(null)
 
 // Proporcionar el estado del flujo a los componentes hijos
 provide('selectedFlow', selectedFlow)
@@ -401,14 +411,147 @@ const cerrarSesionDirectamente = () => {
   }
 }
 
+// Función para manejar la configuración de Gemini AI
+const onGeminiConfigurado = (evento) => {
+  console.log('🤖 Gemini configurado:', evento)
+
+  if (evento.desconectado) {
+    $q.notify({
+      type: 'info',
+      message: 'Gemini AI desconectado',
+      position: 'top',
+    })
+  } else if (evento.resultado && evento.resultado.exito) {
+    $q.notify({
+      type: 'positive',
+      message: 'Gemini AI configurado correctamente. Chat mejorado disponible.',
+      position: 'top',
+    })
+  }
+}
+
 // Cargar información del usuario al montar
-onMounted(() => {
+onMounted(async () => {
   loadUserInfo()
 
   // Cargar el flujo seleccionado desde localStorage
   const savedFlow = localStorage.getItem('selectedFlow')
   if (savedFlow && (savedFlow === 'mobile' || savedFlow === 'escritorio')) {
     selectedFlow.value = savedFlow
+  }
+
+  // 🧠 INICIALIZAR servicio de contexto
+  console.log('🚀 Inicializando servicio de contexto...')
+
+  // Configurar callback para cambios de flujo
+  santoroContextService.registrarCallback('cambio_flujo', (datos) => {
+    console.log('📱 Flujo cambiado desde contexto:', datos)
+  })
+
+  // Configurar callback para cambios de ruta
+  santoroContextService.registrarCallback('cambio_ruta', (datos) => {
+    console.log('🧭 Ruta cambiada desde contexto:', datos)
+  })
+
+  // Actualizar contexto inicial
+  santoroContextService.cambiarFlujo(selectedFlow.value)
+  santoroContextService.actualizarContextoRuta()
+
+  // Configurar eventos globales para modales
+  window.addEventListener('santoro-abrir-gemini-config', () => {
+    if (geminiConfigRef.value) {
+      geminiConfigRef.value.abrir()
+    }
+  })
+
+  // Configurar eventos de navegación
+  window.addEventListener('santoro-navegar', (event) => {
+    const { ruta, parametros } = event.detail
+    console.log('🧭 Navegando a:', ruta, parametros)
+
+    router.push(ruta).catch((err) => {
+      console.error('Error navegando a', ruta, err)
+      $q.notify({
+        type: 'negative',
+        message: `Error navegando a ${ruta}`,
+        position: 'top-right',
+      })
+    })
+  })
+
+  // Configurar evento para abrir consola
+  window.addEventListener('santoro-abrir-consola', () => {
+    console.log('🖥️ Abriendo consola de logs...')
+    openConsole()
+  })
+
+  // Configurar evento para cambiar flujo
+  window.addEventListener('santoro-cambiar-flujo', (event) => {
+    const { flujo } = event.detail
+    console.log('🔄 Cambiando flujo a:', flujo)
+
+    if (flujo === 'escritorio' || flujo === 'mobile') {
+      selectedFlow.value = flujo
+      $q.notify({
+        type: 'positive',
+        message: `Cambiado a flujo ${flujo === 'escritorio' ? 'de escritorio' : 'móvil'}`,
+        icon: flujo === 'escritorio' ? 'desktop_windows' : 'smartphone',
+        position: 'top-right',
+      })
+    }
+  })
+
+  // Configurar evento para aplicar filtros
+  window.addEventListener('santoro-aplicar-filtro', (event) => {
+    const { tipo } = event.detail
+    console.log('🏷️ Aplicando filtro:', tipo)
+
+    let mensaje = 'Filtro aplicado'
+    let icon = 'filter_list'
+
+    if (tipo === 'fecha') {
+      showFilters.value = true
+      mensaje = 'Abriendo filtros de fecha'
+      icon = 'date_range'
+    } else if (tipo === 'limpiar') {
+      filtros.value = {}
+      mensaje = 'Filtros limpiados'
+      icon = 'clear'
+      // Emitir evento para que los componentes hijos actualicen
+      window.dispatchEvent(new CustomEvent('limpiar-filtros'))
+    } else if (tipo === 'errores') {
+      filtros.value = { ...filtros.value, nivel: 'ERROR' }
+      mensaje = 'Mostrando solo errores'
+      icon = 'error'
+      // Emitir evento con los nuevos filtros
+      window.dispatchEvent(new CustomEvent('filtros-aplicados', { detail: filtros.value }))
+    }
+
+    $q.notify({
+      type: 'positive',
+      message: mensaje,
+      icon: icon,
+      position: 'top-right',
+    })
+  })
+
+  // Configurar notificaciones para los controladores
+  try {
+    const { santoroModalController } = await import('src/services/santoroModalControllerSimple.js')
+    const { santoroActionController } = await import('src/services/santoroActionController.js')
+
+    // Configurar notificaciones
+    santoroModalController.configurarNotificaciones((notification) => {
+      $q.notify(notification)
+    })
+
+    santoroActionController.configurarNotificaciones((notification) => {
+      $q.notify(notification)
+    })
+
+    console.log('🔔 Notificaciones configuradas para controladores')
+  } catch (error) {
+    console.error('Error configurando notificaciones:', error)
   }
 })
 </script>

@@ -656,6 +656,12 @@ async function cargarOvalAlineado(start_date, end_date) {
 function renderChartOval() {
   if (!ovalChartRef.value) {
     console.warn('⚠️ ovalChartRef no está montado aún.')
+    // Reintentar después de un breve delay
+    setTimeout(() => {
+      if (ovalChartRef.value) {
+        renderChartOval()
+      }
+    }, 100)
     return
   }
   if (ovalChartInstance) {
@@ -741,6 +747,12 @@ async function cargarFuncionalidadesMasUsadas(start_date, end_date) {
 function renderChartFuncionalidades(labels, data) {
   if (!funcionalidadesChartRef.value) {
     console.warn('funcionalidadesChartRef no está montado aún.')
+    // Reintentar después de un breve delay
+    setTimeout(() => {
+      if (funcionalidadesChartRef.value) {
+        renderChartFuncionalidades(labels, data)
+      }
+    }, 100)
     return
   }
   if (chartFuncionalidadesInstance) {

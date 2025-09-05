@@ -6,32 +6,19 @@ import { santoroContextService } from './santoroContextService.js'
 
 class SantoroGeminiIntegration {
   constructor() {
-    // API Key por defecto como fallback
-    this.apiKeyPorDefecto = 'AIzaSyD3Fwcr30PAukXnBHXsGcNdZhDP2ST55Hw'
     this.apiKey = null
     this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
     this.configurado = false
     this.contextoSistema = null
-
-    // Inicializar con API key por defecto
-    this.inicializarConApiKeyPorDefecto()
   }
 
-  // � Inicializar con API Key por defecto
-  inicializarConApiKeyPorDefecto() {
-    console.log('🔑 Inicializando con API Key por defecto...')
-    this.configurar(this.apiKeyPorDefecto)
-  }
-
-  // �🔧 CONFIGURACIÓN inicial
+  // 🔧 CONFIGURACIÓN inicial
   configurar(apiKey, contextoSistema) {
-    // Si no se proporciona API key, usar la por defecto
-    this.apiKey = apiKey || this.apiKeyPorDefecto
-    this.configurado = !!this.apiKey
+    this.apiKey = apiKey
+    this.configurado = !!apiKey
     this.contextoSistema = contextoSistema || this.getContextoSistemaPorDefecto()
 
-    console.log('🤖 Gemini AI configurado:', this.configurado ? '✅' : '❌')
-    console.log('🔑 API Key activa:', this.apiKey ? (this.apiKey.substring(0, 10) + '...') : 'No configurada')
+    console.log('🤖 Gemini AI configurado:', this.configurado)
     return this.configurado
   }
 
@@ -175,25 +162,6 @@ RESPUESTA REQUERIDA (JSON válido):
       return null
     } catch (error) {
       console.error('Error en llamada a Gemini API:', error)
-
-      // Manejo específico para rate limiting (429)
-      if (error.response?.status === 429) {
-        console.warn('⚠️ Rate limit alcanzado en Gemini API')
-        throw new Error('RATE_LIMIT: La API de Gemini está ocupada. Intenta en unos segundos.')
-      }
-
-      // Manejo específico para errores de autenticación
-      if (error.response?.status === 401) {
-        console.warn('⚠️ API Key inválida o expirada')
-        throw new Error('AUTH_ERROR: API Key de Gemini inválida. Configura una nueva clave.')
-      }
-
-      // Manejo específico para cuota excedida
-      if (error.response?.status === 403) {
-        console.warn('⚠️ Cuota de API excedida')
-        throw new Error('QUOTA_EXCEEDED: Cuota de Gemini API excedida.')
-      }
-
       throw error
     }
   }
@@ -594,9 +562,8 @@ CAPACIDADES:
 - Diagnósticos técnicos avanzados
 - Generación de reportes y exportaciones
 - Navegación por módulos del dashboard
-- Configuración de filtros inteligentes automáticos
+- Configuración de filtros inteligentes
 - Búsquedas contextuales
-- Control de fechas y períodos de tiempo
 
 MÓDULOS DISPONIBLES:
 - Diagnóstico: Análisis profundo del sistema
@@ -608,51 +575,12 @@ ACCIONES PRINCIPALES que puedes ejecutar:
 - navegar_a: Ir a un módulo específico
 - abrir_consola: Abrir consola de logs
 - cambiar_flujo: Cambiar entre mobile/escritorio
-- aplicar_filtro_fecha: Aplicar filtros de fecha automáticos
-- filtrar_hoy: Filtrar datos de hoy
-- filtrar_ayer: Filtrar datos de ayer
-- filtrar_semana: Filtrar datos de esta semana
-- filtrar_mes: Filtrar datos de este mes
-- filtrar_ultimos_7_dias: Filtrar últimos 7 días
-- filtrar_ultimos_30_dias: Filtrar últimos 30 días
-- abrir_filtros: Abrir panel de filtros
-- resetear_filtros: Resetear filtros al mes actual
+- aplicar_filtro: Aplicar filtros específicos
 - mostrar_ayuda: Mostrar ayuda del sistema
 
-COMANDOS DE FILTROS que entiendes:
-- "Filtrar por hoy" → aplicar_filtro_fecha con tipo "hoy"
-- "Mostrar datos de esta semana" → filtrar_semana
-- "Ver últimos 7 días" → filtrar_ultimos_7_dias
-- "Datos de ayer" → filtrar_ayer
-- "Abrir filtros" → abrir_filtros
-- "Resetear filtros" → resetear_filtros
-
-IMPORTANTE:
-- Siempre considera el contexto actual del usuario
-- Para filtros de fecha, detecta automáticamente el período solicitado
-- Usa las acciones específicas de filtros cuando el usuario mencione fechas o períodos
+IMPORTANTE: Siempre considera el contexto actual del usuario para dar respuestas más precisas.
 
 Siempre responde en JSON válido con la estructura exacta solicitada.`
-  }
-
-  // 🔧 MÉTODOS de configuración avanzados
-  cambiarApiKey(nuevaApiKey) {
-    console.log('🔄 Cambiando API Key...')
-    const apiKeyAnterior = this.apiKey?.substring(0, 10) + '...'
-
-    this.configurar(nuevaApiKey || this.apiKeyPorDefecto)
-
-    console.log('🔑 API Key cambiada de:', apiKeyAnterior, 'a:', this.apiKey?.substring(0, 10) + '...')
-    return this.configurado
-  }
-
-  obtenerConfiguracionActual() {
-    return {
-      configurado: this.configurado,
-      apiKey: this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'No configurada',
-      esApiKeyPorDefecto: this.apiKey === this.apiKeyPorDefecto,
-      baseURL: this.baseURL
-    }
   }
 
   // 🧪 MÉTODO de prueba
