@@ -249,6 +249,13 @@
 
     <!-- 🤖 SANTORO IA ASSISTANT - Chat Flotante Global -->
     <SantoroChat />
+
+    <!-- 🔧 MODAL DE CONFIGURACIÓN GEMINI AI -->
+    <GeminiConfigModal
+      ref="geminiConfigRef"
+      id="gemini-config"
+      @configurado="onGeminiConfigurado"
+    />
   </q-layout>
 </template>
 
@@ -260,6 +267,7 @@ import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 import SantoroChat from '../components/SantoroChat.vue'
+import GeminiConfigModal from '../components/GeminiConfigModal.vue'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -270,6 +278,7 @@ const modalVisible = ref(false)
 const detalleModal = ref(null)
 const showFilters = ref(false)
 const consolaRef = ref(null)
+const geminiConfigRef = ref(null)
 
 // Proporcionar el estado del flujo a los componentes hijos
 provide('selectedFlow', selectedFlow)
@@ -401,14 +410,74 @@ const cerrarSesionDirectamente = () => {
   }
 }
 
+// Función para manejar la configuración de Gemini AI
+const onGeminiConfigurado = (evento) => {
+  console.log('🤖 Gemini configurado:', evento)
+
+  if (evento.desconectado) {
+    $q.notify({
+      type: 'info',
+      message: 'Gemini AI desconectado',
+      position: 'top',
+    })
+  } else if (evento.resultado && evento.resultado.exito) {
+    $q.notify({
+      type: 'positive',
+      message: 'Gemini AI configurado correctamente. Chat mejorado disponible.',
+      position: 'top',
+    })
+  }
+}
+
 // Cargar información del usuario al montar
-onMounted(() => {
+onMounted(async () => {
   loadUserInfo()
 
   // Cargar el flujo seleccionado desde localStorage
   const savedFlow = localStorage.getItem('selectedFlow')
   if (savedFlow && (savedFlow === 'mobile' || savedFlow === 'escritorio')) {
     selectedFlow.value = savedFlow
+  }
+
+  // Configurar eventos globales para modales
+  window.addEventListener('santoro-abrir-gemini-config', () => {
+    if (geminiConfigRef.value) {
+      geminiConfigRef.value.abrir()
+    }
+  })
+
+  // Configurar eventos de navegación
+  window.addEventListener('santoro-navegar', (event) => {
+    const { ruta, parametros } = event.detail
+    console.log('🧭 Navegando a:', ruta, parametros)
+
+    router.push(ruta).catch((err) => {
+      console.error('Error navegando a', ruta, err)
+      $q.notify({
+        type: 'negative',
+        message: `Error navegando a ${ruta}`,
+        position: 'top-right',
+      })
+    })
+  })
+
+  // Configurar notificaciones para los controladores
+  try {
+    const { santoroModalController } = await import('src/services/santoroModalControllerSimple.js')
+    const { santoroActionController } = await import('src/services/santoroActionController.js')
+
+    // Configurar notificaciones
+    santoroModalController.configurarNotificaciones((notification) => {
+      $q.notify(notification)
+    })
+
+    santoroActionController.configurarNotificaciones((notification) => {
+      $q.notify(notification)
+    })
+
+    console.log('🔔 Notificaciones configuradas para controladores')
+  } catch (error) {
+    console.error('Error configurando notificaciones:', error)
   }
 })
 </script>

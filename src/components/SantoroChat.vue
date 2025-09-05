@@ -251,10 +251,17 @@ const enviarMensaje = async () => {
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     // Agregar respuesta de Santoro
+    const textoRespuesta =
+      typeof respuesta.respuesta === 'string'
+        ? respuesta.respuesta
+        : respuesta.mensaje || 'Acción ejecutada correctamente'
+
     const mensajeSantoro = {
       tipo: 'bot',
-      texto: respuesta.respuesta,
-      acciones: respuesta.acciones || [],
+      texto: textoRespuesta,
+      acciones: Array.isArray(respuesta.acciones)
+        ? respuesta.acciones.map((acc) => acc.accion || acc.tipo || acc)
+        : [],
       datos: respuesta.datos,
       hora: new Date().toLocaleTimeString(),
     }
@@ -344,7 +351,8 @@ const ejecutarAccion = async (accion) => {
     const parametros = { origen: 'chat_santoro' }
 
     // 🎯 EJECUTAR ACCIÓN REAL EN LA UI
-    const resultado = await santoroActionController.ejecutarAccion(accion, parametros, datos)
+    const tipoAccion = typeof accion === 'string' ? accion : accion.accion || accion.tipo
+    const resultado = await santoroActionController.ejecutarAccion(tipoAccion, parametros, datos)
 
     // Agregar respuesta sobre la acción ejecutada
     const mensajeRespuesta = {
@@ -439,6 +447,26 @@ const scrollHaciaAbajo = async () => {
 // 🎯 Inicialización
 onMounted(() => {
   inicializarReconocimientoVoz()
+
+  // Registrar el componente de configuración de Gemini en el controlador de modales
+  window.addEventListener('load', () => {
+    try {
+      // Obtener la referencia al modal de configuración desde el MainLayout
+      const geminiConfigRef = document.querySelector('#gemini-config')?.geminiConfigRef
+
+      if (geminiConfigRef) {
+        // Importar y registrar en el controlador de modales
+        import('src/services/santoroModalController.js').then(({ santoroModalController }) => {
+          santoroModalController.registrarComponente('gemini-config', geminiConfigRef, {
+            abrir: () => geminiConfigRef.value?.abrir(),
+          })
+          console.log('🤖 Componente Gemini registrado en modal controller')
+        })
+      }
+    } catch (error) {
+      console.error('Error registrando componente Gemini:', error)
+    }
+  })
 })
 </script>
 

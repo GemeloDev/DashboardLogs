@@ -2,7 +2,6 @@
 // Este archivo conecta las decisiones de Santoro con cambios visuales reales
 
 import { reactive } from 'vue'
-import { useQuasar } from 'quasar'
 
 class SantoroActionController {
   constructor() {
@@ -14,6 +13,25 @@ class SantoroActionController {
     })
 
     this.callbacks = new Map() // Callbacks para acciones específicas
+    this.notificationCallback = null // Callback para notificaciones
+  }
+
+  // 🔧 CONFIGURAR CALLBACK DE NOTIFICACIONES
+  configurarNotificaciones(callback) {
+    this.notificationCallback = callback
+  }
+
+  // 🔔 MOSTRAR NOTIFICACIÓN
+  mostrarNotificacion(tipo, mensaje, posicion = 'top') {
+    try {
+      if (this.notificationCallback) {
+        this.notificationCallback({ type: tipo, message: mensaje, position: posicion })
+      } else {
+        console.log(`🔔 ${tipo.toUpperCase()}: ${mensaje}`)
+      }
+    } catch {
+      console.log(`🔔 ${tipo.toUpperCase()}: ${mensaje}`)
+    }
   }
 
   // 📋 REGISTRAR COMPONENTE para que Santoro pueda controlarlo
@@ -122,35 +140,17 @@ class SantoroActionController {
 
   // 📊 MOSTRAR GRÁFICO
   async mostrarGrafico(datos) {
-    const $q = useQuasar()
-
     if (!datos || datos.length === 0) {
-      $q.notify({
-        type: 'warning',
-        message: '📊 No hay datos para mostrar en el gráfico',
-        position: 'top-right'
-      })
+      this.mostrarNotificacion('warning', '📊 No hay datos para mostrar en el gráfico', 'top-right')
       return { exito: false, mensaje: 'Sin datos para graficar' }
     }
 
-    // Simular apertura de modal de gráfico
-    $q.dialog({
-      title: '📊 Gráfico Generado por Santoro',
-      message: `Se encontraron ${datos.length} registros para visualizar`,
-      html: true,
-      ok: 'Ver Dashboard Completo',
-      cancel: 'Cerrar'
-    }).onOk(() => {
-      // Aquí conectarías con tu componente de gráficos real
-      this.abrirDashboard('general')
-    })
+    // Emitir evento para abrir gráfico
+    window.dispatchEvent(new CustomEvent('santoro-mostrar-grafico', {
+      detail: { datos }
+    }))
 
-    $q.notify({
-      type: 'positive',
-      message: '📊 Gráfico generado exitosamente',
-      position: 'top-right',
-      actions: [{ label: 'Ver Dashboard', handler: () => this.abrirDashboard('general') }]
-    })
+    this.mostrarNotificacion('positive', '📊 Gráfico generado exitosamente', 'top-right')
 
     return {
       exito: true,
@@ -161,35 +161,22 @@ class SantoroActionController {
 
   // 📁 EXPORTAR DATOS
   async exportarDatos(datos) {
-    const $q = useQuasar()
-
     if (!datos || datos.length === 0) {
-      $q.notify({
-        type: 'warning',
-        message: '📁 No hay datos para exportar',
-        position: 'top-right'
-      })
+      this.mostrarNotificacion('warning', '📁 No hay datos para exportar', 'top-right')
       return { exito: false, mensaje: 'Sin datos para exportar' }
     }
 
-    // Simular exportación
-    $q.loading.show({ message: 'Generando reporte...' })
+    // Simular exportación con notificación de loading
+    this.mostrarNotificacion('info', 'Generando reporte...', 'top')
 
     // Simular delay de exportación
     await new Promise(resolve => setTimeout(resolve, 1500))
-
-    $q.loading.hide()
 
     // Crear archivo de ejemplo (en una implementación real usarías tus datos)
     const contenidoCSV = this.generarCSV(datos)
     this.descargarArchivo(contenidoCSV, `santoro-reporte-${Date.now()}.csv`)
 
-    $q.notify({
-      type: 'positive',
-      message: `📁 Reporte exportado con ${datos.length} registros`,
-      position: 'top-right',
-      timeout: 3000
-    })
+    this.mostrarNotificacion('positive', `📁 Reporte exportado con ${datos.length} registros`, 'top-right')
 
     return {
       exito: true,
@@ -200,24 +187,10 @@ class SantoroActionController {
 
   // 🔍 ABRIR FILTROS
   async abrirFiltros() {
-    const $q = useQuasar()
+    // Emitir evento para abrir filtros
+    window.dispatchEvent(new CustomEvent('santoro-abrir-filtros-avanzados'))
 
-    // Simular apertura de filtros avanzados
-    $q.dialog({
-      title: '🔍 Filtros Inteligentes - Santoro',
-      message: 'Configura filtros basados en el análisis de Santoro',
-      prompt: {
-        model: '',
-        label: 'Búsqueda inteligente',
-        hint: 'Ej: errores de ayer, usuarios activos, exportaciones recientes'
-      },
-      ok: 'Aplicar Filtros',
-      cancel: 'Cancelar'
-    }).onOk((busqueda) => {
-      if (busqueda) {
-        this.procesarBusquedaInteligente(busqueda)
-      }
-    })
+    this.mostrarNotificacion('info', '🔍 Abriendo filtros inteligentes...', 'top')
 
     return {
       exito: true,
@@ -228,22 +201,16 @@ class SantoroActionController {
 
   // 🔍 MOSTRAR DETALLES
   async mostrarDetalles(datos) {
-    const $q = useQuasar()
-
     if (!datos) {
       return { exito: false, mensaje: 'No hay detalles para mostrar' }
     }
 
-    // Crear HTML con detalles formateados
-    const detallesHTML = this.formatearDetalles(datos)
+    // Emitir evento con detalles
+    window.dispatchEvent(new CustomEvent('santoro-mostrar-detalles', {
+      detail: { datos }
+    }))
 
-    $q.dialog({
-      title: '🔍 Detalles Analizados por Santoro',
-      message: detallesHTML,
-      html: true,
-      style: 'max-width: 80vw',
-      ok: 'Cerrar'
-    })
+    this.mostrarNotificacion('info', '🔍 Mostrando detalles...', 'top')
 
     return {
       exito: true,
@@ -265,33 +232,38 @@ class SantoroActionController {
       }
     }
 
-    // Fallback si no hay componente registrado
-    const $q = useQuasar()
-    $q.notify({
-      type: 'info',
-      message: '🏥 Abriendo módulo de diagnóstico...',
-      position: 'top-right'
-    })
+    // Fallback: Navegar a la página de diagnóstico
+    try {
+      // Emitir evento para navegación
+      window.dispatchEvent(new CustomEvent('santoro-navegar', {
+        detail: { ruta: '/diagnostico', parametros }
+      }))
 
-    return {
-      exito: true,
-      mensaje: 'Redirigiendo a diagnóstico',
-      accionEjecutada: 'abrir_diagnostico'
+      this.mostrarNotificacion('positive', '🏥 Abriendo módulo de diagnóstico...', 'top-right')
+
+      return {
+        exito: true,
+        mensaje: '🏥 Navegando al módulo de diagnóstico...',
+        accionEjecutada: 'abrir_diagnostico'
+      }
+    } catch (error) {
+      console.error('Error abriendo diagnóstico:', error)
+      return {
+        exito: false,
+        mensaje: 'Error abriendo diagnóstico: ' + error.message,
+        accionEjecutada: 'abrir_diagnostico'
+      }
     }
   }
 
   // 📊 ABRIR DASHBOARD
   async abrirDashboard(tipo = 'general') {
-    const $q = useQuasar()
+    // Emitir evento para navegar al dashboard
+    window.dispatchEvent(new CustomEvent('santoro-abrir-dashboard', {
+      detail: { tipo }
+    }))
 
-    $q.notify({
-      type: 'info',
-      message: `📊 Cargando dashboard: ${tipo}`,
-      position: 'top-right'
-    })
-
-    // Aquí conectarías con tu router o componente de dashboard
-    // this.$router.push('/dashboard')
+    this.mostrarNotificacion('info', `📊 Cargando dashboard: ${tipo}`, 'top-right')
 
     return {
       exito: true,
@@ -302,32 +274,10 @@ class SantoroActionController {
 
   // 💡 MOSTRAR AYUDA
   async mostrarAyuda() {
-    const $q = useQuasar()
+    // Emitir evento para mostrar ayuda
+    window.dispatchEvent(new CustomEvent('santoro-mostrar-ayuda'))
 
-    const ayudaHTML = `
-            <div style="line-height: 1.6;">
-                <h6>🤖 Comandos de Santoro</h6>
-                <ul>
-                    <li><strong>"busca error USR123"</strong> - Buscar códigos específicos</li>
-                    <li><strong>"eventos de hoy"</strong> - Ver actividad reciente</li>
-                    <li><strong>"sesión USR123"</strong> - Analizar sesiones</li>
-                    <li><strong>"exporta datos"</strong> - Generar reportes</li>
-                </ul>
-
-                <h6>🎤 Comandos por Voz</h6>
-                <p>Presiona el micrófono y di cualquier comando</p>
-
-                <h6>📊 Acciones Rápidas</h6>
-                <p>Usa los botones que aparecen en mis respuestas para acciones directas</p>
-            </div>
-        `
-
-    $q.dialog({
-      title: '💡 Ayuda de Santoro IA',
-      message: ayudaHTML,
-      html: true,
-      ok: 'Entendido'
-    })
+    this.mostrarNotificacion('info', '💡 Mostrando ayuda completa...', 'top')
 
     return {
       exito: true,
@@ -377,16 +327,12 @@ class SantoroActionController {
   }
 
   async procesarBusquedaInteligente(busqueda) {
-    const $q = useQuasar()
+    this.mostrarNotificacion('info', `🔍 Procesando: "${busqueda}"`, 'top-right')
 
-    $q.notify({
-      type: 'info',
-      message: `🔍 Procesando: "${busqueda}"`,
-      position: 'top-right'
-    })
-
-    // Aquí conectarías de vuelta con Santoro para procesar la nueva búsqueda
-    // santoroAI.procesarPregunta(busqueda)
+    // Emitir evento para procesar búsqueda
+    window.dispatchEvent(new CustomEvent('santoro-procesar-busqueda', {
+      detail: { busqueda }
+    }))
   }
 
   // 📞 CALLBACK REGISTRATION para acciones personalizadas

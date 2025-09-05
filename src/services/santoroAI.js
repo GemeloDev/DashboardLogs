@@ -4,7 +4,7 @@
 import santoroIntegrator from './santoroIntegrator.js'
 import { santoroActionController } from './santoroActionController.js'
 import { santoroRouterController } from './santoroRouterController.js'
-import { santoroModalController } from './santoroModalController.js'
+import { santoroModalController } from './santoroModalControllerSimple.js'
 import { santoroComponentController } from './santoroComponentController.js'
 import { santoroGeminiIntegration } from './santoroGeminiIntegration.js'
 
@@ -22,6 +22,12 @@ class SantoroAI {
       componente: santoroComponentController,
       gemini: santoroGeminiIntegration
     }
+
+    // Configurar Gemini Integration con el contexto del sistema
+    this.configurarGemini()
+
+    // Intentar cargar API Key guardada
+    this.cargarApiKeyGuardada()
 
     // 🧠 Contexto del sistema - Capacidades completas como Google Assistant
     this.systemContext = {
@@ -93,10 +99,70 @@ class SantoroAI {
   }
 
   // 🔑 CONFIGURAR GEMINI
-  configurarGemini(apiKey) {
-    this.apiKey = apiKey
-    this.controladores.gemini.configurar(apiKey, this.systemContext)
-    console.log('🔑 Gemini AI configurado')
+  configurarGemini(apiKey = null) {
+    if (apiKey) {
+      this.apiKey = apiKey
+    }
+
+    // Configurar Gemini Integration con el contexto del sistema
+    const configurado = this.controladores.gemini.configurar(
+      this.apiKey || apiKey,
+      this.systemContext
+    )
+
+    if (configurado) {
+      console.log('✅ Gemini AI integrado exitosamente')
+      return { exito: true, mensaje: 'Gemini AI configurado correctamente' }
+    } else {
+      console.log('⚠️  Gemini AI no configurado - usando procesamiento local')
+      return { exito: false, mensaje: 'API Key de Gemini no proporcionada' }
+    }
+  }
+
+  // 🔧 MÉTODO PARA CONFIGURAR API KEY DESDE LA UI
+  async configurarApiKey(apiKey) {
+    if (!apiKey || typeof apiKey !== 'string') {
+      return {
+        exito: false,
+        mensaje: 'API Key inválida. Debe ser una cadena de texto válida.'
+      }
+    }
+
+    try {
+      // Configurar Gemini
+      this.configurarGemini(apiKey)
+
+      // Guardar en localStorage para persistencia
+      localStorage.setItem('santoro_gemini_api_key', apiKey)
+
+      return {
+        exito: true,
+        mensaje: 'API Key de Gemini configurada correctamente. Ahora tengo capacidades avanzadas de IA.',
+        capacidades: ['comprensión_avanzada', 'respuestas_contextuales', 'análisis_inteligente']
+      }
+
+    } catch (error) {
+      console.error('Error configurando API Key:', error)
+      return {
+        exito: false,
+        mensaje: `Error configurando API Key: ${error.message}`
+      }
+    }
+  }
+
+  // 🔄 CARGAR API KEY GUARDADA
+  cargarApiKeyGuardada() {
+    try {
+      const apiKeySaved = localStorage.getItem('santoro_gemini_api_key')
+      if (apiKeySaved) {
+        this.configurarGemini(apiKeySaved)
+        console.log('🔑 API Key de Gemini cargada desde localStorage')
+        return true
+      }
+    } catch (error) {
+      console.error('Error cargando API Key:', error)
+    }
+    return false
   }
 
   // 🎯 MÉTODO PRINCIPAL - Procesa las preguntas del usuario con IA Avanzada
@@ -124,7 +190,8 @@ class SantoroAI {
           intencion: resultado.intencion,
           confianza: resultado.confianza,
           fuente: resultado.fuente || 'gemini',
-          exito: true
+          exito: true,
+          mensaje: typeof resultado.respuesta === 'string' ? resultado.respuesta : 'Acción ejecutada correctamente'
         }
       }
 
@@ -134,7 +201,7 @@ class SantoroAI {
       }
 
       return {
-        respuesta: resultado.respuesta || 'No pude procesar tu solicitud completamente.',
+        respuesta: typeof resultado.respuesta === 'string' ? resultado.respuesta : 'No pude procesar tu solicitud completamente.',
         exito: resultado.exito,
         intencion: resultado.intencion,
         fuente: resultado.fuente || 'local'
@@ -165,21 +232,22 @@ class SantoroAI {
             break
 
           case 'modal':
+            console.log('🎭 Ejecutando modal:', accion.destino, accion.parametros)
             resultado = await this.controladores.modal.abrirModal(
               accion.destino,
-              accion.parametros
+              accion.parametros || {}
             )
             break
 
           case 'buscar':
-            resultado = await santoroIntegrator.ejecutarAccion('buscar', accion.parametros)
+            resultado = await santoroIntegrator.ejecutarAccion('buscar', accion.parametros || {})
             break
 
           case 'exportar':
-            resultado = await this.controladores.accion.ejecutarAccion({
-              tipo: 'exportar',
-              ...accion.parametros
-            })
+            resultado = await this.controladores.accion.ejecutarAccion(
+              'exportar_datos',
+              accion.parametros || {}
+            )
             break
 
           case 'componente':
@@ -187,18 +255,25 @@ class SantoroAI {
             break
 
           case 'analizar':
-            resultado = await santoroIntegrator.ejecutarAccion('analizar', accion.parametros)
+            resultado = await santoroIntegrator.ejecutarAccion('analizar', accion.parametros || {})
             break
 
           default:
-            resultado = await this.controladores.accion.ejecutarAccion(accion)
+            console.log('🔧 Ejecutando acción genérica:', JSON.stringify(accion))
+            resultado = await this.controladores.accion.ejecutarAccion(
+              accion.tipo,
+              accion.parametros || {},
+              accion.datos || null
+            )
         }
 
         resultados.push({
           accion: accion.tipo,
           destino: accion.destino,
-          resultado,
-          exito: resultado?.exito !== false
+          parametros: accion.parametros,
+          resultado: resultado,
+          exito: resultado?.exito !== false,
+          mensaje: resultado?.mensaje || `Acción ${accion.tipo} ejecutada`
         })
 
       } catch (error) {
@@ -206,7 +281,8 @@ class SantoroAI {
         resultados.push({
           accion: accion.tipo,
           error: error.message,
-          exito: false
+          exito: false,
+          mensaje: `Error ejecutando ${accion.tipo}: ${error.message}`
         })
       }
     }
