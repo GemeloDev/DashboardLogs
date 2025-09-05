@@ -69,7 +69,7 @@
               flat
               round
               color="grey-4"
-              @click="mostrarAyuda"
+              @click="cerrarDiagnostico"
               class="q-mr-sm"
             >
               <q-tooltip>Minimizar diagnóstico</q-tooltip>
