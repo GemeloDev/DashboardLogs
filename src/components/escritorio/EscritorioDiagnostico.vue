@@ -6,7 +6,6 @@
     transition-show="slide-up"
     transition-hide="slide-down"
     @escape-key="cerrarDiagnostico"
-    persistent
   >
     <q-card class="diagnostic-modal bg-grey-9 text-white">
       <!-- Header Mejorado -->
@@ -60,7 +59,7 @@
               flat
               round
               color="cyan-4"
-              @click="mostrarAyuda = !mostrarAyuda"
+              @click="mostrarAyuda"
               class="q-mr-sm"
             >
               <q-tooltip class="bg-cyan-8">💡 Ayuda y Guías</q-tooltip>
@@ -70,7 +69,7 @@
               flat
               round
               color="grey-4"
-              @click="cerrarDiagnostico"
+              @click="mostrarAyuda"
               class="q-mr-sm"
             >
               <q-tooltip>Minimizar diagnóstico</q-tooltip>
@@ -753,11 +752,7 @@
                           <q-card class="bg-grey-9 text-white q-mb-sm">
                             <q-card-section>
                               <div class="row items-start">
-                                <div class="col-auto">
-                                  <q-chip dense color="primary" text-color="white">{{
-                                    formatearFecha(r.date)
-                                  }}</q-chip>
-                                </div>
+
                                 <div class="col">
                                   <div class="text-subtitle1 q-mb-xs">
                                     {{ r.type || r.proceso || 'Evento' }}
@@ -765,15 +760,14 @@
                                   <div class="text-body2 log-message">
                                     {{ r.message || r.detail || r.data || 'Sin mensaje' }}
                                   </div>
-
                                   <div class="text-caption q-mt-sm log-metadata">
                                     <div class="log-item">
                                       <q-icon name="person" size="xs" class="q-mr-xs" />
-                                      {{ r.person || r.persona || r.baseCode || 'N/A' }}
+                                      {{ '(' + r.person.curp + ') ' + r.person.nombres + ' ' + r.person.primerApellido + ' ' + r.person.segundoApellido   || r.persona || r.baseCode || 'N/A' }}
                                     </div>
                                     <div class="log-item">
                                       <q-icon name="apartment" size="xs" class="q-mr-xs" />
-                                      {{ r.oficina || r.office || 'N/A' }}
+                                      {{ r.oficina.nombre || r.office || 'N/A' }}
                                     </div>
                                     <div class="log-item">
                                       <q-icon name="computer" size="xs" class="q-mr-xs" />
@@ -785,6 +779,11 @@
                                     </div>
                                   </div>
                                 </div>
+                                <div class="col-auto">
+                                  <q-chip dense color="primary" text-color="white">{{
+                                    formatearFecha(r.date)
+                                  }}</q-chip>
+                                </div>
                               </div>
                             </q-card-section>
                           </q-card>
@@ -792,7 +791,6 @@
                       </div>
                     </div>
                   </div>
-
                   <div v-else class="text-center">
                     <q-icon name="error_outline" size="3rem" color="green-5" class="q-mb-md" />
                     <div class="text-h6 text-green-4">Error al enviar solicitud</div>
@@ -885,6 +883,8 @@
       </q-card-section>
     </q-card>
   </q-dialog>
+
+  <EscritorioGuia ref="escritorioGuia"/>
 </template>
 
 <script setup>
@@ -892,6 +892,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { DiagnosticService } from '../../services/diagnosticService.js'
 import { CatalogService } from '../../services/catalogService.js'
+import EscritorioGuia from './EscritorioGuia.vue'
 
 // Props y emits
 const props = defineProps({
@@ -910,6 +911,8 @@ const $q = useQuasar()
 const mostrarDiagnostico = ref(false)
 const tabActiva = ref('busqueda')
 const diagnosticoActivo = ref('')
+const escritorioGuia = ref(false)
+
 
 // Formularios
 const busquedaRapida = ref('')
@@ -1070,6 +1073,17 @@ const realizarBusquedaRapida = async () => {
   }
 }
 
+const mostrarAyuda = () => {
+  console.log('🔍 Intentando abrir diagnóstico...')
+  console.log('🔍 Diagnositico.value...', escritorioGuia.value)
+
+  if(escritorioGuia.value){
+    escritorioGuia.value.abrirGuia()
+  } else {
+    console.log('No se localizo el componente EscritorioGuia')
+  }
+}
+
 const consultarCodigoError = async (codigo = null) => {
   const errorCode = codigo || formulario.value.errorCode
   if (!errorCode || !String(errorCode).trim()) return
@@ -1194,7 +1208,7 @@ const enviarSoporte = async () => {
 const limpiarCodigoSoporte = () => {
   if (formulario.value.supportCode && formulario.value.supportCode.includes('-')) {
     // Remover el sufijo del código (ej: USR02808190918-INF019 -> USR02808190918)
-    formulario.value.supportCode = formulario.value.supportCode.split('-')[0]
+    // formulario.value.supportCode = formulario.value.supportCode.split('-')[0]
 
     $q.notify({
       type: 'info',

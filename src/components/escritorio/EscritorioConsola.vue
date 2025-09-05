@@ -25,7 +25,7 @@
                 {{ logsFiltrados.length }} / {{ logs.length }} registros
               </q-chip>
             </div>
-            <div class="text-subtitle2 text-grey-4 q-mt-sm" v-if="filtroActual">
+            <div class="text-subtitle2 text-grey-4 q-mt-sm" v-if="F">
               {{ filtroActual }}
             </div>
           </div>
