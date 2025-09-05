@@ -2,6 +2,7 @@
 // Este archivo conecta las decisiones de Santoro con cambios visuales reales
 
 import { reactive } from 'vue'
+import { santoroFiltersController } from './santoroFiltersController.js'
 
 class SantoroActionController {
   constructor() {
@@ -78,7 +79,64 @@ class SantoroActionController {
           break
 
         case 'aplicar_filtro_fecha':
+        case 'filtrar_fecha':
+        case 'filtrar_por_fecha':
           resultado = await this.aplicarFiltroFecha(parametros)
+          break
+
+        case 'filtrar_hoy':
+          resultado = await this.aplicarFiltroFecha({ tipo: 'hoy' })
+          break
+
+        case 'filtrar_ayer':
+          resultado = await this.aplicarFiltroFecha({ tipo: 'ayer' })
+          break
+
+        case 'filtrar_semana':
+        case 'filtrar_esta_semana':
+          resultado = await this.aplicarFiltroFecha({ tipo: 'semana actual' })
+          break
+
+        case 'filtrar_mes':
+        case 'filtrar_este_mes':
+          resultado = await this.aplicarFiltroFecha({ tipo: 'mes actual' })
+          break
+
+        case 'filtrar_ultimos_7_dias':
+        case 'filtrar_semana_pasada':
+          resultado = await this.aplicarFiltroFecha({ tipo: 'ultimos 7 dias' })
+          break
+
+        case 'filtrar_ultimos_30_dias':
+        case 'filtrar_mes_pasado':
+          resultado = await this.aplicarFiltroFecha({ tipo: 'ultimos 30 dias' })
+          break
+
+        case 'resetear_filtros':
+        case 'limpiar_filtros':
+          resultado = await this.resetearFiltros()
+          break
+
+        // 🖥️ ACCIONES DE CONTROL DE ESCRITORIO
+        case 'cerrar_consola':
+        case 'cerrar_diagnostico':
+          resultado = await this.cerrarConsola(parametros)
+          break
+
+        case 'cerrar_modal_filtros':
+        case 'cerrar_filtros':
+        case 'cerrar_modal':
+          resultado = await this.cerrarModalFiltros(parametros)
+          break
+
+        case 'minimizar_escritorio':
+        case 'minimizar_flujo':
+          resultado = await this.minimizarEscritorio(parametros)
+          break
+
+        case 'maximizar_escritorio':
+        case 'maximizar_flujo':
+          resultado = await this.maximizarEscritorio(parametros)
           break
 
         // 🔍 ACCIONES DE BÚSQUEDA Y DIAGNÓSTICO
@@ -89,6 +147,26 @@ class SantoroActionController {
 
         case 'abrir_diagnostico':
           resultado = await this.abrirDiagnostico(parametros)
+          break
+
+        case 'abrir_consola':
+        case 'mostrar_consola':
+          resultado = await this.abrirConsola(parametros)
+          break
+
+        case 'cambiar_flujo':
+        case 'cambiar_vista':
+          resultado = await this.cambiarFlujo(parametros)
+          break
+
+        case 'aplicar_filtro':
+        case 'filtrar_por':
+          resultado = await this.aplicarFiltro(parametros)
+          break
+
+        case 'navegar_a':
+        case 'ir_a':
+          resultado = await this.navegarA(parametros)
           break
 
         case 'buscar_relacionados':
@@ -187,15 +265,91 @@ class SantoroActionController {
 
   // 🔍 ABRIR FILTROS
   async abrirFiltros() {
-    // Emitir evento para abrir filtros
-    window.dispatchEvent(new CustomEvent('santoro-abrir-filtros-avanzados'))
+    try {
+      const resultado = await santoroFiltersController.abrirPanelFiltros()
 
-    this.mostrarNotificacion('info', '🔍 Abriendo filtros inteligentes...', 'top')
+      if (resultado.exito) {
+        this.mostrarNotificacion('positive', '🔍 Panel de filtros abierto', 'top')
+      } else {
+        // Fallback: emitir evento personalizado
+        window.dispatchEvent(new CustomEvent('santoro-abrir-filtros-avanzados'))
+        this.mostrarNotificacion('info', '🔍 Abriendo filtros...', 'top')
+      }
 
-    return {
-      exito: true,
-      mensaje: 'Panel de filtros abierto',
-      accionEjecutada: 'abrir_filtros'
+      return {
+        exito: true,
+        mensaje: 'Panel de filtros abierto',
+        accionEjecutada: 'abrir_filtros'
+      }
+    } catch (error) {
+      console.error('Error abriendo filtros:', error)
+      return {
+        exito: false,
+        mensaje: 'Error al abrir filtros'
+      }
+    }
+  }
+
+  // 📅 APLICAR FILTRO DE FECHA
+  async aplicarFiltroFecha(parametros) {
+    try {
+      const tipoFiltro = parametros.tipo || parametros.filtro || 'mes actual'
+      const resultado = await santoroFiltersController.aplicarFiltroFecha(tipoFiltro)
+
+      if (resultado.exito) {
+        this.mostrarNotificacion('positive', `✅ ${resultado.mensaje}`, 'top')
+
+        return {
+          exito: true,
+          mensaje: resultado.mensaje,
+          accionEjecutada: 'aplicar_filtro_fecha',
+          datos: {
+            fechaInicio: resultado.fechaInicio,
+            fechaFin: resultado.fechaFin,
+            descripcion: resultado.descripcion
+          }
+        }
+      } else {
+        this.mostrarNotificacion('warning', '⚠️ No se pudo aplicar el filtro', 'top')
+        return {
+          exito: false,
+          mensaje: 'No se pudo aplicar el filtro de fecha'
+        }
+      }
+    } catch (error) {
+      console.error('Error aplicando filtro de fecha:', error)
+      return {
+        exito: false,
+        mensaje: 'Error al aplicar filtro de fecha'
+      }
+    }
+  }
+
+  // 🔄 RESETEAR FILTROS
+  async resetearFiltros() {
+    try {
+      const resultado = await santoroFiltersController.resetearFiltros()
+
+      if (resultado.exito) {
+        this.mostrarNotificacion('positive', `🔄 ${resultado.mensaje}`, 'top')
+
+        return {
+          exito: true,
+          mensaje: resultado.mensaje,
+          accionEjecutada: 'resetear_filtros'
+        }
+      } else {
+        return {
+          exito: false,
+          mensaje: 'No se pudo resetear los filtros'
+        }
+      }
+    } catch (error) {
+      console.error('Error reseteando filtros:', error)
+      return {
+        exito: false,
+        mensaje: 'Error al resetear filtros'
+      }
     }
   }
 
@@ -256,7 +410,144 @@ class SantoroActionController {
     }
   }
 
-  // 📊 ABRIR DASHBOARD
+  // �️ ABRIR CONSOLA
+  async abrirConsola(parametros = {}) {
+    try {
+      // Emitir evento para abrir la consola
+      window.dispatchEvent(new CustomEvent('santoro-abrir-consola', {
+        detail: parametros
+      }))
+
+      this.mostrarNotificacion('positive', '🖥️ Abriendo consola de logs...', 'top-right')
+
+      return {
+        exito: true,
+        mensaje: '🖥️ Abriendo consola de logs del sistema...',
+        accionEjecutada: 'abrir_consola'
+      }
+    } catch (error) {
+      console.error('Error abriendo consola:', error)
+      return {
+        exito: false,
+        mensaje: 'Error abriendo consola: ' + error.message,
+        accionEjecutada: 'abrir_consola'
+      }
+    }
+  }
+
+  // 🔄 CAMBIAR FLUJO (Mobile/Escritorio) con navegación inteligente
+  async cambiarFlujo(parametros = {}) {
+    try {
+      const flujo = parametros.flujo || parametros.tipo || 'mobile'
+      const contextoActual = parametros.contextoActual || 'dashboard'
+      const necesitaNavegacion = parametros.necesitaNavegacion || false
+
+      // Emitir evento para cambiar flujo
+      window.dispatchEvent(new CustomEvent('santoro-cambiar-flujo', {
+        detail: { flujo }
+      }))
+
+      const mensaje = flujo === 'mobile'
+        ? '📱 Cambiando a vista móvil...'
+        : '🖥️ Cambiando a vista de escritorio...'
+
+      this.mostrarNotificacion('info', mensaje, 'top-right')
+
+      // Si necesita navegación o no está en una ruta apropiada, navegar al dashboard
+      if (necesitaNavegacion || !window.location.pathname.includes('/logs')) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('santoro-navegar', {
+            detail: { ruta: '/logs', parametros: { flujo } }
+          }))
+        }, 500) // Dar tiempo al cambio de flujo
+      }
+
+      return {
+        exito: true,
+        mensaje: mensaje,
+        accionEjecutada: 'cambiar_flujo',
+        datos: { flujo, contextoActual, navegado: necesitaNavegacion }
+      }
+    } catch (error) {
+      console.error('Error cambiando flujo:', error)
+      return {
+        exito: false,
+        mensaje: 'Error cambiando flujo: ' + error.message,
+        accionEjecutada: 'cambiar_flujo'
+      }
+    }
+  }
+
+  // 🔍 APLICAR FILTRO
+  async aplicarFiltro(parametros = {}) {
+    try {
+      // Emitir evento para aplicar filtros
+      window.dispatchEvent(new CustomEvent('santoro-aplicar-filtro', {
+        detail: parametros
+      }))
+
+      const tipoFiltro = parametros.tipo || parametros.filtro || 'personalizado'
+      const mensaje = `🔍 Aplicando filtro: ${tipoFiltro}...`
+
+      this.mostrarNotificacion('info', mensaje, 'top-right')
+
+      return {
+        exito: true,
+        mensaje: mensaje,
+        accionEjecutada: 'aplicar_filtro',
+        datos: parametros
+      }
+    } catch (error) {
+      console.error('Error aplicando filtro:', error)
+      return {
+        exito: false,
+        mensaje: 'Error aplicando filtro: ' + error.message,
+        accionEjecutada: 'aplicar_filtro'
+      }
+    }
+  }
+
+  // 🧭 NAVEGAR A
+  async navegarA(parametros = {}) {
+    try {
+      const ruta = parametros.ruta || parametros.pagina || '/'
+
+      // Mapear nombres amigables a rutas
+      const rutasDisponibles = {
+        'logs': '/logs',
+        'estadisticas': '/estadisticas',
+        'eventos': '/eventos',
+        'eventos-fallidos': '/eventos-fallidos',
+        'diagnostico': '/diagnostico',
+        'dashboard': '/logs'
+      }
+
+      const rutaFinal = rutasDisponibles[ruta.toLowerCase()] || ruta
+
+      // Emitir evento de navegación
+      window.dispatchEvent(new CustomEvent('santoro-navegar', {
+        detail: { ruta: rutaFinal, parametros }
+      }))
+
+      this.mostrarNotificacion('info', `🧭 Navegando a ${ruta}...`, 'top-right')
+
+      return {
+        exito: true,
+        mensaje: `🧭 Navegando a ${ruta}...`,
+        accionEjecutada: 'navegar_a',
+        datos: { ruta: rutaFinal }
+      }
+    } catch (error) {
+      console.error('Error navegando:', error)
+      return {
+        exito: false,
+        mensaje: 'Error navegando: ' + error.message,
+        accionEjecutada: 'navegar_a'
+      }
+    }
+  }
+
+  // �📊 ABRIR DASHBOARD
   async abrirDashboard(tipo = 'general') {
     // Emitir evento para navegar al dashboard
     window.dispatchEvent(new CustomEvent('santoro-abrir-dashboard', {
@@ -333,6 +624,180 @@ class SantoroActionController {
     window.dispatchEvent(new CustomEvent('santoro-procesar-busqueda', {
       detail: { busqueda }
     }))
+  }
+
+  // 🖥️ FUNCIONES DE CONTROL DE ESCRITORIO
+
+  // 🚪 CERRAR CONSOLA/DIAGNÓSTICO
+  async cerrarConsola(parametros = {}) {
+    try {
+      // Buscar componentes de consola o diagnóstico
+      const componentesConsola = ['escritorio-consola', 'diagnostico', 'flujo-escritorio']
+      let cerrado = false
+
+      for (const nombreComp of componentesConsola) {
+        const componente = this.componentes.get(nombreComp)
+        if (componente?.disponible) {
+          // Intentar cerrar usando diferentes métodos
+          if (componente.metodos.cerrar) {
+            await componente.metodos.cerrar()
+            cerrado = true
+            this.mostrarNotificacion('success', '✅ Consola cerrada correctamente', 'top')
+            break
+          } else if (componente.metodos.ocultar) {
+            await componente.metodos.ocultar()
+            cerrado = true
+            this.mostrarNotificacion('success', '✅ Diagnóstico minimizado', 'top')
+            break
+          }
+        }
+      }
+
+      // Si no encontramos componentes específicos, emitir evento global
+      if (!cerrado) {
+        window.dispatchEvent(new CustomEvent('santoro-cerrar-consola', {
+          detail: parametros
+        }))
+        cerrado = true
+        this.mostrarNotificacion('info', '📱 Comando de cierre enviado', 'top')
+      }
+
+      return {
+        exito: cerrado,
+        mensaje: cerrado ? 'Consola cerrada correctamente' : 'No pude encontrar la consola para cerrar',
+        accionEjecutada: 'cerrar_consola'
+      }
+
+    } catch (error) {
+      console.error('❌ Error cerrando consola:', error)
+      return {
+        exito: false,
+        mensaje: 'Error al intentar cerrar la consola',
+        error: error.message
+      }
+    }
+  }
+
+  // 🔧 CERRAR MODAL DE FILTROS
+  async cerrarModalFiltros(parametros = {}) {
+    try {
+      // Buscar componentes de modal de filtros
+      const componentesFiltros = ['modal-filtros', 'filtros-avanzados', 'log-filters']
+      let cerrado = false
+
+      for (const nombreComp of componentesFiltros) {
+        const componente = this.componentes.get(nombreComp)
+        if (componente?.disponible) {
+          if (componente.metodos.cerrar) {
+            await componente.metodos.cerrar()
+            cerrado = true
+            this.mostrarNotificacion('success', '✅ Modal de filtros cerrado', 'top')
+            break
+          } else if (componente.metodos.ocultar) {
+            await componente.metodos.ocultar()
+            cerrado = true
+            break
+          }
+        }
+      }
+
+      // Emitir evento global para cerrar modales
+      if (!cerrado) {
+        window.dispatchEvent(new CustomEvent('santoro-cerrar-modal-filtros', {
+          detail: parametros
+        }))
+        cerrado = true
+        this.mostrarNotificación('info', '🔧 Comando de cierre de filtros enviado', 'top')
+      }
+
+      return {
+        exito: cerrado,
+        mensaje: cerrado ? 'Modal de filtros cerrado correctamente' : 'No encontré el modal de filtros abierto',
+        accionEjecutada: 'cerrar_modal_filtros'
+      }
+
+    } catch (error) {
+      console.error('❌ Error cerrando modal de filtros:', error)
+      return {
+        exito: false,
+        mensaje: 'Error al intentar cerrar el modal de filtros',
+        error: error.message
+      }
+    }
+  }
+
+  // 📉 MINIMIZAR ESCRITORIO
+  async minimizarEscritorio(parametros = {}) {
+    try {
+      const componente = this.componentes.get('flujo-escritorio')
+
+      if (componente?.disponible && componente.metodos.minimizar) {
+        await componente.metodos.minimizar()
+        this.mostrarNotificacion('success', '📉 Escritorio minimizado', 'top')
+
+        return {
+          exito: true,
+          mensaje: 'Escritorio minimizado correctamente',
+          accionEjecutada: 'minimizar_escritorio'
+        }
+      }
+
+      // Fallback: evento global
+      window.dispatchEvent(new CustomEvent('santoro-minimizar-escritorio', {
+        detail: parametros
+      }))
+
+      return {
+        exito: true,
+        mensaje: 'Comando de minimizar enviado',
+        accionEjecutada: 'minimizar_escritorio'
+      }
+
+    } catch (error) {
+      console.error('❌ Error minimizando escritorio:', error)
+      return {
+        exito: false,
+        mensaje: 'Error al minimizar el escritorio',
+        error: error.message
+      }
+    }
+  }
+
+  // 📈 MAXIMIZAR ESCRITORIO
+  async maximizarEscritorio(parametros = {}) {
+    try {
+      const componente = this.componentes.get('flujo-escritorio')
+
+      if (componente?.disponible && componente.metodos.maximizar) {
+        await componente.metodos.maximizar()
+        this.mostrarNotificacion('success', '📈 Escritorio maximizado', 'top')
+
+        return {
+          exito: true,
+          mensaje: 'Escritorio maximizado correctamente',
+          accionEjecutada: 'maximizar_escritorio'
+        }
+      }
+
+      // Fallback: evento global
+      window.dispatchEvent(new CustomEvent('santoro-maximizar-escritorio', {
+        detail: parametros
+      }))
+
+      return {
+        exito: true,
+        mensaje: 'Comando de maximizar enviado',
+        accionEjecutada: 'maximizar_escritorio'
+      }
+
+    } catch (error) {
+      console.error('❌ Error maximizando escritorio:', error)
+      return {
+        exito: false,
+        mensaje: 'Error al maximizar el escritorio',
+        error: error.message
+      }
+    }
   }
 
   // 📞 CALLBACK REGISTRATION para acciones personalizadas

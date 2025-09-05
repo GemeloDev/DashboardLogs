@@ -209,16 +209,16 @@ defineExpose({
 </script>
 
 <style scoped>
-.q-input >>> .q-field__control {
+.q-input :deep(.q-field__control) {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
 }
 
-.q-input >>> .q-field__control:hover {
+.q-input :deep(.q-field__control:hover) {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.q-input >>> .q-field__control:focus-within {
+.q-input :deep(.q-field__control:focus-within) {
   background: rgba(59, 130, 246, 0.1);
   border: 1px solid #3b82f6;
 }

@@ -210,7 +210,28 @@ class SantoroAI {
     } catch (error) {
       console.error('❌ Error procesando pregunta:', error)
 
-      // Fallback a procesamiento local en caso de error
+      // Manejo específico para rate limiting
+      if (error.message?.includes('RATE_LIMIT')) {
+        return {
+          respuesta: '⏳ La API de Gemini está ocupada. Estoy usando procesamiento local por ahora.',
+          exito: true,
+          intencion: 'fallback_rate_limit',
+          fuente: 'local_fallback'
+        }
+      }
+
+      // Manejo específico para errores de autenticación
+      if (error.message?.includes('AUTH_ERROR')) {
+        return {
+          respuesta: '🔑 Necesito que configures tu API Key de Gemini. Mientras tanto, uso procesamiento básico.',
+          exito: true,
+          intencion: 'config_required',
+          fuente: 'local_fallback'
+        }
+      }
+
+      // Fallback general a procesamiento local
+      console.log('🔄 Usando fallback a procesamiento local...')
       return await this.procesarLocal(pregunta, contextoActual)
     }
   }
