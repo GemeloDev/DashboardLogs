@@ -20,6 +20,8 @@ const routes = [
       { path: 'eventos', component: () => import('pages/EventosPage.vue') },
       { path: 'eventos-fallidos', component: () => import('pages/EventosFallidos.vue') },
       { path: 'diagnostico', component: () => import('pages/DiagnosticoPage.vue') },
+      { path: 'santoro-demo', component: () => import('pages/SantoroDemoPage.vue') },
+      { path: 'santoro-config', component: () => import('pages/SantoroConfigPage.vue') },
     ],
   },
 

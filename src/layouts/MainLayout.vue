@@ -246,6 +246,9 @@
         </div>
       </transition>
     </q-page-container>
+
+    <!-- 🤖 SANTORO IA ASSISTANT - Chat Flotante Global -->
+    <SantoroChat />
   </q-layout>
 </template>
 
@@ -256,6 +259,7 @@ import { useRouter } from 'vue-router'
 import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
+import SantoroChat from '../components/SantoroChat.vue'
 
 const $q = useQuasar()
 const router = useRouter()
