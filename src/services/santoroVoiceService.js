@@ -476,7 +476,7 @@ class SantoroVoiceService {
       localService: voz.localService
     }))
   }
-
+ 
   // 🔧 CAMBIAR voz
   cambiarVoz(nombreVoz) {
     const voz = this.estado.voces.find(v => v.name === nombreVoz)
