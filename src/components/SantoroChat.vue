@@ -377,13 +377,26 @@ const enviarMensaje = async () => {
     }
     mensajes.value.push(mensajeSantoro)
 
-    // 🗣️ Hacer que Santoro hable su respuesta (solo si voz automática está activada)
+    // 🗣️ Hacer que Santoro hable su respuesta (FORZADO para depuración)
     setTimeout(async () => {
       if (voiceControlsRef.value) {
         const estadoVoz = voiceControlsRef.value.estadoVoz
-        if (estadoVoz && estadoVoz.vozAutomaticaActivada) {
-          await hablarRespuesta(textoRespuesta)
+        console.log('🔊 Estado de voz automática:', {
+          disponible: !!estadoVoz,
+          vozAutomaticaActivada: estadoVoz?.vozAutomaticaActivada,
+          responderConVoz: estadoVoz?.responderConVoz,
+          vozDisponible: estadoVoz?.vozDisponible,
+        })
+
+        // ACTIVAR VOZ AUTOMÁTICA SI NO ESTÁ ACTIVADA
+        if (estadoVoz && !estadoVoz.vozAutomaticaActivada) {
+          console.log('🔧 Activando voz automática...')
+          voiceControlsRef.value.activarVozAutomatica()
         }
+
+        // HABLAR SIEMPRE (para depuración)
+        console.log('🗣️ Forzando habla de Santoro...')
+        await hablarRespuesta(textoRespuesta)
       }
     }, 500) // Pequeño delay para que se muestre el mensaje primero
   } catch (error) {
@@ -451,7 +464,14 @@ const onErrorVoz = (error) => {
 
 // Hablar respuesta de Santoro
 const hablarRespuesta = async (texto) => {
-  if (voiceControlsRef.value) {
+  console.log('🎤 hablarRespuesta iniciada con:', texto?.substring(0, 50) + '...')
+
+  if (!voiceControlsRef.value) {
+    console.error('❌ voiceControlsRef no está disponible')
+    return
+  }
+
+  try {
     // Limpiar texto de emojis y caracteres especiales para mejor síntesis
     const textoLimpio = texto
       .replace(/🤖|💡|🔍|📊|🏥|⚡|🎯|🔧|📈|📋|⚠️|🧭|🔄|🏷️|🗣️|🎤|🛑|✅|❌/gu, '')
@@ -459,8 +479,20 @@ const hablarRespuesta = async (texto) => {
       .replace(/\n/g, ' ')
       .trim()
 
-    console.log('🗣️ Santoro hablará:', textoLimpio)
-    await voiceControlsRef.value.hablar(textoLimpio)
+    console.log('🗣️ Santoro intentará hablar:', textoLimpio.substring(0, 100) + '...')
+
+    // Verificar estado del servicio de voz
+    const estadoVoz = voiceControlsRef.value.estadoVoz
+    console.log('🔊 Estado del servicio de voz:', {
+      vozDisponible: estadoVoz?.vozDisponible,
+      hablando: estadoVoz?.hablando,
+      vozConfigurada: estadoVoz?.vozConfigurada?.name,
+    })
+
+    const resultado = await voiceControlsRef.value.hablar(textoLimpio)
+    console.log('🎯 Resultado de hablar:', resultado)
+  } catch (error) {
+    console.error('❌ Error en hablarRespuesta:', error)
   }
 }
 

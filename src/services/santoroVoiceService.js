@@ -251,13 +251,23 @@ class SantoroVoiceService {
 
   // 🗣️ HABLAR texto con mejor calidad
   async hablar(texto, opciones = {}) {
+    console.log('🎤 santoroVoiceService.hablar() iniciado con:', texto?.substring(0, 50) + '...')
+
     if (!this.estado.vozDisponible) {
       console.warn('⚠️ Síntesis de voz no disponible')
-      return false
+      // Intentar reinicializar
+      console.log('🔄 Intentando reinicializar síntesis...')
+      await this.configurarSintesis()
+
+      if (!this.estado.vozDisponible) {
+        console.error('❌ Síntesis sigue sin estar disponible')
+        return false
+      }
     }
 
     try {
       // Detener cualquier speech anterior
+      console.log('🛑 Deteniendo síntesis anterior...')
       window.speechSynthesis.cancel()
 
       // Esperar un poco para que se cancele completamente
@@ -265,12 +275,16 @@ class SantoroVoiceService {
 
       // Limpiar texto para mejor síntesis
       const textoLimpio = this.limpiarTextoParaVoz(texto)
+      console.log('🧹 Texto limpio para síntesis:', textoLimpio.substring(0, 100) + '...')
 
       const utterance = new SpeechSynthesisUtterance(textoLimpio)
 
       // Configurar voz
       if (this.estado.vozConfigurada) {
         utterance.voice = this.estado.vozConfigurada
+        console.log('🎯 Usando voz configurada:', this.estado.vozConfigurada.name)
+      } else {
+        console.warn('⚠️ No hay voz configurada, usando por defecto')
       }
 
       // Configurar parámetros optimizados
@@ -278,6 +292,13 @@ class SantoroVoiceService {
       utterance.rate = opciones.velocidad || this.estado.velocidad
       utterance.pitch = opciones.tono || this.estado.tono
       utterance.lang = opciones.idioma || this.estado.vozConfigurada?.lang || 'es-ES'
+
+      console.log('⚙️ Configuración de síntesis:', {
+        volumen: utterance.volume,
+        velocidad: utterance.rate,
+        tono: utterance.pitch,
+        idioma: utterance.lang
+      })
 
       // Event listeners
       utterance.onstart = () => {
@@ -305,6 +326,7 @@ class SantoroVoiceService {
       }
 
       // Iniciar síntesis
+      console.log('🚀 Iniciando síntesis de voz...')
       window.speechSynthesis.speak(utterance)
 
       return true
@@ -476,7 +498,7 @@ class SantoroVoiceService {
       localService: voz.localService
     }))
   }
- 
+
   // 🔧 CAMBIAR voz
   cambiarVoz(nombreVoz) {
     const voz = this.estado.voces.find(v => v.name === nombreVoz)
@@ -490,21 +512,54 @@ class SantoroVoiceService {
 
   // 🧪 PRUEBA de funcionalidades
   async probarVoz() {
+    console.log('🧪 Iniciando prueba de voz...')
+
     const resultados = {
       sintesis: false,
       reconocimiento: false,
-      permisos: this.estado.permisos
+      permisos: this.estado.permisos,
+      vozConfigurada: this.estado.vozConfigurada?.name || 'No configurada'
     }
 
     // Probar síntesis
     if (this.estado.vozDisponible) {
+      console.log('🎤 Probando síntesis de voz...')
       resultados.sintesis = await this.hablar('Hola, soy Santoro, tu asistente inteligente con voz.')
+      console.log('🎯 Resultado síntesis:', resultados.sintesis)
+    } else {
+      console.log('❌ Síntesis no disponible')
     }
 
     // Probar reconocimiento (sin iniciar, solo verificar disponibilidad)
     resultados.reconocimiento = this.estado.escuchandoDisponible && this.estado.permisos
 
+    console.log('📊 Resultados prueba de voz:', resultados)
     return resultados
+  }
+
+  // 🔥 FORZAR HABLA (para depuración)
+  async forzarHabla(texto = 'Prueba de voz de Santoro') {
+    console.log('🔥 FORZANDO HABLA:', texto)
+
+    // Activar voz automática
+    this.activarVozAutomatica()
+
+    // Verificar estado
+    console.log('🔍 Estado antes de forzar habla:', {
+      vozDisponible: this.estado.vozDisponible,
+      vozConfigurada: this.estado.vozConfigurada?.name,
+      hablando: this.estado.hablando,
+      vozAutomaticaActivada: this.estado.vozAutomaticaActivada
+    })
+
+    // Reinicializar si es necesario
+    if (!this.estado.vozDisponible) {
+      console.log('🔄 Reinicializando servicio...')
+      await this.inicializar()
+    }
+
+    // Intentar hablar
+    return await this.hablar(texto)
   }
 
   // 🎤 MODO conversación (alternar entre hablar y escuchar)
