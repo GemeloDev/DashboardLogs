@@ -553,6 +553,95 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error configurando notificaciones:', error)
   }
+
+  // 🚀 INICIALIZAR SISTEMA SANTORO MEGA-ROBUSTO
+  console.log('🚀 Iniciando sistema Santoro MEGA ultra-robusto...')
+
+  try {
+    const { santoroMegaSystem } = await import('../services/santoroMegaSystem.js')
+
+    // El sistema se auto-inicializa, pero podemos forzar inicialización aquí también
+    setTimeout(async () => {
+      try {
+        const result = await santoroMegaSystem.initialize()
+
+        if (result.success) {
+          console.log('✅ Sistema Santoro MEGA completamente listo!')
+
+          $q.notify({
+            type: 'positive',
+            message: '🎉 Sistema Santoro MEGA Activo',
+            caption:
+              'Comandos: Ctrl+Alt+E (Escritorio), Ctrl+Alt+M (Móvil), Ctrl+Alt+D (Diagnóstico)',
+            position: 'top-right',
+            timeout: 6000,
+            actions: [
+              {
+                label: 'Test Rápido',
+                color: 'white',
+                handler: () => {
+                  if (window.santoro) {
+                    console.log('🧪 Ejecutando test rápido...')
+                    window.santoro.test()
+                  }
+                },
+              },
+            ],
+          })
+        }
+      } catch (error) {
+        console.error('❌ Error en sistema mega:', error)
+
+        $q.notify({
+          type: 'warning',
+          message: '⚠️ Sistema en modo emergencia',
+          caption: 'Funciones básicas disponibles',
+          position: 'top-right',
+          timeout: 3000,
+        })
+      }
+    }, 1000) // 1 segundo es suficiente para el mega system
+  } catch (error) {
+    console.error('❌ Error cargando mega system:', error)
+
+    // Sistema de emergencia directo si todo falla
+    setTimeout(() => {
+      window.santoro = {
+        cambiarAEscritorio: () => {
+          selectedFlow.value = 'escritorio'
+          $q.notify({ type: 'positive', message: 'Cambiado a Escritorio', position: 'top-right' })
+        },
+        cambiarAMovil: () => {
+          selectedFlow.value = 'mobile'
+          $q.notify({ type: 'positive', message: 'Cambiado a Móvil', position: 'top-right' })
+        },
+        abrirDiagnostico: () => {
+          router.push('/diagnostico')
+          $q.notify({ type: 'positive', message: 'Abriendo Diagnóstico', position: 'top-right' })
+        },
+        abrirEstadisticas: () => {
+          router.push('/estadisticas')
+          $q.notify({ type: 'positive', message: 'Abriendo Estadísticas', position: 'top-right' })
+        },
+      }
+
+      // APIs directas
+      window.cambiarAEscritorio = window.santoro.cambiarAEscritorio
+      window.cambiarAMovil = window.santoro.cambiarAMovil
+      window.abrirDiagnostico = window.santoro.abrirDiagnostico
+      window.abrirEstadisticas = window.santoro.abrirEstadisticas
+
+      $q.notify({
+        type: 'info',
+        message: '🛡️ Sistema de emergencia activo',
+        caption: 'Comandos básicos disponibles',
+        position: 'top-right',
+        timeout: 4000,
+      })
+
+      console.log('🛡️ Sistema de emergencia directo activo')
+    }, 500)
+  }
 })
 </script>
 

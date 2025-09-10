@@ -165,7 +165,7 @@ import { useFiltroFechasStore } from 'src/stores/filtroFechasStore'
 // Store y estado
 const store = useFiltroFechasStore()
 const $q = useQuasar()
-const emit = defineEmits(['filter'])
+const emit = defineEmits(['filter', 'filtro-aplicado', 'filtro-error', 'filtro-estado'])
 
 // Estados reactivos
 const rangoFechas = ref(null)
@@ -222,38 +222,71 @@ const calcularDiasSeleccionados = () => {
   return Math.ceil(diferencia / (1000 * 3600 * 24)) + 1
 }
 
-// Función para aplicar filtros
+// Función para aplicar filtros con información enriquecida para el asistente IA
 const aplicarFiltros = async () => {
   if (!fechasValidas.value) {
+    const errorInfo = {
+      accion: 'aplicar_filtro_fechas',
+      error: 'Rango de fechas inválido',
+      detalles: 'No se ha seleccionado un rango de fechas válido',
+      valido: false,
+    }
+
+    emit('filtro-error', errorInfo)
+
     $q.notify({
-      type: 'negative',
-      message: 'Por favor, selecciona un rango de fechas válido',
+      type: 'warning',
+      message: 'Por favor selecciona un rango de fechas válido',
       position: 'top',
     })
     return
   }
 
-  try {
-    cargando.value = true
+  cargando.value = true
 
-    // Actualizar el store
+  try {
+    // Actualizar el store con las fechas seleccionadas
     store.setFechas(rangoFechas.value.from, rangoFechas.value.to)
+
+    const diasSeleccionados = calcularDiasSeleccionados()
+    const periodo = formatearPeriodo()
 
     // Mostrar notificación de éxito
     $q.notify({
       type: 'positive',
-      message: `Filtros aplicados: ${calcularDiasSeleccionados()} días`,
+      message: `Filtros aplicados: ${diasSeleccionados} días`,
       position: 'top',
       timeout: 2000,
     })
 
-    // Emitir evento para que el componente padre actualice los datos
+    // Emitir evento básico para compatibilidad
     emit('filter', {
       fechaInicio: rangoFechas.value.from,
       fechaFin: rangoFechas.value.to,
     })
+
+    // Emitir evento enriquecido para el asistente IA
+    emit('filtro-aplicado', {
+      accion: 'aplicar_filtro_fechas',
+      impacto: {
+        diasSeleccionados: diasSeleccionados,
+        rangoValido: true,
+        periodo: periodo,
+        fechaInicio: rangoFechas.value.from,
+        fechaFin: rangoFechas.value.to,
+        timestamp: new Date().toISOString(),
+      },
+      mensaje: `Filtro de fechas aplicado: ${diasSeleccionados} días seleccionados (${periodo})`,
+    })
   } catch (error) {
     console.error('Error al aplicar filtros:', error)
+
+    emit('filtro-error', {
+      accion: 'aplicar_filtro_fechas',
+      error: error.message || 'Error desconocido',
+      detalles: 'Error interno al procesar el filtro de fechas',
+    })
+
     $q.notify({
       type: 'negative',
       message: 'Error al aplicar los filtros',
@@ -278,6 +311,104 @@ const resetearAMesActual = () => {
 const actualizarFechasDesdeRango = (nuevoRango) => {
   rangoFechas.value = nuevoRango
 }
+
+// ========== FUNCIONES PARA EL ASISTENTE IA ==========
+
+// Función para obtener el rango de fechas actual
+const getRangoFechas = () => {
+  return {
+    from: rangoFechas.value?.from || null,
+    to: rangoFechas.value?.to || null,
+    periodo: formatearPeriodo(),
+    diasSeleccionados: calcularDiasSeleccionados(),
+    valido: fechasValidas.value,
+  }
+}
+
+// Función para establecer un rango de fechas específico
+const setRangoFechas = (fechaInicio, fechaFin, aplicarInmediatamente = true) => {
+  rangoFechas.value = {
+    from: fechaInicio,
+    to: fechaFin,
+  }
+
+  emit('filtro-estado', {
+    accion: 'set_rango_fechas',
+    estado: getRangoFechas(),
+    mensaje: `Rango establecido: ${fechaInicio} a ${fechaFin}`,
+  })
+
+  if (aplicarInmediatamente) {
+    aplicarFiltros()
+  }
+}
+
+// Función para obtener el período seleccionado actual
+const getPeriodoSeleccionado = () => {
+  return {
+    texto: formatearPeriodo(),
+    diasSeleccionados: calcularDiasSeleccionados(),
+    fechaInicio: rangoFechas.value?.from,
+    fechaFin: rangoFechas.value?.to,
+    valido: fechasValidas.value,
+  }
+}
+
+// Función para validar si el rango actual es válido
+const esRangoValido = () => {
+  return fechasValidas.value && rangoFechas.value?.from && rangoFechas.value?.to
+}
+
+// Función para obtener información de impacto del filtro
+const getImpactoFiltro = () => {
+  const dias = calcularDiasSeleccionados()
+  const valido = esRangoValido()
+
+  return {
+    diasSeleccionados: dias,
+    rangoValido: valido,
+    periodo: formatearPeriodo(),
+    advertencias: !valido ? ['Rango de fechas no válido'] : [],
+    sugerencias: dias > 30 ? ['Considera reducir el rango para mejor rendimiento'] : [],
+  }
+}
+
+// Función mejorada para seleccionar período con información para IA
+const seleccionarPeriodoIA = (periodo) => {
+  seleccionarPeriodo(periodo)
+
+  emit('filtro-estado', {
+    accion: 'seleccionar_periodo',
+    periodo: periodo,
+    estado: getRangoFechas(),
+    mensaje: `Período seleccionado: ${periodo.toUpperCase()}`,
+  })
+}
+
+// ========== EXPOSICIÓN DE MÉTODOS PARA EL ASISTENTE IA ==========
+defineExpose({
+  // Métodos de consulta
+  getRangoFechas,
+  getPeriodoSeleccionado,
+  getImpactoFiltro,
+  esRangoValido,
+
+  // Métodos de manipulación
+  setRangoFechas,
+  seleccionarPeriodo: seleccionarPeriodoIA,
+  resetearAMesActual,
+  aplicarFiltros,
+
+  // Estados reactivos para consulta
+  fechasValidas,
+  rangoFechasTexto,
+  cargando,
+
+  // Funciones de utilidad
+  calcularDiasSeleccionados,
+  formatearPeriodo,
+  validarFecha,
+})
 
 // Función para seleccionar períodos predefinidos
 const seleccionarPeriodo = (periodo) => {

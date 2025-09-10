@@ -590,7 +590,6 @@ const abrirConsolaGeneral = (tipo) => {
       }
       break
   }
-
   if (datos.length === 0) {
     datos = [
       {
