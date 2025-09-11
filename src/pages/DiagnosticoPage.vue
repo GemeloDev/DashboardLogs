@@ -3,8 +3,8 @@
     <!-- Header Principal -->
     <div class="diagnostic-header-section bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
       <div class="container">
-        <div class="row items-center">
-          <div class="col">
+        <div class="row items-center q-col-gutter-md">
+          <div class="col-12 col-md-8">
             <div class="text-h3 diagnostic-title q-mb-md">
               <q-icon
                 name="medical_services"
@@ -12,14 +12,14 @@
                 color="cyan-4"
                 size="48px"
               />
-              🔬 Centro de Diagnóstico Técnico Avanzado
+              <span class="diagnostic-title-text">🔬 Centro de Diagnóstico Técnico Avanzado</span>
             </div>
             <div class="text-h6 text-cyan-3 diagnostic-subtitle q-mb-md">
-              🛡️ Sistema de Soporte Técnico en Tiempo Real | 🔍 Análisis de Errores & Sesiones
+              <span class="diagnostic-subtitle-text">🛡️ Sistema de Soporte Técnico en Tiempo Real | 🔍 Análisis de Errores & Sesiones</span>
             </div>
 
             <!-- Indicadores de Estado -->
-            <div class="row q-gutter-md">
+            <div class="row q-gutter-sm diagnostic-chips-container">
               <q-chip
                 color="green-6"
                 text-color="white"
@@ -54,8 +54,8 @@
           </div>
 
           <!-- Acciones Rápidas -->
-          <div class="col-auto">
-            <div class="row q-gutter-sm">
+          <div class="col-12 col-md-4">
+            <div class="row q-gutter-sm justify-end diagnostic-actions">
               <q-btn
                 color="primary"
                 icon="refresh"
@@ -63,6 +63,7 @@
                 @click="actualizarDatos"
                 :loading="cargando"
                 unelevated
+                class="diagnostic-action-btn"
               />
               <q-btn
                 color="secondary"
@@ -71,8 +72,16 @@
                 @click="mostrarDialogoExportacion"
                 :disable="!hayDatosParaExportar"
                 unelevated
+                class="diagnostic-action-btn"
               />
-              <q-btn color="info" icon="help_outline" label="Ayuda" @click="mostrarAyuda" flat />
+              <q-btn
+                color="info"
+                icon="help_outline"
+                label="Ayuda"
+                @click="mostrarAyuda"
+                flat
+                class="diagnostic-action-btn"
+              />
             </div>
           </div>
         </div>
@@ -696,7 +705,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import { DiagnosticService } from '../services/diagnosticService.js'
@@ -750,6 +759,14 @@ const gestionSesion = ref({
 const sesionesCargando = ref(false)
 const sesionesEncontradas = ref([])
 const resultadoSesion = ref(null)
+
+// Computed para verificar si hay datos para exportar
+const hayDatosParaExportar = computed(() => {
+  return (
+    (resultadoError.value?.success && resultadoError.value?.data?.length > 0) ||
+    (resultadoSesion.value?.success && resultadoSesion.value?.data?.length > 0)
+  )
+})
 
 // Datos del sistema (comentados porque no se usan actualmente)
 // const versionSistema = ref('2.1.0')
@@ -1897,6 +1914,56 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  /* Header responsive */
+  .diagnostic-header-section {
+    padding: 1rem !important;
+  }
+
+  .diagnostic-title {
+    font-size: 1.5rem !important;
+    text-align: center;
+  }
+
+  .diagnostic-title-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .diagnostic-subtitle {
+    font-size: 0.9rem !important;
+    text-align: center;
+  }
+
+  .diagnostic-subtitle-text {
+    display: block;
+    line-height: 1.3;
+  }
+
+  .diagnostic-chips-container {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .diagnostic-status-chip {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .diagnostic-actions {
+    justify-content: center !important;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .diagnostic-action-btn {
+    min-width: auto;
+    font-size: 0.85rem;
+  }
+
+  /* Sesiones y otros elementos */
   .session-header {
     .row {
       flex-direction: column;
@@ -1931,6 +1998,74 @@ onMounted(() => {
 
   .page-subtitle {
     font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .diagnostic-title {
+    font-size: 1.2rem !important;
+  }
+
+  .diagnostic-title-text {
+    font-size: 1.2rem;
+  }
+
+  .diagnostic-subtitle-text {
+    font-size: 0.8rem;
+  }
+
+  .diagnostic-action-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Estilos personalizados para modales */
+:deep(.export-dialog-custom) {
+  .q-dialog__inner {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .q-card {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  }
+}
+
+:deep(.help-dialog-custom) {
+  .q-dialog__inner {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .q-card {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .q-card__section {
+    color: white;
+  }
+}
+
+/* Mejoras generales para otros modales del sistema */
+:deep(.q-dialog) {
+  .q-card {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .q-card__section--vert {
+    color: white;
+  }
+
+  .q-btn {
+    border-radius: 8px;
   }
 }
 </style>

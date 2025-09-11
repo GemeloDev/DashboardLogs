@@ -13,9 +13,22 @@ const routes = [
     component: () => import('layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
     children: [
-      { path: '', redirect: '/dashboard' },
-      { path: 'dashboard', redirect: '/logs' }, // Alias para dashboard
-      { path: 'logs', component: () => import('pages/LogsPage.vue') },
+      { path: '', redirect: '/escritorio' }, // Por defecto escritorio
+      { path: 'dashboard', redirect: '/escritorio' }, // Alias para dashboard
+      { path: 'logs', redirect: '/escritorio' }, // Alias para logs
+
+      // Rutas específicas para cada flujo
+      {
+        path: 'escritorio',
+        component: () => import('pages/EscritorioPage.vue'),
+        meta: { flow: 'escritorio' }
+      },
+      {
+        path: 'mobile',
+        component: () => import('pages/LogsPage.vue'),
+        meta: { flow: 'mobile' }
+      },
+
       { path: 'estadisticas', component: () => import('pages/EstadisticasPage.vue') },
       { path: 'eventos', component: () => import('pages/EventosPage.vue') },
       { path: 'eventos-fallidos', component: () => import('pages/EventosFallidos.vue') },

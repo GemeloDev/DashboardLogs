@@ -878,7 +878,7 @@ export class SantoroActionController {
     }
   }
 
-  // 🔄 CAMBIAR FLUJO (Mobile/Escritorio) con navegación inteligente
+  // 🔄 CAMBIAR FLUJO (Mobile/Escritorio) con navegación por rutas
   async cambiarFlujo(parametros = {}) {
     console.log('🔄 cambiarFlujo iniciado con parámetros:', parametros)
 
@@ -886,32 +886,29 @@ export class SantoroActionController {
       const flujoSolicitado = parametros.flujo || parametros.tipo || 'mobile'
       console.log('🎯 Flujo solicitado:', flujoSolicitado)
 
-      // 🌐 Obtener contexto actual para tomar decisiones inteligentes
+      // 🌐 Obtener contexto actual y ruta actual
       const contexto = this.obtenerContextoActual()
+      const rutaActual = window.location.pathname
       console.log('📍 Contexto para cambio de flujo:', contexto)
+      console.log('🔗 Ruta actual:', rutaActual)
 
       const contextoDetallado = contexto.contextoDetallado || {}
-      const { paginaActual, vista: vistaActual, modalesAbiertos } = contextoDetallado
-
-      console.log('📋 Detalles del contexto:', {
-        paginaActual,
-        vistaActual,
-        modalesAbiertos: modalesAbiertos || []
-      })
+      const { modalesAbiertos } = contextoDetallado
 
       // 🎯 VALIDACIÓN INTELIGENTE: ¿Ya está en el flujo solicitado?
-      if (vistaActual === flujoSolicitado ||
-        (flujoSolicitado === 'desktop' && vistaActual === 'desktop') ||
-        (flujoSolicitado === 'mobile' && vistaActual === 'mobile')) {
+      const yaEnFlujoCorrect =
+        (flujoSolicitado === 'escritorio' || flujoSolicitado === 'desktop') && rutaActual.includes('/escritorio') ||
+        (flujoSolicitado === 'mobile') && rutaActual.includes('/mobile')
 
+      if (yaEnFlujoCorrect) {
         this.mostrarNotificacion('info',
-          `✅ Ya estás en vista ${flujoSolicitado}. ${paginaActual === 'escritorio' ? 'En página de escritorio.' : paginaActual === 'mobile' ? 'En página móvil.' : ''}`,
+          `✅ Ya estás en vista ${flujoSolicitado}. Ubicación: ${rutaActual}`,
           'top')
 
         return {
           exito: true,
           mensaje: `Ya está en vista ${flujoSolicitado}`,
-          contextoActual: contexto.resumen,
+          rutaActual,
           accionEjecutada: 'cambiar_flujo',
           yaEnVistaCorrecta: true
         }
@@ -925,57 +922,62 @@ export class SantoroActionController {
           'top')
       }
 
-      // Emitir evento para cambiar flujo
-      console.log('📡 Emitiendo evento santoro-cambiar-flujo con:', {
-        flujo: flujoSolicitado,
-        contextoAnterior: contexto.contextoDetallado,
-        paginaAnterior: paginaActual
-      })
+      // 🎯 DETERMINAR RUTA DESTINO
+      let rutaDestino = '/escritorio' // Por defecto
+      if (flujoSolicitado === 'mobile') {
+        rutaDestino = '/mobile'
+      } else if (flujoSolicitado === 'escritorio' || flujoSolicitado === 'desktop') {
+        rutaDestino = '/escritorio'
+      }
 
+      console.log('🎯 Navegando hacia ruta:', rutaDestino)
+
+      // 🚀 NAVEGAR A LA NUEVA RUTA
+      if (window.location.pathname !== rutaDestino) {
+        try {
+          // Intentar usar Vue Router si está disponible
+          if (window.__VUE_ROUTER_INSTANCE__) {
+            await window.__VUE_ROUTER_INSTANCE__.push(rutaDestino)
+          } else {
+            // Fallback a navegación directa
+            window.history.pushState({}, '', rutaDestino)
+            window.dispatchEvent(new PopStateEvent('popstate'))
+          }
+        } catch (error) {
+          console.warn('Error en navegación router, usando fallback:', error)
+          window.location.href = rutaDestino
+        }
+      }
+
+      // Emitir evento para notificar el cambio
       window.dispatchEvent(new CustomEvent('santoro-cambiar-flujo', {
         detail: {
           flujo: flujoSolicitado,
-          contextoAnterior: contexto.contextoDetallado,
-          paginaAnterior: paginaActual
+          rutaAnterior: rutaActual,
+          rutaDestino,
+          contextoAnterior: contexto.contextoDetallado
         }
       }))
 
       const mensaje = flujoSolicitado === 'mobile'
-        ? `📱 Cambiando de ${vistaActual} a vista móvil...`
-        : `🖥️ Cambiando de ${vistaActual} a vista de escritorio...`
+        ? `📱 Navegando a vista móvil: ${rutaDestino}`
+        : `🖥️ Navegando a vista de escritorio: ${rutaDestino}`
 
       console.log('💬 Mensaje de notificación:', mensaje)
-      this.mostrarNotificación('info', mensaje, 'top-right')
+      this.mostrarNotificación('success', mensaje, 'top-right')
 
-      // 🧭 NAVEGACIÓN INTELIGENTE: Determinar si necesita cambiar de página
-      const necesitaNavegacion = parametros.necesitaNavegacion ||
-        (flujoSolicitado === 'mobile' && paginaActual !== 'mobile') ||
-        (flujoSolicitado === 'desktop' && paginaActual !== 'escritorio')
-
-      if (necesitaNavegacion || !window.location.pathname.includes('/logs')) {
-        const rutaDestino = flujoSolicitado === 'mobile' ? '/logs#mobile' : '/logs#escritorio'
-
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('santoro-navegar', {
-            detail: {
-              ruta: rutaDestino,
-              parametros: { flujo: flujoSolicitado },
-              contextoAnterior: paginaActual
-            }
-          }))
-        }, 500) // Dar tiempo al cambio de flujo
-      }
+      // ✅ Dar tiempo para que la navegación se complete
+      await new Promise(resolve => setTimeout(resolve, 300))
 
       return {
         exito: true,
         mensaje: mensaje,
         accionEjecutada: 'cambiar_flujo',
-        contextoAnterior: contexto.resumen,
+        rutaAnterior: rutaActual,
+        rutaDestino,
         datos: {
           flujoSolicitado,
-          vistaAnterior: vistaActual,
-          paginaAnterior: paginaActual,
-          navegado: necesitaNavegacion,
+          rutaNavegada: rutaDestino,
           modalesAfectados: modalesArray
         }
       }

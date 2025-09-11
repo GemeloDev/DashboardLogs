@@ -9,11 +9,37 @@
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
         <q-toolbar-title>Consola Logs</q-toolbar-title>
 
-        <!-- Información del usuario y logout -->
+        <!-- Botones de herramientas rápidas -->
         <div class="row items-center q-gutter-sm">
+          <!-- Botón de filtros avanzados -->
+          <q-btn
+            flat
+            dense
+            round
+            icon="filter_list"
+            color="orange"
+            @click="toggleFiltros"
+            class="q-mr-sm"
+          >
+            <q-tooltip>Filtros Avanzados</q-tooltip>
+          </q-btn>
+
+          <!-- Botón de consola -->
+          <q-btn
+            flat
+            dense
+            round
+            icon="terminal"
+            color="purple"
+            @click="openConsole"
+            class="q-mr-sm"
+          >
+            <q-tooltip>Consola de Logs</q-tooltip>
+          </q-btn>
+
           <q-chip
-            :icon="selectedFlow === 'escritorio' ? 'desktop_windows' : 'smartphone'"
-            :label="selectedFlow === 'escritorio' ? 'Escritorio' : 'Mobile'"
+            :icon="currentFlow === 'escritorio' ? 'desktop_windows' : 'smartphone'"
+            :label="currentFlow === 'escritorio' ? 'Escritorio' : 'Mobile'"
             outline
             color="white"
             text-color="white"
@@ -53,11 +79,30 @@
           </q-btn-dropdown>
         </div>
       </q-toolbar>
+
+      <!-- Panel de filtros expandible -->
+      <q-slide-transition>
+        <div v-show="showFilters" class="filters-panel">
+          <div
+            class="q-pa-md"
+            style="background: rgba(30, 30, 47, 0.95); border-top: 1px solid #333"
+          >
+            <div class="row items-center justify-between q-mb-sm">
+              <div class="text-subtitle1 text-white">
+                <q-icon name="filter_list" class="q-mr-sm" color="orange" />
+                Filtros Avanzados
+              </div>
+              <q-btn flat dense round icon="close" color="white" @click="showFilters = false" />
+            </div>
+            <EscritorioFiltros @filtrar="onFiltrar" />
+          </div>
+        </div>
+      </q-slide-transition>
     </q-header>
 
     <!-- SIDEBAR ESCRITORIO -->
     <q-drawer
-      v-if="selectedFlow === 'escritorio'"
+      v-if="currentFlow === 'escritorio'"
       v-model="leftDrawerOpen"
       show-if-above
       bordered
@@ -75,7 +120,8 @@
           <q-item>
             <q-item-section>
               <q-btn-toggle
-                v-model="selectedFlow"
+                :model-value="currentFlow"
+                @update:model-value="cambiarFlujo"
                 spread
                 no-caps
                 rounded
@@ -89,13 +135,13 @@
             </q-item-section>
           </q-item>
           <q-separator dark spaced />
-          <q-item clickable v-ripple to="/logs" exact>
+          <q-item clickable v-ripple to="/escritorio" exact>
             <q-item-section avatar>
               <q-icon name="dashboard" color="primary" />
             </q-item-section>
             <q-item-section><span style="font-weight: 600">Dashboard</span></q-item-section>
           </q-item>
-          <template v-if="selectedFlow !== 'escritorio'">
+          <template v-if="currentFlow !== 'escritorio'">
             <q-item clickable v-ripple to="/estadisticas">
               <q-item-section avatar>
                 <q-icon name="insert_chart" color="blue" />
@@ -119,18 +165,6 @@
           </template>
           <q-separator dark spaced />
           <q-item-label header class="text-grey-4">Herramientas</q-item-label>
-          <q-item clickable v-ripple @click="showFilters = true">
-            <q-item-section avatar>
-              <q-icon name="filter_list" color="orange" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Filtros Avanzados</span></q-item-section>
-          </q-item>
-          <q-item clickable v-ripple @click="openConsole">
-            <q-item-section avatar>
-              <q-icon name="terminal" color="purple" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Consola</span></q-item-section>
-          </q-item>
           <q-item clickable v-ripple to="/diagnostico">
             <q-item-section avatar>
               <q-icon name="bug_report" color="red" />
@@ -152,7 +186,7 @@
 
     <!-- SIDEBAR MOBILE -->
     <q-drawer
-      v-if="selectedFlow === 'mobile'"
+      v-if="currentFlow === 'mobile'"
       v-model="leftDrawerOpen"
       show-if-above
       bordered
@@ -170,7 +204,8 @@
           <q-item>
             <q-item-section>
               <q-btn-toggle
-                v-model="selectedFlow"
+                :model-value="currentFlow"
+                @update:model-value="cambiarFlujo"
                 spread
                 no-caps
                 rounded
@@ -184,7 +219,7 @@
             </q-item-section>
           </q-item>
           <q-separator dark spaced />
-          <q-item clickable v-ripple to="/logs" exact>
+          <q-item clickable v-ripple to="/mobile" exact>
             <q-item-section avatar>
               <q-icon name="dashboard" color="primary" />
             </q-item-section>
@@ -223,18 +258,6 @@
         <div class="flow-container" style="min-height: 100vh">
           <router-view />
 
-          <!-- Diálogo global de filtros (se mantiene para rutas que lo usen) -->
-          <q-dialog v-model="showFilters" persistent>
-            <q-card style="min-width: 350px; background: #1e1e2f">
-              <q-card-section>
-                <EscritorioFiltros @filtrar="onFiltrar" />
-              </q-card-section>
-              <q-card-actions align="right">
-                <q-btn flat label="Cerrar" color="primary" v-close-popup />
-              </q-card-actions>
-            </q-card>
-          </q-dialog>
-
           <!-- Componentes globales accesibles desde cualquier página -->
           <EscritorioConsolaSimple ref="consolaRef" />
 
@@ -260,20 +283,20 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, provide } from 'vue'
+import { ref, provide, onMounted, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import SantoroChat from '../components/SantoroChat.vue'
+import GeminiConfigModal from '../components/GeminiConfigModal.vue'
 import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
-import SantoroChat from '../components/SantoroChat.vue'
-import GeminiConfigModal from '../components/GeminiConfigModal.vue'
 import { santoroContextService } from '../services/santoroContextService.js'
 
 const $q = useQuasar()
 const router = useRouter()
+const route = useRoute()
 const leftDrawerOpen = ref(false)
-const selectedFlow = ref('mobile')
 const filtros = ref({})
 const modalVisible = ref(false)
 const detalleModal = ref(null)
@@ -281,8 +304,15 @@ const showFilters = ref(false)
 const consolaRef = ref(null)
 const geminiConfigRef = ref(null)
 
+// Computed para obtener el flujo actual desde la ruta
+const currentFlow = computed(() => {
+  if (route.path.includes('/mobile')) return 'mobile'
+  if (route.path.includes('/escritorio')) return 'escritorio'
+  return 'escritorio' // Por defecto
+})
+
 // Proporcionar el estado del flujo a los componentes hijos
-provide('selectedFlow', selectedFlow)
+provide('selectedFlow', currentFlow)
 provide('filtrosGlobales', filtros)
 
 // Información del usuario
@@ -291,357 +321,110 @@ const userInfo = ref({
   email: 'usuario@ejemplo.com',
 })
 
-// Observar cambios en el flujo seleccionado
-watch(selectedFlow, (newFlow, oldFlow) => {
-  if (newFlow !== oldFlow) {
-    const message =
-      newFlow === 'mobile' ? 'Cambiado a vista móvil' : 'Cambiado a vista de escritorio'
+// Función para cambiar de flujo mediante rutas
+const cambiarFlujo = (nuevoFlujo) => {
+  const rutaDestino = nuevoFlujo === 'mobile' ? '/mobile' : '/escritorio'
+  router.push(rutaDestino)
 
-    $q.notify({
-      message,
-      color: 'info',
-      icon: newFlow === 'mobile' ? 'smartphone' : 'desktop_windows',
-    })
+  const message =
+    nuevoFlujo === 'mobile' ? 'Cambiado a vista móvil' : 'Cambiado a vista de escritorio'
 
-    // Emitir evento personalizado para comunicar el cambio a componentes hijos
-    window.dispatchEvent(new CustomEvent('cambiar-flujo', { detail: newFlow }))
+  $q.notify({
+    message,
+    color: 'info',
+    icon: nuevoFlujo === 'mobile' ? 'smartphone' : 'desktop_windows',
+  })
 
-    // También actualizar el localStorage para persistencia
-    localStorage.setItem('selectedFlow', newFlow)
-  }
-})
+  // Emitir evento personalizado para comunicar el cambio a componentes hijos
+  window.dispatchEvent(new CustomEvent('cambiar-flujo', { detail: nuevoFlujo }))
+
+  // Actualizar contexto de Santoro
+  santoroContextService.cambiarFlujo(nuevoFlujo)
+}
+
+// Observar cambios en la ruta para notificar cambios de flujo
+watch(
+  () => route.path,
+  (newPath) => {
+    const flujo = newPath.includes('/mobile') ? 'mobile' : 'escritorio'
+    santoroContextService.cambiarFlujo(flujo)
+  },
+  { immediate: true }
+)
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
+function toggleFiltros() {
+  showFilters.value = !showFilters.value
+}
+
 function onFiltrar(val) {
   console.log('🔄 MainLayout: Aplicando filtros:', val)
   filtros.value = val
-  console.log('📋 MainLayout: Filtros globales actualizados:', filtros.value)
-  showFilters.value = false
+
+  // Emitir evento para que las gráficas escuchen los cambios
+  window.dispatchEvent(new CustomEvent('filtros-aplicados', { detail: val }))
+
   $q.notify({
-    message: 'Filtros aplicados',
+    message: '🔍 Filtros aplicados correctamente',
     color: 'positive',
+    icon: 'filter_list',
+    position: 'top-right',
   })
 }
 
+function onGeminiConfigurado() {
+  console.log('✅ Gemini configurado desde MainLayout')
+}
+
+// Funciones para modales
 function openConsole() {
-  if (consolaRef.value && consolaRef.value.abrirConsolaDirecta) {
-    consolaRef.value.abrirConsolaDirecta()
+  if (consolaRef.value && consolaRef.value.abrirConsola) {
+    consolaRef.value.abrirConsola()
+    console.log('✅ Consola abierta correctamente')
+  } else {
+    console.warn('❌ Referencia de consola no disponible:', consolaRef.value)
 
     $q.notify({
-      message: 'Abriendo consola de logs...',
-      color: 'info',
-      icon: 'terminal',
-      position: 'top-right',
-      timeout: 2000,
+      message: '❌ Error al abrir la consola. Referencia no disponible.',
+      color: 'negative',
+      icon: 'error',
     })
   }
 }
 
-// Función para cargar información del usuario
-const loadUserInfo = () => {
-  try {
-    const sessionData =
-      localStorage.getItem('dashboardLogsSession') || sessionStorage.getItem('dashboardLogsSession')
-
-    if (sessionData) {
-      const session = JSON.parse(sessionData)
-      if (session.user) {
-        userInfo.value = {
-          nombre: session.user.nombre || 'Usuario',
-          email: session.user.email || 'usuario@ejemplo.com',
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error cargando información del usuario:', error)
-  }
+function logout() {
+  router.push('/login')
 }
 
-// Función para cerrar sesión
-const logout = () => {
-  try {
-    if (!$q.dialog) {
-      console.error('Dialog plugin no está disponible')
-      // Fallback: cerrar sesión directamente
-      cerrarSesionDirectamente()
-      return
-    }
-
-    $q.dialog({
-      title: 'Cerrar Sesión',
-      message: '¿Estás seguro de que deseas cerrar sesión?',
-      cancel: true,
-      persistent: true,
-    })
-      .onOk(() => {
-        cerrarSesionDirectamente()
-      })
-      .onCancel(() => {
-        console.log('Logout cancelado')
-      })
-  } catch (error) {
-    console.error('Error en logout:', error)
-    cerrarSesionDirectamente()
-  }
-}
-
-// Función auxiliar para cerrar sesión
-const cerrarSesionDirectamente = () => {
-  try {
-    // Limpiar sesión
-    localStorage.removeItem('dashboardLogsSession')
-    sessionStorage.removeItem('dashboardLogsSession')
-
-    // Mostrar notificación
-    $q.notify({
-      type: 'positive',
-      message: 'Sesión cerrada exitosamente',
-      position: 'top',
-    })
-
-    // Redirigir al login
-    router.push('/login')
-  } catch (error) {
-    console.error('Error al cerrar sesión:', error)
-    // Forzar redirección aunque haya error
-    window.location.href = '/login'
-  }
-}
-
-// Función para manejar la configuración de Gemini AI
-const onGeminiConfigurado = (evento) => {
-  console.log('🤖 Gemini configurado:', evento)
-
-  if (evento.desconectado) {
-    $q.notify({
-      type: 'info',
-      message: 'Gemini AI desconectado',
-      position: 'top',
-    })
-  } else if (evento.resultado && evento.resultado.exito) {
-    $q.notify({
-      type: 'positive',
-      message: 'Gemini AI configurado correctamente. Chat mejorado disponible.',
-      position: 'top',
-    })
-  }
-}
-
-// Cargar información del usuario al montar
-onMounted(async () => {
-  loadUserInfo()
-
-  // Cargar el flujo seleccionado desde localStorage
+// Eventos del asistente Santoro
+onMounted(() => {
+  // Configurar flujo inicial desde localStorage o por defecto
   const savedFlow = localStorage.getItem('selectedFlow')
-  if (savedFlow && (savedFlow === 'mobile' || savedFlow === 'escritorio')) {
-    selectedFlow.value = savedFlow
+  const initialFlow =
+    savedFlow && ['mobile', 'escritorio'].includes(savedFlow) ? savedFlow : 'escritorio'
+
+  // Si estamos en la ruta raíz, redirigir al flujo inicial
+  if (route.path === '/' || route.path === '/dashboard' || route.path === '/logs') {
+    router.push(`/${initialFlow}`)
   }
 
-  // 🧠 INICIALIZAR servicio de contexto
-  console.log('🚀 Inicializando servicio de contexto...')
-
-  // Configurar callback para cambios de flujo
-  santoroContextService.registrarCallback('cambio_flujo', (datos) => {
-    console.log('📱 Flujo cambiado desde contexto:', datos)
+  // Escuchar eventos del asistente para cambio de flujo
+  window.addEventListener('santoro-cambiar-flujo', (event) => {
+    const { flujo } = event.detail
+    cambiarFlujo(flujo)
   })
 
-  // Configurar callback para cambios de ruta
-  santoroContextService.registrarCallback('cambio_ruta', (datos) => {
-    console.log('🧭 Ruta cambiada desde contexto:', datos)
-  })
-
-  // Actualizar contexto inicial
-  santoroContextService.cambiarFlujo(selectedFlow.value)
-  santoroContextService.actualizarContextoRuta()
-
-  // Configurar eventos globales para modales
-  window.addEventListener('santoro-abrir-gemini-config', () => {
-    if (geminiConfigRef.value) {
-      geminiConfigRef.value.abrir()
-    }
-  })
-
-  // Configurar eventos de navegación
-  window.addEventListener('santoro-navegar', (event) => {
-    const { ruta, parametros } = event.detail
-    console.log('🧭 Navegando a:', ruta, parametros)
-
-    router.push(ruta).catch((err) => {
-      console.error('Error navegando a', ruta, err)
-      $q.notify({
-        type: 'negative',
-        message: `Error navegando a ${ruta}`,
-        position: 'top-right',
-      })
-    })
-  })
-
-  // Configurar evento para abrir consola
+  // Otros eventos del asistente...
   window.addEventListener('santoro-abrir-consola', () => {
-    console.log('🖥️ Abriendo consola de logs...')
     openConsole()
   })
 
-  // Configurar evento para cambiar flujo
-  window.addEventListener('santoro-cambiar-flujo', (event) => {
-    const { flujo } = event.detail
-    console.log('🔄 Cambiando flujo a:', flujo)
-
-    if (flujo === 'escritorio' || flujo === 'mobile') {
-      selectedFlow.value = flujo
-      $q.notify({
-        type: 'positive',
-        message: `Cambiado a flujo ${flujo === 'escritorio' ? 'de escritorio' : 'móvil'}`,
-        icon: flujo === 'escritorio' ? 'desktop_windows' : 'smartphone',
-        position: 'top-right',
-      })
-    }
+  window.addEventListener('santoro-mostrar-filtros', () => {
+    showFilters.value = true
   })
-
-  // Configurar evento para aplicar filtros
-  window.addEventListener('santoro-aplicar-filtro', (event) => {
-    const { tipo } = event.detail
-    console.log('🏷️ Aplicando filtro:', tipo)
-
-    let mensaje = 'Filtro aplicado'
-    let icon = 'filter_list'
-
-    if (tipo === 'fecha') {
-      showFilters.value = true
-      mensaje = 'Abriendo filtros de fecha'
-      icon = 'date_range'
-    } else if (tipo === 'limpiar') {
-      filtros.value = {}
-      mensaje = 'Filtros limpiados'
-      icon = 'clear'
-      // Emitir evento para que los componentes hijos actualicen
-      window.dispatchEvent(new CustomEvent('limpiar-filtros'))
-    } else if (tipo === 'errores') {
-      filtros.value = { ...filtros.value, nivel: 'ERROR' }
-      mensaje = 'Mostrando solo errores'
-      icon = 'error'
-      // Emitir evento con los nuevos filtros
-      window.dispatchEvent(new CustomEvent('filtros-aplicados', { detail: filtros.value }))
-    }
-
-    $q.notify({
-      type: 'positive',
-      message: mensaje,
-      icon: icon,
-      position: 'top-right',
-    })
-  })
-
-  // Configurar notificaciones para los controladores
-  try {
-    const { santoroModalController } = await import('src/services/santoroModalControllerSimple.js')
-    const { santoroActionController } = await import('src/services/santoroActionController.js')
-
-    // Configurar notificaciones
-    santoroModalController.configurarNotificaciones((notification) => {
-      $q.notify(notification)
-    })
-
-    santoroActionController.configurarNotificaciones((notification) => {
-      $q.notify(notification)
-    })
-
-    console.log('🔔 Notificaciones configuradas para controladores')
-  } catch (error) {
-    console.error('Error configurando notificaciones:', error)
-  }
-
-  // 🚀 INICIALIZAR SISTEMA SANTORO MEGA-ROBUSTO
-  console.log('🚀 Iniciando sistema Santoro MEGA ultra-robusto...')
-
-  try {
-    const { santoroMegaSystem } = await import('../services/santoroMegaSystem.js')
-
-    // El sistema se auto-inicializa, pero podemos forzar inicialización aquí también
-    setTimeout(async () => {
-      try {
-        const result = await santoroMegaSystem.initialize()
-
-        if (result.success) {
-          console.log('✅ Sistema Santoro MEGA completamente listo!')
-
-          $q.notify({
-            type: 'positive',
-            message: '🎉 Sistema Santoro MEGA Activo',
-            caption:
-              'Comandos: Ctrl+Alt+E (Escritorio), Ctrl+Alt+M (Móvil), Ctrl+Alt+D (Diagnóstico)',
-            position: 'top-right',
-            timeout: 6000,
-            actions: [
-              {
-                label: 'Test Rápido',
-                color: 'white',
-                handler: () => {
-                  if (window.santoro) {
-                    console.log('🧪 Ejecutando test rápido...')
-                    window.santoro.test()
-                  }
-                },
-              },
-            ],
-          })
-        }
-      } catch (error) {
-        console.error('❌ Error en sistema mega:', error)
-
-        $q.notify({
-          type: 'warning',
-          message: '⚠️ Sistema en modo emergencia',
-          caption: 'Funciones básicas disponibles',
-          position: 'top-right',
-          timeout: 3000,
-        })
-      }
-    }, 1000) // 1 segundo es suficiente para el mega system
-  } catch (error) {
-    console.error('❌ Error cargando mega system:', error)
-
-    // Sistema de emergencia directo si todo falla
-    setTimeout(() => {
-      window.santoro = {
-        cambiarAEscritorio: () => {
-          selectedFlow.value = 'escritorio'
-          $q.notify({ type: 'positive', message: 'Cambiado a Escritorio', position: 'top-right' })
-        },
-        cambiarAMovil: () => {
-          selectedFlow.value = 'mobile'
-          $q.notify({ type: 'positive', message: 'Cambiado a Móvil', position: 'top-right' })
-        },
-        abrirDiagnostico: () => {
-          router.push('/diagnostico')
-          $q.notify({ type: 'positive', message: 'Abriendo Diagnóstico', position: 'top-right' })
-        },
-        abrirEstadisticas: () => {
-          router.push('/estadisticas')
-          $q.notify({ type: 'positive', message: 'Abriendo Estadísticas', position: 'top-right' })
-        },
-      }
-
-      // APIs directas
-      window.cambiarAEscritorio = window.santoro.cambiarAEscritorio
-      window.cambiarAMovil = window.santoro.cambiarAMovil
-      window.abrirDiagnostico = window.santoro.abrirDiagnostico
-      window.abrirEstadisticas = window.santoro.abrirEstadisticas
-
-      $q.notify({
-        type: 'info',
-        message: '🛡️ Sistema de emergencia activo',
-        caption: 'Comandos básicos disponibles',
-        position: 'top-right',
-        timeout: 4000,
-      })
-
-      console.log('🛡️ Sistema de emergencia directo activo')
-    }, 500)
-  }
 })
 </script>
 
@@ -675,6 +458,12 @@ onMounted(async () => {
       color: #9e9e9e;
     }
   }
+}
+
+.filters-panel {
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .flow-container {

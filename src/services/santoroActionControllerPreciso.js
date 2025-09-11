@@ -91,54 +91,64 @@ export class SantoroActionControllerPreciso {
 
             // 1. Verificar estado actual con máxima precisión
             const contextoActual = this.obtenerContextoPreciso()
+            const rutaActual = window.location.pathname
 
-            if (contextoActual.flujo === 'escritorio') {
+            if (rutaActual.includes('/escritorio')) {
                 return {
                     exito: true,
                     mensaje: 'Ya te encuentras en el flujo de escritorio',
                     contexto: contextoActual,
+                    ruta: rutaActual,
                     accion: 'ninguna'
                 }
             }
 
-            // 2. Buscar métodos específicos para cambiar a escritorio
-            const metodosEscritorio = await this.buscarMetodosCambioFlujo('escritorio')
+            // 2. Navegar a la ruta de escritorio
+            const rutaDestino = '/escritorio'
+            console.log('🚀 Navegando a:', rutaDestino)
 
-            if (metodosEscritorio.length === 0) {
-                throw new Error('No se encontraron métodos para cambiar a escritorio')
-            }
-
-            // 3. Ejecutar cambio con validación
-            for (const metodo of metodosEscritorio) {
-                try {
-                    await this.ejecutarMetodoCambioFlujo(metodo, 'escritorio')
-
-                    // Verificar cambio exitoso con timeout
-                    await this.esperarCambioFlujo('escritorio', 3000)
-
-                    const nuevoContexto = this.obtenerContextoPreciso()
-
-                    if (nuevoContexto.flujo === 'escritorio') {
-                        this.registrarAccionExitosa('cambio_flujo', {
-                            flujoAnterior: contextoActual.flujo,
-                            flujoNuevo: 'escritorio',
-                            metodo: metodo.tipo
-                        })
-
-                        return {
-                            exito: true,
-                            mensaje: 'Cambiado al flujo de escritorio exitosamente',
-                            contexto: nuevoContexto,
-                            metodo_usado: metodo.tipo
-                        }
-                    }
-                } catch (error) {
-                    console.warn(`Método ${metodo.tipo} falló:`, error.message)
-                    continue
+            try {
+                // Intentar usar Vue Router si está disponible
+                if (window.__VUE_ROUTER_INSTANCE__) {
+                    await window.__VUE_ROUTER_INSTANCE__.push(rutaDestino)
+                } else {
+                    // Fallback a navegación directa
+                    window.history.pushState({}, '', rutaDestino)
+                    window.dispatchEvent(new PopStateEvent('popstate'))
                 }
+            } catch (error) {
+                console.warn('Error en navegación router, usando fallback:', error)
+                window.location.href = rutaDestino
             }
 
-            throw new Error('Todos los métodos de cambio fallaron')
+            // 3. Emitir eventos para notificar el cambio
+            window.dispatchEvent(new CustomEvent('santoro-cambiar-flujo', {
+                detail: {
+                    flujo: 'escritorio',
+                    rutaAnterior: rutaActual,
+                    rutaDestino,
+                    metodo: 'programatico'
+                }
+            }))
+
+            // 4. Verificar cambio exitoso con timeout
+            await this.esperarCambioRuta('/escritorio', 3000)
+
+            const nuevoContexto = this.obtenerContextoPreciso()
+
+            this.registrarAccionExitosa('cambio_flujo', {
+                rutaAnterior: rutaActual,
+                rutaDestino,
+                flujoNuevo: 'escritorio'
+            })
+
+            return {
+                exito: true,
+                mensaje: 'Cambiado al flujo de escritorio exitosamente',
+                contexto: nuevoContexto,
+                rutaAnterior: rutaActual,
+                rutaDestino
+            }
 
         } catch (error) {
             console.error('❌ Error cambiando a escritorio:', error)
@@ -167,51 +177,64 @@ export class SantoroActionControllerPreciso {
             console.log('📱 Iniciando cambio a móvil...')
 
             const contextoActual = this.obtenerContextoPreciso()
+            const rutaActual = window.location.pathname
 
-            if (contextoActual.flujo === 'movil') {
+            if (rutaActual.includes('/mobile')) {
                 return {
                     exito: true,
                     mensaje: 'Ya te encuentras en el flujo móvil',
                     contexto: contextoActual,
+                    ruta: rutaActual,
                     accion: 'ninguna'
                 }
             }
 
-            const metodosMovil = await this.buscarMetodosCambioFlujo('movil')
+            // Navegar a la ruta de mobile
+            const rutaDestino = '/mobile'
+            console.log('🚀 Navegando a:', rutaDestino)
 
-            if (metodosMovil.length === 0) {
-                throw new Error('No se encontraron métodos para cambiar a móvil')
-            }
-
-            for (const metodo of metodosMovil) {
-                try {
-                    await this.ejecutarMetodoCambioFlujo(metodo, 'movil')
-
-                    await this.esperarCambioFlujo('movil', 3000)
-
-                    const nuevoContexto = this.obtenerContextoPreciso()
-
-                    if (nuevoContexto.flujo === 'movil') {
-                        this.registrarAccionExitosa('cambio_flujo', {
-                            flujoAnterior: contextoActual.flujo,
-                            flujoNuevo: 'movil',
-                            metodo: metodo.tipo
-                        })
-
-                        return {
-                            exito: true,
-                            mensaje: 'Cambiado al flujo móvil exitosamente',
-                            contexto: nuevoContexto,
-                            metodo_usado: metodo.tipo
-                        }
-                    }
-                } catch (error) {
-                    console.warn(`Método ${metodo.tipo} falló:`, error.message)
-                    continue
+            try {
+                // Intentar usar Vue Router si está disponible
+                if (window.__VUE_ROUTER_INSTANCE__) {
+                    await window.__VUE_ROUTER_INSTANCE__.push(rutaDestino)
+                } else {
+                    // Fallback a navegación directa
+                    window.history.pushState({}, '', rutaDestino)
+                    window.dispatchEvent(new PopStateEvent('popstate'))
                 }
+            } catch (error) {
+                console.warn('Error en navegación router, usando fallback:', error)
+                window.location.href = rutaDestino
             }
 
-            throw new Error('Todos los métodos de cambio fallaron')
+            // Emitir eventos para notificar el cambio
+            window.dispatchEvent(new CustomEvent('santoro-cambiar-flujo', {
+                detail: {
+                    flujo: 'mobile',
+                    rutaAnterior: rutaActual,
+                    rutaDestino,
+                    metodo: 'programatico'
+                }
+            }))
+
+            // Verificar cambio exitoso
+            await this.esperarCambioRuta('/mobile', 3000)
+
+            const nuevoContexto = this.obtenerContextoPreciso()
+
+            this.registrarAccionExitosa('cambio_flujo', {
+                rutaAnterior: rutaActual,
+                rutaDestino,
+                flujoNuevo: 'mobile'
+            })
+
+            return {
+                exito: true,
+                mensaje: 'Cambiado al flujo móvil exitosamente',
+                contexto: nuevoContexto,
+                rutaAnterior: rutaActual,
+                rutaDestino
+            }
 
         } catch (error) {
             console.error('❌ Error cambiando a móvil:', error)
@@ -604,6 +627,26 @@ export class SantoroActionControllerPreciso {
             const verificar = () => {
                 const contexto = this.obtenerContextoPreciso()
                 if (contexto.flujo === flujoEsperado) {
+                    clearTimeout(timeoutId)
+                    resolve(true)
+                } else {
+                    setTimeout(verificar, 100)
+                }
+            }
+
+            verificar()
+        })
+    }
+
+    async esperarCambioRuta(rutaEsperada, timeout = 3000) {
+        return new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                reject(new Error(`Timeout esperando ruta ${rutaEsperada}`))
+            }, timeout)
+
+            const verificar = () => {
+                const rutaActual = window.location.pathname
+                if (rutaActual.includes(rutaEsperada)) {
                     clearTimeout(timeoutId)
                     resolve(true)
                 } else {
