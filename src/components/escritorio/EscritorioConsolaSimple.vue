@@ -10,7 +10,7 @@
     <q-card class="console-modal-card bg-dark text-white">
       <!-- Header -->
       <q-card-section class="console-header bg-grey-9">
-        <div class="row items-center">
+        <div class="row">
           <div class="col">
             <div class="text-h5">
               <q-icon name="terminal" class="q-mr-sm" color="primary" />
@@ -55,319 +55,347 @@
               <q-tooltip>Cerrar consola</q-tooltip>
             </q-btn>
           </div>
-        </div>
-      </q-card-section>
+          <div class="col-12 q-pt-md">
+            <q-list>
+              <q-expansion-item
+                class="flex justify-end"
+                v-model="filtrosToggle"
+                icon="filter_alt"
+                label="Filtros"
+                header-style="background: #232629 !important;"
+                header-class="text-weight-bolder text-white text-right"
+                expand-icon-class="text-white"
+                expand-separator
+              >
+                <q-card class="bg-grey-8">
+                  <!-- Controles -->
+                  <q-card-section class="console-controls bg-grey-8">
+                    <div class="row q-col-gutter-md">
+                      <!-- Primera fila: Búsqueda -->
+                      <div class="col-12 col-md-8">
+                        <q-input
+                          v-model="busqueda"
+                          label="Buscar en mensaje..."
+                          filled
+                          dark
+                          color="primary"
+                          debounce="300"
+                          clearable
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="search" color="primary" />
+                          </template>
+                        </q-input>
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <q-btn-dropdown
+                          color="positive"
+                          icon="download"
+                          label="Exportar"
+                          :disable="!logsFiltrados.length"
+                          class="q-mr-sm"
+                        >
+                          <q-list>
+                            <q-item clickable @click="exportarLogs('excel')">
+                              <q-item-section avatar>
+                                <q-icon name="table_chart" color="green" />
+                              </q-item-section>
+                              <q-item-section>
+                                <q-item-label>Excel (.xlsx)</q-item-label>
+                                <q-item-label caption>Archivo Excel con formato</q-item-label>
+                              </q-item-section>
+                            </q-item>
 
-      <!-- Controles -->
-      <q-card-section class="console-controls bg-grey-8">
-        <div class="row q-col-gutter-md">
-          <!-- Primera fila: Búsqueda -->
-          <div class="col-12 col-md-8">
-            <q-input
-              v-model="busqueda"
-              label="Buscar en logs..."
-              filled
-              dark
-              color="primary"
-              debounce="300"
-              clearable
-            >
-              <template v-slot:prepend>
-                <q-icon name="search" color="primary" />
-              </template>
-            </q-input>
-          </div>
-          <div class="col-12 col-md-4">
-            <q-btn-dropdown
-              color="positive"
-              icon="download"
-              label="Exportar"
-              :disable="!logsFiltrados.length"
-              class="q-mr-sm"
-            >
-              <q-list>
-                <q-item clickable @click="exportarLogs('excel')">
-                  <q-item-section avatar>
-                    <q-icon name="table_chart" color="green" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Excel (.xlsx)</q-item-label>
-                    <q-item-label caption>Archivo Excel con formato</q-item-label>
-                  </q-item-section>
-                </q-item>
+                            <q-item clickable @click="exportarLogs('json')">
+                              <q-item-section avatar>
+                                <q-icon name="code" color="blue" />
+                              </q-item-section>
+                              <q-item-section>
+                                <q-item-label>JSON (.json)</q-item-label>
+                                <q-item-label caption>Formato JSON estructurado</q-item-label>
+                              </q-item-section>
+                            </q-item>
 
-                <q-item clickable @click="exportarLogs('json')">
-                  <q-item-section avatar>
-                    <q-icon name="code" color="blue" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>JSON (.json)</q-item-label>
-                    <q-item-label caption>Formato JSON estructurado</q-item-label>
-                  </q-item-section>
-                </q-item>
-
-                <q-item clickable @click="exportarLogs('txt')">
-                  <q-item-section avatar>
-                    <q-icon name="text_snippet" color="orange" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Texto (.txt)</q-item-label>
-                    <q-item-label caption>Archivo de texto plano</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-btn-dropdown>
-            <q-btn color="warning" icon="clear_all" label="Limpiar" @click="limpiarConsola" flat />
-          </div>
-
-          <!-- Segunda fila: Filtros avanzados - Optimizado para responsive -->
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-select
-              v-model="filtroOficina"
-              :options="opcionesOficinas"
-              option-label="label"
-              option-value="value"
-              emit-value
-              map-options
-              label="Oficina"
-              filled
-              dark
-              color="primary"
-              clearable
-              use-input
-              @filter="filtrarOficinas"
-              dense
-            >
-              <template v-slot:prepend>
-                <q-icon name="business" color="orange" />
-              </template>
-            </q-select>
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-select
-              v-model="filtroUsuario"
-              :options="opcionesUsuarios"
-              option-label="label"
-              option-value="value"
-              emit-value
-              map-options
-              label="Usuario"
-              filled
-              dark
-              color="primary"
-              clearable
-              use-input
-              @filter="filtrarUsuarios"
-              dense
-            >
-              <template v-slot:prepend>
-                <q-icon name="person" color="green" />
-              </template>
-            </q-select>
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-select
-              v-model="filtroTipoLog"
-              :options="opcionesTiposLog"
-              option-label="label"
-              option-value="value"
-              emit-value
-              map-options
-              label="Tipo"
-              filled
-              dark
-              color="primary"
-              clearable
-              dense
-            >
-              <template v-slot:prepend>
-                <q-icon name="article" color="blue" />
-              </template>
-            </q-select>
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-select
-              v-model="filtroProceso"
-              :options="opcionesProcesos"
-              option-label="label"
-              option-value="value"
-              emit-value
-              map-options
-              label="Proceso"
-              filled
-              dark
-              color="primary"
-              clearable
-              dense
-            >
-              <template v-slot:prepend>
-                <q-icon name="settings" color="purple" />
-              </template>
-            </q-select>
-          </div>
-
-          <!-- Tercera fila: Filtros adicionales - Optimizado -->
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-select
-              v-model="filtroDispositivo"
-              :options="opcionesDispositivos"
-              option-label="label"
-              option-value="value"
-              emit-value
-              map-options
-              label="Dispositivo"
-              filled
-              dark
-              color="primary"
-              clearable
-              use-input
-              @filter="filtrarDispositivos"
-              dense
-            >
-              <template v-slot:prepend>
-                <q-icon name="smartphone" color="cyan" />
-              </template>
-            </q-select>
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-select
-              v-model="filtroEscaner"
-              :options="opcionesEscaners"
-              option-label="label"
-              option-value="value"
-              emit-value
-              map-options
-              label="Escáner"
-              filled
-              dark
-              color="primary"
-              clearable
-              use-input
-              @filter="filtrarEscaners"
-              dense
-            >
-              <template v-slot:prepend>
-                <q-icon name="qr_code_scanner" color="pink" />
-              </template>
-            </q-select>
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-input
-              v-model="textoRangoFechas"
-              label="Fechas"
-              filled
-              dark
-              color="primary"
-              clearable
-              readonly
-              dense
-            >
-              <template v-slot:prepend>
-                <q-icon name="date_range" color="amber" />
-              </template>
-              <template v-slot:append>
-                <q-icon name="calendar_month" class="cursor-pointer">
-                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date v-model="rangoFechas" range mask="YYYY-MM-DD" dark>
-                      <div class="row items-center justify-end q-pa-sm">
+                            <q-item clickable @click="exportarLogs('txt')">
+                              <q-item-section avatar>
+                                <q-icon name="text_snippet" color="orange" />
+                              </q-item-section>
+                              <q-item-section>
+                                <q-item-label>Texto (.txt)</q-item-label>
+                                <q-item-label caption>Archivo de texto plano</q-item-label>
+                              </q-item-section>
+                            </q-item>
+                          </q-list>
+                        </q-btn-dropdown>
                         <q-btn
+                          color="warning"
+                          icon="clear_all"
                           label="Limpiar"
+                          @click="limpiarConsola"
+                          flat
+                        />
+                      </div>
+
+                      <!-- Segunda fila: Filtros avanzados - Optimizado para responsive -->
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-select
+                          v-model="filtroOficina"
+                          :options="opcionesOficinas"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          label="Oficina"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          use-input
+                          @filter="filtrarOficinas"
+                          dense
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="business" color="orange" />
+                          </template>
+                        </q-select>
+                      </div>
+
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-select
+                          v-model="filtroUsuario"
+                          :options="opcionesUsuarios"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          label="Usuario"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          use-input
+                          @filter="filtrarUsuarios"
+                          dense
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="person" color="green" />
+                          </template>
+                        </q-select>
+                      </div>
+
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-select
+                          v-model="filtroTipoLog"
+                          :options="opcionesTiposLog"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          label="Tipo"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          dense
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="article" color="blue" />
+                          </template>
+                        </q-select>
+                      </div>
+
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-select
+                          v-model="filtroProceso"
+                          :options="opcionesProcesos"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          label="Proceso"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          dense
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="settings" color="purple" />
+                          </template>
+                        </q-select>
+                      </div>
+
+                      <!-- Tercera fila: Filtros adicionales - Optimizado -->
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-select
+                          v-model="filtroDispositivo"
+                          :options="opcionesDispositivos"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          label="Dispositivo"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          use-input
+                          @filter="filtrarDispositivos"
+                          dense
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="smartphone" color="cyan" />
+                          </template>
+                        </q-select>
+                      </div>
+
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-select
+                          v-model="filtroEscaner"
+                          :options="opcionesEscaners"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          label="Escáner"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          use-input
+                          @filter="filtrarEscaners"
+                          dense
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="qr_code_scanner" color="pink" />
+                          </template>
+                        </q-select>
+                      </div>
+
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-input
+                          v-model="textoRangoFechas"
+                          label="Fechas"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          readonly
+                          dense
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="date_range" color="amber" />
+                          </template>
+                          <template v-slot:append>
+                            <q-icon name="calendar_month" class="cursor-pointer">
+                              <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                <q-date v-model="rangoFechas" range mask="YYYY-MM-DD" dark>
+                                  <div class="row items-center justify-end q-pa-sm">
+                                    <q-btn
+                                      label="Limpiar"
+                                      color="negative"
+                                      flat
+                                      size="sm"
+                                      @click="rangoFechas = null"
+                                      class="q-mr-sm"
+                                    />
+                                    <q-btn
+                                      v-close-popup
+                                      label="Aplicar"
+                                      color="primary"
+                                      flat
+                                      size="sm"
+                                    />
+                                  </div>
+                                </q-date>
+                              </q-popup-proxy>
+                            </q-icon>
+                          </template>
+                        </q-input>
+                      </div>
+
+                      <!-- Filtros avanzados de código de error y sesión -->
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-input
+                          v-model="filtroErrorCode"
+                          label="Código Error"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          dense
+                          debounce="300"
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="error_outline" color="red-4" />
+                          </template>
+                          <template v-slot:hint> Ej: USR02808141525-INF017 </template>
+                        </q-input>
+                      </div>
+
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-input
+                          v-model="filtroSessionToken"
+                          label="Token Sesión"
+                          filled
+                          dark
+                          color="primary"
+                          clearable
+                          dense
+                          debounce="300"
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="vpn_key" color="green-4" />
+                          </template>
+                          <template v-slot:hint> Ej: HNh0vhSPeQ9e </template>
+                        </q-input>
+                      </div>
+
+                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                        <q-btn
                           color="negative"
+                          icon="filter_alt_off"
+                          label="Limpiar"
+                          @click="limpiarTodosFiltros"
+                          outline
+                          class="full-width"
+                          dense
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Indicadores de filtros activos -->
+                    <div v-if="filtrosActivos.length" class="row q-mt-md">
+                      <div class="col-12">
+                        <div class="text-caption text-grey-4 q-mb-xs">Filtros activos:</div>
+                        <q-chip
+                          v-for="filtro in filtrosActivos"
+                          :key="filtro.key"
+                          :color="filtro.color"
+                          text-color="white"
+                          removable
+                          @remove="limpiarFiltro(filtro.key)"
+                          size="sm"
+                          class="q-mr-xs"
+                        >
+                          <q-icon :name="filtro.icon" size="16px" class="q-mr-xs" />
+                          {{ filtro.label }}
+                        </q-chip>
+                        <q-btn
+                          icon="clear_all"
+                          label="Limpiar todos"
                           flat
                           size="sm"
-                          @click="rangoFechas = null"
-                          class="q-mr-sm"
+                          color="red"
+                          @click="limpiarTodosFiltros"
+                          class="q-ml-sm"
                         />
-                        <q-btn v-close-popup label="Aplicar" color="primary" flat size="sm" />
                       </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
-          </div>
-
-          <!-- Filtros avanzados de código de error y sesión -->
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-input
-              v-model="filtroErrorCode"
-              label="Código Error"
-              filled
-              dark
-              color="primary"
-              clearable
-              dense
-              debounce="300"
-            >
-              <template v-slot:prepend>
-                <q-icon name="error_outline" color="red-4" />
-              </template>
-              <template v-slot:hint> Ej: USR02808141525-INF017 </template>
-            </q-input>
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-input
-              v-model="filtroSessionToken"
-              label="Token Sesión"
-              filled
-              dark
-              color="primary"
-              clearable
-              dense
-              debounce="300"
-            >
-              <template v-slot:prepend>
-                <q-icon name="vpn_key" color="green-4" />
-              </template>
-              <template v-slot:hint> Ej: HNh0vhSPeQ9e </template>
-            </q-input>
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-            <q-btn
-              color="negative"
-              icon="filter_alt_off"
-              label="Limpiar"
-              @click="limpiarTodosFiltros"
-              outline
-              class="full-width"
-              dense
-            />
-          </div>
-        </div>
-
-        <!-- Indicadores de filtros activos -->
-        <div v-if="filtrosActivos.length" class="row q-mt-md">
-          <div class="col-12">
-            <div class="text-caption text-grey-4 q-mb-xs">Filtros activos:</div>
-            <q-chip
-              v-for="filtro in filtrosActivos"
-              :key="filtro.key"
-              :color="filtro.color"
-              text-color="white"
-              removable
-              @remove="limpiarFiltro(filtro.key)"
-              size="sm"
-              class="q-mr-xs"
-            >
-              <q-icon :name="filtro.icon" size="16px" class="q-mr-xs" />
-              {{ filtro.label }}
-            </q-chip>
-            <q-btn
-              icon="clear_all"
-              label="Limpiar todos"
-              flat
-              size="sm"
-              color="red"
-              @click="limpiarTodosFiltros"
-              class="q-ml-sm"
-            />
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </q-expansion-item>
+            </q-list>
           </div>
         </div>
       </q-card-section>
@@ -457,7 +485,7 @@
                   <div class="row items-center q-mb-xs">
                     <q-icon name="business" color="orange-4" size="18px" class="q-mr-sm" />
                     <div class="text-weight-medium text-orange-4">
-                      {{ obtenerNombreOficina(log) }}
+                      {{ obtenerNombreOficina(log).nombre || obtenerNombreOficina(log) }}
                     </div>
                   </div>
                   <div v-if="obtenerDireccionOficina(log)" class="text-caption text-grey-5 q-ml-md">
@@ -1052,7 +1080,6 @@ const opcionesTiposLog = ref([
   { label: 'WARNING', value: 'WARNING' },
   { label: 'START', value: 'START' },
   { label: 'END', value: 'END' },
-  { label: 'FIN (Error de escaneo)', value: 'FIN' },
   { label: 'EXPORT', value: 'EXPORT' },
   { label: 'DETAIL', value: 'DETAIL' },
   { label: 'CONECTADO', value: 'CONECTADO' },
@@ -1126,6 +1153,7 @@ const oficinasFull = ref([])
 const usuariosFull = ref([])
 const dispositivosFull = ref([])
 const escanersFull = ref([])
+const filtrosToggle = ref(false)
 
 // Computed para el texto del rango de fechas
 const textoRangoFechas = computed(() => {
@@ -1243,14 +1271,13 @@ const logsFiltrados = computed(() => {
   // Filtro por búsqueda de texto mejorado
   if (busqueda.value) {
     const needle = busqueda.value.toLowerCase()
-    resultado = resultado.filter(
-      (log) =>
-        (log.Message || log.Mensaje || '').toLowerCase().includes(needle) ||
-        (log.type || log.Tipo || log.EventType || '').toLowerCase().includes(needle) ||
-        (log.process || log.Proceso || '').toLowerCase().includes(needle) ||
-        obtenerNombreOficina(log).toLowerCase().includes(needle) ||
-        obtenerNombreUsuario(log).toLowerCase().includes(needle) ||
-        (log.device || '').toLowerCase().includes(needle)
+    resultado = resultado.filter((log) =>
+      // (obtenerNombreOficina(log).toLowerCase().includes(needle) || '') ||
+      // (obtenerNombreUsuario(log).toLowerCase().includes(needle) || '') ||
+      // (log.type || log.Tipo || log.EventType || '').toLowerCase().includes(needle) ||
+      // (log.process || log.Proceso || '').toLowerCase().includes(needle) ||
+      // (log.device || '').toLowerCase().includes(needle) ||
+      (log.message || log.Mensaje || '').toLowerCase().includes(needle)
     )
   }
 
@@ -1610,7 +1637,7 @@ const formatearFechaCompleta = (fecha) => {
 
     // Verificar si la fecha es válida
     if (isNaN(date.getTime())) {
-      console.warn(`⚠️ Fecha no válida: "${fecha}". Mostrando texto original.`)
+      console.log(`👌 Fecha formateada: "${fecha}". Mostrando en formato original.`)
       return fecha // Devolver el texto original si no se puede parsear
     }
 
@@ -1774,6 +1801,11 @@ watch(paginaActual, () => {
 // Funciones principales mejoradas
 const abrirConsola = (logsData = null, filtroTexto = '', filtrosGrafica = null) => {
   mostrarConsola.value = true
+
+  setTimeout(() => {
+    filtrosToggle.value = true
+  },1000)
+
   origenConsola.value = 'graficas' // Marcar origen desde gráficas
 
   if (logsData && logsData.length > 0) {
@@ -2627,7 +2659,7 @@ const filtrarOficinas = (val, update) => {
     } else {
       const needle = val.toLowerCase()
       opcionesOficinas.value = oficinasFull.value.filter(
-        (oficina) => oficina.label.toLowerCase().indexOf(needle) > -1
+        (oficina) => String(oficina.label).toLowerCase().indexOf(needle) > -1
       )
     }
   })
@@ -2967,6 +2999,10 @@ const exportarLogs = (formato = 'json') => {
 const abrirConsolaDirecta = async () => {
   console.log('🚀 ABRIENDO CONSOLA DIRECTA DESDE SIDEBAR - versión con carga API')
 
+  setTimeout(() => {
+    filtrosToggle.value = true
+  },1000)
+
   // 🔧 Establecer origen como sidebar para usar filtrado API
   origenConsola.value = 'sidebar'
 
@@ -3097,6 +3133,10 @@ const abrirDiagnosticoManual = () => {
   }
 }
 
+const filtrarLogs = (e) => {
+  console.log(e.tarjet.value)
+}
+
 // Exposición de funciones
 defineExpose({
   abrirConsola,
@@ -3108,6 +3148,7 @@ defineExpose({
   abrirDiagnosticoSesion,
   abrirDiagnosticoManual,
   cerrarDiagnostico,
+  filtrarLogs,
 })
 </script>
 

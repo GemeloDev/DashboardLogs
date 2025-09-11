@@ -361,13 +361,14 @@
           <q-tab-panel name="session">
             <q-card class="bg-grey-8 text-white">
               <q-card-section>
-                <div class="text-h6">👤 Análisis de Sesión por Código Base</div>
-                <div class="text-caption text-grey-4 q-mb-lg">
-                  Formato: USR02808191331 (usar baseCode)
-                </div>
-
-                <div class="row q-col-gutter-md">
-                  <div class="col-12 col-md-8">
+                <div class="row justify-center">
+                  <div class="col-12 justify-center q-gutter-y-xs text-center">
+                    <div class="text-h6 q-pa-md">👤 Análisis de Sesión por Código Base</div>
+                    <div class="text-caption text-grey-4 q-mb-lg q-mx-md">
+                      Formato: USR02808191331 (usar baseCode)
+                    </div>
+                  </div>
+                  <div class="col-md-6 col-xs-12 q-gutter-y-md">
                     <q-input
                       v-model="formulario.sessionToken"
                       label="Código Base de Sesión"
@@ -380,15 +381,13 @@
                         <q-icon name="account_circle" color="blue-5" />
                       </template>
                     </q-input>
-                  </div>
-                  <div class="col-12 col-md-4">
                     <q-btn
                       color="blue-5"
                       icon="search"
                       label="Consultar"
                       @click="() => consultarSesion()"
                       :loading="cargandoSesion"
-                      size="lg"
+                      size="md"
                       class="full-width"
                     />
                   </div>
@@ -398,7 +397,7 @@
                 <div v-if="resultadoSesion" class="q-mt-lg">
                   <q-separator class="q-mb-md" color="grey-6" />
                   <div v-if="resultadoSesion.success && resultadoSesion.data.length > 0">
-                    <div class="text-h6 text-blue-4 q-mb-md">
+                    <div class="text-h6 text-blue-4 q-pa-md q-mb-lg text-center">
                       <q-icon name="account_circle" class="q-mr-sm" />
                       Sesión: {{ resultadoSesion.baseCode }}
                       <q-chip color="blue-6" text-color="white" size="sm" class="q-ml-sm">
@@ -407,8 +406,9 @@
                     </div>
 
                     <!-- Resumen de la sesión -->
-                    <div class="row q-col-gutter-md q-mb-lg">
-                      <div class="col-12 col-md-6">
+                    <div class="row justify-center q-col-gutter-md">
+                      <div class="col-md-6 col-sm-12">
+                        <!-- Card de info del usuario -->
                         <q-card class="bg-grey-7">
                           <q-card-section>
                             <div class="text-subtitle2 q-mb-md">👤 Información del Usuario</div>
@@ -453,10 +453,8 @@
                             </q-list>
                           </q-card-section>
                         </q-card>
-                      </div>
-
-                      <div class="col-12 col-md-6">
-                        <q-card class="bg-grey-7">
+                        <!-- Card de estadísticas de sesión -->
+                        <q-card class="bg-grey-7 q-mt-lg">
                           <q-card-section>
                             <div class="text-subtitle2 q-mb-md">📊 Estadísticas de Sesión</div>
                             <q-list dark>
@@ -500,14 +498,12 @@
                           </q-card-section>
                         </q-card>
                       </div>
-                    </div>
 
-                    <!-- Timeline de eventos -->
-                    <div class="row q-col-gutter-md">
-                      <div class="col-12">
+                      <!-- Timeline de eventos -->
+                      <div class="col-md-6 col-sm-12">
                         <q-card class="bg-grey-7">
                           <q-card-section>
-                            <div class="text-subtitle2 q-mb-md">
+                            <div class="text-subtitle2 q-pa-sm">
                               🔄 Timeline de Acciones/Logs
                               <q-chip color="blue-6" text-color="white" size="sm" class="q-ml-sm">
                                 {{ resultadoSesion.data?.length || 0 }} acciones
@@ -526,8 +522,8 @@
                             </div>
 
                             <!-- Timeline con datos -->
-                            <div v-else>
-                              <q-timeline color="blue-5" side="right" dark class="session-timeline">
+                            <div v-else class="q-px-md">
+                              <q-timeline color="blue-5" side="right" dark class="session-timeline q-pl-md">
                                 <q-timeline-entry
                                   v-for="(log, index) in resultadoSesion.data"
                                   :key="log.id || index"
@@ -752,7 +748,6 @@
                           <q-card class="bg-grey-9 text-white q-mb-sm">
                             <q-card-section>
                               <div class="row items-start">
-
                                 <div class="col">
                                   <div class="text-subtitle1 q-mb-xs">
                                     {{ r.type || r.proceso || 'Evento' }}
@@ -763,7 +758,19 @@
                                   <div class="text-caption q-mt-sm log-metadata">
                                     <div class="log-item">
                                       <q-icon name="person" size="xs" class="q-mr-xs" />
-                                      {{ '(' + r.person.curp + ') ' + r.person.nombres + ' ' + r.person.primerApellido + ' ' + r.person.segundoApellido   || r.persona || r.baseCode || 'N/A' }}
+                                      {{
+                                        '(' +
+                                          r.person.curp +
+                                          ') ' +
+                                          r.person.nombres +
+                                          ' ' +
+                                          r.person.primerApellido +
+                                          ' ' +
+                                          r.person.segundoApellido ||
+                                        r.persona ||
+                                        r.baseCode ||
+                                        'N/A'
+                                      }}
                                     </div>
                                     <div class="log-item">
                                       <q-icon name="apartment" size="xs" class="q-mr-xs" />
@@ -884,7 +891,7 @@
     </q-card>
   </q-dialog>
 
-  <EscritorioGuia ref="escritorioGuia"/>
+  <EscritorioGuia ref="escritorioGuia" />
 </template>
 
 <script setup>
@@ -912,7 +919,6 @@ const mostrarDiagnostico = ref(false)
 const tabActiva = ref('busqueda')
 const diagnosticoActivo = ref('')
 const escritorioGuia = ref(false)
-
 
 // Formularios
 const busquedaRapida = ref('')
@@ -1077,7 +1083,7 @@ const mostrarAyuda = () => {
   console.log('🔍 Intentando abrir diagnóstico...')
   console.log('🔍 Diagnositico.value...', escritorioGuia.value)
 
-  if(escritorioGuia.value){
+  if (escritorioGuia.value) {
     escritorioGuia.value.abrirGuia()
   } else {
     console.log('No se localizo el componente EscritorioGuia')
@@ -1287,7 +1293,7 @@ defineExpose({
 }
 
 .session-timeline {
-  max-height: 600px;
+  max-height: 300px;
   overflow-y: auto;
 
   .log-details {
@@ -1335,4 +1341,29 @@ defineExpose({
     }
   }
 }
+
+/* Scrollbar completo */
+::-webkit-scrollbar {
+  width: 10px;  /* ancho de la barra */
+  height: 10px; /* alto si es horizontal */
+}
+
+/* Fondo de la barra */
+::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 8px;
+}
+
+/* Thumb (la parte que se mueve) */
+::-webkit-scrollbar-thumb {
+  background-color: #757575; /* azul Quasar */
+  border-radius: 8px;
+  border: 2px solid #f0f0f0; /* espacio alrededor */
+}
+
+/* Thumb al hacer hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #7a7a7a;
+}
+
 </style>
