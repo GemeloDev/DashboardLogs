@@ -141,28 +141,6 @@
             </q-item-section>
             <q-item-section><span style="font-weight: 600">Dashboard</span></q-item-section>
           </q-item>
-          <template v-if="currentFlow !== 'escritorio'">
-            <q-item clickable v-ripple to="/estadisticas">
-              <q-item-section avatar>
-                <q-icon name="insert_chart" color="blue" />
-              </q-item-section>
-              <q-item-section><span style="font-weight: 600">Estadísticas</span></q-item-section>
-            </q-item>
-            <q-item clickable v-ripple to="/eventos">
-              <q-item-section avatar>
-                <q-icon name="event" color="green" />
-              </q-item-section>
-              <q-item-section><span style="font-weight: 600">Eventos</span></q-item-section>
-            </q-item>
-            <q-item clickable v-ripple to="/eventos-fallidos">
-              <q-item-section avatar>
-                <q-icon name="report_problem" color="red" />
-              </q-item-section>
-              <q-item-section
-                ><span style="font-weight: 600">Eventos Fallidos</span></q-item-section
-              >
-            </q-item>
-          </template>
           <q-separator dark spaced />
           <q-item-label header class="text-grey-4">Herramientas</q-item-label>
           <q-item clickable v-ripple to="/diagnostico">
@@ -323,7 +301,38 @@ const userInfo = ref({
 
 // Función para cambiar de flujo mediante rutas
 const cambiarFlujo = (nuevoFlujo) => {
-  const rutaDestino = nuevoFlujo === 'mobile' ? '/mobile' : '/escritorio'
+  const rutaActual = route.path
+  let rutaDestino
+
+  // Lógica inteligente para mantener la página actual cuando sea posible
+  if (nuevoFlujo === 'mobile') {
+    // Para flujo móvil: dashboard, estadísticas, eventos, eventos-fallidos
+    if (
+      rutaActual.includes('/estadisticas') ||
+      rutaActual.includes('/eventos') ||
+      rutaActual.includes('/eventos-fallidos')
+    ) {
+      rutaDestino = rutaActual // Mantener páginas que existen en móvil
+    } else if (rutaActual.includes('/diagnostico')) {
+      rutaDestino = '/mobile' // Diagnóstico no existe en móvil, ir al dashboard
+    } else {
+      rutaDestino = '/mobile' // Dashboard móvil por defecto
+    }
+  } else {
+    // Para flujo escritorio: dashboard, diagnóstico
+    if (rutaActual.includes('/diagnostico')) {
+      rutaDestino = rutaActual // Mantener diagnóstico si ya estamos ahí
+    } else if (
+      rutaActual.includes('/estadisticas') ||
+      rutaActual.includes('/eventos') ||
+      rutaActual.includes('/eventos-fallidos')
+    ) {
+      rutaDestino = '/escritorio' // Estas páginas no existen en escritorio, ir al dashboard
+    } else {
+      rutaDestino = '/escritorio' // Dashboard de escritorio por defecto
+    }
+  }
+
   router.push(rutaDestino)
 
   const message =

@@ -28,14 +28,14 @@
                 unelevated
                 class="escritorio-action-btn"
               />
-              <q-btn
+              <!-- <q-btn
                 color="secondary"
                 icon="settings"
                 label="Configurar"
                 @click="mostrarConfiguracion"
                 unelevated
                 class="escritorio-action-btn"
-              />
+              /> -->
             </div>
           </div>
         </div>
@@ -76,13 +76,6 @@ const actualizarDatos = () => {
   }, 1000)
 }
 
-const mostrarConfiguracion = () => {
-  $q.notify({
-    type: 'info',
-    message: '⚙️ Configuración disponible próximamente',
-    position: 'top-right',
-  })
-}
 </script>
 
 <style lang="scss" scoped>

@@ -6,7 +6,7 @@
           <q-icon name="filter_list" size="28px" class="q-mr-sm" color="primary" />
           Filtros Avanzados
         </div>
-        <q-btn flat color="negative" icon="close" label="Cerrar" v-close-popup />
+        <!-- <q-btn flat color="negative" icon="close" label="Cerrar" v-close-popup /> -->
       </div>
 
       <div v-if="resumenFiltros.length" class="q-mt-sm text-caption text-grey-4">
