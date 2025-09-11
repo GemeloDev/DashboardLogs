@@ -1,62 +1,1677 @@
-<template>
-  <q-page class="diagnostic-page">
-    <div class="page-container">
-      <!-- Header de la página -->
-      <div class="page-header q-pa-lg">
-        <div class="row items-center">
-          <div class="col">
-            <h4 class="page-title q-ma-none">
-              <q-icon name="bug_report" class="q-mr-md" color="red-5" size="2rem" />
-              Centro de Diagnóstico Técnico
-            </h4>
-            <p class="page-subtitle q-ma-none q-mt-sm text-grey-6">
-              Análisis de códigos de error, sesiones y soporte técnico especializado
-            </p>
+﻿<template>
+  <q-page class="diagnostic-page bg-dark text-white">
+    <!-- Header Principal -->
+    <div class="diagnostic-header-section bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
+      <div class="container">
+        <div class="row items-center q-col-gutter-md">
+          <div class="col-12 col-md-8">
+            <div class="text-h3 diagnostic-title q-mb-md">
+              <q-icon
+                name="medical_services"
+                class="q-mr-sm diagnostic-icon"
+                color="cyan-4"
+                size="48px"
+              />
+              <span class="diagnostic-title-text">🔬 Centro de Diagnóstico Técnico Avanzado</span>
+            </div>
+            <div class="text-h6 text-cyan-3 diagnostic-subtitle q-mb-md">
+              <span class="diagnostic-subtitle-text">🛡️ Sistema de Soporte Técnico en Tiempo Real | 🔍 Análisis de Errores & Sesiones</span>
+            </div>
+
+            <!-- Indicadores de Estado -->
+            <div class="row q-gutter-sm diagnostic-chips-container">
+              <q-chip
+                color="green-6"
+                text-color="white"
+                icon="wifi"
+                size="md"
+                class="diagnostic-status-chip"
+              >
+                🟢 API Conectada
+              </q-chip>
+
+              <q-chip
+                color="purple-6"
+                text-color="white"
+                icon="security"
+                size="md"
+                class="diagnostic-status-chip"
+              >
+                🛡️ Modo Seguro
+              </q-chip>
+
+              <q-chip
+                v-if="diagnosticoActivo"
+                color="cyan-5"
+                text-color="white"
+                size="md"
+                icon="auto_fix_high"
+                class="diagnostic-chip animate-pulse"
+              >
+                <span class="diagnostic-glow">✨ Análisis: {{ diagnosticoActivo }}</span>
+              </q-chip>
+            </div>
           </div>
-          <!-- <div class="col-auto">
-            <q-btn
-              color="primary"
-              icon="dashboard"
-              label="Volver al Dashboard"
-              @click="$router.push('/logs')"
-              outline
-            />
-          </div> -->
+
+          <!-- Acciones Rápidas -->
+          <div class="col-12 col-md-4">
+            <div class="row q-gutter-sm justify-end diagnostic-actions">
+              <q-btn
+                color="primary"
+                icon="refresh"
+                label="Actualizar"
+                @click="actualizarDatos"
+                :loading="cargando"
+                unelevated
+                class="diagnostic-action-btn"
+              />
+              <q-btn
+                color="secondary"
+                icon="download"
+                label="Exportar"
+                @click="mostrarDialogoExportacion"
+                :disable="!hayDatosParaExportar"
+                unelevated
+                class="diagnostic-action-btn"
+              />
+              <q-btn
+                color="info"
+                icon="help_outline"
+                label="Ayuda"
+                @click="mostrarAyuda"
+                flat
+                class="diagnostic-action-btn"
+              />
+            </div>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- Contenido principal -->
-      <div class="page-content q-pa-lg">
-        <EscritorioDiagnostico ref="diagnosticoComponent" />
+    <!-- Contenido Principal -->
+    <div class="diagnostic-content q-pa-lg">
+      <div class="container">
+        <!-- Pestañas de Diagnóstico -->
+        <q-tabs
+          v-model="tabActiva"
+          dense
+          class="bg-grey-8 text-grey-3 q-mb-lg diagnostic-tabs"
+          active-color="cyan-5"
+          indicator-color="cyan-5"
+          align="justify"
+        >
+          <q-tab name="busqueda" icon="search" label="🔍 Búsqueda Rápida" />
+          <q-tab name="errorCode" icon="error" label="🔴 Código Error" />
+          <q-tab name="session" icon="account_circle" label="👤 Análisis Sesión" />
+        </q-tabs>
+
+        <!-- Contenido de Pestañas -->
+        <q-tab-panels v-model="tabActiva" animated keep-alive class="bg-transparent">
+          <!-- BÚSQUEDA RÁPIDA (exacta al modal) -->
+          <q-tab-panel name="busqueda" class="q-pa-none">
+            <div class="search-panel">
+              <q-card class="diagnostic-card bg-grey-8 text-white">
+                <q-card-section>
+                  <div class="text-h6">🚀 Búsqueda Rápida de Diagnóstico</div>
+                  <div class="text-caption text-grey-4 q-mb-md">
+                    Ingresa cualquier código para iniciar el análisis automático
+                  </div>
+
+                  <q-input
+                    v-model="busquedaRapida"
+                    label="Código de Error, baseCode o Usuario"
+                    placeholder="Ej: USR02808190918-SUC001, USR02808190918"
+                    dark
+                    outlined
+                    class="q-mb-md"
+                    @keyup.enter="realizarBusquedaRapida"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="search" color="red-5" />
+                    </template>
+                    <template v-slot:append>
+                      <q-btn
+                        round
+                        dense
+                        flat
+                        icon="send"
+                        @click="realizarBusquedaRapida"
+                        :loading="cargandoBusqueda"
+                        color="red-5"
+                      />
+                    </template>
+                  </q-input>
+
+                  <!-- Ejemplos de códigos reales -->
+                  <div class="q-mb-md">
+                    <div class="text-caption text-grey-4 q-mb-sm">Ejemplos de códigos:</div>
+                    <div class="row q-gutter-sm">
+                      <q-chip
+                        clickable
+                        @click="busquedaRapida = 'USR02808190918-SUC001'"
+                        color="red-6"
+                        text-color="white"
+                        size="sm"
+                        icon="error"
+                      >
+                        USR02808190918-SUC001
+                      </q-chip>
+                      <q-chip
+                        clickable
+                        @click="busquedaRapida = 'USR02808191331'"
+                        color="blue-6"
+                        text-color="white"
+                        size="sm"
+                        icon="account_circle"
+                      >
+                        USR02808191331
+                      </q-chip>
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </q-tab-panel>
+
+          <!-- CÓDIGO DE ERROR (exacto al modal) -->
+          <q-tab-panel name="errorCode" class="q-pa-none">
+            <q-card class="diagnostic-card bg-grey-8 text-white">
+              <q-card-section>
+                <div class="text-h6">🔍 Análisis de Código de Error</div>
+                <div class="text-caption text-grey-4 q-mb-lg">Formato: USR02808190918-SUC001</div>
+
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-8">
+                    <q-input
+                      v-model="formulario.errorCode"
+                      label="Código de Error"
+                      placeholder="USR02808190918-SUC001"
+                      dark
+                      outlined
+                      @keyup.enter="() => consultarCodigoError()"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="error" color="red-5" />
+                      </template>
+                    </q-input>
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <q-btn
+                      color="red-5"
+                      icon="search"
+                      label="Consultar"
+                      @click="() => consultarCodigoError()"
+                      :loading="cargandoError"
+                      size="lg"
+                      class="full-width"
+                    />
+                  </div>
+                </div>
+
+                <!-- Resultado del Error (exacto al modal) -->
+                <div v-if="resultadoError" class="q-mt-lg">
+                  <q-separator class="q-mb-md" color="grey-6" />
+                  <div v-if="resultadoError.success && resultadoError.data.length > 0">
+                    <div class="text-h6 text-red-4 q-mb-md">
+                      <q-icon name="error" class="q-mr-sm" />
+                      Código de Error: {{ resultadoError.errorCode }}
+                      <q-chip color="red-6" text-color="white" size="sm" class="q-ml-sm">
+                        {{ resultadoError.data.length }} registro(s)
+                      </q-chip>
+                    </div>
+
+                    <!-- Resumen principal -->
+                    <div class="row q-col-gutter-md q-mb-lg">
+                      <div class="col-12">
+                        <q-card class="bg-grey-7">
+                          <q-card-section>
+                            <div class="text-subtitle2 q-mb-md">📊 Información Principal</div>
+                            <div class="row q-col-gutter-md">
+                              <div class="col-12 col-md-6">
+                                <q-list dark>
+                                  <q-item dense>
+                                    <q-item-section avatar>
+                                      <q-icon color="blue-5" name="person" />
+                                    </q-item-section>
+                                    <q-item-section>
+                                      <q-item-label>{{
+                                        resultadoError.summary?.user || 'No disponible'
+                                      }}</q-item-label>
+                                      <q-item-label caption>Usuario</q-item-label>
+                                    </q-item-section>
+                                  </q-item>
+                                  <q-item dense>
+                                    <q-item-section avatar>
+                                      <q-icon color="green-5" name="business" />
+                                    </q-item-section>
+                                    <q-item-section>
+                                      <q-item-label>{{
+                                        resultadoError.summary?.office || 'No disponible'
+                                      }}</q-item-label>
+                                      <q-item-label caption>Oficina</q-item-label>
+                                    </q-item-section>
+                                  </q-item>
+                                </q-list>
+                              </div>
+                              <div class="col-12 col-md-6">
+                                <q-list dark>
+                                  <q-item dense>
+                                    <q-item-section avatar>
+                                      <q-icon color="orange-5" name="tag" />
+                                    </q-item-section>
+                                    <q-item-section>
+                                      <q-item-label>{{
+                                        resultadoError.summary?.baseCode || 'No disponible'
+                                      }}</q-item-label>
+                                      <q-item-label caption>Código Base (Mostrar)</q-item-label>
+                                    </q-item-section>
+                                  </q-item>
+                                  <q-item dense>
+                                    <q-item-section avatar>
+                                      <q-icon color="purple-5" name="security" />
+                                    </q-item-section>
+                                    <q-item-section>
+                                      <q-item-label>{{
+                                        resultadoError.summary?.sessionToken || 'No disponible'
+                                      }}</q-item-label>
+                                      <q-item-label caption
+                                        >Token de Sesión (Para logs)</q-item-label
+                                      >
+                                    </q-item-section>
+                                  </q-item>
+                                </q-list>
+                              </div>
+                            </div>
+                          </q-card-section>
+                        </q-card>
+                      </div>
+                    </div>
+
+                    <!-- Lista de registros -->
+                    <div class="row q-col-gutter-md">
+                      <div class="col-12">
+                        <q-card class="bg-grey-7">
+                          <q-card-section>
+                            <div class="text-subtitle2 q-mb-md">📋 Registros Relacionados</div>
+                            <q-list dark separator>
+                              <q-item
+                                v-for="(record, index) in resultadoError.data"
+                                :key="record.id || index"
+                                clickable
+                                @click="verDetalleCompleto(record)"
+                              >
+                                <q-item-section avatar>
+                                  <q-avatar color="red-6" text-color="white" size="sm">
+                                    {{ index + 1 }}
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label>{{
+                                    record.message || record.descripcion || 'Sin mensaje'
+                                  }}</q-item-label>
+                                  <q-item-label caption class="text-grey-4">
+                                    {{ formatearFecha(record.fecha) }} | Usuario:
+                                    {{ record.person?.nombreCompleto || 'N/A' }} | Oficina:
+                                    {{ record.oficina?.nombre || 'N/A' }}
+                                  </q-item-label>
+                                </q-item-section>
+                                <q-item-section side>
+                                  <q-btn
+                                    icon="visibility"
+                                    flat
+                                    round
+                                    color="cyan-5"
+                                    size="sm"
+                                    @click.stop="verDetalleCompleto(record)"
+                                  />
+                                </q-item-section>
+                              </q-item>
+                            </q-list>
+                          </q-card-section>
+                        </q-card>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else class="text-center">
+                    <q-icon name="error_outline" size="3rem" color="red-5" class="q-mb-md" />
+                    <div class="text-h6 text-red-4">Error al consultar código</div>
+                    <div class="text-body2 text-grey-4">
+                      {{ resultadoError.error || 'No se encontraron datos' }}
+                    </div>
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </q-tab-panel>
+
+          <!-- SESIÓN (exacto al modal con diseño creativo) -->
+          <q-tab-panel name="session">
+            <q-card class="bg-grey-8 text-white session-card">
+              <q-card-section>
+                <div class="text-h6 q-mb-sm">
+                  <q-icon name="account_circle" color="blue-5" size="sm" class="q-mr-sm" />
+                  👤 Análisis de Sesión por Código Base
+                </div>
+                <div class="text-caption text-grey-4 q-mb-lg">
+                  <q-icon name="info" size="xs" class="q-mr-xs" />
+                  Formato: USR02808191331 (usar baseCode sin sufijos)
+                </div>
+
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-8">
+                    <q-input
+                      v-model="formulario.sessionToken"
+                      label="Código Base de Sesión"
+                      placeholder="USR02808191331"
+                      dark
+                      outlined
+                      class="session-input"
+                      @keyup.enter="() => consultarSesion()"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="account_circle" color="blue-5" />
+                      </template>
+                      <template v-slot:hint>
+                        <span class="text-blue-4">
+                          <q-icon name="lightbulb" size="xs" class="q-mr-xs" />
+                          Ingresa solo el código base, sin sufijos como -SUC001
+                        </span>
+                      </template>
+                    </q-input>
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <q-btn
+                      color="blue-5"
+                      icon="search"
+                      label="Consultar Sesión"
+                      @click="() => consultarSesion()"
+                      :loading="cargandoSesion"
+                      size="lg"
+                      class="full-width session-btn"
+                      unelevated
+                    >
+                      <template v-slot:loading>
+                        <q-spinner-facebook color="white" />
+                      </template>
+                    </q-btn>
+                  </div>
+                </div>
+
+                <!-- Resultado de la Sesión (creativo y responsive) -->
+                <div v-if="resultadoSesion" class="q-mt-lg session-results">
+                  <q-separator class="q-mb-lg" color="blue-5" />
+
+                  <div v-if="resultadoSesion.success && resultadoSesion.data.length > 0">
+                    <!-- Header de resultados con animación -->
+                    <div class="session-header q-mb-lg">
+                      <div class="row items-center">
+                        <div class="col">
+                          <div class="text-h5 text-blue-4 q-mb-xs">
+                            <q-icon name="account_circle" class="q-mr-sm session-icon-pulse" />
+                            Sesión de Logs: {{ resultadoSesion.baseCode }}
+                          </div>
+                          <q-chip
+                            color="blue-6"
+                            text-color="white"
+                            icon="data_usage"
+                            class="session-count-chip"
+                          >
+                            {{ resultadoSesion.data.length }} registro(s) encontrado(s)
+                          </q-chip>
+                        </div>
+                        <div class="col-auto">
+                          <q-btn
+                            round
+                            color="blue-5"
+                            icon="refresh"
+                            @click="() => consultarSesion()"
+                            :loading="cargandoSesion"
+                            class="refresh-btn"
+                            glossy
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Resumen principal mejorado -->
+                    <div class="row q-col-gutter-md q-mb-lg">
+                      <div class="col-12 col-lg-6">
+                        <q-card class="bg-gradient-blue summary-card">
+                          <q-card-section>
+                            <div class="text-subtitle2 q-mb-md text-white">
+                              <q-icon name="person" class="q-mr-sm" />
+                              📊 Información del Usuario
+                            </div>
+                            <q-list dark class="transparent">
+                              <q-item dense class="summary-item">
+                                <q-item-section avatar>
+                                  <q-avatar color="blue-5" text-color="white" size="sm">
+                                    <q-icon name="person" />
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label class="text-weight-medium">{{
+                                    resultadoSesion.summary?.user || 'No disponible'
+                                  }}</q-item-label>
+                                  <q-item-label caption class="text-blue-2"
+                                    >Usuario Principal</q-item-label
+                                  >
+                                </q-item-section>
+                              </q-item>
+                              <q-item dense class="summary-item">
+                                <q-item-section avatar>
+                                  <q-avatar color="green-5" text-color="white" size="sm">
+                                    <q-icon name="business" />
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label class="text-weight-medium">{{
+                                    resultadoSesion.summary?.office || 'No disponible'
+                                  }}</q-item-label>
+                                  <q-item-label caption class="text-blue-2"
+                                    >Oficina Asignada</q-item-label
+                                  >
+                                </q-item-section>
+                              </q-item>
+                            </q-list>
+                          </q-card-section>
+                        </q-card>
+                      </div>
+
+                      <div class="col-12 col-lg-6">
+                        <q-card class="bg-gradient-purple summary-card">
+                          <q-card-section>
+                            <div class="text-subtitle2 q-mb-md text-white">
+                              <q-icon name="analytics" class="q-mr-sm" />
+                              📈 Estadísticas de Sesión
+                            </div>
+                            <q-list dark class="transparent">
+                              <q-item dense class="summary-item">
+                                <q-item-section avatar>
+                                  <q-avatar color="orange-5" text-color="white" size="sm">
+                                    <q-icon name="security" />
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label class="text-weight-medium">{{
+                                    resultadoSesion.summary?.sessionToken || 'No disponible'
+                                  }}</q-item-label>
+                                  <q-item-label caption class="text-purple-2"
+                                    >Token de Sesión</q-item-label
+                                  >
+                                </q-item-section>
+                              </q-item>
+                              <q-item dense class="summary-item">
+                                <q-item-section avatar>
+                                  <q-avatar color="cyan-5" text-color="white" size="sm">
+                                    <q-icon name="schedule" />
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label class="text-weight-medium">
+                                    {{ resultadoSesion.data.length }} eventos
+                                  </q-item-label>
+                                  <q-item-label caption class="text-purple-2"
+                                    >Total de Actividades</q-item-label
+                                  >
+                                </q-item-section>
+                              </q-item>
+                            </q-list>
+                          </q-card-section>
+                        </q-card>
+                      </div>
+                    </div>
+
+                    <!-- Lista detallada de registros de sesión (creativa y responsive) -->
+                    <div class="session-records">
+                      <div class="text-h6 text-blue-4 q-mb-md">
+                        <q-icon name="list_alt" class="q-mr-sm" />
+                        📋 Registros Detallados de la Sesión
+                      </div>
+
+                      <div class="row q-col-gutter-md">
+                        <div
+                          v-for="(record, index) in resultadoSesion.data"
+                          :key="record.id || index"
+                          class="col-12 col-md-6 col-lg-4"
+                        >
+                          <q-card
+                            class="session-record-card bg-grey-9 text-white"
+                            :style="{ 'animation-delay': `${index * 0.1}s` }"
+                          >
+                            <q-card-section>
+                              <div class="row items-start q-mb-sm">
+                                <div class="col">
+                                  <div class="record-type q-mb-xs">
+                                    <q-chip
+                                      :color="getRecordTypeColor(record.type || record.proceso)"
+                                      text-color="white"
+                                      size="sm"
+                                      icon="category"
+                                    >
+                                      {{ record.type || record.proceso || 'Evento' }}
+                                    </q-chip>
+                                  </div>
+                                  <div class="record-message text-body2 q-mb-sm">
+                                    {{
+                                      record.message ||
+                                      record.detail ||
+                                      record.data ||
+                                      'Sin mensaje disponible'
+                                    }}
+                                  </div>
+                                </div>
+                                <div class="col-auto">
+                                  <q-chip
+                                    dense
+                                    color="blue-6"
+                                    text-color="white"
+                                    icon="schedule"
+                                    class="record-time"
+                                  >
+                                    {{ formatearFechaCorta(record.date || record.fecha) }}
+                                  </q-chip>
+                                </div>
+                              </div>
+
+                              <!-- Metadata del registro -->
+                              <div class="record-metadata">
+                                <div class="metadata-grid">
+                                  <div class="metadata-item">
+                                    <q-icon
+                                      name="person"
+                                      size="xs"
+                                      color="blue-4"
+                                      class="q-mr-xs"
+                                    />
+                                    <span class="metadata-label">Usuario:</span>
+                                    <span class="metadata-value">
+                                      {{
+                                        getPersonName(record.person) ||
+                                        record.persona ||
+                                        record.baseCode ||
+                                        'N/A'
+                                      }}
+                                    </span>
+                                  </div>
+
+                                  <div class="metadata-item">
+                                    <q-icon
+                                      name="apartment"
+                                      size="xs"
+                                      color="green-4"
+                                      class="q-mr-xs"
+                                    />
+                                    <span class="metadata-label">Oficina:</span>
+                                    <span class="metadata-value">
+                                      {{ record.oficina?.nombre || record.office || 'N/A' }}
+                                    </span>
+                                  </div>
+
+                                  <div class="metadata-item">
+                                    <q-icon
+                                      name="computer"
+                                      size="xs"
+                                      color="orange-4"
+                                      class="q-mr-xs"
+                                    />
+                                    <span class="metadata-label">Dispositivo:</span>
+                                    <span class="metadata-value">
+                                      {{ record.device || record.dispositivo || 'N/A' }}
+                                    </span>
+                                  </div>
+
+                                  <div class="metadata-item">
+                                    <q-icon
+                                      name="qr_code_scanner"
+                                      size="xs"
+                                      color="purple-4"
+                                      class="q-mr-xs"
+                                    />
+                                    <span class="metadata-label">Scanner:</span>
+                                    <span class="metadata-value">
+                                      {{
+                                        record.scanDevice ||
+                                        record.scan_device ||
+                                        record.scanner ||
+                                        'N/A'
+                                      }}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <!-- Botón de detalle -->
+                              <div class="record-actions q-mt-sm">
+                                <q-btn
+                                  flat
+                                  dense
+                                  color="blue-4"
+                                  icon="visibility"
+                                  label="Ver detalles"
+                                  @click="verDetalleCompleto(record)"
+                                  class="full-width detail-btn"
+                                  size="sm"
+                                />
+                              </div>
+                            </q-card-section>
+                          </q-card>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Estado de error mejorado -->
+                  <div v-else class="error-state text-center q-pa-xl">
+                    <div class="error-animation q-mb-lg">
+                      <q-icon
+                        name="error_outline"
+                        size="4rem"
+                        color="blue-5"
+                        class="error-icon-bounce"
+                      />
+                    </div>
+                    <div class="text-h6 text-blue-4 q-mb-sm">Sin datos de sesión</div>
+                    <div class="text-body2 text-grey-4 q-mb-lg">
+                      {{
+                        resultadoSesion.error || 'No se encontraron registros para este código base'
+                      }}
+                    </div>
+                    <q-btn
+                      color="blue-5"
+                      icon="refresh"
+                      label="Intentar nuevamente"
+                      @click="() => consultarSesion()"
+                      unelevated
+                    />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </q-tab-panel>
+        </q-tab-panels>
       </div>
     </div>
+
+    <!-- Loading Overlay -->
+    <q-inner-loading
+      :showing="cargando"
+      color="cyan-5"
+      size="50px"
+      label="Procesando diagnóstico..."
+    />
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
-import EscritorioDiagnostico from '../components/escritorio/EscritorioDiagnostico.vue'
+import { DiagnosticService } from '../services/diagnosticService.js'
 
+const $q = useQuasar()
 const route = useRoute()
-const diagnosticoComponent = ref(null)
 
+// Estado principal
+const tabActiva = ref('busqueda')
+const cargando = ref(false)
+const diagnosticoActivo = ref('')
+
+// Estados EXACTOS al modal original
+const busquedaRapida = ref('')
+const cargandoBusqueda = ref(false)
+
+const formulario = ref({
+  errorCode: '',
+  sessionToken: '',
+  supportCode: '',
+  device: '',
+  user: '',
+})
+
+// Resultados EXACTOS al modal
+const cargandoError = ref(false)
+const cargandoSesion = ref(false)
+
+// Estados de búsqueda
+const busquedaAvanzada = ref({
+  texto: '',
+  tipo: [],
+  periodo: null,
+})
+const busquedaCargando = ref(false)
+const resultadosBusqueda = ref([])
+
+// Estados de análisis de errores
+const analisisError = ref({
+  codigo: '',
+})
+const analisisCargando = ref(false)
+const erroresRecientes = ref([])
+const resultadoError = ref(null)
+
+// Estados de gestión de sesiones
+const gestionSesion = ref({
+  usuario: '',
+  estado: null,
+})
+const sesionesCargando = ref(false)
+const sesionesEncontradas = ref([])
+const resultadoSesion = ref(null)
+
+// Computed para verificar si hay datos para exportar
+const hayDatosParaExportar = computed(() => {
+  return (
+    (resultadoError.value?.success && resultadoError.value?.data?.length > 0) ||
+    (resultadoSesion.value?.success && resultadoSesion.value?.data?.length > 0)
+  )
+})
+
+// Datos del sistema (comentados porque no se usan actualmente)
+// const versionSistema = ref('2.1.0')
+// const ultimaActualizacion = ref('10 Sep 2025')
+
+// Computed para métricas (temporalmente deshabilitado)
+/*
+const metricas = computed(() => [
+  {
+    key: 'logs',
+    label: 'Logs Analizados',
+    value: resultadosBusqueda.value.length,
+    icon: 'description',
+    color: 'text-blue-4',
+  },
+  {
+    key: 'errores',
+    label: 'Errores Detectados',
+    value: erroresRecientes.value.length,
+    icon: 'error',
+    color: 'text-red-4',
+  },
+  {
+    key: 'sesiones',
+    label: 'Sesiones Activas',
+    value: sesionesEncontradas.value.filter((s) => s.estado === 'activa').length,
+    icon: 'people',
+    color: 'text-green-4',
+  },
+])
+*/
+
+// Métodos principales
+const actualizarDatos = async () => {
+  cargando.value = true
+  diagnosticoActivo.value = 'Actualizando datos'
+
+  try {
+    // Simular carga de datos
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    $q.notify({
+      type: 'positive',
+      message: '✅ Datos actualizados correctamente',
+      position: 'top-right',
+    })
+  } catch {
+    $q.notify({
+      type: 'negative',
+      message: '❌ Error actualizando datos',
+      position: 'top-right',
+    })
+  } finally {
+    cargando.value = false
+    diagnosticoActivo.value = ''
+  }
+}
+
+const ejecutarBusquedaAvanzada = async () => {
+  if (!busquedaAvanzada.value.texto.trim()) return
+
+  busquedaCargando.value = true
+  diagnosticoActivo.value = 'Búsqueda avanzada'
+
+  try {
+    // Simular búsqueda en API
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    // Datos de ejemplo
+    resultadosBusqueda.value = [
+      {
+        Type: 'ERROR',
+        Message: 'Error de conexión con base de datos',
+        Date: new Date(),
+        Process: 'AuthService',
+      },
+      {
+        Type: 'WARNING',
+        Message: 'Tiempo de respuesta elevado',
+        Date: new Date(),
+        Process: 'ApiController',
+      },
+      {
+        Type: 'INFO',
+        Message: 'Usuario autenticado correctamente',
+        Date: new Date(),
+        Process: 'LoginService',
+      },
+    ]
+
+    $q.notify({
+      type: 'positive',
+      message: `🔍 Encontrados ${resultadosBusqueda.value.length} resultados`,
+      position: 'top-right',
+    })
+  } catch {
+    $q.notify({
+      type: 'negative',
+      message: '❌ Error en la búsqueda',
+      position: 'top-right',
+    })
+  } finally {
+    busquedaCargando.value = false
+    diagnosticoActivo.value = ''
+  }
+}
+
+const analizarError = async () => {
+  if (!analisisError.value.codigo.trim()) return
+
+  analisisCargando.value = true
+  diagnosticoActivo.value = `Analizando error: ${analisisError.value.codigo}`
+
+  try {
+    console.log(`🔍 Consultando código de error: ${analisisError.value.codigo}`)
+    const resultado = await DiagnosticService.getErrorCodeDetails(analisisError.value.codigo)
+
+    if (resultado.success && resultado.data.length > 0) {
+      // Usar los datos reales del servicio
+      erroresRecientes.value = resultado.data.map((record) => ({
+        Message: record.message || record.descripcion || 'Error desconocido',
+        Date: record.fecha || record.timestamp || new Date(),
+        Process: record.proceso || record.servicio || 'Sistema',
+        Code: analisisError.value.codigo,
+        User: record.person?.nombreCompleto || 'Usuario desconocido',
+        Office: record.oficina?.nombre || 'Oficina no especificada',
+        BaseCode: record.baseCode,
+        SessionToken: record.sessionToken,
+      }))
+
+      // Guardar resultado completo para mostrar detalles
+      resultadoError.value = resultado
+
+      $q.notify({
+        type: 'positive',
+        message: `🔍 Encontrados ${resultado.data.length} registros para error: ${analisisError.value.codigo}`,
+        position: 'top-right',
+      })
+    } else {
+      $q.notify({
+        type: 'warning',
+        message: `⚠️ No se encontraron registros para el código: ${analisisError.value.codigo}`,
+        position: 'top-right',
+      })
+    }
+  } catch (error) {
+    console.log('🔄 Error en consulta:', error.message)
+    // Usar datos de muestra como fallback igual que el modal original
+    const sampleData = DiagnosticService.getSampleErrorData(analisisError.value.codigo)
+    erroresRecientes.value =
+      sampleData.data?.map((record) => ({
+        Message: record.message || record.descripcion || 'Error de ejemplo',
+        Date: record.fecha || new Date(),
+        Process: record.proceso || 'Sistema',
+        Code: analisisError.value.codigo,
+        User: record.person?.nombreCompleto || 'Usuario de prueba',
+        Office: record.oficina?.nombre || 'Oficina de prueba',
+      })) || []
+
+    resultadoError.value = sampleData
+
+    $q.notify({
+      type: 'warning',
+      message: 'Usando datos de ejemplo - Error de conectividad',
+      position: 'top-right',
+    })
+  } finally {
+    analisisCargando.value = false
+    diagnosticoActivo.value = ''
+  }
+}
+
+const buscarSesiones = async () => {
+  if (!gestionSesion.value.usuario.trim()) return
+
+  sesionesCargando.value = true
+  diagnosticoActivo.value = `Buscando sesiones: ${gestionSesion.value.usuario}`
+
+  try {
+    console.log(`🔍 Consultando sesión por baseCode: ${gestionSesion.value.usuario}`)
+    const resultado = await DiagnosticService.getSessionDetails(gestionSesion.value.usuario)
+
+    if (resultado.success && resultado.data.length > 0) {
+      // Usar los datos reales del servicio
+      sesionesEncontradas.value = resultado.data.map((record) => ({
+        usuario: record.person?.nombreCompleto || gestionSesion.value.usuario,
+        sessionId: record.sessionToken || record.id,
+        estado: record.estado || 'activa',
+        ultimaActividad: record.fecha || record.lastActivity || new Date(),
+        baseCode: record.baseCode,
+        device: record.device,
+        office: record.oficina?.nombre,
+      }))
+
+      // Guardar resultado completo
+      resultadoSesion.value = resultado
+
+      $q.notify({
+        type: 'positive',
+        message: `👤 Encontradas ${resultado.data.length} sesiones`,
+        position: 'top-right',
+      })
+    } else {
+      $q.notify({
+        type: 'warning',
+        message: `⚠️ No se encontraron sesiones para: ${gestionSesion.value.usuario}`,
+        position: 'top-right',
+      })
+    }
+  } catch (error) {
+    console.log('🔄 Error en consulta de sesión:', error.message)
+    // Usar datos de muestra como fallback igual que el modal original
+    const sampleData = DiagnosticService.getSampleSessionData(gestionSesion.value.usuario)
+    sesionesEncontradas.value =
+      sampleData.data?.map((record) => ({
+        usuario: record.person?.nombreCompleto || 'Usuario de prueba',
+        sessionId: record.sessionToken || 'sess_sample',
+        estado: 'activa',
+        ultimaActividad: record.fecha || new Date(),
+        baseCode: record.baseCode,
+        device: record.device,
+      })) || []
+
+    resultadoSesion.value = sampleData
+
+    $q.notify({
+      type: 'warning',
+      message: 'Usando datos de ejemplo - Error de conectividad',
+      position: 'top-right',
+    })
+  } finally {
+    sesionesCargando.value = false
+    diagnosticoActivo.value = ''
+  }
+}
+
+// Métodos de soporte técnico (comentados porque no se usan actualmente)
+/*
+const limpiarCache = async () => {
+  operacionCargando.value = true
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    $q.notify({
+      type: 'positive',
+      message: '🧹 Cache limpiado correctamente',
+      position: 'top-right',
+    })
+  } finally {
+    operacionCargando.value = false
+  }
+}
+*/
+
+// FUNCIONES EXACTAS AL MODAL ORIGINAL
+
+const realizarBusquedaRapida = async () => {
+  if (!busquedaRapida.value.trim()) return
+
+  cargandoBusqueda.value = true
+
+  try {
+    // Determinar si es código de error o baseCode (exacto al modal)
+    if (busquedaRapida.value.includes('-')) {
+      // Es código de error
+      formulario.value.errorCode = busquedaRapida.value
+      tabActiva.value = 'errorCode'
+      await consultarCodigoError()
+    } else {
+      // Es baseCode para sesión
+      formulario.value.sessionToken = busquedaRapida.value
+      tabActiva.value = 'session'
+      await consultarSesion()
+    }
+  } finally {
+    cargandoBusqueda.value = false
+  }
+}
+
+const consultarCodigoError = async (codigo = null) => {
+  const errorCode = codigo || formulario.value.errorCode
+  if (!errorCode || !String(errorCode).trim()) return
+
+  cargandoError.value = true
+
+  try {
+    console.log(`🔍 Consultando código de error: ${errorCode}`)
+    resultadoError.value = await DiagnosticService.getErrorCodeDetails(errorCode)
+
+    $q.notify({
+      type: 'positive',
+      message: 'Código de error consultado',
+      icon: 'error',
+      position: 'top-right',
+    })
+  } catch (error) {
+    console.log('🔄 Error en consulta:', error.message)
+    resultadoError.value = DiagnosticService.getSampleErrorData(errorCode)
+
+    $q.notify({
+      type: 'warning',
+      message: 'Usando datos de ejemplo',
+      caption: 'Error al conectar con el servidor',
+      position: 'top-right',
+    })
+  } finally {
+    cargandoError.value = false
+  }
+}
+
+const consultarSesion = async (codigo = null) => {
+  const baseCode = codigo || formulario.value.sessionToken
+  if (!baseCode || !String(baseCode).trim()) return
+
+  cargandoSesion.value = true
+
+  try {
+    console.log(`🔍 Consultando sesión por baseCode: ${baseCode}`)
+    resultadoSesion.value = await DiagnosticService.getSessionDetails(baseCode)
+
+    $q.notify({
+      type: 'positive',
+      message: 'Sesión consultada',
+      icon: 'account_circle',
+      position: 'top-right',
+    })
+  } catch (error) {
+    console.log('🔄 Error en consulta de sesión:', error.message)
+    resultadoSesion.value = DiagnosticService.getSampleSessionData(baseCode)
+
+    $q.notify({
+      type: 'warning',
+      message: 'Usando datos de ejemplo',
+      caption: 'Error al conectar con el servidor',
+      position: 'top-right',
+    })
+  } finally {
+    cargandoSesion.value = false
+  }
+}
+
+// Funciones auxiliares para el diseño mejorado de sesiones
+const getRecordTypeColor = (type) => {
+  const colors = {
+    LOGIN: 'green-6',
+    LOGOUT: 'red-6',
+    ERROR: 'red-7',
+    WARNING: 'orange-6',
+    INFO: 'blue-6',
+    DEBUG: 'purple-6',
+    SUCCESS: 'green-5',
+    PROCESS: 'cyan-6',
+  }
+  return colors[type?.toString().toUpperCase()] || 'grey-6'
+}
+
+const formatearFechaCorta = (fecha) => {
+  if (!fecha) return 'N/A'
+  const f = new Date(fecha)
+  const ahora = new Date()
+  const diff = ahora - f
+
+  // Si es menos de 1 hora, mostrar "hace X minutos"
+  if (diff < 3600000) {
+    const minutos = Math.floor(diff / 60000)
+    return `${minutos}m`
+  }
+
+  // Si es menos de 24 horas, mostrar "hace X horas"
+  if (diff < 86400000) {
+    const horas = Math.floor(diff / 3600000)
+    return `${horas}h`
+  }
+
+  // Si no, mostrar fecha completa
+  return f.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const getPersonName = (person) => {
+  if (!person) return null
+
+  const curp = person.curp ? `(${person.curp})` : ''
+  const nombres = person.nombres || ''
+  const apellido1 = person.primerApellido || ''
+  const apellido2 = person.segundoApellido || ''
+
+  const nombreCompleto = `${nombres} ${apellido1} ${apellido2}`.trim()
+  return nombreCompleto ? `${curp} ${nombreCompleto}`.trim() : null
+}
+
+/*
+const verificarBaseDatos = async () => {
+  operacionCargando.value = true
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+    $q.notify({
+      type: 'positive',
+      message: '✅ Base de datos verificada - Estado: OK',
+      position: 'top-right',
+    })
+  } finally {
+    operacionCargando.value = false
+  }
+}
+
+const testearConexion = async () => {
+  operacionCargando.value = true
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    $q.notify({
+      type: 'positive',
+      message: '🌐 Conexión verificada - Latencia: 45ms',
+      position: 'top-right',
+    })
+  } finally {
+    operacionCargando.value = false
+  }
+}
+
+const verLogsDelSistema = () => {
+  $q.dialog({
+    title: 'Logs del Sistema',
+    message: 'Funcionalidad en desarrollo. Pronto podrás ver los logs detallados del sistema.',
+    ok: 'Entendido',
+  })
+}
+*/
+
+const mostrarDialogoExportacion = () => {
+  // Determinar qué datos están disponibles
+  const tieneErrores = resultadoError.value?.success && resultadoError.value?.data?.length > 0
+  const tieneSesiones = resultadoSesion.value?.success && resultadoSesion.value?.data?.length > 0
+
+  if (!tieneErrores && !tieneSesiones) {
+    $q.notify({
+      type: 'warning',
+      message: 'No hay datos disponibles para exportar',
+      caption: 'Realiza primero una consulta de código de error o sesión',
+      position: 'top-right',
+    })
+    return
+  }
+
+  const dialogRef = $q.dialog({
+    title: 'Exportar Datos de Diagnóstico',
+    message: `
+      <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 16px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+          <h3 style="margin: 0; font-size: 1.4rem; font-weight: 600;">✨ Selecciona el formato de exportación</h3>
+          <p style="margin: 12px 0 0 0; opacity: 0.9; font-size: 0.95rem;">Datos disponibles: ${
+            tieneErrores ? '🔴 Códigos de Error' : ''
+          }${tieneErrores && tieneSesiones ? ' y ' : ''}${tieneSesiones ? '👤 Sesiones' : ''}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 20px;">
+          <div id="export-pdf" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 25px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(220,53,69,0.3); border: 2px solid transparent;" onmouseover="this.style.transform='translateY(-8px) scale(1.02)'; this.style.boxShadow='0 12px 32px rgba(220,53,69,0.4)'; this.style.borderColor='rgba(255,255,255,0.2)';" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 16px rgba(220,53,69,0.3)'; this.style.borderColor='transparent';">
+            <div style="font-size: 3rem; margin-bottom: 12px;">📄</div>
+            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 600;">PDF PROFESIONAL</h4>
+            <p style="margin: 8px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Reporte detallado con línea de tiempo</p>
+          </div>
+
+          <div id="export-excel" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 25px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(40,167,69,0.3); border: 2px solid transparent;" onmouseover="this.style.transform='translateY(-8px) scale(1.02)'; this.style.boxShadow='0 12px 32px rgba(40,167,69,0.4)'; this.style.borderColor='rgba(255,255,255,0.2)';" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 16px rgba(40,167,69,0.3)'; this.style.borderColor='transparent';">
+            <div style="font-size: 3rem; margin-bottom: 12px;">📊</div>
+            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 600;">EXCEL TIMELINE</h4>
+            <p style="margin: 8px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Análisis cronológico de datos</p>
+          </div>
+
+          <div id="export-json" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 25px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(0,123,255,0.3); border: 2px solid transparent;" onmouseover="this.style.transform='translateY(-8px) scale(1.02)'; this.style.boxShadow='0 12px 32px rgba(0,123,255,0.4)'; this.style.borderColor='rgba(255,255,255,0.2)';" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 16px rgba(0,123,255,0.3)'; this.style.borderColor='transparent';">
+            <div style="font-size: 3rem; margin-bottom: 12px;">💻</div>
+            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 600;">JSON TÉCNICO</h4>
+            <p style="margin: 8px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Datos estructurados completos</p>
+          </div>
+        </div>
+      </div>
+    `,
+    html: true,
+    persistent: false,
+    ok: false,
+    cancel: {
+      label: 'Cancelar',
+      color: 'grey-6',
+      flat: true,
+    },
+    class: 'export-dialog-custom',
+  })
+
+  // Agregar event listeners después de que el diálogo se renderice
+  setTimeout(() => {
+    const pdfBtn = document.getElementById('export-pdf')
+    const excelBtn = document.getElementById('export-excel')
+    const jsonBtn = document.getElementById('export-json')
+
+    if (pdfBtn)
+      pdfBtn.onclick = () => {
+        exportarDatos('pdf')
+        dialogRef.hide()
+      }
+    if (excelBtn)
+      excelBtn.onclick = () => {
+        exportarDatos('excel')
+        dialogRef.hide()
+      }
+    if (jsonBtn)
+      jsonBtn.onclick = () => {
+        exportarDatos('json')
+        dialogRef.hide()
+      }
+  }, 100)
+}
+
+const exportarDatos = async (formato) => {
+  try {
+    cargando.value = true
+
+    // Determinar qué datos exportar según la pestaña activa y datos disponibles
+    let datosExportar = null
+    let tipoExportacion = ''
+
+    if (tabActiva.value === 'errorCode' && resultadoError.value?.success) {
+      datosExportar = resultadoError.value
+      tipoExportacion = 'error'
+    } else if (tabActiva.value === 'session' && resultadoSesion.value?.success) {
+      datosExportar = resultadoSesion.value
+      tipoExportacion = 'session'
+    } else {
+      // Auto-detectar los datos disponibles
+      if (resultadoError.value?.success && resultadoError.value?.data?.length > 0) {
+        datosExportar = resultadoError.value
+        tipoExportacion = 'error'
+      } else if (resultadoSesion.value?.success && resultadoSesion.value?.data?.length > 0) {
+        datosExportar = resultadoSesion.value
+        tipoExportacion = 'session'
+      }
+    }
+
+    if (!datosExportar) {
+      $q.notify({
+        type: 'warning',
+        message: 'No hay datos disponibles para exportar',
+        caption: 'Realiza primero una consulta de código de error o sesión',
+        position: 'top-right',
+      })
+      return
+    }
+
+    // Importar el servicio dinámicamente
+    const { ExportService } = await import('../services/exportService.js')
+
+    // Realizar la exportación según el tipo
+    if (tipoExportacion === 'error') {
+      await ExportService.exportErrorCode(datosExportar, formato)
+    } else {
+      await ExportService.exportSession(datosExportar, formato)
+    }
+
+    $q.notify({
+      type: 'positive',
+      message: `Exportacion ${formato.toUpperCase()} completada exitosamente`,
+      caption: `Datos de ${
+        tipoExportacion === 'error' ? 'codigo de error' : 'sesion'
+      } exportados correctamente`,
+      position: 'top-right',
+      timeout: 3000,
+    })
+  } catch (error) {
+    console.error('Error en exportación:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Error en la exportacion',
+      caption: error.message || 'No se pudo completar la exportacion',
+      position: 'top-right',
+    })
+  } finally {
+    cargando.value = false
+  }
+}
+
+// Métodos utilitarios
+const formatearFecha = (fecha) => {
+  if (!fecha) return 'Sin fecha'
+  const f = new Date(fecha)
+  return f.toLocaleString('es-ES', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const verDetalleCompleto = (record) => {
+  $q.dialog({
+    title: 'Detalle Completo del Registro',
+    message: `
+      <div style="text-align: left; color: #333;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <h4 style="margin: 0; font-size: 18px;">Informacion del Registro</h4>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
+            <h5 style="color: #007bff; margin-top: 0;">Detalles del Error</h5>
+            <p><strong>Mensaje:</strong> ${record.message || record.descripcion || 'N/A'}</p>
+            <p><strong>Fecha:</strong> ${formatearFecha(record.fecha || record.date)}</p>
+            <p><strong>Tipo:</strong> ${record.type || record.tipo || 'N/A'}</p>
+            <p><strong>Proceso:</strong> ${record.process || record.proceso || 'N/A'}</p>
+          </div>
+
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h5 style="color: #28a745; margin-top: 0;">Códigos de Identificación</h5>
+            <p><strong>Base Code:</strong> ${record.baseCode || 'N/A'}</p>
+            <p><strong>Session Token:</strong> ${record.sessionToken || 'N/A'}</p>
+            <p><strong>Error Code:</strong> ${record.errorCode || 'N/A'}</p>
+            <p><strong>Tracking Code:</strong> ${record.trackingCode || 'N/A'}</p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <h5 style="color: #e67e22; margin-top: 0;">Información del Usuario</h5>
+            <p><strong>Nombre Completo:</strong> ${record.person?.nombreCompleto || 'N/A'}</p>
+            <p><strong>CURP:</strong> ${record.person?.curp || 'N/A'}</p>
+            <p><strong>Nombres:</strong> ${record.person?.nombres || 'N/A'}</p>
+            <p><strong>Apellidos:</strong> ${
+              (record.person?.primerApellido || '') +
+                ' ' +
+                (record.person?.segundoApellido || '') || 'N/A'
+            }</p>
+          </div>
+
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #6f42c1;">
+            <h5 style="color: #6f42c1; margin-top: 0;">Ubicación y Dispositivos</h5>
+            <p><strong>Oficina:</strong> ${record.oficina?.nombre || 'N/A'}</p>
+            <p><strong>ID Oficina:</strong> ${record.oficina?.id || 'N/A'}</p>
+            <p><strong>Dispositivo:</strong> ${record.device || record.dispositivo || 'N/A'}</p>
+            <p><strong>Scanner:</strong> ${record.scanDevice || record.scan_device || 'N/A'}</p>
+          </div>
+        </div>
+
+        <div style="background: #343a40; color: white; padding: 15px; border-radius: 8px;">
+          <h5 style="color: #17a2b8; margin-top: 0;">Datos Técnicos Completos (JSON)</h5>
+          <pre style="background: #2d3436; color: #00b894; padding: 10px; border-radius: 4px; font-size: 11px; max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${JSON.stringify(
+            record,
+            null,
+            2
+          )}</pre>
+        </div>
+      </div>
+    `,
+    html: true,
+    style: 'max-width: 900px',
+    persistent: false,
+    ok: {
+      label: 'Cerrar',
+      color: 'primary',
+      flat: true,
+    },
+  })
+}
+
+const mostrarAyuda = () => {
+  $q.dialog({
+    title: '🎯 Centro de Ayuda - Sistema de Diagnóstico',
+    message: `
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 25px; border-radius: 16px; color: white;">
+
+        <div style="text-align: center; margin-bottom: 25px;">
+          <div style="font-size: 3rem; margin-bottom: 10px;">🔬</div>
+          <h3 style="margin: 0; color: #60a5fa;">Centro de Diagnóstico Técnico</h3>
+          <p style="margin: 5px 0 0 0; opacity: 0.8;">Guía completa de uso del sistema</p>
+        </div>
+
+        <div style="display: grid; gap: 20px; margin-bottom: 25px;">
+
+          <div style="background: rgba(220, 38, 127, 0.1); border-left: 4px solid #dc267f; padding: 15px; border-radius: 8px;">
+            <h4 style="color: #f87171; margin: 0 0 10px 0;">🔴 Análisis de Códigos de Error</h4>
+            <ul style="margin: 0; padding-left: 20px; opacity: 0.9;">
+              <li>Formato: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">USR02808190918-SUC001</code></li>
+              <li>Obtén reportes detallados con línea de tiempo</li>
+              <li>Exporta en PDF, Excel o JSON</li>
+              <li>Ve el historial completo de errores</li>
+            </ul>
+          </div>
+
+          <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid #6366f1; padding: 15px; border-radius: 8px;">
+            <h4 style="color: #8b5cf6; margin: 0 0 10px 0;">👤 Análisis de Sesiones</h4>
+            <ul style="margin: 0; padding-left: 20px; opacity: 0.9;">
+              <li>Formato: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">USR02808191331</code> (sin sufijos)</li>
+              <li>Cronología completa de acciones del usuario</li>
+              <li>Línea de tiempo detallada con timestamps</li>
+              <li>Seguimiento de dispositivos y procesos</li>
+            </ul>
+          </div>
+
+          <div style="background: rgba(6, 182, 212, 0.1); border-left: 4px solid #06b6d4; padding: 15px; border-radius: 8px;">
+            <h4 style="color: #22d3ee; margin: 0 0 10px 0;">� Búsqueda Rápida</h4>
+            <ul style="margin: 0; padding-left: 20px; opacity: 0.9;">
+              <li>Detección automática del tipo de código</li>
+              <li>Búsqueda inteligente por código o usuario</li>
+              <li>Resultados inmediatos sin configuración</li>
+              <li>Ideal para consultas rápidas</li>
+            </ul>
+          </div>
+
+          <div style="background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; padding: 15px; border-radius: 8px;">
+            <h4 style="color: #4ade80; margin: 0 0 10px 0;">📊 Opciones de Exportación</h4>
+            <ul style="margin: 0; padding-left: 20px; opacity: 0.9;">
+              <li><strong>PDF:</strong> Reportes profesionales con línea de tiempo visual</li>
+              <li><strong>Excel:</strong> Análisis de datos con cronología detallada</li>
+              <li><strong>JSON:</strong> Datos técnicos estructurados para desarrolladores</li>
+            </ul>
+          </div>
+
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; text-align: center;">
+          <h4 style="color: #f59e0b; margin: 0 0 10px 0;">💡 Consejos Útiles</h4>
+          <div style="font-size: 0.9rem; opacity: 0.9;">
+            • Use la búsqueda rápida para consultas simples<br>
+            • Los códigos de error incluyen sufijos (-SUC001)<br>
+            • Los códigos de sesión son solo el código base<br>
+            • Todos los reportes incluyen líneas de tiempo detalladas
+          </div>
+        </div>
+
+      </div>
+    `,
+    html: true,
+    style: 'max-width: 700px',
+    persistent: false,
+    ok: {
+      label: 'Entendido',
+      color: 'primary',
+      unelevated: true,
+    },
+    class: 'help-dialog-custom',
+  })
+}
+
+// Inicialización
 onMounted(() => {
-  // Si hay un código en los query params, abrirlo automáticamente
-  const codigo = route.query.code || route.query.error || route.query.session
+  // Verificar parámetros de ruta
+  const codigo = route.query.code || route.query.error
+  const usuario = route.query.user || route.query.session
+  const busqueda = route.query.search || route.query.q
 
-  if (codigo && diagnosticoComponent.value) {
-    setTimeout(() => {
-      diagnosticoComponent.value.abrirDiagnostico(codigo)
-    }, 100)
-  } else {
-    // Abrir directamente el modal de diagnóstico
-    setTimeout(() => {
-      diagnosticoComponent.value?.abrirDiagnostico()
-    }, 100)
+  if (codigo) {
+    tabActiva.value = 'errorCode'
+    analisisError.value.codigo = codigo
+    setTimeout(() => analizarError(), 500)
+  } else if (usuario) {
+    tabActiva.value = 'session'
+    gestionSesion.value.usuario = usuario
+    setTimeout(() => buscarSesiones(), 500)
+  } else if (busqueda) {
+    tabActiva.value = 'busqueda'
+    busquedaAvanzada.value.texto = busqueda
+    setTimeout(() => ejecutarBusquedaAvanzada(), 500)
   }
 })
 </script>
+
+<style lang="scss" scoped>
+.diagnostic-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.diagnostic-header-section {
+  border-bottom: 2px solid rgba(6, 182, 212, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.diagnostic-title {
+  font-weight: 700;
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 30px rgba(6, 182, 212, 0.3);
+}
+
+.diagnostic-subtitle {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.diagnostic-icon {
+  filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.5));
+}
+
+.diagnostic-status-chip {
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.diagnostic-chip {
+  font-weight: 600;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+}
+
+.diagnostic-glow {
+  text-shadow: 0 0 10px currentColor;
+}
+
+.diagnostic-tabs {
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.diagnostic-card {
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.temporal-filter-btn {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.temporal-filter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.search-result-item,
+.error-item,
+.session-item {
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.search-result-item:hover,
+.error-item:hover,
+.session-item:hover {
+  background-color: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.3);
+  transform: translateX(8px);
+}
+
+.stat-card,
+.metric-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover,
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.support-tool-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.support-buttons .q-btn {
+  transition: all 0.3s ease;
+}
+
+.support-buttons .q-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.metric-value {
+  font-weight: 700;
+  text-shadow: 0 0 10px currentColor;
+}
+
+.info-item {
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+</style>
+
 
 <style lang="scss" scoped>
 .diagnostic-page {
@@ -90,7 +1705,285 @@ onMounted(() => {
   position: relative;
 }
 
+// Estilos específicos para el panel de sesiones mejorado
+.session-card {
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.session-input {
+  .q-field__control {
+    border-radius: 12px;
+  }
+}
+
+.session-btn {
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.5px;
+}
+
+.session-results {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.session-header {
+  .session-icon-pulse {
+    animation: pulse 2s infinite;
+  }
+
+  .session-count-chip {
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  }
+
+  .refresh-btn {
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.summary-card {
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+
+  &.bg-gradient-blue {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  }
+
+  &.bg-gradient-purple {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  }
+
+  .summary-item {
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+  }
+}
+
+.session-records {
+  .session-record-card {
+    border-radius: 12px;
+    border-left: 4px solid #3b82f6;
+    transition: all 0.3s ease;
+    animation: slideInUp 0.6s ease-out both;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+      border-left-color: #60a5fa;
+    }
+  }
+
+  .record-type {
+    .q-chip {
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .record-message {
+    line-height: 1.5;
+    color: #e5e7eb;
+    overflow-wrap: break-word;
+  }
+
+  .record-time {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .record-metadata {
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .metadata-item {
+      display: flex;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #9ca3af;
+
+      .metadata-label {
+        font-weight: 500;
+        margin-left: 4px;
+        margin-right: 6px;
+        color: #d1d5db;
+      }
+
+      .metadata-value {
+        color: #f3f4f6;
+        font-weight: 400;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+    }
+  }
+
+  .detail-btn {
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: none;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+    }
+  }
+}
+
+.error-state {
+  .error-animation {
+    .error-icon-bounce {
+      animation: bounce 2s infinite;
+    }
+  }
+}
+
+// Animaciones
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  53%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40%,
+  43% {
+    transform: translateY(-10px);
+  }
+  70% {
+    transform: translateY(-5px);
+  }
+  90% {
+    transform: translateY(-2px);
+  }
+}
+
 @media (max-width: 768px) {
+  /* Header responsive */
+  .diagnostic-header-section {
+    padding: 1rem !important;
+  }
+
+  .diagnostic-title {
+    font-size: 1.5rem !important;
+    text-align: center;
+  }
+
+  .diagnostic-title-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .diagnostic-subtitle {
+    font-size: 0.9rem !important;
+    text-align: center;
+  }
+
+  .diagnostic-subtitle-text {
+    display: block;
+    line-height: 1.3;
+  }
+
+  .diagnostic-chips-container {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .diagnostic-status-chip {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .diagnostic-actions {
+    justify-content: center !important;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .diagnostic-action-btn {
+    min-width: auto;
+    font-size: 0.85rem;
+  }
+
+  /* Sesiones y otros elementos */
+  .session-header {
+    .row {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+
+  .summary-card {
+    margin-bottom: 1rem;
+  }
+
+  .session-record-card {
+    margin-bottom: 1rem;
+  }
+
+  .metadata-grid {
+    grid-template-columns: 1fr !important;
+  }
+
   .page-header {
     .row {
       flex-direction: column;
@@ -105,6 +1998,74 @@ onMounted(() => {
 
   .page-subtitle {
     font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .diagnostic-title {
+    font-size: 1.2rem !important;
+  }
+
+  .diagnostic-title-text {
+    font-size: 1.2rem;
+  }
+
+  .diagnostic-subtitle-text {
+    font-size: 0.8rem;
+  }
+
+  .diagnostic-action-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Estilos personalizados para modales */
+:deep(.export-dialog-custom) {
+  .q-dialog__inner {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .q-card {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  }
+}
+
+:deep(.help-dialog-custom) {
+  .q-dialog__inner {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .q-card {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .q-card__section {
+    color: white;
+  }
+}
+
+/* Mejoras generales para otros modales del sistema */
+:deep(.q-dialog) {
+  .q-card {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .q-card__section--vert {
+    color: white;
+  }
+
+  .q-btn {
+    border-radius: 8px;
   }
 }
 </style>

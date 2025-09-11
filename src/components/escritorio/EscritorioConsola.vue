@@ -43,11 +43,11 @@
         </div>
       </q-card-section>
 
-      <!-- Controles mejorados de búsqueda y filtros -->
+      <!-- Controles centralizados con dropdowns responsive -->
       <q-card-section class="console-controls-section bg-grey-8">
-        <div class="row q-col-gutter-md">
-          <!-- Buscador principal mejorado -->
-          <div class="col-12 col-md-6">
+        <!-- Buscador principal centrado -->
+        <div class="row justify-center q-mb-md">
+          <div class="col-12 col-md-8 col-lg-6">
             <q-input
               v-model="busqueda"
               label="Buscar en logs (mensaje, proceso, oficina)..."
@@ -57,126 +57,283 @@
               debounce="300"
               class="enhanced-search-input"
               clearable
+              dense
             >
               <template v-slot:prepend>
                 <q-icon name="search" color="primary" />
               </template>
-              <template v-slot:append>
-                <q-btn
-                  icon="filter_list"
-                  flat
-                  round
-                  dense
-                  color="primary"
-                  @click="mostrarFiltrosAvanzados = !mostrarFiltrosAvanzados"
-                  :class="{ 'bg-primary': mostrarFiltrosAvanzados }"
-                />
-              </template>
             </q-input>
-          </div>
-
-          <!-- Filtros rápidos por tipo -->
-          <div class="col-12 col-md-4">
-            <q-select
-              v-model="filtroTipo"
-              :options="tiposDisponibles"
-              label="Filtrar por tipo"
-              filled
-              dark
-              color="primary"
-              clearable
-              multiple
-              use-chips
-              emit-value
-              map-options
-            />
-          </div>
-
-          <!-- Acciones mejoradas -->
-          <div class="col-12 col-md-2">
-            <div class="console-actions">
-              <q-btn
-                color="positive"
-                icon="download"
-                label="Exportar"
-                @click="exportarLogs"
-                :disable="!logsFiltrados.length"
-                class="full-width q-mb-xs"
-                size="sm"
-              />
-              <q-btn
-                color="secondary"
-                icon="filter_alt_off"
-                label="Limpiar Filtros"
-                @click="limpiarFiltros"
-                :disable="!hayFiltrosActivos"
-                class="full-width q-mb-xs"
-                size="sm"
-              />
-              <q-btn
-                color="warning"
-                icon="clear_all"
-                label="Limpiar Todo"
-                @click="limpiarConsola"
-                flat
-                :disable="!logs.length"
-                class="full-width"
-              />
-            </div>
           </div>
         </div>
 
-        <!-- Filtros avanzados expandibles -->
-        <q-slide-transition>
-          <div v-show="mostrarFiltrosAvanzados" class="advanced-filters q-mt-md">
-            <q-separator color="grey-6" class="q-mb-md" />
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model="filtroOficina"
-                  label="Filtrar por oficina..."
-                  filled
-                  dark
-                  color="secondary"
-                  clearable
+        <!-- Dropdowns de filtros centralizados -->
+        <div class="row justify-center q-col-gutter-md">
+          <div class="col-auto">
+            <!-- Dropdown de Oficinas -->
+            <q-btn-dropdown
+              color="primary"
+              icon="business"
+              :label="oficinaSeleccionada || 'Oficina'"
+              dropdown-icon="keyboard_arrow_down"
+              dense
+              unelevated
+              class="dropdown-filter"
+            >
+              <q-list dense>
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="
+                    filtroOficina = null
+                    oficinaSeleccionada = null
+                  "
                 >
-                  <template v-slot:prepend>
-                    <q-icon name="business" />
-                  </template>
-                </q-input>
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model="filtroProceso"
-                  label="Filtrar por proceso..."
-                  filled
-                  dark
-                  color="secondary"
-                  clearable
+                  <q-item-section>
+                    <q-item-label>Todas las oficinas</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item
+                  v-for="oficina in oficinasDisponibles"
+                  :key="oficina"
+                  clickable
+                  v-close-popup
+                  @click="
+                    filtroOficina = oficina
+                    oficinaSeleccionada = oficina
+                  "
                 >
-                  <template v-slot:prepend>
-                    <q-icon name="settings" />
-                  </template>
-                </q-input>
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model="filtroFecha"
-                  label="Filtrar por fecha específica..."
-                  filled
-                  dark
-                  color="secondary"
-                  clearable
-                  type="date"
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="event" />
-                  </template>
-                </q-input>
-              </div>
-            </div>
+                  <q-item-section>
+                    <q-item-label>{{ oficina }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
           </div>
-        </q-slide-transition>
+
+          <div class="col-auto">
+            <!-- Dropdown de Usuarios -->
+            <q-btn-dropdown
+              color="secondary"
+              icon="person"
+              :label="usuarioSeleccionado || 'Usuario'"
+              dropdown-icon="keyboard_arrow_down"
+              dense
+              unelevated
+              class="dropdown-filter"
+            >
+              <q-list dense>
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="
+                    filtroUsuario = null
+                    usuarioSeleccionado = null
+                  "
+                >
+                  <q-item-section>
+                    <q-item-label>Todos los usuarios</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item
+                  v-for="usuario in usuariosDisponibles"
+                  :key="usuario"
+                  clickable
+                  v-close-popup
+                  @click="
+                    filtroUsuario = usuario
+                    usuarioSeleccionado = usuario
+                  "
+                >
+                  <q-item-section>
+                    <q-item-label>{{ usuario }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
+
+          <div class="col-auto">
+            <!-- Dropdown de Tipos de Log -->
+            <q-btn-dropdown
+              color="info"
+              icon="category"
+              :label="tipoSeleccionado || 'Tipo'"
+              dropdown-icon="keyboard_arrow_down"
+              dense
+              unelevated
+              class="dropdown-filter"
+            >
+              <q-list dense>
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="
+                    filtroTipo = []
+                    tipoSeleccionado = null
+                  "
+                >
+                  <q-item-section>
+                    <q-item-label>Todos los tipos</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item
+                  v-for="tipo in tiposDisponibles"
+                  :key="tipo.value"
+                  clickable
+                  v-close-popup
+                  @click="
+                    filtroTipo = [tipo.value]
+                    tipoSeleccionado = tipo.label
+                  "
+                >
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon :name="tipo.icon" :color="tipo.color" class="q-mr-sm" />
+                      {{ tipo.label }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
+
+          <div class="col-auto">
+            <!-- Dropdown de Fechas -->
+            <q-btn-dropdown
+              color="accent"
+              icon="event"
+              :label="rangoFechaSeleccionado || 'Fecha'"
+              dropdown-icon="keyboard_arrow_down"
+              dense
+              unelevated
+              class="dropdown-filter"
+            >
+              <q-list dense>
+                <q-item clickable v-close-popup @click="aplicarRangoFecha('hoy')">
+                  <q-item-section>
+                    <q-item-label>Hoy</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="aplicarRangoFecha('ayer')">
+                  <q-item-section>
+                    <q-item-label>Ayer</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="aplicarRangoFecha('semana')">
+                  <q-item-section>
+                    <q-item-label>Esta semana</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="aplicarRangoFecha('mes')">
+                  <q-item-section>
+                    <q-item-label>Este mes</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="
+                    filtroFecha = null
+                    rangoFechaSeleccionado = null
+                  "
+                >
+                  <q-item-section>
+                    <q-item-label>Todas las fechas</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="col-auto">
+            <q-btn
+              color="positive"
+              icon="download"
+              label="Exportar"
+              @click="exportarLogs"
+              :disable="!logsFiltrados.length"
+              dense
+              unelevated
+              class="q-mr-sm"
+            />
+            <q-btn
+              color="warning"
+              icon="filter_alt_off"
+              label="Limpiar"
+              @click="limpiarTodosFiltros"
+              :disable="!hayFiltrosActivos"
+              dense
+              flat
+            />
+          </div>
+        </div>
+
+        <!-- Indicadores de filtros activos -->
+        <div v-if="hayFiltrosActivos" class="row justify-center q-mt-md">
+          <div class="col-auto">
+            <q-chip
+              v-if="oficinaSeleccionada"
+              removable
+              @remove="
+                filtroOficina = null
+                oficinaSeleccionada = null
+              "
+              color="primary"
+              text-color="white"
+              icon="business"
+              size="sm"
+            >
+              {{ oficinaSeleccionada }}
+            </q-chip>
+            <q-chip
+              v-if="usuarioSeleccionado"
+              removable
+              @remove="
+                filtroUsuario = null
+                usuarioSeleccionado = null
+              "
+              color="secondary"
+              text-color="white"
+              icon="person"
+              size="sm"
+            >
+              {{ usuarioSeleccionado }}
+            </q-chip>
+            <q-chip
+              v-if="tipoSeleccionado"
+              removable
+              @remove="
+                filtroTipo = []
+                tipoSeleccionado = null
+              "
+              color="info"
+              text-color="white"
+              icon="category"
+              size="sm"
+            >
+              {{ tipoSeleccionado }}
+            </q-chip>
+            <q-chip
+              v-if="rangoFechaSeleccionado"
+              removable
+              @remove="
+                filtroFecha = null
+                rangoFechaSeleccionado = null
+              "
+              color="accent"
+              text-color="white"
+              icon="event"
+              size="sm"
+            >
+              {{ rangoFechaSeleccionado }}
+            </q-chip>
+          </div>
+        </div>
       </q-card-section>
 
       <!-- Contenedor principal de logs mejorado -->
@@ -412,6 +569,13 @@ const filtroProceso = ref('')
 const filtroFecha = ref('')
 const filtroActual = ref('')
 
+// Nuevos estados para dropdowns centralizados
+const oficinaSeleccionada = ref(null)
+const usuarioSeleccionado = ref(null)
+const tipoSeleccionado = ref(null)
+const rangoFechaSeleccionado = ref(null)
+const filtroUsuario = ref(null)
+
 // Computed principal con filtros mejorados y optimizados
 const logsFiltrados = computed(() => {
   console.log('🔍 Aplicando filtros locales:', {
@@ -476,6 +640,32 @@ const logsFiltrados = computed(() => {
     })
   }
 
+  // Nuevos filtros de dropdown
+  // Filtro por oficina seleccionada (dropdown)
+  if (oficinaSeleccionada.value) {
+    logsResultado = logsResultado.filter((log) => {
+      const logOficina = log.Oficina?.Nombre || log.oficina || log.OficinaNombre || ''
+      return logOficina.trim() === oficinaSeleccionada.value.trim()
+    })
+  }
+
+  // Filtro por usuario seleccionado (dropdown)
+  if (usuarioSeleccionado.value) {
+    logsResultado = logsResultado.filter((log) => {
+      const logUsuario = log.Usuario || log.usuario || log.Person?.nombres || ''
+      return logUsuario.trim() === usuarioSeleccionado.value.trim()
+    })
+  }
+
+  // Filtro por usuario adicional
+  if (filtroUsuario.value) {
+    const usuarioFilter = filtroUsuario.value.toLowerCase().trim()
+    logsResultado = logsResultado.filter((log) => {
+      const logUsuario = log.Usuario || log.usuario || log.Person?.nombres || ''
+      return logUsuario.toLowerCase().includes(usuarioFilter)
+    })
+  }
+
   console.log('✅ Filtros aplicados:', {
     resultados: logsResultado.length,
     original: logs.value.length,
@@ -485,22 +675,61 @@ const logsFiltrados = computed(() => {
       oficina: !!filtroOficina.value,
       proceso: !!filtroProceso.value,
       fecha: !!filtroFecha.value,
+      oficinaDropdown: !!oficinaSeleccionada.value,
+      usuarioDropdown: !!usuarioSeleccionado.value,
+      tipoDropdown: !!tipoSeleccionado.value,
+      fechaDropdown: !!rangoFechaSeleccionado.value,
     },
   })
 
   return logsResultado
 })
 
-// Computed para tipos disponibles
+// Computed para tipos disponibles con iconos y colores
 const tiposDisponibles = computed(() => {
   const tipos = new Set()
   logs.value.forEach((log) => {
     tipos.add((log.Type || 'INFO').toUpperCase())
   })
+
+  const tipoConfig = {
+    ERROR: { icon: 'error', color: 'negative' },
+    WARNING: { icon: 'warning', color: 'orange' },
+    INFO: { icon: 'info', color: 'info' },
+    SUCCESS: { icon: 'check_circle', color: 'positive' },
+    DEBUG: { icon: 'bug_report', color: 'purple' },
+  }
+
   return Array.from(tipos).map((tipo) => ({
     label: tipo,
     value: tipo,
+    icon: tipoConfig[tipo]?.icon || 'circle',
+    color: tipoConfig[tipo]?.color || 'grey',
   }))
+})
+
+// Computed para oficinas disponibles
+const oficinasDisponibles = computed(() => {
+  const oficinas = new Set()
+  logs.value.forEach((log) => {
+    const oficina = log.Oficina?.Nombre || log.oficina || log.OficinaNombre
+    if (oficina && oficina.trim()) {
+      oficinas.add(oficina.trim())
+    }
+  })
+  return Array.from(oficinas).sort()
+})
+
+// Computed para usuarios disponibles
+const usuariosDisponibles = computed(() => {
+  const usuarios = new Set()
+  logs.value.forEach((log) => {
+    const usuario = log.Usuario || log.usuario || log.Person?.nombres
+    if (usuario && usuario.trim()) {
+      usuarios.add(usuario.trim())
+    }
+  })
+  return Array.from(usuarios).sort()
 })
 
 // Computed para verificar si hay filtros activos
@@ -510,7 +739,12 @@ const hayFiltrosActivos = computed(() => {
     (filtroTipo.value && filtroTipo.value.length > 0) ||
     filtroOficina.value ||
     filtroProceso.value ||
-    filtroFecha.value
+    filtroFecha.value ||
+    oficinaSeleccionada.value ||
+    usuarioSeleccionado.value ||
+    tipoSeleccionado.value ||
+    rangoFechaSeleccionado.value ||
+    filtroUsuario.value
   )
 })
 
@@ -585,6 +819,96 @@ const limpiarFiltros = () => {
     console.log('🔄 Recargando logs después de limpiar filtros...')
     cargarLogs()
   }
+}
+
+// Métodos para los nuevos dropdowns centralizados
+const limpiarTodosFiltros = () => {
+  console.log('🧹 Limpiando todos los filtros incluyendo dropdowns...')
+
+  // Filtros originales
+  busqueda.value = ''
+  filtroTipo.value = []
+  filtroOficina.value = ''
+  filtroProceso.value = ''
+  filtroFecha.value = ''
+  filtroActual.value = ''
+  mostrarFiltrosAvanzados.value = false
+
+  // Nuevos filtros de dropdowns
+  oficinaSeleccionada.value = null
+  usuarioSeleccionado.value = null
+  tipoSeleccionado.value = null
+  rangoFechaSeleccionado.value = null
+  filtroUsuario.value = null
+
+  // Notificar al usuario
+  $q.notify({
+    type: 'info',
+    message: 'Todos los filtros limpiados',
+    position: 'top',
+    timeout: 1500,
+  })
+
+  // Si la consola está abierta y no tiene logs de gráfica, recargar
+  if (mostrarConsola.value && (!props.logsIniciales || props.logsIniciales.length === 0)) {
+    console.log('🔄 Recargando logs después de limpiar todos los filtros...')
+    cargarLogs()
+  }
+}
+
+const aplicarRangoFecha = (rango) => {
+  console.log('📅 Aplicando rango de fecha:', rango)
+
+  const hoy = new Date()
+  let fechaInicio
+  //fechaFin
+
+  switch (rango) {
+    case 'hoy': {
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+   //   fechaFin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59)
+      rangoFechaSeleccionado.value = 'Hoy'
+      break
+    }
+    case 'ayer': {
+      const ayer = new Date(hoy)
+      ayer.setDate(hoy.getDate() - 1)
+      fechaInicio = new Date(ayer.getFullYear(), ayer.getMonth(), ayer.getDate())
+      //  fechaFin = new Date(ayer.getFullYear(), ayer.getMonth(), ayer.getDate(), 23, 59, 59)
+      rangoFechaSeleccionado.value = 'Ayer'
+      break
+    }
+    case 'semana': {
+      const inicioSemana = new Date(hoy)
+      inicioSemana.setDate(hoy.getDate() - hoy.getDay())
+      fechaInicio = new Date(
+        inicioSemana.getFullYear(),
+        inicioSemana.getMonth(),
+        inicioSemana.getDate()
+      )
+    //  fechaFin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59)
+      rangoFechaSeleccionado.value = 'Esta semana'
+      break
+    }
+    case 'mes': {
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+      //   fechaFin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59)
+      rangoFechaSeleccionado.value = 'Este mes'
+      break
+    }
+    default:
+      return
+  }
+
+  // Aplicar filtro de fecha (aquí podrías integrar con tu sistema de filtros de fecha)
+  filtroFecha.value = fechaInicio.toISOString().split('T')[0]
+
+  $q.notify({
+    type: 'positive',
+    message: `Filtro aplicado: ${rangoFechaSeleccionado.value}`,
+    position: 'top',
+    timeout: 2000,
+  })
 }
 
 // Funciones de formato mejoradas
@@ -731,15 +1055,15 @@ const mostrarDetalleLog = (log) => {
   modalDetalle.value = true
 }
 
-const limpiarConsola = () => {
-  logs.value = []
-  limpiarFiltros()
-  $q.notify({
-    type: 'info',
-    message: 'Consola limpiada',
-    position: 'top',
-  })
-}
+// const limpiarConsola = () => {
+//   logs.value = []
+//   limpiarFiltros()
+//   $q.notify({
+//     type: 'info',
+//     message: 'Consola limpiada',
+//     position: 'top',
+//   })
+// }
 
 const exportarLogs = () => {
   if (!logs.value.length) return
@@ -1010,7 +1334,28 @@ onMounted(() => {
   align-items: center;
 }
 
-// Responsive
+// Estilos para dropdowns centralizados
+.dropdown-filter {
+  min-width: 120px;
+  margin: 0 4px;
+
+  .q-btn-dropdown__arrow {
+    margin-left: 4px;
+  }
+}
+
+.dropdown-filter .q-btn {
+  font-size: 13px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Responsive para dropdowns
 @media (max-width: 768px) {
   .console-header-section,
   .console-controls-section,
@@ -1031,6 +1376,36 @@ onMounted(() => {
   .log-metadata {
     flex-direction: column;
     gap: 8px;
+  }
+
+  // Dropdowns responsive
+  .dropdown-filter {
+    min-width: 100px;
+    margin: 2px;
+
+    .q-btn {
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+  }
+
+  // En mobile, apilar dropdowns verticalmente en pantallas muy pequeñas
+  @media (max-width: 480px) {
+    .row.justify-center.q-col-gutter-md {
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+
+      .col-auto {
+        width: 100%;
+        max-width: 200px;
+      }
+
+      .dropdown-filter {
+        width: 100%;
+        min-width: unset;
+      }
+    }
   }
 }
 </style>

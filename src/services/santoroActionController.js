@@ -1,20 +1,69 @@
-// 🎯 SANTORO ACTION CONTROLLER - Ejecuta acciones reales en la UI
-// Este archivo conecta las decisiones de Santoro con cambios visuales reales
+/**
+ * SantoroActionController - Controlador de Acciones Preciso
+ * Maneja todas las acciones del asistente IA con precisión absoluta
+ */
 
-import { reactive } from 'vue'
-import { santoroFiltersController } from './santoroFiltersController.js'
+import { santoroFiltroDateController } from './santoroFiltroDateController.js'
+import { santoroTemporalProcessor } from './santoroTemporalProcessor.js'
 
-class SantoroActionController {
+export class SantoroActionController {
   constructor() {
-    this.componentes = new Map() // Registro de componentes disponibles
-    this.estado = reactive({
+    this.contextStore = null
+    this.accionesEnProceso = new Set()
+    this.timeouts = new Map()
+    this.components = new Map()
+    this.notificationCallback = null
+
+    // ✅ ESTADO DEL CONTROLADOR
+    this.estado = {
       accionEnProceso: false,
       ultimaAccion: null,
-      resultadoVisible: false
+      ultimoResultado: null,
+      errores: []
+    }
+
+    console.log('🎯 SantoroActionController constructor ejecutado')
+    this.inicializar()
+  }
+
+  async inicializar() {
+    console.log('🎯 Inicializando SantoroActionController...')
+
+    // Inicializar store con verificación segura
+    if (typeof window !== 'undefined' && window.app && window.app.config?.globalProperties) {
+      try {
+        const pinia = window.app.config.globalProperties.$pinia
+        if (pinia) {
+          const { useSantoroContextStore } = await import('../stores/santoroContextStore.js')
+          this.contextStore = useSantoroContextStore(pinia)
+        }
+      } catch (error) {
+        console.warn('Error inicializando store:', error)
+      }
+    }
+
+    this.configurarEventListeners()
+  }
+
+  configurarEventListeners() {
+    // Listener para cambios de ruta
+    window.addEventListener('popstate', () => {
+      if (this.contextStore) {
+        this.contextStore.detectarContexto()
+      }
     })
 
-    this.callbacks = new Map() // Callbacks para acciones específicas
-    this.notificationCallback = null // Callback para notificaciones
+    // Listener para eventos personalizados de Vue Router
+    document.addEventListener('vue-router-navigation', (event) => {
+      const { to, from } = event.detail
+      this.manejarCambioRuta(to, from)
+    })
+
+    // Listener para cambios de componentes
+    document.addEventListener('vue-component-mounted', (event) => {
+      const { componentName, instance } = event.detail
+      this.manejarMontajeComponente(componentName, instance)
+    })
   }
 
   // 🔧 CONFIGURAR CALLBACK DE NOTIFICACIONES
@@ -38,19 +87,121 @@ class SantoroActionController {
   // 📋 REGISTRAR COMPONENTE para que Santoro pueda controlarlo
   registrarComponente(nombre, instancia, metodos = {}) {
     console.log(`🔗 Registrando componente: ${nombre}`)
-    this.componentes.set(nombre, {
+    this.components.set(nombre, {
       instancia,
       metodos,
       disponible: true
     })
+
+    // Conectar con context store si está disponible
+    if (this.contextStore) {
+      this.contextStore.conectarComponente(nombre, instancia)
+    }
+  }
+
+  // 🌐 OBTENER CONTEXTO ACTUAL PARA DECISIONES INTELIGENTES
+  obtenerContextoActual() {
+    try {
+      console.log('🔍 Obteniendo contexto actual...')
+      console.log('🗄️ Context Store disponible:', !!this.contextStore)
+
+      if (this.contextStore && typeof this.contextStore.detectarContexto === 'function') {
+        const contexto = this.contextStore.detectarContexto()
+        console.log('📊 Contexto desde store:', contexto)
+
+        // Validar que el contexto sea válido
+        if (contexto && typeof contexto === 'object') {
+          // Asegurar que tenga la propiedad resumen
+          if (!contexto.resumen) {
+            contexto.resumen = `Flujo: ${contexto.flujo || 'desconocido'}, Módulo: ${contexto.modulo || 'desconocido'}`
+          }
+
+          // Validar contextoDetallado
+          if (!contexto.contextoDetallado) {
+            contexto.contextoDetallado = {
+              paginaActual: window.location.pathname.includes('/estadisticas') ? 'estadisticas' :
+                window.location.pathname.includes('/diagnostico') ? 'diagnostico' :
+                  window.location.pathname.includes('/eventos') ? 'eventos' : 'logs',
+              vista: 'desktop',
+              modalesAbiertos: []
+            }
+          }
+
+          // Asegurar que modalesAbiertos esté definido
+          if (!contexto.contextoDetallado.modalesAbiertos) {
+            contexto.contextoDetallado.modalesAbiertos = []
+          }
+
+          return contexto
+        }
+      }
+
+      // Contexto básico pero funcional
+      const paginaActual = window.location.pathname.includes('/estadisticas') ? 'estadisticas' :
+        window.location.pathname.includes('/diagnostico') ? 'diagnostico' :
+          window.location.pathname.includes('/eventos') ? 'eventos' : 'logs'
+
+      const contextoBasico = {
+        flujo: 'desktop',
+        modulo: paginaActual,
+        componentes: [],
+        modales: [],
+        timestamp: new Date(),
+        resumen: 'Contexto básico - Store no disponible',
+        contextoDetallado: {
+          paginaActual,
+          vista: 'desktop',
+          modalesAbiertos: []
+        }
+      }
+
+      console.log('📋 Contexto básico:', contextoBasico)
+      return contextoBasico
+
+    } catch (error) {
+      console.warn('❌ Error obteniendo contexto:', error)
+
+      const contextoError = {
+        flujo: 'error',
+        modulo: 'error',
+        componentes: [],
+        modales: [],
+        timestamp: new Date(),
+        resumen: `Error: ${error.message}`,
+        contextoDetallado: {
+          paginaActual: 'error',
+          vista: 'error',
+          modalesAbiertos: []
+        }
+      }
+
+      return contextoError
+    }
   }
 
   // 🚀 EJECUTAR ACCIÓN PRINCIPAL
   async ejecutarAccion(nombreAccion, parametros = {}, datos = null) {
     console.log('🎯 Ejecutando acción UI:', nombreAccion, parametros)
+    console.log('🔍 Estado del controlador:', this.estado)
+
+    // ✅ Verificar que el estado esté inicializado
+    if (!this.estado) {
+      console.error('❌ Estado del controlador no inicializado! Creando estado de emergencia...')
+      this.estado = {
+        accionEnProceso: false,
+        ultimaAccion: null,
+        ultimoResultado: null,
+        errores: []
+      }
+    }
+
+    // 🌐 Obtener contexto actual para tomar decisiones inteligentes
+    const contexto = this.obtenerContextoActual()
+    console.log('📍 Contexto actual:', contexto ? contexto.resumen : 'Contexto no disponible')
 
     this.estado.accionEnProceso = true
     this.estado.ultimaAccion = nombreAccion
+    console.log('✅ Estado actualizado:', this.estado)
 
     try {
       let resultado
@@ -154,6 +305,60 @@ class SantoroActionController {
           resultado = await this.abrirConsola(parametros)
           break
 
+        case 'abrir_consola_temporal':
+        case 'consola_con_filtro':
+        case 'mostrar_logs_periodo':
+          resultado = await this.abrirConsolaConFiltroTemporal(datos, parametros)
+          break
+
+        case 'abrir_eventos':
+        case 'mostrar_eventos':
+          resultado = await this.abrirEventos(parametros)
+          break
+
+        case 'abrir_eventos_fallidos':
+        case 'mostrar_eventos_fallidos':
+        case 'ver_eventos_fallidos':
+          resultado = await this.abrirEventosFallidos(parametros)
+          break
+
+        case 'abrir_diagnostico_pagina':
+        case 'ir_a_diagnostico':
+        case 'mostrar_diagnostico':
+        case 'diagnosticar_error':
+        case 'analizar_error':
+        case 'buscar_sesion':
+        case 'revisar_sesion':
+        case 'diagnostico_usuario':
+        case 'soporte_tecnico':
+        case 'centro_diagnostico': {
+          // Enriquecer parámetros basado en el tipo de acción
+          const parametrosEnriquecidos = { ...parametros }
+
+          // Detectar códigos de error en el comando
+          const codigoMatch = parametros.comando?.match(/(?:error|código|code)\s*:?\s*([a-zA-Z0-9-_]+)/i)
+          if (codigoMatch) {
+            parametrosEnriquecidos.codigo = codigoMatch[1]
+            parametrosEnriquecidos.error = codigoMatch[1]
+          }
+
+          // Detectar usuarios/sesiones
+          const usuarioMatch = parametros.comando?.match(/(?:usuario|user|sesión|session)\s*:?\s*([a-zA-Z0-9@._-]+)/i)
+          if (usuarioMatch) {
+            parametrosEnriquecidos.usuario = usuarioMatch[1]
+            parametrosEnriquecidos.session = usuarioMatch[1]
+          }
+
+          // Detectar términos de búsqueda
+          const busquedaMatch = parametros.comando?.match(/(?:buscar|search|encontrar)\s+(.+?)(?:\s+(?:del|desde|en|por)|$)/i)
+          if (busquedaMatch) {
+            parametrosEnriquecidos.busqueda = busquedaMatch[1].trim()
+          }
+
+          resultado = await this.abrirDiagnosticoPagina(parametrosEnriquecidos)
+          break
+        }
+
         case 'cambiar_flujo':
         case 'cambiar_vista':
           resultado = await this.cambiarFlujo(parametros)
@@ -213,6 +418,8 @@ class SantoroActionController {
       }
     } finally {
       this.estado.accionEnProceso = false
+      console.log('🏁 Acción completada:', this.estado.ultimaAccion)
+      console.log('📊 Estado final:', this.estado)
     }
   }
 
@@ -266,7 +473,7 @@ class SantoroActionController {
   // 🔍 ABRIR FILTROS
   async abrirFiltros() {
     try {
-      const resultado = await santoroFiltersController.abrirPanelFiltros()
+      const resultado = await santoroFiltroDateController.abrirPanelFiltros()
 
       if (resultado.exito) {
         this.mostrarNotificacion('positive', '🔍 Panel de filtros abierto', 'top')
@@ -290,27 +497,21 @@ class SantoroActionController {
     }
   }
 
-  // 📅 APLICAR FILTRO DE FECHA
-  async aplicarFiltroFecha(parametros) {
+  // 📅 FILTROS DE FECHA
+  async aplicarFiltroFecha(tipoFiltro) {
     try {
-      const tipoFiltro = parametros.tipo || parametros.filtro || 'mes actual'
-      const resultado = await santoroFiltersController.aplicarFiltroFecha(tipoFiltro)
+      const resultado = await santoroFiltroDateController.aplicarFiltroFecha(tipoFiltro)
 
       if (resultado.exito) {
-        this.mostrarNotificacion('positive', `✅ ${resultado.mensaje}`, 'top')
+        const mensaje = `📅 Filtro "${tipoFiltro}" aplicado`
+        this.mostrarNotificacion('positive', mensaje, 'top')
 
         return {
           exito: true,
-          mensaje: resultado.mensaje,
-          accionEjecutada: 'aplicar_filtro_fecha',
-          datos: {
-            fechaInicio: resultado.fechaInicio,
-            fechaFin: resultado.fechaFin,
-            descripcion: resultado.descripcion
-          }
+          mensaje: mensaje,
+          accionEjecutada: 'aplicar_filtro_fecha'
         }
       } else {
-        this.mostrarNotificacion('warning', '⚠️ No se pudo aplicar el filtro', 'top')
         return {
           exito: false,
           mensaje: 'No se pudo aplicar el filtro de fecha'
@@ -328,7 +529,7 @@ class SantoroActionController {
   // 🔄 RESETEAR FILTROS
   async resetearFiltros() {
     try {
-      const resultado = await santoroFiltersController.resetearFiltros()
+      const resultado = await santoroFiltroDateController.resetearFiltros()
 
       if (resultado.exito) {
         this.mostrarNotificacion('positive', `🔄 ${resultado.mensaje}`, 'top')
@@ -412,14 +613,20 @@ class SantoroActionController {
 
   // �️ ABRIR CONSOLA
   async abrirConsola(parametros = {}) {
+    console.log('🖥️ abrirConsola iniciado con parámetros:', parametros)
+
     try {
       // Emitir evento para abrir la consola
+      console.log('📡 Emitiendo evento santoro-abrir-consola')
+
       window.dispatchEvent(new CustomEvent('santoro-abrir-consola', {
         detail: parametros
       }))
 
+      console.log('💬 Mostrando notificación de consola')
       this.mostrarNotificacion('positive', '🖥️ Abriendo consola de logs...', 'top-right')
 
+      console.log('✅ abrirConsola completado exitosamente')
       return {
         exito: true,
         mensaje: '🖥️ Abriendo consola de logs del sistema...',
@@ -435,38 +642,344 @@ class SantoroActionController {
     }
   }
 
-  // 🔄 CAMBIAR FLUJO (Mobile/Escritorio) con navegación inteligente
-  async cambiarFlujo(parametros = {}) {
-    try {
-      const flujo = parametros.flujo || parametros.tipo || 'mobile'
-      const contextoActual = parametros.contextoActual || 'dashboard'
-      const necesitaNavegacion = parametros.necesitaNavegacion || false
+  // 🖥️ ABRIR CONSOLA CON FILTRO TEMPORAL AVANZADO
+  async abrirConsolaConFiltroTemporal(datos, parametros = {}) {
+    console.log('🕒 abrirConsolaConFiltroTemporal iniciado:', { datos, parametros })
 
-      // Emitir evento para cambiar flujo
-      window.dispatchEvent(new CustomEvent('santoro-cambiar-flujo', {
-        detail: { flujo }
+    try {
+      // Detectar referencia temporal en el comando o datos
+      let rangoTemporal = null
+
+      if (typeof datos === 'string' && santoroTemporalProcessor.contieneReferenciaTemporal(datos)) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(datos)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Si no se detectó en datos, buscar en parametros
+      if (!rangoTemporal && parametros.comando) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(parametros.comando)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Fallback a último mes si no se detecta nada
+      if (!rangoTemporal) {
+        rangoTemporal = santoroTemporalProcessor.generarRangoUltimoMes()
+      }
+
+      console.log('📅 Rango temporal procesado:', rangoTemporal)
+
+      // Construir URL de API con filtros temporales
+      const apiUrl = `api/logs/filter?fromDate=${rangoTemporal.fromDate}&toDate=${rangoTemporal.toDate}`
+
+      // Emitir evento para abrir consola con datos pre-filtrados
+      window.dispatchEvent(new CustomEvent('santoro-abrir-consola-filtrada', {
+        detail: {
+          apiUrl,
+          rangoTemporal,
+          filtrosTemporales: {
+            fromDate: rangoTemporal.fromDate,
+            toDate: rangoTemporal.toDate,
+            periodo: rangoTemporal.periodo
+          },
+          descripcion: rangoTemporal.descripcion
+        }
       }))
 
-      const mensaje = flujo === 'mobile'
-        ? '📱 Cambiando a vista móvil...'
-        : '🖥️ Cambiando a vista de escritorio...'
+      this.mostrarNotificacion('positive',
+        `🖥️ Abriendo consola: ${rangoTemporal.descripcion}`,
+        'top-right'
+      )
+
+      return {
+        exito: true,
+        mensaje: `🖥️ Consola abierta con ${rangoTemporal.descripcion}`,
+        accionEjecutada: 'abrir_consola_temporal',
+        datos: {
+          apiUrl,
+          rangoTemporal,
+          descripcion: rangoTemporal.descripcion
+        }
+      }
+    } catch (error) {
+      console.error('Error abriendo consola con filtro temporal:', error)
+      return {
+        exito: false,
+        mensaje: 'Error procesando filtro temporal: ' + error.message,
+        accionEjecutada: 'abrir_consola_temporal'
+      }
+    }
+  }
+
+  // 📅 ABRIR EVENTOS (diferentes de eventos fallidos)
+  async abrirEventos(parametros = {}) {
+    console.log('📅 abrirEventos iniciado:', parametros)
+
+    try {
+      // Detectar si hay filtro temporal en el comando
+      let rangoTemporal = null
+      if (parametros.comando && santoroTemporalProcessor.contieneReferenciaTemporal(parametros.comando)) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(parametros.comando)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Emitir evento para navegar a eventos
+      const eventoDetalle = {
+        ruta: '/eventos',
+        parametros: parametros,
+        filtrosTemporales: rangoTemporal
+      }
+
+      window.dispatchEvent(new CustomEvent('santoro-navegar', {
+        detail: eventoDetalle
+      }))
+
+      const mensaje = rangoTemporal
+        ? `📅 Abriendo eventos: ${rangoTemporal.descripcion}`
+        : '📅 Abriendo módulo de eventos'
+
+      this.mostrarNotificacion('positive', mensaje, 'top-right')
+
+      return {
+        exito: true,
+        mensaje,
+        accionEjecutada: 'abrir_eventos',
+        datos: eventoDetalle
+      }
+    } catch (error) {
+      console.error('Error abriendo eventos:', error)
+      return {
+        exito: false,
+        mensaje: 'Error abriendo eventos: ' + error.message,
+        accionEjecutada: 'abrir_eventos'
+      }
+    }
+  }
+
+  // ❌ ABRIR EVENTOS FALLIDOS (módulo específico)
+  async abrirEventosFallidos(parametros = {}) {
+    console.log('❌ abrirEventosFallidos iniciado:', parametros)
+
+    try {
+      // Detectar si hay filtro temporal en el comando
+      let rangoTemporal = null
+      if (parametros.comando && santoroTemporalProcessor.contieneReferenciaTemporal(parametros.comando)) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(parametros.comando)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Emitir evento para navegar a eventos fallidos
+      const eventoDetalle = {
+        ruta: '/eventos-fallidos',
+        parametros: parametros,
+        filtrosTemporales: rangoTemporal
+      }
+
+      window.dispatchEvent(new CustomEvent('santoro-navegar', {
+        detail: eventoDetalle
+      }))
+
+      const mensaje = rangoTemporal
+        ? `❌ Abriendo eventos fallidos: ${rangoTemporal.descripcion}`
+        : '❌ Abriendo módulo de eventos fallidos'
+
+      this.mostrarNotificacion('warning', mensaje, 'top-right')
+
+      return {
+        exito: true,
+        mensaje,
+        accionEjecutada: 'abrir_eventos_fallidos',
+        datos: eventoDetalle
+      }
+    } catch (error) {
+      console.error('Error abriendo eventos fallidos:', error)
+      return {
+        exito: false,
+        mensaje: 'Error abriendo eventos fallidos: ' + error.message,
+        accionEjecutada: 'abrir_eventos_fallidos'
+      }
+    }
+  }
+
+  // 🏥 ABRIR PÁGINA DE DIAGNÓSTICO (no modal)
+  async abrirDiagnosticoPagina(parametros = {}) {
+    console.log('🏥 abrirDiagnosticoPagina iniciado:', parametros)
+
+    try {
+      // Detectar si hay filtro temporal en el comando
+      let rangoTemporal = null
+      if (parametros.comando && santoroTemporalProcessor.contieneReferenciaTemporal(parametros.comando)) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(parametros.comando)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Construir URL con query parameters
+      let rutaCompleta = '/diagnostico'
+      const queryParams = new URLSearchParams()
+
+      // Agregar parámetros específicos
+      if (parametros.codigo) queryParams.set('code', parametros.codigo)
+      if (parametros.error) queryParams.set('error', parametros.error)
+      if (parametros.usuario) queryParams.set('user', parametros.usuario)
+      if (parametros.session) queryParams.set('session', parametros.session)
+      if (parametros.busqueda) queryParams.set('search', parametros.busqueda)
+      if (parametros.tipo) queryParams.set('type', parametros.tipo)
+
+      // Agregar filtros temporales si existen
+      if (rangoTemporal && rangoTemporal.fechaInicio && rangoTemporal.fechaFin) {
+        queryParams.set('fromDate', rangoTemporal.fechaInicio)
+        queryParams.set('toDate', rangoTemporal.fechaFin)
+        queryParams.set('periodo', rangoTemporal.descripcion)
+      }
+
+      if (queryParams.toString()) {
+        rutaCompleta += '?' + queryParams.toString()
+      }
+
+      // Emitir evento para navegar a página de diagnóstico
+      const diagnosticoDetalle = {
+        ruta: rutaCompleta,
+        parametros: parametros,
+        filtrosTemporales: rangoTemporal
+      }
+
+      window.dispatchEvent(new CustomEvent('santoro-navegar', {
+        detail: diagnosticoDetalle
+      }))
+
+      const mensaje = rangoTemporal
+        ? `🏥 Abriendo diagnóstico: ${rangoTemporal.descripcion}`
+        : '🏥 Abriendo página de diagnóstico'
 
       this.mostrarNotificacion('info', mensaje, 'top-right')
 
-      // Si necesita navegación o no está en una ruta apropiada, navegar al dashboard
-      if (necesitaNavegacion || !window.location.pathname.includes('/logs')) {
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('santoro-navegar', {
-            detail: { ruta: '/logs', parametros: { flujo } }
-          }))
-        }, 500) // Dar tiempo al cambio de flujo
+      return {
+        exito: true,
+        mensaje,
+        accionEjecutada: 'abrir_diagnostico_pagina',
+        datos: diagnosticoDetalle
       }
+    } catch (error) {
+      console.error('Error abriendo página de diagnóstico:', error)
+      return {
+        exito: false,
+        mensaje: 'Error abriendo diagnóstico: ' + error.message,
+        accionEjecutada: 'abrir_diagnostico_pagina'
+      }
+    }
+  }
+
+  // 🔄 CAMBIAR FLUJO (Mobile/Escritorio) con navegación por rutas
+  async cambiarFlujo(parametros = {}) {
+    console.log('🔄 cambiarFlujo iniciado con parámetros:', parametros)
+
+    try {
+      const flujoSolicitado = parametros.flujo || parametros.tipo || 'mobile'
+      console.log('🎯 Flujo solicitado:', flujoSolicitado)
+
+      // 🌐 Obtener contexto actual y ruta actual
+      const contexto = this.obtenerContextoActual()
+      const rutaActual = window.location.pathname
+      console.log('📍 Contexto para cambio de flujo:', contexto)
+      console.log('🔗 Ruta actual:', rutaActual)
+
+      const contextoDetallado = contexto.contextoDetallado || {}
+      const { modalesAbiertos } = contextoDetallado
+
+      // 🎯 VALIDACIÓN INTELIGENTE: ¿Ya está en el flujo solicitado?
+      const yaEnFlujoCorrect =
+        (flujoSolicitado === 'escritorio' || flujoSolicitado === 'desktop') && rutaActual.includes('/escritorio') ||
+        (flujoSolicitado === 'mobile') && rutaActual.includes('/mobile')
+
+      if (yaEnFlujoCorrect) {
+        this.mostrarNotificacion('info',
+          `✅ Ya estás en vista ${flujoSolicitado}. Ubicación: ${rutaActual}`,
+          'top')
+
+        return {
+          exito: true,
+          mensaje: `Ya está en vista ${flujoSolicitado}`,
+          rutaActual,
+          accionEjecutada: 'cambiar_flujo',
+          yaEnVistaCorrecta: true
+        }
+      }
+
+      // 🚨 ADVERTENCIA: ¿Hay modales abiertos que se perderían?
+      const modalesArray = Array.isArray(modalesAbiertos) ? modalesAbiertos : []
+      if (modalesArray.length > 0) {
+        this.mostrarNotificacion('warning',
+          `⚠️ Hay ${modalesArray.length} modal(es) abierto(s). Podrían cerrarse al cambiar vista.`,
+          'top')
+      }
+
+      // 🎯 DETERMINAR RUTA DESTINO
+      let rutaDestino = '/escritorio' // Por defecto
+      if (flujoSolicitado === 'mobile') {
+        rutaDestino = '/mobile'
+      } else if (flujoSolicitado === 'escritorio' || flujoSolicitado === 'desktop') {
+        rutaDestino = '/escritorio'
+      }
+
+      console.log('🎯 Navegando hacia ruta:', rutaDestino)
+
+      // 🚀 NAVEGAR A LA NUEVA RUTA
+      if (window.location.pathname !== rutaDestino) {
+        try {
+          // Intentar usar Vue Router si está disponible
+          if (window.__VUE_ROUTER_INSTANCE__) {
+            await window.__VUE_ROUTER_INSTANCE__.push(rutaDestino)
+          } else {
+            // Fallback a navegación directa
+            window.history.pushState({}, '', rutaDestino)
+            window.dispatchEvent(new PopStateEvent('popstate'))
+          }
+        } catch (error) {
+          console.warn('Error en navegación router, usando fallback:', error)
+          window.location.href = rutaDestino
+        }
+      }
+
+      // Emitir evento para notificar el cambio
+      window.dispatchEvent(new CustomEvent('santoro-cambiar-flujo', {
+        detail: {
+          flujo: flujoSolicitado,
+          rutaAnterior: rutaActual,
+          rutaDestino,
+          contextoAnterior: contexto.contextoDetallado
+        }
+      }))
+
+      const mensaje = flujoSolicitado === 'mobile'
+        ? `📱 Navegando a vista móvil: ${rutaDestino}`
+        : `🖥️ Navegando a vista de escritorio: ${rutaDestino}`
+
+      console.log('💬 Mensaje de notificación:', mensaje)
+      this.mostrarNotificación('success', mensaje, 'top-right')
+
+      // ✅ Dar tiempo para que la navegación se complete
+      await new Promise(resolve => setTimeout(resolve, 300))
 
       return {
         exito: true,
         mensaje: mensaje,
         accionEjecutada: 'cambiar_flujo',
-        datos: { flujo, contextoActual, navegado: necesitaNavegacion }
+        rutaAnterior: rutaActual,
+        rutaDestino,
+        datos: {
+          flujoSolicitado,
+          rutaNavegada: rutaDestino,
+          modalesAfectados: modalesArray
+        }
       }
     } catch (error) {
       console.error('Error cambiando flujo:', error)
@@ -811,6 +1324,200 @@ class SantoroActionController {
       return await callback(parametros)
     }
     return { exito: false, mensaje: `Callback no encontrado: ${accion}` }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // 🌐 FUNCIONES ESPECIALIZADAS DE CONTEXTO PARA EL ASISTENTE
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  // 📍 OBTENER REPORTE COMPLETO DE SITUACIÓN ACTUAL
+  obtenerReporteSituacionActual() {
+    try {
+      const contexto = this.obtenerContextoActual()
+      const { contextoDetallado } = contexto
+
+      // Generar reporte detallado para el asistente
+      const reporte = {
+        ubicacion: {
+          pagina: contextoDetallado.paginaActual || 'desconocida',
+          ruta: contextoDetallado.rutaCompleta || window.location.pathname,
+          vista: contextoDetallado.tipoVista || 'desktop',
+          hash: contextoDetallado.hashURL || window.location.hash
+        },
+
+        interfaz: {
+          modalesAbiertos: Array.from(contextoDetallado.modalesAbiertos || []),
+          componentesVisibles: Array.from(contextoDetallado.componentesVisibles || []),
+          dimensionesPantalla: contextoDetallado.dimensionesPantalla || { ancho: 0, alto: 0 }
+        },
+
+        filtros: {
+          aplicados: Object.fromEntries(contextoDetallado.filtrosAplicados || new Map()),
+          cantidad: (contextoDetallado.filtrosAplicados || new Map()).size,
+          busquedaActiva: contextoDetallado.busquedaActiva || null
+        },
+
+        estado: {
+          conexion: contextoDetallado.estadoConexion || 'unknown',
+          ultimaActividad: contextoDetallado.ultimaActividad || new Date(),
+          operacionesEnCurso: Array.from(contextoDetallado.operacionesEnCurso || []),
+          asistenteDiponible: contextoDetallado.asistenteDiponible !== false
+        },
+
+        capacidades: {
+          puedeNavegar: true,
+          puedeAbrirModales: true,
+          puedeAplicarFiltros: true,
+          puedeExportar: contextoDetallado.permisos?.has?.('exportar') !== false,
+          puedeUsarVoz: contextoDetallado.vocesDisponibles !== false
+        },
+
+        timestamp: new Date(),
+        resumenHumano: this.generarResumenHumano(contextoDetallado)
+      }
+
+      return reporte
+
+    } catch (error) {
+      console.error('Error generando reporte de situación:', error)
+      return {
+        error: true,
+        mensaje: 'No se pudo obtener el contexto actual',
+        timestamp: new Date()
+      }
+    }
+  }
+
+  // 🗣️ GENERAR RESUMEN HUMANO DEL CONTEXTO
+  generarResumenHumano(contextoDetallado) {
+    const partes = []
+
+    // Ubicación
+    const pagina = contextoDetallado.paginaActual || 'página desconocida'
+    const vista = contextoDetallado.tipoVista || 'desktop'
+    partes.push(`Estás en la ${pagina} usando vista ${vista}`)
+
+    // Modales
+    const modales = Array.from(contextoDetallado.modalesAbiertos || [])
+    if (modales.length > 0) {
+      partes.push(`con ${modales.length} modal(es) abierto(s): ${modales.join(', ')}`)
+    } else {
+      partes.push('sin modales abiertos')
+    }
+
+    // Filtros
+    const filtros = contextoDetallado.filtrosAplicados || new Map()
+    if (filtros.size > 0) {
+      const listaFiltros = Array.from(filtros.entries())
+        .map(([key, value]) => `${key}=${value}`)
+        .join(', ')
+      partes.push(`Filtros activos: ${listaFiltros}`)
+    } else {
+      partes.push('sin filtros aplicados')
+    }
+
+    // Operaciones
+    const operaciones = Array.from(contextoDetallado.operacionesEnCurso || [])
+    if (operaciones.length > 0) {
+      partes.push(`Operaciones en curso: ${operaciones.join(', ')}`)
+    }
+
+    return partes.join('. ') + '.'
+  }
+
+  // 🎯 VALIDAR SI ACCIÓN ES APROPIADA EN CONTEXTO ACTUAL
+  validarAccionEnContexto(nombreAccion, parametros = {}) {
+    const contexto = this.obtenerContextoActual()
+    const { contextoDetallado } = contexto
+
+    const validacion = {
+      esApropiada: true,
+      advertencias: [],
+      sugerencias: [],
+      contextoActual: contexto.resumen
+    }
+
+    try {
+      // Validaciones específicas por acción
+      switch (nombreAccion) {
+        case 'cambiar_flujo': {
+          const flujoSolicitado = parametros.flujo || parametros.tipo
+          const vistaActual = contextoDetallado.tipoVista
+
+          if (flujoSolicitado === vistaActual) {
+            validacion.advertencias.push(`Ya estás en vista ${flujoSolicitado}`)
+            validacion.sugerencias.push('No es necesario cambiar de vista')
+          }
+
+          if ((contextoDetallado.modalesAbiertos || []).length > 0) {
+            validacion.advertencias.push('Hay modales abiertos que podrían cerrarse')
+          }
+          break
+        }
+
+        case 'abrir_modal':
+        case 'mostrar_diagnostico':
+        case 'abrir_ayuda': {
+          const modalSolicitado = parametros.modal || parametros.tipo
+          if ((contextoDetallado.modalesAbiertos || []).includes(modalSolicitado)) {
+            validacion.advertencias.push(`El modal ${modalSolicitado} ya está abierto`)
+            validacion.sugerencias.push('Considera cerrar el modal primero o usar otro comando')
+          }
+          break
+        }
+
+        case 'aplicar_filtro':
+        case 'filtrar_por':
+          if (contextoDetallado.paginaActual !== 'logs' &&
+            contextoDetallado.paginaActual !== 'eventos') {
+            validacion.advertencias.push('Los filtros funcionan mejor en las páginas de logs o eventos')
+            validacion.sugerencias.push('Considera navegar primero a la página apropiada')
+          }
+          break
+
+        case 'exportar':
+        case 'generar_reporte':
+          if ((contextoDetallado.operacionesEnCurso || []).includes('exportando')) {
+            validacion.esApropiada = false
+            validacion.advertencias.push('Ya hay una exportación en curso')
+            validacion.sugerencias.push('Espera a que termine la exportación actual')
+          }
+          break
+      }
+
+    } catch (error) {
+      console.warn('Error validando acción en contexto:', error)
+      validacion.advertencias.push('No se pudo validar completamente el contexto')
+    }
+
+    return validacion
+  }
+
+  // 🚀 EJECUTAR ACCIÓN CON VALIDACIÓN CONTEXTUAL
+  async ejecutarAccionConValidacion(nombreAccion, parametros = {}, datos = null) {
+    // Validar contexto primero
+    const validacion = this.validarAccionEnContexto(nombreAccion, parametros)
+
+    // Si no es apropiada, devolver advertencia
+    if (!validacion.esApropiada) {
+      return {
+        exito: false,
+        mensaje: 'Acción no apropiada en el contexto actual',
+        advertencias: validacion.advertencias,
+        sugerencias: validacion.sugerencias,
+        contextoActual: validacion.contextoActual
+      }
+    }
+
+    // Si hay advertencias, mostrarlas pero continuar
+    if (validacion.advertencias.length > 0) {
+      this.mostrarNotificacion('warning',
+        `⚠️ ${validacion.advertencias[0]}`,
+        'top')
+    }
+
+    // Ejecutar la acción normalmente
+    return await this.ejecutarAccion(nombreAccion, parametros, datos)
   }
 }
 

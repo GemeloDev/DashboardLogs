@@ -85,7 +85,16 @@ export default defineConfig((/* ctx */) => {
           target: 'http://187.188.66.56:8024',
           changeOrigin: true,
           secure: false,
-          // logLevel: 'production'
+          logLevel: 'debug',
+          onProxyReq: (proxyReq, req) => {
+            console.log('🔄 Proxy request:', req.method, req.url, '-> ', proxyReq.host + proxyReq.path)
+          },
+          onProxyRes: (proxyRes, req) => {
+            console.log('✅ Proxy response:', proxyRes.statusCode, req.url)
+          },
+          onError: (err, req) => {
+            console.error('❌ Proxy error:', err.message, req.url)
+          }
         }
       }
     },

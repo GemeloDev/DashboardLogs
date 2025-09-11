@@ -7,14 +7,14 @@
       </div>
 
       <!-- Primera fila: KPIs Dashboard Mejorados -->
-      <div class="row q-col-gutter-md q-mb-lg">
+      <div class="row q-col-gutter-lg q-mb-xl">
         <!-- KPI Total de Logs -->
-        <div class="col-12 col-sm-6 col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
           <q-card class="kpi-card gradient-blue" @click="abrirConsolaGeneral('todos')">
-            <q-card-section class="q-pa-md">
+            <q-card-section class="q-pa-lg">
               <div class="kpi-content">
                 <div class="kpi-icon-container">
-                  <q-icon name="analytics" size="32px" class="kpi-icon" />
+                  <q-icon name="analytics" size="36px" class="kpi-icon" />
                 </div>
                 <div class="kpi-data">
                   <div class="kpi-title">Total Logs</div>
@@ -33,12 +33,12 @@
         </div>
 
         <!-- KPI Usuarios Activos -->
-        <div class="col-12 col-sm-6 col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
           <q-card class="kpi-card gradient-green" @click="abrirConsolaGeneral('login')">
-            <q-card-section class="q-pa-md">
+            <q-card-section class="q-pa-lg">
               <div class="kpi-content">
                 <div class="kpi-icon-container">
-                  <q-icon name="verified_user" size="32px" class="kpi-icon" />
+                  <q-icon name="verified_user" size="36px" class="kpi-icon" />
                 </div>
                 <div class="kpi-data">
                   <div class="kpi-title">Logins</div>
@@ -57,12 +57,12 @@
         </div>
 
         <!-- KPI Errores -->
-        <div class="col-12 col-sm-6 col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
           <q-card class="kpi-card gradient-red" @click="abrirConsolaGeneral('errores')">
-            <q-card-section class="q-pa-md">
+            <q-card-section class="q-pa-lg">
               <div class="kpi-content">
                 <div class="kpi-icon-container">
-                  <q-icon name="bug_report" size="32px" class="kpi-icon" />
+                  <q-icon name="bug_report" size="36px" class="kpi-icon" />
                 </div>
                 <div class="kpi-data">
                   <div class="kpi-title">Total Errores</div>
@@ -81,12 +81,12 @@
         </div>
 
         <!-- KPI Escaneos -->
-        <div class="col-12 col-sm-6 col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
           <q-card class="kpi-card gradient-cyan" @click="abrirConsolaGeneral('escaneos')">
-            <q-card-section class="q-pa-md">
+            <q-card-section class="q-pa-lg">
               <div class="kpi-content">
                 <div class="kpi-icon-container">
-                  <q-icon name="qr_code_scanner" size="32px" class="kpi-icon" />
+                  <q-icon name="qr_code_scanner" size="36px" class="kpi-icon" />
                 </div>
                 <div class="kpi-data">
                   <div class="kpi-title">Escaneos</div>
@@ -106,14 +106,14 @@
       </div>
 
       <!-- Segunda fila: KPIs adicionales -->
-      <div class="row q-col-gutter-md q-mb-lg">
+      <div class="row q-col-gutter-lg q-mb-xl">
         <!-- KPI Exportaciones -->
-        <div class="col-12 col-sm-6 col-md-6">
+        <div class="col-12 col-md-6">
           <q-card class="kpi-card gradient-orange" @click="abrirConsolaGeneral('exportaciones')">
-            <q-card-section class="q-pa-md">
+            <q-card-section class="q-pa-lg">
               <div class="kpi-content">
                 <div class="kpi-icon-container">
-                  <q-icon name="file_download" size="32px" class="kpi-icon" />
+                  <q-icon name="file_download" size="36px" class="kpi-icon" />
                 </div>
                 <div class="kpi-data">
                   <div class="kpi-title">Exportaciones</div>
@@ -132,12 +132,12 @@
         </div>
 
         <!-- KPI Logins Exitosos -->
-        <div class="col-12 col-sm-6 col-md-6">
+        <div class="col-12 col-md-6">
           <q-card class="kpi-card gradient-green" @click="abrirConsolaGeneral('login')">
-            <q-card-section class="q-pa-md">
+            <q-card-section class="q-pa-lg">
               <div class="kpi-content">
                 <div class="kpi-icon-container">
-                  <q-icon name="verified_user" size="32px" class="kpi-icon" />
+                  <q-icon name="verified_user" size="36px" class="kpi-icon" />
                 </div>
                 <div class="kpi-data">
                   <div class="kpi-title">Logins Exitosos</div>
@@ -156,9 +156,9 @@
         </div>
       </div>
 
-      <div class="row q-col-gutter-md">
+      <div class="row q-col-gutter-lg">
         <!-- Gráfica de Exportaciones Mejorada -->
-        <div class="col-12 col-xl-6">
+        <div class="col-12 col-lg-6">
           <q-card class="enhanced-chart-card export-chart">
             <q-card-section class="chart-header">
               <div class="row items-center">
@@ -190,13 +190,13 @@
               </div>
             </q-card-section>
             <q-card-section class="chart-content">
-              <canvas ref="exportacionesChart" height="300"></canvas>
+              <canvas ref="exportacionesChart" height="320"></canvas>
             </q-card-section>
           </q-card>
         </div>
 
         <!-- Gráfica de Tiempos Mejorada -->
-        <div class="col-12 col-xl-6">
+        <div class="col-12 col-lg-6">
           <q-card class="enhanced-chart-card time-chart">
             <q-card-section class="chart-header">
               <div class="row items-center">
@@ -218,7 +218,7 @@
               </div>
             </q-card-section>
             <q-card-section class="chart-content">
-              <canvas ref="tiemposChart" height="300"></canvas>
+              <canvas ref="tiemposChart" height="320"></canvas>
             </q-card-section>
           </q-card>
         </div>
@@ -256,16 +256,16 @@
               </div>
             </q-card-section>
             <q-card-section class="chart-content">
-              <canvas ref="escaneosChart" height="250"></canvas>
+              <canvas ref="escaneosChart" height="280"></canvas>
             </q-card-section>
           </q-card>
         </div>
       </div>
 
       <!-- Segunda fila de gráficas: Login y Registro -->
-      <div class="row q-col-gutter-md q-mt-md">
+      <div class="row q-col-gutter-lg q-mt-lg">
         <!-- Gráfica de Login -->
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-lg-6">
           <q-card class="enhanced-chart-card login-chart">
             <q-card-section class="chart-header">
               <div class="row items-center">
@@ -299,7 +299,7 @@
               </div>
             </q-card-section>
             <q-card-section class="chart-content">
-              <canvas ref="loginChart" class="responsive-canvas" height="300"></canvas>
+              <canvas ref="loginChart" class="responsive-canvas" height="320"></canvas>
               <div v-if="loadingLogin" class="chart-loading-overlay">
                 <q-spinner-ios size="40px" color="green" />
                 <div class="q-mt-sm">Cargando datos de login...</div>
@@ -309,7 +309,7 @@
         </div>
 
         <!-- Gráfica de Registro -->
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-lg-6">
           <q-card class="enhanced-chart-card registro-chart">
             <q-card-section class="chart-header">
               <div class="row items-center">
@@ -343,7 +343,7 @@
               </div>
             </q-card-section>
             <q-card-section class="chart-content">
-              <canvas ref="registroChart" class="responsive-canvas" height="300"></canvas>
+              <canvas ref="registroChart" class="responsive-canvas" height="320"></canvas>
               <div v-if="loadingRegistro" class="chart-loading-overlay">
                 <q-spinner-ios size="40px" color="blue" />
                 <div class="q-mt-sm">Cargando datos de registro...</div>
@@ -590,7 +590,6 @@ const abrirConsolaGeneral = (tipo) => {
       }
       break
   }
-
   if (datos.length === 0) {
     datos = [
       {
@@ -605,15 +604,33 @@ const abrirConsolaGeneral = (tipo) => {
     ]
   }
 
+  // Función helper para obtener nombre de oficina
+  const obtenerNombreOficina = (oficina) => {
+    if (!oficina) return 'No especificada'
+    if (typeof oficina === 'string') return oficina
+    if (typeof oficina === 'object') {
+      return (
+        oficina.nombre ||
+        oficina.Nombre ||
+        oficina.descripcion ||
+        oficina.Descripcion ||
+        'Sin nombre'
+      )
+    }
+    return 'No especificada'
+  }
+
   const logsFormateados = datos.map((detalle) => ({
     Date: detalle.fechaCompleta || detalle.fecha || detalle.Date,
     Type: detalle.tipo || detalle.Type || 'INFO',
     Process: detalle.proceso || detalle.Process || tipo.toUpperCase(),
     Message: detalle.mensaje || detalle.Message || `Evento de ${tipo}`,
     Oficina: {
-      Nombre:
-        detalle.oficina || detalle.Oficina?.Nombre || detalle.Oficina?.nombre || 'No especificada',
-      Direccion: detalle.oficina?.direccion || 'No especificada',
+      Nombre: obtenerNombreOficina(detalle.oficina || detalle.Oficina),
+      Direccion:
+        (detalle.oficina && typeof detalle.oficina === 'object' && detalle.oficina.direccion) ||
+        (detalle.Oficina && typeof detalle.Oficina === 'object' && detalle.Oficina.direccion) ||
+        'No especificada',
     },
     Usuario: detalle.usuario || detalle.Usuario || detalle.person?.nombres || 'No especificado',
     Dispositivo: detalle.device || detalle.Dispositivo || detalle.device || 'No especificado',
@@ -700,8 +717,23 @@ const getChartConfig = (type, data, detalles) => {
               const sample = detallesFecha.slice(0, 3)
               return sample
                 .map((d) => {
-                  const oficinaNombre =
-                    typeof d.oficina === 'string' ? d.oficina : d.oficina?.nombre || 'N/A'
+                  // Función helper para obtener nombre de oficina
+                  const obtenerNombreOficina = (oficina) => {
+                    if (!oficina) return 'N/A'
+                    if (typeof oficina === 'string') return oficina
+                    if (typeof oficina === 'object') {
+                      return (
+                        oficina.nombre ||
+                        oficina.Nombre ||
+                        oficina.descripcion ||
+                        oficina.Descripcion ||
+                        'Sin nombre'
+                      )
+                    }
+                    return 'N/A'
+                  }
+
+                  const oficinaNombre = obtenerNombreOficina(d.oficina)
                   return `🕐 ${d.hora} - ${oficinaNombre}`
                 })
                 .join('\n')
@@ -1885,6 +1917,33 @@ onBeforeUnmount(() => {
 
   .chart-title .text-h6 {
     font-size: 0.8rem;
+  }
+}
+
+// Mejoras responsive adicionales
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .enhanced-graphics-container {
+    .chart-content {
+      min-height: 280px;
+
+      canvas,
+      .responsive-canvas {
+        max-height: 320px;
+      }
+    }
+  }
+}
+
+@media (min-width: 1440px) {
+  .enhanced-graphics-container {
+    .chart-content {
+      min-height: 320px;
+
+      canvas,
+      .responsive-canvas {
+        max-height: 380px;
+      }
+    }
   }
 }
 

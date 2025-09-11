@@ -774,95 +774,6 @@ o con mejor control -->
             <!-- Sección de información adicional -->
             <div class="row q-gutter-md q-mt-lg">
               <!-- Información de coordenadas y radio -->
-              <div class="col-12 col-lg-6">
-                <q-card
-                  dark
-                  class="info-geo-card q-pa-md full-height"
-                  style="
-                    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
-                    border-radius: 16px;
-                    box-shadow: 0 8px 32px rgba(15, 118, 110, 0.3);
-                  "
-                >
-                  <q-card-section class="q-pa-none">
-                    <div class="text-h6 q-mb-md text-center text-weight-bold">
-                      <q-icon name="place" class="q-mr-sm" />
-                      Información Geográfica
-                    </div>
-
-                    <!-- Layout responsivo para información geográfica -->
-                    <div
-                      class="column q-gutter-md"
-                      v-if="resumenArea.ubicacion && resumenArea.radio"
-                    >
-                      <!-- Coordenadas del centro -->
-                      <div class="geo-info-item">
-                        <div class="row items-center q-mb-xs">
-                          <q-icon name="my_location" size="sm" color="white" class="q-mr-sm" />
-                          <span class="text-body2 text-weight-medium">Centro de Análisis</span>
-                        </div>
-                        <div class="q-pl-md">
-                          <div class="text-caption text-grey-3">
-                            Latitud: {{ resumenArea.ubicacion.lat?.toFixed(6) || 'No disponible' }}
-                          </div>
-                          <div class="text-caption text-grey-3">
-                            Longitud: {{ resumenArea.ubicacion.lng?.toFixed(6) || 'No disponible' }}
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Radio de cobertura -->
-                      <div class="geo-info-item">
-                        <div class="row items-center justify-between q-mb-xs">
-                          <div class="row items-center">
-                            <q-icon
-                              name="radio_button_checked"
-                              size="sm"
-                              color="white"
-                              class="q-mr-sm"
-                            />
-                            <span class="text-body2 text-weight-medium">Radio de Cobertura</span>
-                          </div>
-                          <q-chip
-                            color="teal"
-                            text-color="white"
-                            :label="`${Math.round(resumenArea.radio * 111 * 1000)} m`"
-                            size="sm"
-                            class="text-weight-bold"
-                          />
-                        </div>
-                      </div>
-
-                      <!-- Área total -->
-                      <div class="geo-info-item">
-                        <div class="row items-center justify-between">
-                          <div class="row items-center">
-                            <q-icon name="map" size="sm" color="white" class="q-mr-sm" />
-                            <span class="text-body2 text-weight-medium">Área Total</span>
-                          </div>
-                          <q-chip
-                            color="cyan"
-                            text-color="white"
-                            :label="`${
-                              Math.round(Math.PI * Math.pow(resumenArea.radio * 111, 2) * 100) / 100
-                            } km²`"
-                            size="sm"
-                            class="text-weight-bold"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Estado cuando no hay datos geográficos -->
-                    <div v-else class="text-center q-py-md">
-                      <q-icon name="location_off" size="48px" color="grey-5" class="q-mb-sm" />
-                      <div class="text-body2 text-grey-4">
-                        Selecciona un área en el mapa para ver información geográfica
-                      </div>
-                    </div>
-                  </q-card-section>
-                </q-card>
-              </div>
 
               <!-- Estadísticas de usuario adicionales -->
               <div class="col-12 col-lg-6">
@@ -993,7 +904,7 @@ o con mejor control -->
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch, computed, inject } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, watch, computed, inject } from 'vue'
 import {
   Chart,
   BarController,
@@ -2194,51 +2105,126 @@ watch(
   { immediate: false }
 )
 
-// Función para renderizar gráficas
-function renderCharts() {
-  new Chart(barChart.value, {
-    type: 'bar',
-    data: {
-      labels: tiemposFuncionalidad.value.map((t) => t.funcionalidad),
-      datasets: [
-        {
-          label: 'Segundos Totales',
-          data: tiemposFuncionalidad.value.map((t) => t.totalSegundos),
-          backgroundColor: '#26A69A',
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: { tooltip: { enabled: true } },
-      scales: {
-        x: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
-        y: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
-      },
-    },
-  })
+// Variable para almacenar instancias de gráficos
+let barChartInstance = null
+let doughnutChartInstance = null
+let deviceChartInstance = null
 
-  new Chart(chart.value, {
-    type: 'doughnut',
-    data: {
-      labels: tiemposFuncionalidad.value.map((t) => t.funcionalidad),
-      datasets: [
-        {
-          label: 'Distribución',
-          data: tiemposFuncionalidad.value.map((t) => t.totalSegundos),
-          backgroundColor: ['#26A69A', '#7E57C2', '#1976D2', '#66BB6A', '#FFA726'], // Colores más acordes al flujo
-          borderWidth: 1,
+// Función para destruir gráficos existentes
+function destroyExistingCharts() {
+  if (barChartInstance) {
+    try {
+      barChartInstance.destroy()
+      console.log('✅ Gráfico de barras destruido correctamente')
+    } catch (error) {
+      console.warn('⚠️ Error destruyendo gráfico de barras:', error)
+    }
+    barChartInstance = null
+  }
+
+  if (doughnutChartInstance) {
+    try {
+      doughnutChartInstance.destroy()
+      console.log('✅ Gráfico doughnut destruido correctamente')
+    } catch (error) {
+      console.warn('⚠️ Error destruyendo gráfico doughnut:', error)
+    }
+    doughnutChartInstance = null
+  }
+
+  if (deviceChartInstance) {
+    try {
+      deviceChartInstance.destroy()
+      console.log('✅ Gráfico de dispositivos destruido correctamente')
+    } catch (error) {
+      console.warn('⚠️ Error destruyendo gráfico de dispositivos:', error)
+    }
+    deviceChartInstance = null
+  }
+}
+
+// Función para renderizar gráficas con destrucción segura
+function renderCharts() {
+  console.log('📊 Iniciando renderCharts - destruyendo gráficos existentes')
+
+  // Destruir gráficos existentes antes de crear nuevos
+  destroyExistingCharts()
+
+  // Verificar que los canvas estén disponibles
+  if (!barChart.value) {
+    console.warn('⚠️ Canvas barChart no disponible')
+    return
+  }
+
+  try {
+    barChartInstance = new Chart(barChart.value, {
+      type: 'bar',
+      data: {
+        labels: tiemposFuncionalidad.value.map((t) => t.funcionalidad),
+        datasets: [
+          {
+            label: 'Segundos Totales',
+            data: tiemposFuncionalidad.value.map((t) => t.totalSegundos),
+            backgroundColor: '#26A69A',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: { tooltip: { enabled: true } },
+        scales: {
+          x: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
+          y: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
         },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: { tooltip: { enabled: true }, legend: { labels: { color: '#ccc' } } },
-    },
-  })
+      },
+    })
+    console.log('✅ Gráfico de barras creado exitosamente')
+  } catch (error) {
+    console.error('❌ Error creando gráfico de barras:', error)
+  }
+
+  // Crear gráfico doughnut solo si el canvas está disponible
+  if (chart.value) {
+    try {
+      doughnutChartInstance = new Chart(chart.value, {
+        type: 'doughnut',
+        data: {
+          labels: tiemposFuncionalidad.value.map((t) => t.funcionalidad),
+          datasets: [
+            {
+              label: 'Distribución',
+              data: tiemposFuncionalidad.value.map((t) => t.totalSegundos),
+              backgroundColor: ['#26A69A', '#7E57C2', '#1976D2', '#66BB6A', '#FFA726'], // Colores más acordes al flujo
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: { tooltip: { enabled: true }, legend: { labels: { color: '#ccc' } } },
+        },
+      })
+      console.log('✅ Gráfico doughnut creado exitosamente')
+    } catch (error) {
+      console.error('❌ Error creando gráfico doughnut:', error)
+    }
+  } else {
+    console.warn('⚠️ Canvas chart no disponible para doughnut')
+  }
 }
 async function renderDeviceChart() {
   try {
+    // Destruir gráfico de dispositivos existente si existe
+    if (deviceChartInstance) {
+      try {
+        deviceChartInstance.destroy()
+        console.log('✅ Gráfico de dispositivos anterior destruido')
+      } catch (error) {
+        console.warn('⚠️ Error destruyendo gráfico de dispositivos anterior:', error)
+      }
+      deviceChartInstance = null
+    }
+
     const payload = {
       fechaInicio: filtroFechasStore.fechaInicio,
       fechaFin: filtroFechasStore.fechaFin,
@@ -2248,7 +2234,13 @@ async function renderDeviceChart() {
     const labels = data.map((d) => d.dispositivo)
     const valores = data.map((d) => d.total)
 
-    new Chart(deviceChart.value, {
+    // Verificar que el canvas esté disponible
+    if (!deviceChart.value) {
+      console.warn('⚠️ Canvas deviceChart no disponible')
+      return
+    }
+
+    deviceChartInstance = new Chart(deviceChart.value, {
       type: 'bar',
       data: {
         labels: labels,
@@ -2279,8 +2271,9 @@ async function renderDeviceChart() {
         },
       },
     })
+    console.log('✅ Gráfico de dispositivos creado exitosamente')
   } catch (error) {
-    console.error('Error al cargar dispositivos:', error)
+    console.error('❌ Error al cargar dispositivos:', error)
   }
 }
 
@@ -2326,6 +2319,23 @@ function renderPiePorFuncionalidad() {
     })
   })
 }
+
+// Limpieza al desmontar el componente
+onBeforeUnmount(() => {
+  console.log('🧹 Limpiando gráficos antes de desmontar EstadisticasPage')
+  destroyExistingCharts()
+
+  // Limpiar también el timeline chart si existe
+  if (window.timelineChart && typeof window.timelineChart.destroy === 'function') {
+    try {
+      window.timelineChart.destroy()
+      console.log('✅ Timeline chart destruido correctamente')
+    } catch (error) {
+      console.warn('⚠️ Error destruyendo timeline chart:', error)
+    }
+    window.timelineChart = null
+  }
+})
 </script>
 <style scoped>
 .stats-container {

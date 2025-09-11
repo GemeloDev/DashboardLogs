@@ -1519,25 +1519,56 @@ const logsPaginados = computed(() => {
 
 // Funciones auxiliares para obtener información de logs
 const obtenerNombreOficina = (log) => {
-  return (
-    log.oficina?.nombre || // ← Campo real de la API /logs/filter
-    log.oficina?.Nombre || // ← Respaldo con mayúscula
-    log.oficina?.Descripcion || // ← Respaldo alternativo
-    log.Oficina?.Nombre || // ← Respaldo estructura anterior
-    log.Oficina?.Descripcion || // ← Respaldo estructura anterior
-    log.Oficina // ← Valor por defecto
-  )
+  // Si hay oficina como objeto, extraer el nombre
+  if (log.oficina && typeof log.oficina === 'object') {
+    return log.oficina.nombre ||
+           log.oficina.Nombre ||
+           log.oficina.descripcion ||
+           log.oficina.Descripcion ||
+           'Oficina sin nombre'
+  }
+
+  // Si es string directo
+  if (typeof log.oficina === 'string' && log.oficina.trim() !== '') {
+    return log.oficina
+  }
+
+  // Respaldos para otras estructuras
+  if (log.Oficina && typeof log.Oficina === 'object') {
+    return log.Oficina.nombre ||
+           log.Oficina.Nombre ||
+           log.Oficina.descripcion ||
+           log.Oficina.Descripcion ||
+           'Oficina sin nombre'
+  }
+
+  if (typeof log.Oficina === 'string' && log.Oficina.trim() !== '') {
+    return log.Oficina
+  }
+
+  return 'No especificada'
 }
 
 const obtenerDireccionOficina = (log) => {
-  return (
-    log.oficina?.direccion || // ← Campo real de la API /logs/filter
-    log.oficina?.Direccion || // ← Respaldo con mayúscula
-    log.Oficina?.direccion || // ← Respaldo estructura anterior
-    log.Oficina?.Direccion || // ← Respaldo estructura anterior
-    'No especificada' // ← Valor por defecto
-  )
+  // Si hay oficina como objeto, extraer la dirección
+  if (log.oficina && typeof log.oficina === 'object') {
+    return log.oficina.direccion ||
+           log.oficina.Direccion ||
+           log.oficina.address ||
+           null
+  }
+
+  // Respaldos para otras estructuras
+  if (log.Oficina && typeof log.Oficina === 'object') {
+    return log.Oficina.direccion ||
+           log.Oficina.Direccion ||
+           log.Oficina.address ||
+           null
+  }
+
+  return null
 }
+
 
 const obtenerNombreUsuario = (log) => {
   // Construir nombre completo de la persona de la API /logs/filter
@@ -2542,21 +2573,29 @@ const obtenerOpcionesUnicas = () => {
   console.log('🏢 Oficinas encontradas:', oficinasUnicas.length, '→', oficinasUnicas)
 
   // Agregar opciones predeterminadas si no hay datos de la API
-  if (oficinasUnicas.length === 0) {
-    console.log('⚠️ No se encontraron oficinas en los datos, agregando opciones predeterminadas')
-    oficinasUnicas.push(
-      'Oficina Aguascalientes',
-      'Oficina Baja California',
-      'Oficina CDMX',
-      'Oficina Guadalajara',
-      'Oficina Monterrey'
-    )
-  }
+  // if (oficinasUnicas.length === 0) {
+  //   console.log('⚠️ No se encontraron oficinas en los datos, agregando opciones predeterminadas')
+  //   oficinasUnicas.push(
+  //     'Oficina Aguascalientes',
+  //     'Oficina Baja California',
+  //     'Oficina CDMX',
+  //     'Oficina Guadalajara',
+  //     'Oficina Monterrey'
+  //   )
+  // }
 
+  // oficinasFull.value = oficinasUnicas.map((oficina) => ({
+  //   label: oficina,
+  //   value: oficina,
+  // }))
   oficinasFull.value = oficinasUnicas.map((oficina) => ({
-    label: oficina,
-    value: oficina,
-  }))
+    label: typeof oficina === 'object'
+        ? (oficina.nombre || oficina.Nombre || oficina.descripcion || oficina.Descripcion || String(oficina))
+        : oficina,
+    value: typeof oficina === 'object'
+        ? (oficina.nombre || oficina.Nombre || oficina.descripcion || oficina.Descripcion || String(oficina))
+        : oficina,
+}))
   opcionesOficinas.value = [...oficinasFull.value]
 
   // Obtener usuarios únicos with múltiples campos
