@@ -4,6 +4,7 @@
  */
 
 import { santoroFiltroDateController } from './santoroFiltroDateController.js'
+import { santoroTemporalProcessor } from './santoroTemporalProcessor.js'
 
 export class SantoroActionController {
   constructor() {
@@ -304,6 +305,60 @@ export class SantoroActionController {
           resultado = await this.abrirConsola(parametros)
           break
 
+        case 'abrir_consola_temporal':
+        case 'consola_con_filtro':
+        case 'mostrar_logs_periodo':
+          resultado = await this.abrirConsolaConFiltroTemporal(datos, parametros)
+          break
+
+        case 'abrir_eventos':
+        case 'mostrar_eventos':
+          resultado = await this.abrirEventos(parametros)
+          break
+
+        case 'abrir_eventos_fallidos':
+        case 'mostrar_eventos_fallidos':
+        case 'ver_eventos_fallidos':
+          resultado = await this.abrirEventosFallidos(parametros)
+          break
+
+        case 'abrir_diagnostico_pagina':
+        case 'ir_a_diagnostico':
+        case 'mostrar_diagnostico':
+        case 'diagnosticar_error':
+        case 'analizar_error':
+        case 'buscar_sesion':
+        case 'revisar_sesion':
+        case 'diagnostico_usuario':
+        case 'soporte_tecnico':
+        case 'centro_diagnostico': {
+          // Enriquecer parámetros basado en el tipo de acción
+          const parametrosEnriquecidos = { ...parametros }
+
+          // Detectar códigos de error en el comando
+          const codigoMatch = parametros.comando?.match(/(?:error|código|code)\s*:?\s*([a-zA-Z0-9-_]+)/i)
+          if (codigoMatch) {
+            parametrosEnriquecidos.codigo = codigoMatch[1]
+            parametrosEnriquecidos.error = codigoMatch[1]
+          }
+
+          // Detectar usuarios/sesiones
+          const usuarioMatch = parametros.comando?.match(/(?:usuario|user|sesión|session)\s*:?\s*([a-zA-Z0-9@._-]+)/i)
+          if (usuarioMatch) {
+            parametrosEnriquecidos.usuario = usuarioMatch[1]
+            parametrosEnriquecidos.session = usuarioMatch[1]
+          }
+
+          // Detectar términos de búsqueda
+          const busquedaMatch = parametros.comando?.match(/(?:buscar|search|encontrar)\s+(.+?)(?:\s+(?:del|desde|en|por)|$)/i)
+          if (busquedaMatch) {
+            parametrosEnriquecidos.busqueda = busquedaMatch[1].trim()
+          }
+
+          resultado = await this.abrirDiagnosticoPagina(parametrosEnriquecidos)
+          break
+        }
+
         case 'cambiar_flujo':
         case 'cambiar_vista':
           resultado = await this.cambiarFlujo(parametros)
@@ -583,6 +638,242 @@ export class SantoroActionController {
         exito: false,
         mensaje: 'Error abriendo consola: ' + error.message,
         accionEjecutada: 'abrir_consola'
+      }
+    }
+  }
+
+  // 🖥️ ABRIR CONSOLA CON FILTRO TEMPORAL AVANZADO
+  async abrirConsolaConFiltroTemporal(datos, parametros = {}) {
+    console.log('🕒 abrirConsolaConFiltroTemporal iniciado:', { datos, parametros })
+
+    try {
+      // Detectar referencia temporal en el comando o datos
+      let rangoTemporal = null
+
+      if (typeof datos === 'string' && santoroTemporalProcessor.contieneReferenciaTemporal(datos)) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(datos)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Si no se detectó en datos, buscar en parametros
+      if (!rangoTemporal && parametros.comando) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(parametros.comando)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Fallback a último mes si no se detecta nada
+      if (!rangoTemporal) {
+        rangoTemporal = santoroTemporalProcessor.generarRangoUltimoMes()
+      }
+
+      console.log('📅 Rango temporal procesado:', rangoTemporal)
+
+      // Construir URL de API con filtros temporales
+      const apiUrl = `api/logs/filter?fromDate=${rangoTemporal.fromDate}&toDate=${rangoTemporal.toDate}`
+
+      // Emitir evento para abrir consola con datos pre-filtrados
+      window.dispatchEvent(new CustomEvent('santoro-abrir-consola-filtrada', {
+        detail: {
+          apiUrl,
+          rangoTemporal,
+          filtrosTemporales: {
+            fromDate: rangoTemporal.fromDate,
+            toDate: rangoTemporal.toDate,
+            periodo: rangoTemporal.periodo
+          },
+          descripcion: rangoTemporal.descripcion
+        }
+      }))
+
+      this.mostrarNotificacion('positive',
+        `🖥️ Abriendo consola: ${rangoTemporal.descripcion}`,
+        'top-right'
+      )
+
+      return {
+        exito: true,
+        mensaje: `🖥️ Consola abierta con ${rangoTemporal.descripcion}`,
+        accionEjecutada: 'abrir_consola_temporal',
+        datos: {
+          apiUrl,
+          rangoTemporal,
+          descripcion: rangoTemporal.descripcion
+        }
+      }
+    } catch (error) {
+      console.error('Error abriendo consola con filtro temporal:', error)
+      return {
+        exito: false,
+        mensaje: 'Error procesando filtro temporal: ' + error.message,
+        accionEjecutada: 'abrir_consola_temporal'
+      }
+    }
+  }
+
+  // 📅 ABRIR EVENTOS (diferentes de eventos fallidos)
+  async abrirEventos(parametros = {}) {
+    console.log('📅 abrirEventos iniciado:', parametros)
+
+    try {
+      // Detectar si hay filtro temporal en el comando
+      let rangoTemporal = null
+      if (parametros.comando && santoroTemporalProcessor.contieneReferenciaTemporal(parametros.comando)) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(parametros.comando)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Emitir evento para navegar a eventos
+      const eventoDetalle = {
+        ruta: '/eventos',
+        parametros: parametros,
+        filtrosTemporales: rangoTemporal
+      }
+
+      window.dispatchEvent(new CustomEvent('santoro-navegar', {
+        detail: eventoDetalle
+      }))
+
+      const mensaje = rangoTemporal
+        ? `📅 Abriendo eventos: ${rangoTemporal.descripcion}`
+        : '📅 Abriendo módulo de eventos'
+
+      this.mostrarNotificacion('positive', mensaje, 'top-right')
+
+      return {
+        exito: true,
+        mensaje,
+        accionEjecutada: 'abrir_eventos',
+        datos: eventoDetalle
+      }
+    } catch (error) {
+      console.error('Error abriendo eventos:', error)
+      return {
+        exito: false,
+        mensaje: 'Error abriendo eventos: ' + error.message,
+        accionEjecutada: 'abrir_eventos'
+      }
+    }
+  }
+
+  // ❌ ABRIR EVENTOS FALLIDOS (módulo específico)
+  async abrirEventosFallidos(parametros = {}) {
+    console.log('❌ abrirEventosFallidos iniciado:', parametros)
+
+    try {
+      // Detectar si hay filtro temporal en el comando
+      let rangoTemporal = null
+      if (parametros.comando && santoroTemporalProcessor.contieneReferenciaTemporal(parametros.comando)) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(parametros.comando)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Emitir evento para navegar a eventos fallidos
+      const eventoDetalle = {
+        ruta: '/eventos-fallidos',
+        parametros: parametros,
+        filtrosTemporales: rangoTemporal
+      }
+
+      window.dispatchEvent(new CustomEvent('santoro-navegar', {
+        detail: eventoDetalle
+      }))
+
+      const mensaje = rangoTemporal
+        ? `❌ Abriendo eventos fallidos: ${rangoTemporal.descripcion}`
+        : '❌ Abriendo módulo de eventos fallidos'
+
+      this.mostrarNotificacion('warning', mensaje, 'top-right')
+
+      return {
+        exito: true,
+        mensaje,
+        accionEjecutada: 'abrir_eventos_fallidos',
+        datos: eventoDetalle
+      }
+    } catch (error) {
+      console.error('Error abriendo eventos fallidos:', error)
+      return {
+        exito: false,
+        mensaje: 'Error abriendo eventos fallidos: ' + error.message,
+        accionEjecutada: 'abrir_eventos_fallidos'
+      }
+    }
+  }
+
+  // 🏥 ABRIR PÁGINA DE DIAGNÓSTICO (no modal)
+  async abrirDiagnosticoPagina(parametros = {}) {
+    console.log('🏥 abrirDiagnosticoPagina iniciado:', parametros)
+
+    try {
+      // Detectar si hay filtro temporal en el comando
+      let rangoTemporal = null
+      if (parametros.comando && santoroTemporalProcessor.contieneReferenciaTemporal(parametros.comando)) {
+        const textoTemporal = santoroTemporalProcessor.extraerTextoTemporal(parametros.comando)
+        if (textoTemporal) {
+          rangoTemporal = santoroTemporalProcessor.procesarTextoTemporal(textoTemporal)
+        }
+      }
+
+      // Construir URL con query parameters
+      let rutaCompleta = '/diagnostico'
+      const queryParams = new URLSearchParams()
+
+      // Agregar parámetros específicos
+      if (parametros.codigo) queryParams.set('code', parametros.codigo)
+      if (parametros.error) queryParams.set('error', parametros.error)
+      if (parametros.usuario) queryParams.set('user', parametros.usuario)
+      if (parametros.session) queryParams.set('session', parametros.session)
+      if (parametros.busqueda) queryParams.set('search', parametros.busqueda)
+      if (parametros.tipo) queryParams.set('type', parametros.tipo)
+
+      // Agregar filtros temporales si existen
+      if (rangoTemporal && rangoTemporal.fechaInicio && rangoTemporal.fechaFin) {
+        queryParams.set('fromDate', rangoTemporal.fechaInicio)
+        queryParams.set('toDate', rangoTemporal.fechaFin)
+        queryParams.set('periodo', rangoTemporal.descripcion)
+      }
+
+      if (queryParams.toString()) {
+        rutaCompleta += '?' + queryParams.toString()
+      }
+
+      // Emitir evento para navegar a página de diagnóstico
+      const diagnosticoDetalle = {
+        ruta: rutaCompleta,
+        parametros: parametros,
+        filtrosTemporales: rangoTemporal
+      }
+
+      window.dispatchEvent(new CustomEvent('santoro-navegar', {
+        detail: diagnosticoDetalle
+      }))
+
+      const mensaje = rangoTemporal
+        ? `🏥 Abriendo diagnóstico: ${rangoTemporal.descripcion}`
+        : '🏥 Abriendo página de diagnóstico'
+
+      this.mostrarNotificacion('info', mensaje, 'top-right')
+
+      return {
+        exito: true,
+        mensaje,
+        accionEjecutada: 'abrir_diagnostico_pagina',
+        datos: diagnosticoDetalle
+      }
+    } catch (error) {
+      console.error('Error abriendo página de diagnóstico:', error)
+      return {
+        exito: false,
+        mensaje: 'Error abriendo diagnóstico: ' + error.message,
+        accionEjecutada: 'abrir_diagnostico_pagina'
       }
     }
   }
