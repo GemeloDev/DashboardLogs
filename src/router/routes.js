@@ -29,10 +29,25 @@ const routes = [
         meta: { flow: 'mobile' }
       },
 
-      { path: 'estadisticas', component: () => import('pages/EstadisticasPage.vue') },
-      { path: 'eventos', component: () => import('pages/EventosPage.vue') },
-      { path: 'eventos-fallidos', component: () => import('pages/EventosFallidos.vue') },
-      { path: 'diagnostico', component: () => import('pages/DiagnosticoPage.vue') },
+          // Rutas accesibles desde ambos flujos (no fuerzan cambio de flujo)
+      {
+        path: 'estadisticas',
+        component: () => import('pages/EstadisticasPage.vue')
+      },
+      {
+        path: 'eventos',
+        component: () => import('pages/EventosPage.vue')
+      },
+      {
+        path: 'eventos-fallidos',
+        component: () => import('pages/EventosFallidos.vue')
+      },
+      {
+        path: 'diagnostico',
+        component: () => import('pages/DiagnosticoPage.vue')
+      },
+
+      // Rutas generales/admin
       { path: 'santoro-demo', component: () => import('pages/SantoroDemoPage.vue') },
       { path: 'santoro-config', component: () => import('pages/SantoroConfigPage.vue') },
     ],

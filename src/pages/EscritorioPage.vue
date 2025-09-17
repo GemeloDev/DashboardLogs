@@ -16,28 +16,7 @@
             </div>
           </div>
 
-          <!-- Acciones Rápidas -->
-          <div class="col-12 col-md-4">
-            <div class="row q-gutter-sm justify-end escritorio-actions">
-              <q-btn
-                color="primary"
-                icon="refresh"
-                label="Actualizar"
-                @click="actualizarDatos"
-                :loading="cargando"
-                unelevated
-                class="escritorio-action-btn"
-              />
-              <!-- <q-btn
-                color="secondary"
-                icon="settings"
-                label="Configurar"
-                @click="mostrarConfiguracion"
-                unelevated
-                class="escritorio-action-btn"
-              /> -->
-            </div>
-          </div>
+
         </div>
       </div>
     </div>
@@ -50,31 +29,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useQuasar } from 'quasar'
 import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGraficasEnhanced.vue'
 
-const $q = useQuasar()
 
-// Estados locales
-const cargando = ref(false)
-
-// Funciones
-const actualizarDatos = () => {
-  cargando.value = true
-
-  // Emitir evento para actualizar gráficas
-  setTimeout(() => {
-    window.dispatchEvent(new CustomEvent('actualizar-graficas'))
-    cargando.value = false
-
-    $q.notify({
-      type: 'positive',
-      message: '✅ Dashboard actualizado',
-      position: 'top-right',
-    })
-  }, 1000)
-}
 
 </script>
 

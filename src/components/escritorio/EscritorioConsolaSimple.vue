@@ -7,7 +7,7 @@
     transition-hide="slide-down"
     @escape-key="cerrarConsola"
   >
-    <q-card class="console-modal-card bg-dark text-white">
+    <q-card class="console-modal-card console-dialog-fullscreen bg-dark text-white">
       <!-- Header -->
       <q-card-section class="console-header bg-grey-9">
         <div class="row">
@@ -58,15 +58,43 @@
           <div class="col-12 q-pt-md">
             <q-list>
               <q-expansion-item
-                class="flex justify-end"
+                class="filter-expansion-modern"
                 v-model="filtrosToggle"
-                icon="filter_alt"
-                label="Filtros"
-                header-style="background: #232629 !important;"
-                header-class="text-weight-bolder text-white text-right"
-                expand-icon-class="text-white"
+                header-style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important; border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1);"
+                header-class="text-weight-bold text-white"
                 expand-separator
+                hide-expand-icon
               >
+                <template v-slot:header>
+                  <q-item-section avatar>
+                    <q-icon name="tune" color="cyan-4" size="24px" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white text-weight-bold">
+                      🎛️ Panel de Filtros Avanzados
+                    </q-item-label>
+                    <q-item-label caption class="text-cyan-3">
+                      {{ logsFiltrados.length }} de {{ logs.length }} registros mostrados
+                    </q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <div class="row items-center">
+                      <q-badge
+                        v-if="hayFiltrosActivos"
+                        color="cyan-5"
+                        text-color="white"
+                        :label="contadorFiltrosActivos"
+                        rounded
+                        class="q-mr-sm"
+                      />
+                      <q-icon
+                        :name="filtrosToggle ? 'expand_less' : 'expand_more'"
+                        color="cyan-4"
+                        size="20px"
+                      />
+                    </div>
+                  </q-item-section>
+                </template>
                 <q-card class="bg-grey-8">
                   <!-- Controles -->
                   <q-card-section class="console-controls bg-grey-8">
@@ -442,7 +470,7 @@
               bordered
               flat
             >
-              <!-- Header de la card -->
+              <!-- Header de la card mejorado -->
               <q-card-section class="log-card-header">
                 <div class="row items-center justify-between">
                   <div class="col-auto">
@@ -451,6 +479,7 @@
                       text-color="white"
                       size="md"
                       :icon="getIconoTipo(log.type || log.Tipo || log.EventType)"
+                      class="text-weight-bold"
                     >
                       {{ log.type || log.Tipo || log.EventType || 'INFO' }}
                     </q-chip>
@@ -463,55 +492,123 @@
                     />
                   </div>
                 </div>
+
+                <!-- Timestamp mejorado -->
+                <div class="row items-center justify-between q-mt-sm">
+                  <div class="col">
+                    <div class="timestamp-section">
+                      <q-icon name="schedule" color="blue-4" size="16px" class="q-mr-xs" />
+                      <span class="text-caption text-blue-4 text-weight-medium">
+                        {{ formatearFechaCompleta(log.date || log.Fecha || log.timestamp) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <!-- ID del log -->
+                    <q-chip
+                      dense
+                      color="grey-7"
+                      text-color="white"
+                      size="sm"
+                      icon="tag"
+                      class="log-id-chip"
+                    >
+                      #{{ log.id || index + 1 }}
+                    </q-chip>
+                  </div>
+                </div>
               </q-card-section>
 
               <!-- Contenido principal de la card -->
               <q-card-section class="log-card-content">
-                <!-- Información del usuario -->
-                <div v-if="obtenerNombreUsuario(log)" class="log-user-section">
-                  <div class="row items-center q-mb-sm">
+                <!-- Información del usuario mejorada -->
+                <div v-if="obtenerNombreUsuario(log)" class="log-user-section enhanced-section">
+                  <div class="section-header">
                     <q-icon name="person" color="green-4" size="20px" class="q-mr-sm" />
-                    <div class="text-weight-bold text-green-4">
-                      {{ obtenerNombreUsuario(log) }}
+                    <div class="text-weight-bold text-green-4 section-title">
+                      Usuario del Sistema
                     </div>
                   </div>
-                  <div v-if="obtenerCurpUsuario(log)" class="text-caption text-grey-5 q-ml-md">
-                    Username: {{ obtenerCurpUsuario(log) }}
+                  <div class="section-content">
+                    <div class="detail-item">
+                      <span class="detail-label">Nombre:</span>
+                      <span class="detail-value">{{ obtenerNombreUsuario(log) }}</span>
+                    </div>
+                    <div v-if="obtenerCurpUsuario(log)" class="detail-item">
+                      <span class="detail-label">Username:</span>
+                      <span class="detail-value">{{ obtenerCurpUsuario(log) }}</span>
+                    </div>
+                    <!-- Información adicional del usuario si está disponible -->
+                    <div v-if="log.userRole || log.UserRole" class="detail-item">
+                      <span class="detail-label">Rol:</span>
+                      <q-chip dense color="green-6" text-color="white" size="sm">
+                        {{ log.userRole || log.UserRole }}
+                      </q-chip>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Información de la oficina -->
-                <div v-if="obtenerNombreOficina(log)" class="log-office-section q-mt-sm">
-                  <div class="row items-center q-mb-xs">
-                    <q-icon name="business" color="orange-4" size="18px" class="q-mr-sm" />
-                    <div class="text-weight-medium text-orange-4">
-                      {{ obtenerNombreOficina(log).nombre || obtenerNombreOficina(log) }}
+                <!-- Información de la oficina mejorada -->
+                <div
+                  v-if="obtenerNombreOficina(log)"
+                  class="log-office-section enhanced-section q-mt-sm"
+                >
+                  <div class="section-header">
+                    <q-icon name="business" color="orange-4" size="20px" class="q-mr-sm" />
+                    <div class="text-weight-bold text-orange-4 section-title">
+                      Ubicación & Oficina
                     </div>
                   </div>
-                  <div v-if="obtenerDireccionOficina(log)" class="text-caption text-grey-5 q-ml-md">
-                    {{ obtenerDireccionOficina(log) }}
+                  <div class="section-content">
+                    <div class="detail-item">
+                      <span class="detail-label">Oficina:</span>
+                      <span class="detail-value">
+                        {{ obtenerNombreOficina(log).nombre || obtenerNombreOficina(log) }}
+                      </span>
+                    </div>
+                    <div v-if="obtenerDireccionOficina(log)" class="detail-item">
+                      <span class="detail-label">Dirección:</span>
+                      <span class="detail-value">{{ obtenerDireccionOficina(log) }}</span>
+                    </div>
+                    <!-- Información adicional de ubicación -->
+                    <div v-if="log.officeName || log.OfficeName" class="detail-item">
+                      <span class="detail-label">Código:</span>
+                      <q-chip dense color="orange-6" text-color="white" size="sm">
+                        {{ log.officeName || log.OfficeName }}
+                      </q-chip>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Información del dispositivo -->
+                <!-- Información del dispositivo mejorada -->
                 <div
                   v-if="
                     obtenerInfoDispositivo(log).hasDevice || obtenerInfoDispositivo(log).hasScanner
                   "
-                  class="log-device-section q-mt-sm"
+                  class="log-device-section enhanced-section q-mt-sm"
                 >
-                  <div class="row items-center q-mb-xs">
-                    <q-icon name="devices" color="purple-4" size="18px" class="q-mr-sm" />
-                    <div class="text-weight-medium text-purple-4">Dispositivos</div>
-                  </div>
-                  <div class="device-info q-ml-md">
-                    <div v-if="obtenerInfoDispositivo(log).hasDevice" class="text-caption">
-                      <q-icon name="computer" size="12px" class="q-mr-xs" />
-                      {{ obtenerInfoDispositivo(log).device }}
+                  <div class="section-header">
+                    <q-icon name="devices" color="purple-4" size="20px" class="q-mr-sm" />
+                    <div class="text-weight-bold text-purple-4 section-title">
+                      Hardware & Dispositivos
                     </div>
-                    <div v-if="obtenerInfoDispositivo(log).hasScanner" class="text-caption q-mt-xs">
-                      <q-icon name="qr_code_scanner" size="12px" class="q-mr-xs" />
-                      Escáner: {{ obtenerInfoDispositivo(log).scanner }}
+                  </div>
+                  <div class="section-content">
+                    <div v-if="obtenerInfoDispositivo(log).hasDevice" class="detail-item">
+                      <q-icon name="computer" color="purple-3" size="16px" class="q-mr-xs" />
+                      <span class="detail-label">Dispositivo:</span>
+                      <span class="detail-value">{{ obtenerInfoDispositivo(log).device }}</span>
+                    </div>
+                    <div v-if="obtenerInfoDispositivo(log).hasScanner" class="detail-item">
+                      <q-icon name="qr_code_scanner" color="purple-3" size="16px" class="q-mr-xs" />
+                      <span class="detail-label">Escáner:</span>
+                      <span class="detail-value">{{ obtenerInfoDispositivo(log).scanner }}</span>
+                    </div>
+                    <!-- IP Address si está disponible -->
+                    <div v-if="log.ipAddress || log.IpAddress" class="detail-item">
+                      <q-icon name="router" color="purple-3" size="16px" class="q-mr-xs" />
+                      <span class="detail-label">IP:</span>
+                      <span class="detail-value">{{ log.ipAddress || log.IpAddress }}</span>
                     </div>
                   </div>
                 </div>
@@ -553,19 +650,9 @@
                 </div>
               </q-card-section>
 
-              <!-- Footer con fecha -->
-              <q-card-section class="log-card-footer">
-                <div class="row items-center justify-between">
-                  <div class="col">
-                    <div class="text-caption text-grey-5">
-                      <q-icon name="schedule" size="14px" class="q-mr-xs" />
-                      {{
-                        formatearFechaCompleta(
-                          log.date || log.Date || log.Fecha || log.FechaCreacion
-                        )
-                      }}
-                    </div>
-                  </div>
+              <!-- Footer sin fecha duplicada -->
+              <!-- <q-card-section class="log-card-footer">
+                <div class="row items-center justify-end">
                   <div class="col-auto">
                     <q-btn
                       icon="visibility"
@@ -579,7 +666,7 @@
                     </q-btn>
                   </div>
                 </div>
-              </q-card-section>
+              </q-card-section> -->
             </q-card>
           </div>
 
@@ -1506,6 +1593,15 @@ const filtrosActivos = computed(() => {
   return filtros
 })
 
+// Computed para el nuevo botón de filtros mejorado
+const hayFiltrosActivos = computed(() => {
+  return filtrosActivos.value.length > 0
+})
+
+const contadorFiltrosActivos = computed(() => {
+  return filtrosActivos.value.length
+})
+
 // Computed para paginación
 const totalPaginas = computed(() => {
   return Math.ceil(logsFiltrados.value.length / registrosPorPagina.value)
@@ -1521,11 +1617,13 @@ const logsPaginados = computed(() => {
 const obtenerNombreOficina = (log) => {
   // Si hay oficina como objeto, extraer el nombre
   if (log.oficina && typeof log.oficina === 'object') {
-    return log.oficina.nombre ||
-           log.oficina.Nombre ||
-           log.oficina.descripcion ||
-           log.oficina.Descripcion ||
-           'Oficina sin nombre'
+    return (
+      log.oficina.nombre ||
+      log.oficina.Nombre ||
+      log.oficina.descripcion ||
+      log.oficina.Descripcion ||
+      'Oficina sin nombre'
+    )
   }
 
   // Si es string directo
@@ -1535,11 +1633,13 @@ const obtenerNombreOficina = (log) => {
 
   // Respaldos para otras estructuras
   if (log.Oficina && typeof log.Oficina === 'object') {
-    return log.Oficina.nombre ||
-           log.Oficina.Nombre ||
-           log.Oficina.descripcion ||
-           log.Oficina.Descripcion ||
-           'Oficina sin nombre'
+    return (
+      log.Oficina.nombre ||
+      log.Oficina.Nombre ||
+      log.Oficina.descripcion ||
+      log.Oficina.Descripcion ||
+      'Oficina sin nombre'
+    )
   }
 
   if (typeof log.Oficina === 'string' && log.Oficina.trim() !== '') {
@@ -1552,23 +1652,16 @@ const obtenerNombreOficina = (log) => {
 const obtenerDireccionOficina = (log) => {
   // Si hay oficina como objeto, extraer la dirección
   if (log.oficina && typeof log.oficina === 'object') {
-    return log.oficina.direccion ||
-           log.oficina.Direccion ||
-           log.oficina.address ||
-           null
+    return log.oficina.direccion || log.oficina.Direccion || log.oficina.address || null
   }
 
   // Respaldos para otras estructuras
   if (log.Oficina && typeof log.Oficina === 'object') {
-    return log.Oficina.direccion ||
-           log.Oficina.Direccion ||
-           log.Oficina.address ||
-           null
+    return log.Oficina.direccion || log.Oficina.Direccion || log.Oficina.address || null
   }
 
   return null
 }
-
 
 const obtenerNombreUsuario = (log) => {
   // Construir nombre completo de la persona de la API /logs/filter
@@ -1835,7 +1928,7 @@ const abrirConsola = (logsData = null, filtroTexto = '', filtrosGrafica = null) 
 
   setTimeout(() => {
     filtrosToggle.value = true
-  },1000)
+  }, 1000)
 
   origenConsola.value = 'graficas' // Marcar origen desde gráficas
 
@@ -2589,13 +2682,23 @@ const obtenerOpcionesUnicas = () => {
   //   value: oficina,
   // }))
   oficinasFull.value = oficinasUnicas.map((oficina) => ({
-    label: typeof oficina === 'object'
-        ? (oficina.nombre || oficina.Nombre || oficina.descripcion || oficina.Descripcion || String(oficina))
+    label:
+      typeof oficina === 'object'
+        ? oficina.nombre ||
+          oficina.Nombre ||
+          oficina.descripcion ||
+          oficina.Descripcion ||
+          String(oficina)
         : oficina,
-    value: typeof oficina === 'object'
-        ? (oficina.nombre || oficina.Nombre || oficina.descripcion || oficina.Descripcion || String(oficina))
+    value:
+      typeof oficina === 'object'
+        ? oficina.nombre ||
+          oficina.Nombre ||
+          oficina.descripcion ||
+          oficina.Descripcion ||
+          String(oficina)
         : oficina,
-}))
+  }))
   opcionesOficinas.value = [...oficinasFull.value]
 
   // Obtener usuarios únicos with múltiples campos
@@ -3040,7 +3143,7 @@ const abrirConsolaDirecta = async () => {
 
   setTimeout(() => {
     filtrosToggle.value = true
-  },1000)
+  }, 1000)
 
   // 🔧 Establecer origen como sidebar para usar filtrado API
   origenConsola.value = 'sidebar'
@@ -3466,102 +3569,152 @@ defineExpose({
   }
 }
 
-// Estilos para el grid responsivo de cards
+// Estilos para el grid responsivo de cards - OPTIMIZADO
 .responsive-logs-grid {
   display: grid;
-  gap: 16px;
-  padding: 16px;
-
-  // Mobile: 1 columna
+  gap: 14px;
+  padding: 14px;
   grid-template-columns: 1fr;
+  overflow-x: hidden;
+  max-width: 100%;
 
-  // Tablet: 2 columnas
-  @media (min-width: 768px) {
+  @media (min-width: 600px) {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  // Desktop pequeño: 3 columnas
-  @media (min-width: 1024px) {
+  @media (min-width: 960px) {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  // Desktop grande: 4 columnas
-  @media (min-width: 1440px) {
+  @media (min-width: 1280px) {
     grid-template-columns: repeat(4, 1fr);
   }
 
-  // Desktop extra grande: 5 columnas
-  @media (min-width: 1920px) {
+  @media (min-width: 1600px) {
     grid-template-columns: repeat(5, 1fr);
   }
 }
 
-// Estilos para las cards de logs
+// Estilos para las cards de logs - OPTIMIZADO PARA ALTURA COMPACTA
 .log-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%);
   border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  margin: 6px 0;
+  border-left: 4px solid #007bff;
   transition: all 0.3s ease;
-  overflow: hidden;
-  backdrop-filter: blur(10px);
-  min-height: 280px;
+  min-height: auto;
+  height: auto;
   display: flex;
   flex-direction: column;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: rgba(25, 118, 210, 0.5);
-    box-shadow: 0 8px 32px rgba(25, 118, 210, 0.15);
-    background: linear-gradient(
-      135deg,
-      rgba(25, 118, 210, 0.08) 0%,
-      rgba(255, 255, 255, 0.05) 100%
-    );
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
   }
 
-  // Colores específicos por tipo
-  &.log-card-success {
-    border-left: 4px solid #4caf50;
-    &:hover {
-      border-color: rgba(76, 175, 80, 0.5);
-      box-shadow: 0 8px 32px rgba(76, 175, 80, 0.15);
+  // Header optimizado
+  .log-card-header {
+    padding: 8px 0 6px 0;
+
+    .timestamp-section {
+      display: flex;
+      align-items: center;
+      font-size: 0.8rem;
+      color: #b0b0b0;
+      margin-bottom: 2px;
     }
+
+    .log-id-chip {
+      font-size: 0.7rem;
+    }
+  }
+
+  // Secciones enhanced - COMPACTAS
+  .enhanced-section {
+    background: rgba(46, 46, 62, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    margin: 4px 0;
+    border-left: 3px solid #007bff;
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 3px;
+
+      .section-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+    }
+
+    .section-content {
+      .detail-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 3px;
+        font-size: 0.75rem;
+
+        .detail-label {
+          color: #b0b0b0;
+          font-weight: 500;
+          min-width: 70px;
+          margin-right: 6px;
+        }
+
+        .detail-value {
+          color: #e0e0e0;
+          font-family: 'Courier New', monospace;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 1px 4px;
+          border-radius: 3px;
+          flex: 1;
+          font-size: 0.7rem;
+        }
+
+        .q-icon {
+          margin-right: 4px;
+        }
+      }
+    }
+  }
+
+  // Colores específicos por tipo - DISEÑO ORIGINAL
+  &.log-card-success {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, #2c4a2c 0%, #3a5c3a 100%);
   }
 
   &.log-card-error {
-    border-left: 4px solid #f44336;
-    &:hover {
-      border-color: rgba(244, 67, 54, 0.5);
-      box-shadow: 0 8px 32px rgba(244, 67, 54, 0.15);
-    }
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, #4a2c2c 0%, #5c3a3a 100%);
   }
 
   &.log-card-warning {
-    border-left: 4px solid #ff9800;
-    &:hover {
-      border-color: rgba(255, 152, 0, 0.5);
-      box-shadow: 0 8px 32px rgba(255, 152, 0, 0.15);
-    }
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, #4a4a2c 0%, #5c5c3a 100%);
   }
 
   &.log-card-info {
-    border-left: 4px solid #2196f3;
-    &:hover {
-      border-color: rgba(33, 150, 243, 0.5);
-      box-shadow: 0 8px 32px rgba(33, 150, 243, 0.15);
-    }
+    border-left-color: #17a2b8;
+    background: linear-gradient(135deg, #2c4a4a 0%, #3a5c5c 100%);
   }
 }
 
 .log-card-header {
-  padding: 12px 16px 8px 16px;
+  padding: 8px 12px 6px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
 }
 
 .log-card-content {
+  padding: 10px 0;
+  line-height: 1.3;
   flex: 1;
-  padding: 16px;
 
   .log-user-section,
   .log-office-section,
@@ -3569,10 +3722,49 @@ defineExpose({
   .log-error-section,
   .log-session-section,
   .log-message-section {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 
     &:last-child {
       margin-bottom: 0;
+    }
+  }
+
+  .section-header {
+    margin-bottom: 4px;
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+  }
+
+  .section-content {
+    padding: 8px;
+    background: rgba(46, 46, 62, 0.3);
+    border-radius: 6px;
+    margin: 4px 0;
+  }
+
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+    font-size: 0.75rem;
+
+    .detail-label {
+      color: #b0b0b0;
+      font-weight: 500;
+      min-width: 70px;
+    }
+
+    .detail-value {
+      color: #ffffff;
+      font-weight: 500;
+      text-align: right;
+      max-width: 65%;
+      word-break: break-word;
+      font-size: 0.7rem;
     }
   }
 
@@ -3580,48 +3772,50 @@ defineExpose({
   .error-content,
   .session-content,
   .message-content {
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.4;
+    color: #e0e0e0;
+    line-height: 1.3;
+    font-size: 0.75rem;
   }
 
   .error-content {
     background: rgba(244, 67, 54, 0.1);
     border-left: 2px solid rgba(244, 67, 54, 0.3);
-    padding: 6px 8px;
-    border-radius: 4px;
+    padding: 4px 6px;
+    border-radius: 3px;
     font-family: 'Courier New', monospace;
     font-weight: 500;
     color: #f44336;
+    font-size: 0.7rem;
   }
 
   .session-content {
     background: rgba(0, 188, 212, 0.1);
     border-left: 2px solid rgba(0, 188, 212, 0.3);
-    padding: 6px 8px;
-    border-radius: 4px;
+    padding: 4px 6px;
+    border-radius: 3px;
     font-family: 'Courier New', monospace;
     font-weight: 400;
     color: #00bcd4;
     word-break: break-all;
-    font-size: 11px;
+    font-size: 0.65rem;
   }
 
   .message-content {
-    max-height: 60px;
+    max-height: 45px;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
+    font-size: 0.7rem;
   }
 }
 
 .log-card-footer {
-  padding: 8px 16px 12px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.1);
-  margin-top: auto;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 8px;
 }
 
 // Estilos para la paginación
@@ -3821,5 +4015,44 @@ defineExpose({
     }
   }
 }
-</style>
 
+// Estilos para el botón de filtros moderno
+.filter-expansion-modern {
+  .q-item {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(42, 82, 152, 0.3);
+    }
+  }
+
+  .q-expansion-item__container {
+    .q-expansion-item__content {
+      background: rgba(255, 255, 255, 0.02) !important;
+      border-radius: 0 0 12px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-top: none;
+    }
+  }
+}
+
+// Efectos de animación para el botón de filtros
+@keyframes filter-glow {
+  0% {
+    box-shadow: 0 0 5px rgba(79, 172, 254, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(79, 172, 254, 0.3);
+  }
+}
+
+.filter-expansion-modern .q-item:hover {
+  animation: filter-glow 2s infinite;
+}
+</style>

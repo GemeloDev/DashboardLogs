@@ -1,59 +1,46 @@
 ﻿<template>
   <q-page class="diagnostic-page bg-dark text-white">
-    <!-- Header Principal -->
-    <div class="diagnostic-header-section bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
+    <!-- Header Principal - Estilo EscritorioPage -->
+    <div class="diagnostic-header bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
       <div class="container">
         <div class="row items-center q-col-gutter-md">
           <div class="col-12 col-md-8">
             <div class="text-h3 diagnostic-title q-mb-md">
-              <q-icon
-                name="medical_services"
-                class="q-mr-sm diagnostic-icon"
-                color="cyan-4"
-                size="48px"
-              />
-              <span class="diagnostic-title-text">🔬 Centro de Diagnóstico Técnico Avanzado</span>
+              <q-icon name="medical_services" class="q-mr-sm" color="cyan-4" size="48px" />
+              <span class="diagnostic-title-text">🔬 Centro de Diagnóstico Técnico</span>
             </div>
             <div class="text-h6 text-cyan-3 diagnostic-subtitle q-mb-md">
-              <span class="diagnostic-subtitle-text">🛡️ Sistema de Soporte Técnico en Tiempo Real | 🔍 Análisis de Errores & Sesiones</span>
+              <span class="diagnostic-subtitle-text"
+                >🛡️ Sistema de Análisis de Errores y Sesiones | 📊 Reportes Avanzados</span
+              >
             </div>
 
-            <!-- Indicadores de Estado -->
+            <!-- Indicadores de Estado Simplificados -->
             <div class="row q-gutter-sm diagnostic-chips-container">
               <q-chip
                 color="green-6"
                 text-color="white"
                 icon="wifi"
-                size="md"
+                size="sm"
                 class="diagnostic-status-chip"
               >
-                🟢 API Conectada
-              </q-chip>
-
-              <q-chip
-                color="purple-6"
-                text-color="white"
-                icon="security"
-                size="md"
-                class="diagnostic-status-chip"
-              >
-                🛡️ Modo Seguro
+                🟢 Conectado
               </q-chip>
 
               <q-chip
                 v-if="diagnosticoActivo"
                 color="cyan-5"
                 text-color="white"
-                size="md"
+                size="sm"
                 icon="auto_fix_high"
-                class="diagnostic-chip animate-pulse"
+                class="diagnostic-chip"
               >
-                <span class="diagnostic-glow">✨ Análisis: {{ diagnosticoActivo }}</span>
+                <span>✨ {{ diagnosticoActivo }}</span>
               </q-chip>
             </div>
           </div>
 
-          <!-- Acciones Rápidas -->
+          <!-- Acciones Rápidas Simplificadas -->
           <div class="col-12 col-md-4">
             <div class="row q-gutter-sm justify-end diagnostic-actions">
               <q-btn
@@ -105,71 +92,72 @@
           <q-tab name="session" icon="account_circle" label="👤 Análisis Sesión" />
         </q-tabs>
 
-        <!-- Contenido de Pestañas -->
-        <q-tab-panels v-model="tabActiva" animated keep-alive class="bg-transparent">
-          <!-- BÚSQUEDA RÁPIDA (exacta al modal) -->
-          <q-tab-panel name="busqueda" class="q-pa-none">
-            <div class="search-panel">
-              <q-card class="diagnostic-card bg-grey-8 text-white">
-                <q-card-section>
-                  <div class="text-h6">🚀 Búsqueda Rápida de Diagnóstico</div>
-                  <div class="text-caption text-grey-4 q-mb-md">
-                    Ingresa cualquier código para iniciar el análisis automático
+        <!-- Contenido de Pestañas MODERNIZADO -->
+        <q-tab-panels v-model="tabActiva" animated keep-alive class="modern-tab-panels">
+          <!-- BÚSQUEDA RÁPIDA MODERNA -->
+          <q-tab-panel name="busqueda" class="modern-tab-panel">
+            <div class="modern-search-panel">
+              <div class="modern-card">
+                <div class="card-header">
+                  <div class="header-icon">
+                    <q-icon name="search" size="32px" color="cyan-4" />
+                  </div>
+                  <div class="header-content">
+                    <h3 class="card-title">Búsqueda Rápida de Diagnóstico</h3>
+                    <p class="card-subtitle">
+                      Ingresa cualquier código para iniciar el análisis automático
+                    </p>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div class="modern-input-group">
+                    <q-input
+                      v-model="busquedaRapida"
+                      class="modern-input"
+                      placeholder="Ej: USR02808190918-SUC001, USR02808190918"
+                      dark
+                      borderless
+                      @keyup.enter="realizarBusquedaRapida"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="search" color="cyan-4" size="20px" />
+                      </template>
+                    </q-input>
+                    <q-btn
+                      class="search-action-btn"
+                      icon="send"
+                      @click="realizarBusquedaRapida"
+                      :loading="cargandoBusqueda"
+                      unelevated
+                      size="lg"
+                    />
                   </div>
 
-                  <q-input
-                    v-model="busquedaRapida"
-                    label="Código de Error, baseCode o Usuario"
-                    placeholder="Ej: USR02808190918-SUC001, USR02808190918"
-                    dark
-                    outlined
-                    class="q-mb-md"
-                    @keyup.enter="realizarBusquedaRapida"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="search" color="red-5" />
-                    </template>
-                    <template v-slot:append>
-                      <q-btn
-                        round
-                        dense
-                        flat
-                        icon="send"
-                        @click="realizarBusquedaRapida"
-                        :loading="cargandoBusqueda"
-                        color="red-5"
-                      />
-                    </template>
-                  </q-input>
-
-                  <!-- Ejemplos de códigos reales -->
-                  <div class="q-mb-md">
-                    <div class="text-caption text-grey-4 q-mb-sm">Ejemplos de códigos:</div>
-                    <div class="row q-gutter-sm">
-                      <q-chip
-                        clickable
+                  <!-- Ejemplos de códigos modernos -->
+                  <div class="examples-section">
+                    <h4 class="examples-title">Ejemplos de códigos</h4>
+                    <div class="examples-grid">
+                      <div
+                        class="example-chip error-code"
                         @click="busquedaRapida = 'USR02808190918-SUC001'"
-                        color="red-6"
-                        text-color="white"
-                        size="sm"
-                        icon="error"
                       >
-                        USR02808190918-SUC001
-                      </q-chip>
-                      <q-chip
-                        clickable
+                        <q-icon name="error" size="16px" />
+                        <span>USR02808190918-SUC001</span>
+                        <div class="chip-glow"></div>
+                      </div>
+                      <div
+                        class="example-chip user-code"
                         @click="busquedaRapida = 'USR02808191331'"
-                        color="blue-6"
-                        text-color="white"
-                        size="sm"
-                        icon="account_circle"
                       >
-                        USR02808191331
-                      </q-chip>
+                        <q-icon name="account_circle" size="16px" />
+                        <span>USR02808191331</span>
+                        <div class="chip-glow"></div>
+                      </div>
                     </div>
                   </div>
-                </q-card-section>
-              </q-card>
+                </div>
+              </div>
             </div>
           </q-tab-panel>
 
@@ -1217,31 +1205,128 @@ const mostrarDialogoExportacion = () => {
   const dialogRef = $q.dialog({
     title: 'Exportar Datos de Diagnóstico',
     message: `
-      <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 16px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
-          <h3 style="margin: 0; font-size: 1.4rem; font-weight: 600;">✨ Selecciona el formato de exportación</h3>
-          <p style="margin: 12px 0 0 0; opacity: 0.9; font-size: 0.95rem;">Datos disponibles: ${
-            tieneErrores ? '🔴 Códigos de Error' : ''
-          }${tieneErrores && tieneSesiones ? ' y ' : ''}${tieneSesiones ? '👤 Sesiones' : ''}</p>
-        </div>
+      <div style="padding: 0; margin: 0;">
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 32px; border-radius: 20px; border: 1px solid rgba(59, 130, 246, 0.2);">
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 20px;">
-          <div id="export-pdf" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 25px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(220,53,69,0.3); border: 2px solid transparent;" onmouseover="this.style.transform='translateY(-8px) scale(1.02)'; this.style.boxShadow='0 12px 32px rgba(220,53,69,0.4)'; this.style.borderColor='rgba(255,255,255,0.2)';" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 16px rgba(220,53,69,0.3)'; this.style.borderColor='transparent';">
-            <div style="font-size: 3rem; margin-bottom: 12px;">📄</div>
-            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 600;">PDF PROFESIONAL</h4>
-            <p style="margin: 8px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Reporte detallado con línea de tiempo</p>
+          <!-- Header con gradiente y efecto glassmorphism -->
+          <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%); backdrop-filter: blur(10px); color: white; padding: 24px; border-radius: 16px; margin-bottom: 28px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.02) 50%, transparent 70%); pointer-events: none;"></div>
+            <div style="position: relative; z-index: 1;">
+              <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                <span style="background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">✨ Exportación Avanzada de Datos</span>
+              </h3>
+              <p style="margin: 12px 0 0 0; opacity: 0.85; font-size: 1rem; font-weight: 500;">
+                📊 Datos disponibles: ${
+                  tieneErrores ? '<span style="color: #f87171;">🔴 Códigos de Error</span>' : ''
+                }${tieneErrores && tieneSesiones ? ' y ' : ''}${
+      tieneSesiones ? '<span style="color: #34d399;">👤 Sesiones</span>' : ''
+    }
+              </p>
+            </div>
           </div>
 
-          <div id="export-excel" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 25px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(40,167,69,0.3); border: 2px solid transparent;" onmouseover="this.style.transform='translateY(-8px) scale(1.02)'; this.style.boxShadow='0 12px 32px rgba(40,167,69,0.4)'; this.style.borderColor='rgba(255,255,255,0.2)';" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 16px rgba(40,167,69,0.3)'; this.style.borderColor='transparent';">
-            <div style="font-size: 3rem; margin-bottom: 12px;">📊</div>
-            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 600;">EXCEL TIMELINE</h4>
-            <p style="margin: 8px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Análisis cronológico de datos</p>
+          <!-- Grid de opciones de exportación -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+
+            <!-- Opción PDF -->
+            <div id="export-pdf" style="
+              background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
+              color: white;
+              padding: 28px;
+              border-radius: 16px;
+              cursor: pointer;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              box-shadow: 0 8px 32px rgba(220, 38, 38, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              position: relative;
+              overflow: hidden;
+            "
+            onmouseover="
+              this.style.transform='translateY(-8px) scale(1.02)';
+              this.style.boxShadow='0 16px 40px rgba(220,38,38,0.4), inset 0 1px 0 rgba(255,255,255,0.2)';
+              this.style.borderColor='rgba(255,255,255,0.3)';
+            "
+            onmouseout="
+              this.style.transform='translateY(0) scale(1)';
+              this.style.boxShadow='0 8px 32px rgba(220,38,38,0.3), inset 0 1px 0 rgba(255,255,255,0.1)';
+              this.style.borderColor='rgba(255,255,255,0.1)';
+            ">
+              <div style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%); transition: left 0.6s ease;"></div>
+              <div style="position: relative; z-index: 1; text-align: center;">
+                <div style="font-size: 3.5rem; margin-bottom: 16px; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">📄</div>
+                <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px;">PDF PROFESIONAL</h4>
+                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9; line-height: 1.4;">Reporte detallado con diseño profesional y línea de tiempo</p>
+              </div>
+            </div>
+
+            <!-- Opción Excel -->
+            <div id="export-excel" style="
+              background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+              color: white;
+              padding: 28px;
+              border-radius: 16px;
+              cursor: pointer;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              box-shadow: 0 8px 32px rgba(5, 150, 105, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              position: relative;
+              overflow: hidden;
+            "
+            onmouseover="
+              this.style.transform='translateY(-8px) scale(1.02)';
+              this.style.boxShadow='0 16px 40px rgba(5,150,105,0.4), inset 0 1px 0 rgba(255,255,255,0.2)';
+              this.style.borderColor='rgba(255,255,255,0.3)';
+            "
+            onmouseout="
+              this.style.transform='translateY(0) scale(1)';
+              this.style.boxShadow='0 8px 32px rgba(5,150,105,0.3), inset 0 1px 0 rgba(255,255,255,0.1)';
+              this.style.borderColor='rgba(255,255,255,0.1)';
+            ">
+              <div style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%); transition: left 0.6s ease;"></div>
+              <div style="position: relative; z-index: 1; text-align: center;">
+                <div style="font-size: 3.5rem; margin-bottom: 16px; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">📊</div>
+                <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px;">EXCEL TIMELINE</h4>
+                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9; line-height: 1.4;">Análisis cronológico y datos estructurados</p>
+              </div>
+            </div>
+
+            <!-- Opción JSON -->
+            <div id="export-json" style="
+              background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 50%, #1e3a8a 100%);
+              color: white;
+              padding: 28px;
+              border-radius: 16px;
+              cursor: pointer;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              box-shadow: 0 8px 32px rgba(29, 78, 216, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              position: relative;
+              overflow: hidden;
+            "
+            onmouseover="
+              this.style.transform='translateY(-8px) scale(1.02)';
+              this.style.boxShadow='0 16px 40px rgba(29,78,216,0.4), inset 0 1px 0 rgba(255,255,255,0.2)';
+              this.style.borderColor='rgba(255,255,255,0.3)';
+            "
+            onmouseout="
+              this.style.transform='translateY(0) scale(1)';
+              this.style.boxShadow='0 8px 32px rgba(29,78,216,0.3), inset 0 1px 0 rgba(255,255,255,0.1)';
+              this.style.borderColor='rgba(255,255,255,0.1)';
+            ">
+              <div style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%); transition: left 0.6s ease;"></div>
+              <div style="position: relative; z-index: 1; text-align: center;">
+                <div style="font-size: 3.5rem; margin-bottom: 16px; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">💻</div>
+                <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px;">JSON TÉCNICO</h4>
+                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9; line-height: 1.4;">Datos estructurados completos para desarrollo</p>
+              </div>
+            </div>
           </div>
 
-          <div id="export-json" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 25px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(0,123,255,0.3); border: 2px solid transparent;" onmouseover="this.style.transform='translateY(-8px) scale(1.02)'; this.style.boxShadow='0 12px 32px rgba(0,123,255,0.4)'; this.style.borderColor='rgba(255,255,255,0.2)';" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 16px rgba(0,123,255,0.3)'; this.style.borderColor='transparent';">
-            <div style="font-size: 3rem; margin-bottom: 12px;">💻</div>
-            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 600;">JSON TÉCNICO</h4>
-            <p style="margin: 8px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Datos estructurados completos</p>
+          <!-- Footer con información adicional -->
+          <div style="margin-top: 24px; padding: 20px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05);">
+            <p style="margin: 0; color: rgba(255, 255, 255, 0.7); font-size: 0.85rem; text-align: center; line-height: 1.5;">
+              💡 <strong>Tip:</strong> El formato PDF incluye visualizaciones gráficas, Excel permite análisis avanzado y JSON es ideal para integración técnica.
+            </p>
           </div>
         </div>
       </div>
@@ -1250,9 +1335,10 @@ const mostrarDialogoExportacion = () => {
     persistent: false,
     ok: false,
     cancel: {
-      label: 'Cancelar',
+      label: '✕ Cancelar',
       color: 'grey-6',
       flat: true,
+      style: 'border-radius: 12px; padding: 12px 24px; font-weight: 600; letter-spacing: 0.5px;',
     },
     class: 'export-dialog-custom',
   })
@@ -1262,6 +1348,25 @@ const mostrarDialogoExportacion = () => {
     const pdfBtn = document.getElementById('export-pdf')
     const excelBtn = document.getElementById('export-excel')
     const jsonBtn = document.getElementById('export-json')
+
+    // Agregar efecto shimmer on hover
+    const addShimmerEffect = (element) => {
+      if (element) {
+        element.addEventListener('mouseenter', () => {
+          const shimmer = element.querySelector('div[style*="left: -100%"]')
+          if (shimmer) {
+            shimmer.style.left = '100%'
+            setTimeout(() => {
+              shimmer.style.left = '-100%'
+            }, 600)
+          }
+        })
+      }
+    }
+
+    addShimmerEffect(pdfBtn)
+    addShimmerEffect(excelBtn)
+    addShimmerEffect(jsonBtn)
 
     if (pdfBtn)
       pdfBtn.onclick = () => {
@@ -1433,78 +1538,123 @@ const verDetalleCompleto = (record) => {
 
 const mostrarAyuda = () => {
   $q.dialog({
-    title: '🎯 Centro de Ayuda - Sistema de Diagnóstico',
+    title: 'Centro de Ayuda - Sistema de Diagnóstico',
     message: `
-      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 25px; border-radius: 16px; color: white;">
+      <div style="padding: 0; margin: 0;">
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 32px; border-radius: 20px; border: 1px solid rgba(34, 197, 94, 0.2);">
 
-        <div style="text-align: center; margin-bottom: 25px;">
-          <div style="font-size: 3rem; margin-bottom: 10px;">🔬</div>
-          <h3 style="margin: 0; color: #60a5fa;">Centro de Diagnóstico Técnico</h3>
-          <p style="margin: 5px 0 0 0; opacity: 0.8;">Guía completa de uso del sistema</p>
+          <!-- Header Principal con Glassmorphism -->
+          <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%); backdrop-filter: blur(10px); color: white; padding: 28px; border-radius: 16px; margin-bottom: 32px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.02) 50%, transparent 70%); pointer-events: none;"></div>
+            <div style="position: relative; z-index: 1;">
+              <h2 style="margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: 0.5px;">
+                <span style="background: linear-gradient(135deg, #34d399 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">🛡️ Centro de Diagnóstico Técnico</span>
+              </h2>
+              <p style="margin: 12px 0 0 0; opacity: 0.85; font-size: 1.1rem; font-weight: 500;">
+                Guía completa para análisis avanzado de errores y sesiones
+              </p>
+            </div>
+          </div>
+
+          <!-- Grid de Funcionalidades -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 32px;">
+
+            <!-- Análisis de Errores -->
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(220, 38, 38, 0.2); position: relative; overflow: hidden;">
+              <div style="position: absolute; top: 0; right: 0; width: 60px; height: 60px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); border-radius: 50%;"></div>
+              <div style="position: relative; z-index: 1;">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                  <div style="font-size: 2rem; margin-right: 12px;">🔴</div>
+                  <h3 style="margin: 0; font-size: 1.3rem; font-weight: 700;">Códigos de Error</h3>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+                  <div style="font-family: 'Courier New', monospace; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px;">
+                    USR02808190918-SUC001
+                  </div>
+                  <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 4px;">Formato estándar de código</div>
+                </div>
+                <ul style="margin: 0; padding-left: 16px; font-size: 0.9rem; line-height: 1.6; opacity: 0.9;">
+                  <li>Línea de tiempo detallada</li>
+                  <li>Historial completo de errores</li>
+                  <li>Exportación con todos los registros</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Análisis de Sesiones -->
+            <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(124, 58, 237, 0.2); position: relative; overflow: hidden;">
+              <div style="position: absolute; top: 0; right: 0; width: 60px; height: 60px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); border-radius: 50%;"></div>
+              <div style="position: relative; z-index: 1;">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                  <div style="font-size: 2rem; margin-right: 12px;">👤</div>
+                  <h3 style="margin: 0; font-size: 1.3rem; font-weight: 700;">Sesiones de Usuario</h3>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+                  <div style="font-family: 'Courier New', monospace; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px;">
+                    USR02808191331
+                  </div>
+                  <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 4px;">Sin sufijos adicionales</div>
+                </div>
+                <ul style="margin: 0; padding-left: 16px; font-size: 0.9rem; line-height: 1.6; opacity: 0.9;">
+                  <li>Cronología de acciones</li>
+                  <li>Seguimiento de dispositivos</li>
+                  <li>Timeline con timestamps</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Funcionalidades Adicionales en Grid Horizontal -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 28px;">
+
+            <!-- Búsqueda Rápida -->
+            <div style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(8, 145, 178, 0.2);">
+              <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                <div style="font-size: 1.5rem; margin-right: 10px;">⚡</div>
+                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Búsqueda Rápida</h4>
+              </div>
+              <p style="margin: 0; font-size: 0.85rem; opacity: 0.9; line-height: 1.5;">
+                Detección automática del tipo de código • Resultados inmediatos • Sin configuración
+              </p>
+            </div>
+
+            <!-- Exportación -->
+            <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(5, 150, 105, 0.2);">
+              <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                <div style="font-size: 1.5rem; margin-right: 10px;">📊</div>
+                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Exportación Avanzada</h4>
+              </div>
+              <p style="margin: 0; font-size: 0.85rem; opacity: 0.9; line-height: 1.5;">
+                <strong>PDF</strong> Profesional • <strong>Excel</strong> con 2 hojas • <strong>JSON</strong> estructurado
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Footer con Tips -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 24px; border-radius: 16px; text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+              <div style="font-size: 1.8rem; margin-right: 12px;">💡</div>
+              <h4 style="margin: 0; color: #fbbf24; font-size: 1.2rem; font-weight: 600;">Características Nuevas</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.6;">
+              <div>✨ <strong>Desglose completo:</strong> Todos los registros detallados</div>
+              <div>📱 <strong>100% Responsivo:</strong> Móvil, tablet y desktop</div>
+              <div>🎨 <strong>Diseño moderno:</strong> Efectos visuales mejorados</div>
+            </div>
+          </div>
         </div>
-
-        <div style="display: grid; gap: 20px; margin-bottom: 25px;">
-
-          <div style="background: rgba(220, 38, 127, 0.1); border-left: 4px solid #dc267f; padding: 15px; border-radius: 8px;">
-            <h4 style="color: #f87171; margin: 0 0 10px 0;">🔴 Análisis de Códigos de Error</h4>
-            <ul style="margin: 0; padding-left: 20px; opacity: 0.9;">
-              <li>Formato: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">USR02808190918-SUC001</code></li>
-              <li>Obtén reportes detallados con línea de tiempo</li>
-              <li>Exporta en PDF, Excel o JSON</li>
-              <li>Ve el historial completo de errores</li>
-            </ul>
-          </div>
-
-          <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid #6366f1; padding: 15px; border-radius: 8px;">
-            <h4 style="color: #8b5cf6; margin: 0 0 10px 0;">👤 Análisis de Sesiones</h4>
-            <ul style="margin: 0; padding-left: 20px; opacity: 0.9;">
-              <li>Formato: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">USR02808191331</code> (sin sufijos)</li>
-              <li>Cronología completa de acciones del usuario</li>
-              <li>Línea de tiempo detallada con timestamps</li>
-              <li>Seguimiento de dispositivos y procesos</li>
-            </ul>
-          </div>
-
-          <div style="background: rgba(6, 182, 212, 0.1); border-left: 4px solid #06b6d4; padding: 15px; border-radius: 8px;">
-            <h4 style="color: #22d3ee; margin: 0 0 10px 0;">� Búsqueda Rápida</h4>
-            <ul style="margin: 0; padding-left: 20px; opacity: 0.9;">
-              <li>Detección automática del tipo de código</li>
-              <li>Búsqueda inteligente por código o usuario</li>
-              <li>Resultados inmediatos sin configuración</li>
-              <li>Ideal para consultas rápidas</li>
-            </ul>
-          </div>
-
-          <div style="background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; padding: 15px; border-radius: 8px;">
-            <h4 style="color: #4ade80; margin: 0 0 10px 0;">📊 Opciones de Exportación</h4>
-            <ul style="margin: 0; padding-left: 20px; opacity: 0.9;">
-              <li><strong>PDF:</strong> Reportes profesionales con línea de tiempo visual</li>
-              <li><strong>Excel:</strong> Análisis de datos con cronología detallada</li>
-              <li><strong>JSON:</strong> Datos técnicos estructurados para desarrolladores</li>
-            </ul>
-          </div>
-
-        </div>
-
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; text-align: center;">
-          <h4 style="color: #f59e0b; margin: 0 0 10px 0;">💡 Consejos Útiles</h4>
-          <div style="font-size: 0.9rem; opacity: 0.9;">
-            • Use la búsqueda rápida para consultas simples<br>
-            • Los códigos de error incluyen sufijos (-SUC001)<br>
-            • Los códigos de sesión son solo el código base<br>
-            • Todos los reportes incluyen líneas de tiempo detalladas
-          </div>
-        </div>
-
       </div>
     `,
     html: true,
-    style: 'max-width: 700px',
     persistent: false,
     ok: {
-      label: 'Entendido',
-      color: 'primary',
+      label: '✓ Perfecto, entendido',
+      color: 'green-6',
       unelevated: true,
+      style:
+        'border-radius: 12px; padding: 12px 28px; font-weight: 600; letter-spacing: 0.5px; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);',
     },
     class: 'help-dialog-custom',
   })
@@ -1534,19 +1684,21 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+// Estilo principal similar a EscritorioPage
 .diagnostic-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
-.diagnostic-header-section {
+// Header limpio y moderno
+.diagnostic-header {
   border-bottom: 2px solid rgba(6, 182, 212, 0.3);
   backdrop-filter: blur(10px);
 }
 
 .diagnostic-title {
   font-weight: 700;
-  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1558,13 +1710,167 @@ onMounted(() => {
   opacity: 0.9;
 }
 
-.diagnostic-icon {
-  filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.5));
+.diagnostic-content {
+  position: relative;
 }
 
-.diagnostic-status-chip {
+.diagnostic-actions {
+  gap: 0.5rem;
+}
+
+.diagnostic-action-btn {
+  border-radius: 8px;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+// Chips simplificados
+.diagnostic-status-chip {
+  font-size: 0.85rem;
+  border-radius: 16px;
+}
+
+// Pestañas más limpias
+.q-tabs {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// Tab panels con mejor legibilidad
+.q-tab-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+}
+
+// Cards más claras
+.diagnostic-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(6, 182, 212, 0.3);
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+  }
+}
+
+// Inputs más claros
+.q-field {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+
+  &.q-field--focused {
+    border-color: rgba(6, 182, 212, 0.5) !important;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1) !important;
+  }
+}
+
+// Botones mejorados
+.q-btn {
+  &.q-btn--unelevated {
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// Estados de carga más suaves
+.loading-state {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// Estados de error más claros
+.error-state {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+// Estados vacíos más amigables
+.empty-state {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+}
+
+// Responsive mejorado
+@media (max-width: 768px) {
+  .diagnostic-header {
+    padding: 1rem !important;
+  }
+
+  .diagnostic-title {
+    font-size: 1.5rem !important;
+    text-align: center;
+  }
+
+  .diagnostic-title-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .diagnostic-subtitle {
+    font-size: 0.9rem !important;
+    text-align: center;
+  }
+
+  .diagnostic-subtitle-text {
+    display: block;
+    line-height: 1.3;
+  }
+
+  .diagnostic-chips-container {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .diagnostic-actions {
+    justify-content: center !important;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .diagnostic-title {
+    font-size: 1.2rem !important;
+  }
+
+  .diagnostic-title-text {
+    font-size: 1.2rem;
+  }
+
+  .diagnostic-subtitle-text {
+    font-size: 0.8rem;
+  }
+
+  .diagnostic-action-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
 }
 
 .diagnostic-chip {
@@ -1669,6 +1975,608 @@ onMounted(() => {
 .container {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+// ESTILOS MODERNOS AGREGADOS
+// Variables modernas
+:root {
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-dark: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+  --gradient-card: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  --blur-glass: blur(20px);
+  --border-glass: 1px solid rgba(255, 255, 255, 0.1);
+  --shadow-modern: 0 20px 40px rgba(0, 0, 0, 0.3);
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Header moderno
+.modern-diagnostic-header {
+  position: relative;
+  background: var(--gradient-dark);
+  backdrop-filter: var(--blur-glass);
+  border-bottom: var(--border-glass);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gradient-primary);
+    opacity: 0.1;
+    z-index: 0;
+  }
+}
+
+.bg-gradient-modern {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.modern-header-wrapper {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 2rem;
+  align-items: center;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    text-align: center;
+  }
+}
+
+.modern-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.modern-icon-container {
+  position: relative;
+
+  .modern-diagnostic-icon {
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 0 20px rgba(52, 211, 153, 0.5));
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .icon-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: pulse-glow 3s ease-in-out infinite alternate;
+  }
+}
+
+.modern-text-content {
+  .modern-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff 0%, #64d1f5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.2;
+
+    @media (max-width: 768px) {
+      font-size: 1.8rem;
+    }
+  }
+
+  .modern-subtitle {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    font-weight: 400;
+
+    @media (max-width: 768px) {
+      font-size: 1rem;
+    }
+  }
+}
+
+// Status cards modernos
+.modern-status-grid {
+  display: flex;
+  gap: 1rem;
+
+  @media (max-width: 1024px) {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--gradient-card);
+  backdrop-filter: var(--blur-glass);
+  border: var(--border-glass);
+  border-radius: 16px;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%);
+    opacity: 0;
+    transition: var(--transition-smooth);
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-modern);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  .status-icon {
+    color: #fff;
+    opacity: 0.9;
+  }
+
+  .status-info {
+    display: flex;
+    flex-direction: column;
+
+    .status-label {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-value {
+      font-size: 0.9rem;
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+
+  .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+
+    &.pulse {
+      animation: pulse-indicator 2s ease-in-out infinite;
+    }
+  }
+
+  &.connected {
+    border-left: 3px solid #10b981;
+  }
+
+  &.secure {
+    border-left: 3px solid #8b5cf6;
+  }
+
+  &.analyzing {
+    border-left: 3px solid #06b6d4;
+  }
+}
+
+// Acciones modernas
+.modern-actions {
+  display: flex;
+  gap: 0.75rem;
+
+  @media (max-width: 1024px) {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+.modern-action-btn {
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      transparent 100%
+    );
+    transition: left 0.5s ease;
+  }
+
+  &:hover::before {
+    left: 100%;
+  }
+
+  &.primary {
+    background: var(--gradient-primary);
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+    }
+  }
+
+  &.secondary {
+    background: var(--gradient-secondary);
+    box-shadow: 0 8px 32px rgba(240, 147, 251, 0.3);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(240, 147, 251, 0.4);
+    }
+  }
+
+  &.tertiary {
+    background: var(--gradient-card);
+    backdrop-filter: var(--blur-glass);
+    border: var(--border-glass);
+
+    &:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+// Tabs modernos
+.modern-tabs-container {
+  margin: 2rem 0;
+}
+
+.modern-tabs {
+  background: var(--gradient-card);
+  backdrop-filter: var(--blur-glass);
+  border: var(--border-glass);
+  border-radius: 20px;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.modern-tab {
+  border-radius: 16px;
+  transition: var(--transition-smooth);
+  margin: 0 0.25rem;
+  position: relative;
+
+  .tab-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+
+    .tab-label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .tab-description {
+      font-size: 0.75rem;
+      opacity: 0.7;
+    }
+  }
+
+  &.active {
+    background: var(--gradient-primary);
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  }
+
+  &:not(.active):hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+// Panels modernos
+.modern-tab-panels {
+  background: transparent;
+}
+
+.modern-tab-panel {
+  padding: 0;
+}
+
+// Cards modernos
+.modern-card {
+  background: var(--gradient-card);
+  backdrop-filter: var(--blur-glass);
+  border: var(--border-glass);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: var(--shadow-modern);
+  transition: var(--transition-smooth);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem 2rem 1rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .header-icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gradient-primary);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    }
+
+    .header-content {
+      flex: 1;
+
+      .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .card-subtitle {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+      }
+    }
+  }
+
+  .card-body {
+    padding: 2rem;
+  }
+}
+
+// Input moderno
+.modern-input-group {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  .modern-input {
+    flex: 1;
+
+    :deep(.q-field__control) {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      min-height: 56px;
+      transition: var(--transition-smooth);
+
+      &:hover {
+        border-color: rgba(52, 211, 153, 0.5);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      &.q-field--focused {
+        border-color: #34d399;
+        box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.1);
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    :deep(.q-field__native),
+    :deep(.q-field__input) {
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+  }
+
+  .search-action-btn {
+    background: var(--gradient-success);
+    border-radius: 16px;
+    padding: 0 2rem;
+    box-shadow: 0 8px 32px rgba(79, 172, 254, 0.3);
+    transition: var(--transition-smooth);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(79, 172, 254, 0.4);
+    }
+  }
+}
+
+// Ejemplos modernos
+.examples-section {
+  .examples-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0 0 1rem 0;
+  }
+
+  .examples-grid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .example-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+    font-weight: 500;
+
+    .chip-glow {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%
+      );
+      transition: left 0.5s ease;
+    }
+
+    &:hover .chip-glow {
+      left: 100%;
+    }
+
+    &.error-code {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(239, 68, 68, 0.4);
+      }
+    }
+
+    &.user-code {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4);
+      }
+    }
+  }
+}
+
+// Animaciones
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+@keyframes pulse-indicator {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+// Responsive moderno
+@media (max-width: 768px) {
+  .modern-header-wrapper {
+    gap: 1rem;
+  }
+
+  .modern-title-section {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .modern-text-content .modern-title {
+    font-size: 1.8rem;
+  }
+
+  .modern-status-grid {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .status-card {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modern-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .modern-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modern-card .card-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .examples-grid {
+    flex-direction: column;
+  }
+
+  .example-chip {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
 
@@ -2020,30 +2928,19 @@ onMounted(() => {
   }
 }
 
-/* Estilos personalizados para modales */
+/* Estilos MODERNOS personalizados para modales de diagnóstico */
 :deep(.export-dialog-custom) {
   .q-dialog__inner {
-    background: rgba(15, 23, 42, 0.8) !important;
-    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(20px);
   }
 
   .q-card {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%) !important;
     border: 1px solid rgba(59, 130, 246, 0.3);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
-  }
-}
-
-:deep(.help-dialog-custom) {
-  .q-dialog__inner {
-    background: rgba(15, 23, 42, 0.8) !important;
-    backdrop-filter: blur(10px);
-  }
-
-  .q-card {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
-    border: 1px solid rgba(34, 197, 94, 0.3);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6) !important;
+    border-radius: 24px !important;
+    backdrop-filter: blur(20px);
   }
 
   .q-card__section {
@@ -2051,21 +2948,198 @@ onMounted(() => {
   }
 }
 
-/* Mejoras generales para otros modales del sistema */
-:deep(.q-dialog) {
-  .q-card {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    color: white;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+:deep(.help-dialog-custom) {
+  .q-dialog__inner {
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(20px);
   }
 
-  .q-card__section--vert {
+  .q-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%) !important;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6) !important;
+    border-radius: 24px !important;
+    backdrop-filter: blur(20px);
+  }
+
+  .q-card__section {
     color: white;
+  }
+}
+
+/* Mejoras ULTRA-MODERNAS para todos los modales del sistema de diagnóstico */
+:deep(.q-dialog) {
+  .q-dialog__inner {
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(15px);
+  }
+
+  .q-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 70%, #334155 100%) !important;
+    color: white !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.05) 0%,
+        rgba(147, 51, 234, 0.05) 100%
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+  }
+
+  .q-card__section {
+    color: white !important;
+    position: relative;
+    z-index: 1;
+
+    &--vert {
+      color: white !important;
+    }
   }
 
   .q-btn {
-    border-radius: 8px;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%
+      );
+      transition: left 0.5s ease;
+    }
+
+    &:hover::before {
+      left: 100%;
+    }
+
+    &:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    }
+  }
+
+  // Estilos específicos para títulos en modales
+  .q-card__section:first-child {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px 24px 0 0;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(59, 130, 246, 0.5) 50%,
+        transparent 100%
+      );
+    }
+  }
+
+  // Estilos para inputs dentro de modales
+  .q-input .q-field__control {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
+    transition: all 0.3s ease !important;
+
+    &:hover {
+      border-color: rgba(59, 130, 246, 0.5) !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    &.q-field--focused {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+  }
+
+  .q-input .q-field__native,
+  .q-input .q-field__input {
+    color: white !important;
+  }
+
+  .q-input .q-field__label {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  // Animaciones modernas para entrada del modal
+  &.q-dialog--opened {
+    animation: modalFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+// Animaciones personalizadas
+@keyframes modalFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// Efectos especiales para botones en modales
+:deep(.q-dialog .q-btn--primary) {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3) !important;
+
+  &:hover {
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4) !important;
+  }
+}
+
+:deep(.q-dialog .q-btn--secondary) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3) !important;
+
+  &:hover {
+    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4) !important;
+  }
+}
+
+:deep(.q-dialog .q-btn--negative) {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3) !important;
+
+  &:hover {
+    box-shadow: 0 12px 40px rgba(239, 68, 68, 0.4) !important;
   }
 }
 </style>

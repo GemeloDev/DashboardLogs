@@ -7,7 +7,7 @@
     transition-hide="slide-down"
     @escape-key="cerrarDiagnostico"
   >
-    <q-card class="diagnostic-modal bg-grey-9 text-white">
+    <q-card class="diagnostic-modal diagnostico-dialog-fullscreen bg-grey-9 text-white">
       <!-- Header Mejorado -->
       <q-card-section class="diagnostic-header bg-gradient-to-r from-grey-8 to-grey-7">
         <div class="row items-center">
@@ -523,7 +523,12 @@
 
                             <!-- Timeline con datos -->
                             <div v-else class="q-px-md">
-                              <q-timeline color="blue-5" side="right" dark class="session-timeline q-pl-md">
+                              <q-timeline
+                                color="blue-5"
+                                side="right"
+                                dark
+                                class="session-timeline q-pl-md"
+                              >
                                 <q-timeline-entry
                                   v-for="(log, index) in resultadoSesion.data"
                                   :key="log.id || index"
@@ -1344,7 +1349,7 @@ defineExpose({
 
 /* Scrollbar completo */
 ::-webkit-scrollbar {
-  width: 10px;  /* ancho de la barra */
+  width: 10px; /* ancho de la barra */
   height: 10px; /* alto si es horizontal */
 }
 
@@ -1365,5 +1370,4 @@ defineExpose({
 ::-webkit-scrollbar-thumb:hover {
   background-color: #7a7a7a;
 }
-
 </style>

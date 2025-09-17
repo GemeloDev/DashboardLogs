@@ -282,12 +282,32 @@ const showFilters = ref(false)
 const consolaRef = ref(null)
 const geminiConfigRef = ref(null)
 
+// Estado del flujo guardado en localStorage
+const savedFlow = ref(localStorage.getItem('dashboardFlow') || 'escritorio')
+
 // Computed para obtener el flujo actual desde la ruta
 const currentFlow = computed(() => {
-  if (route.path.includes('/mobile')) return 'mobile'
-  if (route.path.includes('/escritorio')) return 'escritorio'
-  return 'escritorio' // Por defecto
+  // Priorizar el meta.flow de la ruta si existe (rutas específicas)
+  if (route.meta?.flow) {
+    return route.meta.flow
+  }
+
+  // Para rutas sin meta.flow, usar el flujo guardado
+  return savedFlow.value
 })
+
+// Watcher para guardar cambios de flujo
+watch(
+  currentFlow,
+  (newFlow) => {
+    if (route.meta?.flow) {
+      // Si la ruta tiene meta.flow específico, guardarlo como preferencia
+      savedFlow.value = newFlow
+      localStorage.setItem('dashboardFlow', newFlow)
+    }
+  },
+  { immediate: true }
+)
 
 // Proporcionar el estado del flujo a los componentes hijos
 provide('selectedFlow', currentFlow)
@@ -301,36 +321,19 @@ const userInfo = ref({
 
 // Función para cambiar de flujo mediante rutas
 const cambiarFlujo = (nuevoFlujo) => {
-  const rutaActual = route.path
+  // Guardar la nueva preferencia de flujo
+  savedFlow.value = nuevoFlujo
+  localStorage.setItem('dashboardFlow', nuevoFlujo)
+
   let rutaDestino
 
   // Lógica inteligente para mantener la página actual cuando sea posible
   if (nuevoFlujo === 'mobile') {
-    // Para flujo móvil: dashboard, estadísticas, eventos, eventos-fallidos
-    if (
-      rutaActual.includes('/estadisticas') ||
-      rutaActual.includes('/eventos') ||
-      rutaActual.includes('/eventos-fallidos')
-    ) {
-      rutaDestino = rutaActual // Mantener páginas que existen en móvil
-    } else if (rutaActual.includes('/diagnostico')) {
-      rutaDestino = '/mobile' // Diagnóstico no existe en móvil, ir al dashboard
-    } else {
-      rutaDestino = '/mobile' // Dashboard móvil por defecto
-    }
+    // Para flujo móvil: ir a la ruta específica móvil
+    rutaDestino = '/mobile'
   } else {
-    // Para flujo escritorio: dashboard, diagnóstico
-    if (rutaActual.includes('/diagnostico')) {
-      rutaDestino = rutaActual // Mantener diagnóstico si ya estamos ahí
-    } else if (
-      rutaActual.includes('/estadisticas') ||
-      rutaActual.includes('/eventos') ||
-      rutaActual.includes('/eventos-fallidos')
-    ) {
-      rutaDestino = '/escritorio' // Estas páginas no existen en escritorio, ir al dashboard
-    } else {
-      rutaDestino = '/escritorio' // Dashboard de escritorio por defecto
-    }
+    // Para flujo escritorio: ir a la ruta específica escritorio
+    rutaDestino = '/escritorio'
   }
 
   router.push(rutaDestino)
