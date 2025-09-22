@@ -45,16 +45,30 @@ class SantoroContextService {
 
   // 🚀 INICIALIZAR servicio
   inicializar() {
-    // Escuchar cambios de ruta
+    // Escuchar cambios de ruta con múltiples métodos
     window.addEventListener('popstate', () => {
-      this.actualizarContextoRuta()
+      setTimeout(() => this.actualizarContextoRuta(), 100)
     })
+
+    // Observar cambios en la URL cada segundo para capturar navegación manual
+    setInterval(() => {
+      this.actualizarContextoRuta()
+    }, 1000)
+
+    // Escuchar eventos de Vue Router si está disponible
+    if (window.router) {
+      window.router.afterEach(() => {
+        setTimeout(() => this.actualizarContextoRuta(), 100)
+      })
+    }
 
     // Detectar ruta inicial
     this.actualizarContextoRuta()
 
     // Cargar contexto desde localStorage si existe
     this.cargarContextoPersistente()
+
+    console.log('🧠 Santoro Context Service inicializado con detección automática de cambios')
   }
 
   // 📍 ACTUALIZAR contexto de ruta
@@ -95,12 +109,45 @@ class SantoroContextService {
 
   // 🏗️ EXTRAER módulo de la ruta
   extraerModulo(ruta) {
-    if (ruta === '/logs' || ruta === '/') return 'dashboard'
-    if (ruta === '/login') return 'login'
-    if (ruta === '/diagnostico') return 'diagnostico'
-    if (ruta === '/estadisticas') return 'estadisticas'
-    if (ruta === '/eventos') return 'eventos'
-    if (ruta === '/eventos-fallidos') return 'eventos_fallidos'
+    // Mapeo completo de rutas a módulos
+    const mapeoRutas = {
+      '/': 'dashboard',
+      '/login': 'login',
+      '/dashboard-desktop': 'dashboard',
+      '/dashboard-mobile': 'dashboard',
+      '/escritorio': 'escritorio',
+      '/logs': 'logs',
+      '/eventos': 'eventos',
+      '/eventos-fallidos': 'eventos_fallidos',
+      '/estadisticas': 'estadisticas',
+      '/diagnostico': 'diagnostico',
+      '/santoro-config': 'configuracion',
+      '/santoro-demo': 'demo'
+    }
+
+    // Buscar coincidencia exacta primero
+    if (mapeoRutas[ruta]) {
+      return mapeoRutas[ruta]
+    }
+
+    // Buscar por patrones parciales
+    if (ruta.includes('/dashboard')) return 'dashboard'
+    if (ruta.includes('/escritorio')) return 'escritorio'
+    if (ruta.includes('/logs')) return 'logs'
+    if (ruta.includes('/eventos')) return 'eventos'
+    if (ruta.includes('/estadisticas')) return 'estadisticas'
+    if (ruta.includes('/diagnostico')) return 'diagnostico'
+    if (ruta.includes('/santoro')) return 'configuracion'
+
+    // Detectar por hash también
+    const hash = window.location.hash
+    if (hash.includes('/dashboard')) return 'dashboard'
+    if (hash.includes('/escritorio')) return 'escritorio'
+    if (hash.includes('/logs')) return 'logs'
+    if (hash.includes('/eventos')) return 'eventos'
+    if (hash.includes('/estadisticas')) return 'estadisticas'
+    if (hash.includes('/diagnostico')) return 'diagnostico'
+
     return 'desconocido'
   }
 

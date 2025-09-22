@@ -543,7 +543,6 @@ const abrirConsolaGeneral = (tipo) => {
   let datos = []
   let titulo = ''
   let filtrosEspecificos = {}
-
   switch (tipo) {
     case 'todos':
       datos = [
@@ -590,6 +589,7 @@ const abrirConsolaGeneral = (tipo) => {
       }
       break
   }
+
   if (datos.length === 0) {
     datos = [
       {
@@ -603,6 +603,7 @@ const abrirConsolaGeneral = (tipo) => {
       },
     ]
   }
+  console.log('Detalles de exportaciones:', datosExportaciones.value.detalles)
 
   // Función helper para obtener nombre de oficina
   const obtenerNombreOficina = (oficina) => {
@@ -622,9 +623,10 @@ const abrirConsolaGeneral = (tipo) => {
 
   const logsFormateados = datos.map((detalle) => ({
     Date: detalle.fechaCompleta || detalle.fecha || detalle.Date,
-    Type: detalle.tipo || detalle.Type || 'INFO',
-    Process: detalle.proceso || detalle.Process || tipo.toUpperCase(),
-    Message: detalle.mensaje || detalle.Message || `Evento de ${tipo}`,
+    Type: detalle.type,
+    type: detalle.type,
+    Process: detalle.process,
+    Message: detalle.message || detalle.Message || `Evento de ${tipo}`,
     Oficina: {
       Nombre: obtenerNombreOficina(detalle.oficina || detalle.Oficina),
       Direccion:
@@ -652,7 +654,7 @@ const abrirConsolaGeneral = (tipo) => {
     TrackingCode: detalle.trackingCode || detalle.TrackingCode || null,
     ID: detalle.id || detalle.ID || null,
     // Campos adicionales útiles
-    Proceso: detalle.process || 'No especificado',
+    Proceso: detalle.process,
     Hora: detalle.hora || 'No especificada',
   }))
 
@@ -1630,13 +1632,14 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
     )
     return
   }
-
+  console.log(logsFecha, 'logsFecha')
   // Convertir los detalles al formato esperado por la consola con información completa
   const logsFormateados = logsFecha.map((detalle) => ({
     Date: detalle.fechaCompleta || detalle.fecha,
-    Type: detalle.tipo || detalle.Type || (tipoGrafica === 'errores' ? 'ERROR' : 'INFO'),
-    Process: detalle.proceso || detalle.Process || tipoGrafica.toUpperCase(),
-    Message: detalle.mensaje || detalle.Message || `Evento de ${tipoGrafica}`,
+    Type: detalle.type,
+    type: detalle.type,
+    Process: detalle.process,
+    Message: detalle.message || detalle.Message || `Evento de ${tipoGrafica}`,
     Oficina: {
       Nombre:
         (typeof detalle.oficina === 'string' ? detalle.oficina : detalle.oficina?.nombre) ||
@@ -1650,12 +1653,7 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
       detalle.person?.nombres ||
       'No especificado',
     Dispositivo: detalle.device || detalle.Dispositivo || detalle.device || 'No especificado',
-    Escaner:
-      detalle.scanDevice ||
-      detalle.ScanDevice ||
-      detalle.escaner ||
-      detalle.scanner ||
-      'No especificado',
+    Escaner: detalle.scanDevice,
     // Información adicional para mejor contexto
     PersonaCompleta: detalle.person
       ? {
@@ -1668,7 +1666,7 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
     TrackingCode: detalle.trackingCode || detalle.TrackingCode || null,
     ID: detalle.id || detalle.ID || null,
     // Campos adicionales útiles
-    Proceso: detalle.proceso || detalle.Process || 'No especificado',
+    Proceso: detalle.process || detalle.Process || 'No especificado',
     Hora: detalle.hora || 'No especificada',
   }))
 
@@ -1955,6 +1953,9 @@ onBeforeUnmount(() => {
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 
   &:hover {
     transform: translateY(-4px);
@@ -2021,6 +2022,10 @@ onBeforeUnmount(() => {
   margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .kpi-value {
@@ -2029,12 +2034,20 @@ onBeforeUnmount(() => {
   color: #ffffff;
   line-height: 1.2;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .kpi-subtitle {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 // Responsive para KPIs

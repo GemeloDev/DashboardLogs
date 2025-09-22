@@ -481,7 +481,7 @@
                       :icon="getIconoTipo(log.type || log.Tipo || log.EventType)"
                       class="text-weight-bold"
                     >
-                      {{ log.type || log.Tipo || log.EventType || 'INFO' }}
+                      {{ log.type || log.Type || log.EventType || 'INFO' }}
                     </q-chip>
                   </div>
                   <div class="col-auto">
@@ -3574,28 +3574,23 @@ defineExpose({
   display: grid;
   gap: 14px;
   padding: 14px;
-  grid-template-columns: 1fr;
-  overflow-x: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   max-width: 100%;
+  overflow-x: hidden;
 
-  @media (min-width: 600px) {
-    grid-template-columns: repeat(2, 1fr);
+  // Forzar redistribución consistente durante filtrado
+  transition: opacity 0.2s ease-in-out;
+
+  // Asegurar que las tarjetas mantengan posición durante filtrado
+  grid-auto-flow: row;
+  grid-auto-rows: min-content;
+
+  // Optimización para prevenir saltos durante el filtrado
+  &.loading-opacity {
+    opacity: 0.7;
+    pointer-events: none;
   }
-
-  @media (min-width: 960px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (min-width: 1600px) {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-// Estilos para las cards de logs - OPTIMIZADO PARA ALTURA COMPACTA
+} // Estilos para las cards de logs - OPTIMIZADO PARA ALTURA COMPACTA
 .log-card {
   background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%);
   border-radius: 12px;
@@ -3603,12 +3598,22 @@ defineExpose({
   padding: 12px;
   margin: 6px 0;
   border-left: 4px solid #007bff;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   min-height: auto;
   height: auto;
   display: flex;
   flex-direction: column;
 
+  // Restricciones de ancho para prevenir deformación
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow: hidden;
+
+  // Asegurar posicionamiento estable durante filtrado
+  will-change: transform;
+  contain: layout style;
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
@@ -3764,7 +3769,11 @@ defineExpose({
       text-align: right;
       max-width: 65%;
       word-break: break-word;
+      overflow-wrap: break-word;
       font-size: 0.7rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 
@@ -3775,6 +3784,9 @@ defineExpose({
     color: #e0e0e0;
     line-height: 1.3;
     font-size: 0.75rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
   }
 
   .error-content {
@@ -3786,6 +3798,10 @@ defineExpose({
     font-weight: 500;
     color: #f44336;
     font-size: 0.7rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    white-space: pre-wrap;
   }
 
   .session-content {
@@ -3794,10 +3810,13 @@ defineExpose({
     padding: 4px 6px;
     border-radius: 3px;
     font-family: 'Courier New', monospace;
-    font-weight: 400;
+    font-weight: 500;
     color: #00bcd4;
-    word-break: break-all;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    white-space: pre-wrap;
   }
 
   .message-content {
@@ -3920,10 +3939,15 @@ defineExpose({
 // Mejorar responsive para tablets
 @media (min-width: 768px) and (max-width: 1024px) {
   .responsive-logs-grid {
-    // En tablets, máximo 2 columnas para dar más espacio a cada card
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 14px;
+    // En tablets, usar minmax con límites más conservadores
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    gap: 12px;
     padding: 12px;
+  }
+
+  .log-card {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .console-controls {
@@ -3944,14 +3968,20 @@ defineExpose({
 }
 
 // Responsive adjustments
+// Responsive adjustments para móviles
 @media (max-width: 768px) {
   .responsive-logs-grid {
+    grid-template-columns: 1fr;
     padding: 8px;
     gap: 12px;
   }
 
   .log-card {
-    min-height: 250px;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    word-break: break-word;
+    overflow: hidden;
   }
 
   .log-card-content {

@@ -6,10 +6,10 @@
         <div class="row items-center q-col-gutter-md">
           <div class="col-12 col-md-8">
             <div class="text-h3 diagnostic-title q-mb-md">
-              <q-icon name="medical_services" class="q-mr-sm" color="cyan-4" size="48px" />
+              <q-icon name="medical_services" class="q-mr-sm" color="blue-4" size="48px" />
               <span class="diagnostic-title-text">🔬 Centro de Diagnóstico Técnico</span>
             </div>
-            <div class="text-h6 text-cyan-3 diagnostic-subtitle q-mb-md">
+            <div class="text-h6 text-blue-3 diagnostic-subtitle q-mb-md">
               <span class="diagnostic-subtitle-text"
                 >🛡️ Sistema de Análisis de Errores y Sesiones | 📊 Reportes Avanzados</span
               >
@@ -29,7 +29,7 @@
 
               <q-chip
                 v-if="diagnosticoActivo"
-                color="cyan-5"
+                color="blue-5"
                 text-color="white"
                 size="sm"
                 icon="auto_fix_high"
@@ -82,9 +82,9 @@
         <q-tabs
           v-model="tabActiva"
           dense
-          class="bg-grey-8 text-grey-3 q-mb-lg diagnostic-tabs"
-          active-color="cyan-5"
-          indicator-color="cyan-5"
+          class="bg-grey-7 text-grey-2 q-mb-lg diagnostic-tabs"
+          active-color="blue-4"
+          indicator-color="blue-4"
           align="justify"
         >
           <q-tab name="busqueda" icon="search" label="🔍 Búsqueda Rápida" />
@@ -100,7 +100,7 @@
               <div class="modern-card">
                 <div class="card-header">
                   <div class="header-icon">
-                    <q-icon name="search" size="32px" color="cyan-4" />
+                    <q-icon name="search" size="32px" color="blue-4" />
                   </div>
                   <div class="header-content">
                     <h3 class="card-title">Búsqueda Rápida de Diagnóstico</h3>
@@ -121,7 +121,7 @@
                       @keyup.enter="realizarBusquedaRapida"
                     >
                       <template v-slot:prepend>
-                        <q-icon name="search" color="cyan-4" size="20px" />
+                        <q-icon name="search" color="blue-4" size="20px" />
                       </template>
                     </q-input>
                     <q-btn
@@ -163,10 +163,10 @@
 
           <!-- CÓDIGO DE ERROR (exacto al modal) -->
           <q-tab-panel name="errorCode" class="q-pa-none">
-            <q-card class="diagnostic-card bg-grey-8 text-white">
+            <q-card class="diagnostic-card bg-grey-7 text-white">
               <q-card-section>
                 <div class="text-h6">🔍 Análisis de Código de Error</div>
-                <div class="text-caption text-grey-4 q-mb-lg">Formato: USR02808190918-SUC001</div>
+                <div class="text-caption text-grey-3 q-mb-lg">Formato: USR02808190918-SUC001</div>
 
                 <div class="row q-col-gutter-md">
                   <div class="col-12 col-md-8">
@@ -198,7 +198,7 @@
 
                 <!-- Resultado del Error (exacto al modal) -->
                 <div v-if="resultadoError" class="q-mt-lg">
-                  <q-separator class="q-mb-md" color="grey-6" />
+                  <q-separator class="q-mb-md" color="grey-5" />
                   <div v-if="resultadoError.success && resultadoError.data.length > 0">
                     <div class="text-h6 text-red-4 q-mb-md">
                       <q-icon name="error" class="q-mr-sm" />
@@ -211,7 +211,7 @@
                     <!-- Resumen principal -->
                     <div class="row q-col-gutter-md q-mb-lg">
                       <div class="col-12">
-                        <q-card class="bg-grey-7">
+                        <q-card class="bg-grey-6">
                           <q-card-section>
                             <div class="text-subtitle2 q-mb-md">📊 Información Principal</div>
                             <div class="row q-col-gutter-md">
@@ -278,7 +278,7 @@
                     <!-- Lista de registros -->
                     <div class="row q-col-gutter-md">
                       <div class="col-12">
-                        <q-card class="bg-grey-7">
+                        <q-card class="bg-grey-6">
                           <q-card-section>
                             <div class="text-subtitle2 q-mb-md">📋 Registros Relacionados</div>
                             <q-list dark separator>
@@ -297,7 +297,7 @@
                                   <q-item-label>{{
                                     record.message || record.descripcion || 'Sin mensaje'
                                   }}</q-item-label>
-                                  <q-item-label caption class="text-grey-4">
+                                  <q-item-label caption class="text-grey-3">
                                     {{ formatearFecha(record.fecha) }} | Usuario:
                                     {{ record.person?.nombreCompleto || 'N/A' }} | Oficina:
                                     {{ record.oficina?.nombre || 'N/A' }}
@@ -308,7 +308,7 @@
                                     icon="visibility"
                                     flat
                                     round
-                                    color="cyan-5"
+                                    color="blue-4"
                                     size="sm"
                                     @click.stop="verDetalleCompleto(record)"
                                   />
@@ -492,7 +492,7 @@
                               </q-item>
                               <q-item dense class="summary-item">
                                 <q-item-section avatar>
-                                  <q-avatar color="cyan-5" text-color="white" size="sm">
+                                  <q-avatar color="blue-5" text-color="white" size="sm">
                                     <q-icon name="schedule" />
                                   </q-avatar>
                                 </q-item-section>
@@ -685,7 +685,7 @@
     <!-- Loading Overlay -->
     <q-inner-loading
       :showing="cargando"
-      color="cyan-5"
+      color="blue-5"
       size="50px"
       label="Procesando diagnóstico..."
     />
@@ -1105,7 +1105,7 @@ const getRecordTypeColor = (type) => {
     INFO: 'blue-6',
     DEBUG: 'purple-6',
     SUCCESS: 'green-5',
-    PROCESS: 'cyan-6',
+    PROCESS: 'blue-6',
   }
   return colors[type?.toString().toUpperCase()] || 'grey-6'
 }
@@ -1609,7 +1609,7 @@ const mostrarAyuda = () => {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 28px;">
 
             <!-- Búsqueda Rápida -->
-            <div style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(8, 145, 178, 0.2);">
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);">
               <div style="display: flex; align-items: center; margin-bottom: 12px;">
                 <div style="font-size: 1.5rem; margin-right: 10px;">⚡</div>
                 <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Búsqueda Rápida</h4>
@@ -1692,17 +1692,17 @@ onMounted(() => {
 
 // Header limpio y moderno
 .diagnostic-header {
-  border-bottom: 2px solid rgba(6, 182, 212, 0.3);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
   backdrop-filter: blur(10px);
 }
 
 .diagnostic-title {
   font-weight: 700;
-  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 30px rgba(6, 182, 212, 0.3);
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
 }
 
 .diagnostic-subtitle {
@@ -2187,7 +2187,7 @@ onMounted(() => {
   }
 
   &.analyzing {
-    border-left: 3px solid #06b6d4;
+    border-left: 3px solid #3b82f6;
   }
 }
 

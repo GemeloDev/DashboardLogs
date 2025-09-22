@@ -45,18 +45,7 @@ export class ChartDataService {
         muestra: Array.isArray(response.data) ? response.data.slice(0, 2) : response.data
       })
 
-      // Verificar si la respuesta es válida
-      if (response.data === null ||
-        response.data === undefined) {
-        console.log('⚠️ API sin datos de exportaciones válidos - retornando estado vacío')
-        return this.getEmptyChartData()
-      }
 
-      // Si no es array o está vacío, retornar estado vacío
-      if (!Array.isArray(response.data) || response.data.length === 0) {
-        console.log('⚠️ API sin datos de exportaciones válidos (no array o vacío) - retornando estado vacío')
-        return this.getEmptyChartData()
-      }
 
       return this.processExportacionesData(response.data)
     } catch (error) {
@@ -199,6 +188,7 @@ export class ChartDataService {
     })
 
     console.log('Datos agrupados exportaciones:', agrupados)
+    console.log('Datos detalles exportaciones:', detalles)
 
     // Convertir a formato de Chart.js
     const categorias = Object.keys(agrupados).sort()
@@ -1140,7 +1130,6 @@ export class ChartDataService {
 
       detalles.push({
         fecha: fechaStr,
-        tipo: 'ERROR',
         // Los datos reales tienen estructura diferente a los de ejemplo
         proceso: item.process || item.Process || 'Proceso no especificado',
         mensaje: item.message || item.Message || item.descripcion || 'Error sin descripción',
@@ -1160,7 +1149,11 @@ export class ChartDataService {
         id: item.id || item.ID || null,
 
         // IMPORTANTE: Preservar TODOS los datos originales de la API
-        ...item // Incluir el item completo original
+        ...item, // Incluir el item completo original
+
+        // SOBRESCRIBIR después del spread para garantizar el tipo correcto
+        tipo: 'ERROR',
+        type: 'ERROR' // Asegurar ambos campos por compatibilidad
       })
     })
 
