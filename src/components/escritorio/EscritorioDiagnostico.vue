@@ -93,9 +93,9 @@
         >
           <q-tab name="busqueda" icon="search" label="Búsqueda" />
           <q-tab name="errorCode" icon="error" label="Código Error" />
-          <q-tab name="session" icon="account_circle" label="Sesión" />
+          <q-tab name="session" icon="code" label="Código Base" />
+          <q-tab name="token" icon="account_circle" label="Token" />
           <q-tab name="soporte" icon="support_agent" label="Soporte" />
-          <q-tab name="resultados" icon="assessment" label="Resultados" />
         </q-tabs>
       </q-card-section>
 
@@ -318,7 +318,7 @@
                                 <q-item-section>
                                   <q-item-label>{{ record.message }}</q-item-label>
                                   <q-item-label caption>
-                                    {{ formatearFecha(record.date) }} | {{ record.process }} |
+                                    {{ formatearFechaDetails(record.date) }} | {{ record.process }} |
                                     {{ record.device }}
                                   </q-item-label>
                                 </q-item-section>
@@ -464,7 +464,7 @@
                                 </q-item-section>
                                 <q-item-section>
                                   <q-item-label>{{
-                                    formatearFecha(resultadoSesion.summary?.dateRange?.start)
+                                    formatearFechaDetails(resultadoSesion.summary?.dateRange?.start)
                                   }}</q-item-label>
                                   <q-item-label caption>Primer evento</q-item-label>
                                 </q-item-section>
@@ -476,7 +476,7 @@
                                 </q-item-section>
                                 <q-item-section>
                                   <q-item-label>{{
-                                    formatearFecha(resultadoSesion.summary?.dateRange?.end)
+                                    formatearFechaDetails(resultadoSesion.summary?.dateRange?.end)
                                   }}</q-item-label>
                                   <q-item-label caption>Último evento</q-item-label>
                                 </q-item-section>
@@ -533,7 +533,7 @@
                                   v-for="(log, index) in resultadoSesion.data"
                                   :key="log.id || index"
                                   :title="`Acción ${index + 1}: ${log.process || 'Proceso'}`"
-                                  :subtitle="formatearFecha(log.date || log.timestamp)"
+                                  :subtitle="formatearFechaDetails(log.date || log.timestamp)"
                                   :icon="getEventIcon(log.type)"
                                   :color="getEventColor(log.type)"
                                 >
@@ -608,6 +608,55 @@
                     </div>
                   </div>
                 </div>
+              </q-card-section>
+            </q-card>
+          </q-tab-panel>
+
+          <!-- TOKEN -->
+          <q-tab-panel name="token">
+            <q-card class="bg-grey-8 text-white">
+              <q-card-section>
+                <div class="row justify-center">
+                  <div class="col-12 justify-center q-gutter-y-xs text-center">
+                    <div class="text-h6 q-pa-md">📔 Análisis de Sesión por Token</div>
+                    <div class="text-caption text-grey-4 q-mb-lg q-mx-md">
+                      Ejemplo: ihJak3VeUMNA
+                    </div>
+                  </div>
+                  <div class="col-md-6 col-xs-12 q-gutter-y-md">
+                    <q-input
+                      v-model="tokenSesion"
+                      label="Token de Sesión"
+                      placeholder="ihJak3VeUMNA"
+                      dark
+                      outlined
+                      @keyup.enter="() => consultarToken()"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="data_object" color="blue-5" />
+                      </template>
+                    </q-input>
+                    <q-btn
+                      color="blue-5"
+                      icon="search"
+                      label="Consultar"
+                      @click="() => consultarToken()"
+                      :loading="cargandoSesion"
+                      size="md"
+                      class="full-width"
+                    />
+                  </div>
+                  <!-- Resultado de la Sesión  -->
+                  <div class="col-12 q-mt-lg" v-if="resultadoToken !== null">
+                    <ResultadosByToken
+                      :counterUsers="countUsers"
+                      :counterOficinas="countOficinas"
+                      :resultados="resultadoToken"
+                    />
+                  </div>
+                </div>
+
+
               </q-card-section>
             </q-card>
           </q-tab-panel>
@@ -793,7 +842,7 @@
                                 </div>
                                 <div class="col-auto">
                                   <q-chip dense color="primary" text-color="white">{{
-                                    formatearFecha(r.date)
+                                    formatearFechaDetails(r.date)
                                   }}</q-chip>
                                 </div>
                               </div>
@@ -905,6 +954,8 @@ import { useQuasar } from 'quasar'
 import { DiagnosticService } from '../../services/diagnosticService.js'
 import { CatalogService } from '../../services/catalogService.js'
 import EscritorioGuia from './EscritorioGuia.vue'
+import ResultadosByToken from './resultadosEscritorio/ResultadosByToken.vue'
+import { getEventColor, getEventIcon, counterKeyRegister } from 'src/helpers/index.js'
 
 // Props y emits
 const props = defineProps({
@@ -949,6 +1000,12 @@ const resultadoSoporte = ref(null)
 // Opciones locales para Soporte
 const opcionesSoporteDispositivos = ref([])
 const opcionesSoporteUsuarios = ref([])
+
+// Estados de análisis de token
+const resultadoToken = ref(null)
+const countUsers = ref(0)
+const countOficinas = ref(0)
+const tokenSesion = ref('')
 
 const cargarCatalogosSoporte = async () => {
   try {
@@ -1231,37 +1288,31 @@ const limpiarCodigoSoporte = () => {
   }
 }
 
-const getEventIcon = (type) => {
-  switch (type?.toUpperCase()) {
-    case 'SUCCESS':
-      return 'check_circle'
-    case 'ERROR':
-      return 'error'
-    case 'WARNING':
-      return 'warning'
-    case 'INFO':
-      return 'info'
-    default:
-      return 'timeline'
+const consultarToken = async (codigo = null) => {
+  const sesion = codigo || tokenSesion.value
+  if (!sesion || !String(sesion).trim()) return
+
+  cargandoBusqueda.value = true
+
+  try {
+    resultadoToken.value = await DiagnosticService.getTokenSesionData(sesion)
+    countUsers.value = counterKeyRegister(resultadoToken.value.data).persons
+    countOficinas.value = counterKeyRegister(resultadoToken.value.data).oficina
+
+    $q.notify({
+      type: 'positive',
+      message: 'Token consultado',
+      icon: 'account_circle',
+      position: 'top-right',
+    })
+  } catch (error) {
+    console.log(`🔄 Error en consulta:', ${error.message}`)
+  } finally {
+    cargandoBusqueda.value = false
   }
 }
 
-const getEventColor = (type) => {
-  switch (type?.toUpperCase()) {
-    case 'SUCCESS':
-      return 'green-5'
-    case 'ERROR':
-      return 'red-5'
-    case 'WARNING':
-      return 'orange-5'
-    case 'INFO':
-      return 'blue-5'
-    default:
-      return 'grey-5'
-  }
-}
-
-const formatearFecha = (fecha) => {
+const formatearFechaDetails = (fecha) => {
   if (!fecha) return 'No disponible'
   try {
     return new Date(fecha).toLocaleString('es-ES', {
@@ -1369,5 +1420,60 @@ defineExpose({
 /* Thumb al hacer hover */
 ::-webkit-scrollbar-thumb:hover {
   background-color: #7a7a7a;
+}
+
+// Cards modernos
+.modern-card {
+  background: var(--gradient-card);
+  backdrop-filter: var(--blur-glass);
+  border: var(--border-glass);
+  border-radius: 24px;
+  overflow: hidden;
+  transition: var(--transition-smooth);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem 2rem 1rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .header-icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gradient-primary);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    }
+
+    .header-content {
+      flex: 1;
+
+      .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .card-subtitle {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+      }
+    }
+  }
+
+  .card-body {
+    padding: 2rem;
+  }
 }
 </style>

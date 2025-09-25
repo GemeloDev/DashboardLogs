@@ -120,6 +120,63 @@ export class DiagnosticService {
     }
   }
 
+  static async getTokenSesionData(tokenSesion) {
+    try {
+      console.log(`🔍 Consultando sesión por baseCode: ${tokenSesion}`)
+      console.log(`🌐 URL: ${API_BASE_URL}/tokenSession/${tokenSesion}`)
+
+      const response = await axios.get(`${API_BASE_URL}/tokenSession/${tokenSesion}`, buildApiConfig())
+
+      console.log('✅ Detalles de sesión obtenidos:', response.data)
+      console.log('📊 Status:', response.status)
+
+      const data = Array.isArray(response.data) ? response.data : [response.data]
+
+      return {
+        success: true,
+        data,
+        tokenSesion,
+        summary: {
+          totalEvents: data.length,
+          baseCode: data[0]?.baseCode,
+          sessionToken: data[0]?.sessionToken,
+          user: data[0]?.person?.nombreCompleto,
+          office: data[0]?.oficina?.nombre,
+          processes: [...new Set(data.map(item => item.process))],
+          errorTypes: [...new Set(data.map(item => item.type))],
+          dateRange: {
+            start: data[0]?.date,
+            end: data[data.length - 1]?.date
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Error al obtener detalles de sesión:', error)
+      console.error('📋 Session error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        method: error.config?.method
+      })
+
+      // // Si es un error de red o servidor, usar datos de muestra
+      // if (error.code === 'NETWORK_ERROR' || error.response?.status >= 500 || !error.response) {
+      //   console.log('🔄 Usando datos de muestra por error de conectividad')
+      //   return this.getSampleSessionData(sesion)
+      // }
+
+      return {
+        success: false,
+        error: error.message,
+        tokenSesion,
+        data: null
+      }
+    }
+  }
+
   // 🛠️ Enviar solicitud de soporte
   static async sendSupportRequest(code, device, user) {
     try {
@@ -193,6 +250,7 @@ export class DiagnosticService {
       }
     }
   }
+
 
   // 🎨 Generar datos de ejemplo para testing
   static getSampleErrorData(errorCode) {

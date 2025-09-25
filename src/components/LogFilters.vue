@@ -7,151 +7,138 @@
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     "
   >
-    <!-- Header con icono y título -->
-    <div class="row items-center q-mb-lg">
-      <q-icon name="date_range" size="28px" color="blue-4" class="q-mr-sm" />
-      <div class="text-h6 text-white">Filtrar por Período</div>
-      <q-space />
-      <!-- Botón para resetear al mes actual -->
-      <q-btn
-        flat
-        round
-        icon="refresh"
-        color="blue-4"
-        size="sm"
-        @click="resetearAMesActual"
-        class="q-ml-sm"
-      >
-        <q-tooltip class="bg-blue-9">Mes actual</q-tooltip>
-      </q-btn>
-    </div>
-
-    <!-- Filtros de fecha responsivos -->
-    <div class="row q-col-gutter-md">
-      <!-- Rango de Fechas -->
-      <div class="col-12">
-        <q-input
-          v-model="rangoFechasTexto"
-          label="Rango de Fechas"
-          filled
-          dense
-          color="blue-4"
-          label-color="blue-4"
-          input-class="text-white text-weight-medium"
-          class="fecha-input"
-          readonly
-        >
-          <template v-slot:prepend>
-            <q-icon name="date_range" color="blue-4" />
-          </template>
-          <template v-slot:append>
-            <q-icon name="calendar_today" class="cursor-pointer" color="blue-4">
-              <q-popup-proxy cover>
-                <q-date
-                  v-model="rangoFechas"
-                  range
-                  color="blue-4"
-                  :options="validarFecha"
-                  @update:model-value="actualizarFechasDesdeRango"
-                  :class="{ 'q-pa-sm': $q.screen.lt.sm }"
-                >
-                  <div class="row items-center justify-end q-pa-sm">
-                    <q-btn v-close-popup label="Cerrar" color="blue-4" flat />
-                  </div>
-                </q-date>
-              </q-popup-proxy>
-            </q-icon>
-          </template>
-        </q-input>
+    <div class="column text-white colum-responsive">
+      <!-- Header con icono y título -->
+      <div class="col row content-center q-mt-md">
+        <div class="col-8 content-center q-ml-lg">
+          <p class="text-h6 text-white">
+            <q-icon name="date_range" size="28px" color="blue-4" class="q-mr-sm" />
+            Filtrar por Período
+          </p>
+        </div>
+        <!-- Botón para resetear al mes actual -->
+        <div class="col-sm-1 col-md q-ml-md text-right">
+          <q-btn flat round icon="refresh" color="blue-4" size="sm" @click="resetearAMesActual">
+            <q-tooltip class="bg-blue-9">Mes actual</q-tooltip>
+          </q-btn>
+        </div>
       </div>
-    </div>
+      <!-- Filtros de fecha responsivos -->
+      <div class="col q-my-md">
+        <div class="row">
+          <!-- Rango de Fechas -->
+          <div class="col-12">
+            <q-input
+              v-model="rangoFechasTexto"
+              label="Rango de Fechas"
+              filled
+              dense
+              color="blue-4"
+              label-color="blue-4"
+              input-class="text-white text-weight-medium"
+              class="fecha-input"
+              readonly
+            >
+              <template v-slot:prepend>
+                <q-icon name="date_range" color="blue-4" />
+              </template>
+              <template v-slot:append>
+                <q-icon name="calendar_today" class="cursor-pointer" color="blue-4">
+                  <q-popup-proxy cover>
+                    <q-date
+                      v-model="rangoFechas"
+                      range
+                      color="blue-4"
+                      :options="validarFecha"
+                      @update:model-value="actualizarFechasDesdeRango"
+                      :class="{ 'q-pa-sm': $q.screen.lt.sm }"
+                    >
+                      <div class="row items-center justify-end q-pa-sm">
+                        <q-btn v-close-popup label="Cerrar" color="blue-4" flat />
+                      </div>
+                    </q-date>
+                  </q-popup-proxy>
+                </q-icon>
+              </template>
+            </q-input>
+          </div>
+        </div>
+      </div>
 
-    <!-- Botones de acciones -->
-    <div class="row justify-between items-center q-mt-lg">
       <!-- Indicador del período seleccionado -->
-      <div class="col-12 col-sm-6 q-mb-md q-mb-sm-none">
-        <div class="text-blue-4 text-caption text-weight-medium">
-          Período: {{ formatearPeriodo() }}
+      <div class="col row q-gutter-md">
+        <div class="col-sm-12 col-md-2">
+          <div class="text-blue-4 text-caption text-weight-medium">
+            Período: {{ formatearPeriodo() }}
+          </div>
+          <div class="text-grey-5 text-caption">
+            {{ calcularDiasSeleccionados() }} días seleccionados
+          </div>
         </div>
-        <div class="text-grey-5 text-caption">
-          {{ calcularDiasSeleccionados() }} días seleccionados
-        </div>
-      </div>
-
-      <!-- Botones de acción -->
-      <div class="col-12 col-sm-6 row justify-end q-gutter-sm">
         <!-- Botón aplicar filtros -->
-        <q-btn
-          label="Aplicar"
-          icon="filter_list"
-          color="blue-6"
-          unelevated
-          rounded
-          class="q-px-lg text-weight-medium"
-          :loading="cargando"
-          :disable="!fechasValidas"
-          @click="aplicarFiltros"
-        />
+        <div class="col-sm-12 col-md offset-md-7 text-right">
+          <q-btn
+            label="Aplicar"
+            icon="filter_list"
+            color="blue-6"
+            unelevated
+            rounded
+            :loading="cargando"
+            :disable="!fechasValidas"
+            @click="aplicarFiltros"
+          />
+          <!-- Botón de filtros rápidos -->
+          <q-btn-dropdown flat rounded icon="schedule" color="blue-4" dropdown-icon="expand_more">
+            <q-list dense class="q-pa-none">
+              <q-item clickable v-close-popup @click="seleccionarPeriodo('hoy')">
+                <q-item-section avatar>
+                  <q-icon name="today" color="blue-4" size="sm" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-white text-caption">Hoy</q-item-label>
+                </q-item-section>
+              </q-item>
 
-        <!-- Botón de filtros rápidos -->
-        <q-btn-dropdown
-          flat
-          rounded
-          icon="schedule"
-          color="blue-4"
-          dropdown-icon="expand_more"
-          class="q-px-md"
-          :class="{ 'q-pa-sm': $q.screen.lt.sm }"
-        >
-          <q-list dense class="q-pa-none">
-            <q-item clickable v-close-popup @click="seleccionarPeriodo('hoy')">
-              <q-item-section avatar>
-                <q-icon name="today" color="blue-4" size="sm" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-white text-caption">Hoy</q-item-label>
-              </q-item-section>
-            </q-item>
+              <q-item clickable v-close-popup @click="seleccionarPeriodo('ayer')">
+                <q-item-section avatar>
+                  <q-icon name="yesterday" color="blue-4" size="sm" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-white text-caption">Ayer</q-item-label>
+                </q-item-section>
+              </q-item>
 
-            <q-item clickable v-close-popup @click="seleccionarPeriodo('ayer')">
-              <q-item-section avatar>
-                <q-icon name="yesterday" color="blue-4" size="sm" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-white text-caption">Ayer</q-item-label>
-              </q-item-section>
-            </q-item>
+              <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos7')">
+                <q-item-section avatar>
+                  <q-icon name="date_range" color="blue-4" size="sm" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-white text-caption">Últimos 7 días</q-item-label>
+                </q-item-section>
+              </q-item>
 
-            <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos7')">
-              <q-item-section avatar>
-                <q-icon name="date_range" color="blue-4" size="sm" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-white text-caption">Últimos 7 días</q-item-label>
-              </q-item-section>
-            </q-item>
+              <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos30')">
+                <q-item-section avatar>
+                  <q-icon name="calendar_month" color="blue-4" size="sm" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-white text-caption">Últimos 30 días</q-item-label>
+                </q-item-section>
+              </q-item>
 
-            <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos30')">
-              <q-item-section avatar>
-                <q-icon name="calendar_month" color="blue-4" size="sm" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-white text-caption">Últimos 30 días</q-item-label>
-              </q-item-section>
-            </q-item>
+              <q-separator class="bg-grey-7" />
 
-            <q-separator class="bg-grey-7" />
-
-            <q-item clickable v-close-popup @click="seleccionarPeriodo('mesActual')">
-              <q-item-section avatar>
-                <q-icon name="calendar_today" color="green-4" size="sm" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-white text-caption">Mes actual</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-btn-dropdown>
+              <q-item clickable v-close-popup @click="seleccionarPeriodo('mesActual')">
+                <q-item-section avatar>
+                  <q-icon name="calendar_today" color="green-4" size="sm" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-white text-caption">Mes actual</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+        </div>
       </div>
     </div>
   </q-card>
@@ -531,6 +518,14 @@ onMounted(() => {
   .filtros-fechas {
     padding: 0.75rem !important;
     margin-bottom: 0.75rem !important;
+  }
+}
+
+.colum-responsive {
+  height: 200px;
+
+  @media (max-width: 479px) {
+    height: auto;
   }
 }
 

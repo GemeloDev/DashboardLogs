@@ -89,6 +89,7 @@
         >
           <q-tab name="busqueda" icon="search" label="🔍 Búsqueda Rápida" />
           <q-tab name="errorCode" icon="error" label="🔴 Código Error" />
+          <q-tab name="baseCode" icon="code" label="📟 Análisis Código Base" />
           <q-tab name="session" icon="account_circle" label="👤 Análisis Sesión" />
         </q-tabs>
 
@@ -334,7 +335,7 @@
           </q-tab-panel>
 
           <!-- SESIÓN (exacto al modal con diseño creativo) -->
-          <q-tab-panel name="session">
+          <q-tab-panel name="baseCode">
             <q-card class="bg-grey-8 text-white session-card">
               <q-card-section>
                 <div class="text-h6 q-mb-sm">
@@ -678,6 +679,60 @@
               </q-card-section>
             </q-card>
           </q-tab-panel>
+
+          <q-tab-panel name="session" class="no-border bg-dark">
+            <q-card class="modern-card text-white session-card">
+              <q-card-section>
+                <div class="card-header">
+                  <div class="header-icon">
+                    <q-icon name="data_object" size="32px" color="blue-4" />
+                  </div>
+                  <div class="header-content">
+                    <h3 class="card-title">Busqueda Rápida por Token de Sesión</h3>
+                    <p class="card-subtitle">
+                      Ingresa cualquier token de sesión para iniciar el análisis automático.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div class="modern-input-group">
+                    <q-input
+                      v-model="tokenSesion"
+                      class="modern-input"
+                      placeholder="Ej: ihJak3VeUMNA"
+                      dark
+                      borderless
+                      @keyup.enter="() => consultarToken()"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="search" color="blue-4" size="20px" />
+                      </template>
+                    </q-input>
+                    <q-btn
+                      class="search-action-btn"
+                      icon="send"
+                      @click="() => consultarToken()"
+                      :loading="cargandoBusqueda"
+                      unelevated
+                      size="lg"
+                    />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+
+            <!-- Resultados de la consulta por tokén de sesión -->
+            <div class="row q-mt-md" v-if="resultadoToken !== null">
+              <div class="col-sm-12 col-md-12">
+                <ResultadosByToken
+                  :counterUsers="countUsers"
+                  :counterOficinas="countOficinas"
+                  :resultados="resultadoToken"
+                />
+              </div>
+            </div>
+          </q-tab-panel>
         </q-tab-panels>
       </div>
     </div>
@@ -697,6 +752,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import { DiagnosticService } from '../services/diagnosticService.js'
+import ResultadosByToken from 'src/components/escritorio/resultadosEscritorio/ResultadosByToken.vue'
+import { counterKeyRegister, formatearFecha } from 'src/helpers/index.js'
 
 const $q = useQuasar()
 const route = useRoute()
@@ -705,6 +762,7 @@ const route = useRoute()
 const tabActiva = ref('busqueda')
 const cargando = ref(false)
 const diagnosticoActivo = ref('')
+const tokenSesion = ref('')
 
 // Estados EXACTOS al modal original
 const busquedaRapida = ref('')
@@ -738,6 +796,11 @@ const analisisError = ref({
 const analisisCargando = ref(false)
 const erroresRecientes = ref([])
 const resultadoError = ref(null)
+
+// Estados de análisis de token
+const resultadoToken = ref(null)
+const countUsers = ref(0)
+const countOficinas = ref(0)
 
 // Estados de gestión de sesiones
 const gestionSesion = ref({
@@ -1064,6 +1127,30 @@ const consultarCodigoError = async (codigo = null) => {
   }
 }
 
+const consultarToken = async (codigo = null) => {
+  const sesion = codigo || tokenSesion.value
+  if (!sesion || !String(sesion).trim()) return
+
+  cargandoBusqueda.value = true
+
+  try {
+    resultadoToken.value = await DiagnosticService.getTokenSesionData(sesion)
+    countUsers.value = counterKeyRegister(resultadoToken.value.data).persons
+    countOficinas.value = counterKeyRegister(resultadoToken.value.data).oficina
+
+    $q.notify({
+      type: 'positive',
+      message: 'Token consultado',
+      icon: 'account_circle',
+      position: 'top-right',
+    })
+  } catch (error) {
+    console.log(`🔄 Error en consulta:', ${error.message}`)
+  } finally {
+    cargandoBusqueda.value = false
+  }
+}
+
 const consultarSesion = async (codigo = null) => {
   const baseCode = codigo || formulario.value.sessionToken
   if (!baseCode || !String(baseCode).trim()) return
@@ -1077,7 +1164,7 @@ const consultarSesion = async (codigo = null) => {
     $q.notify({
       type: 'positive',
       message: 'Sesión consultada',
-      icon: 'account_circle',
+      icon: 'code',
       position: 'top-right',
     })
   } catch (error) {
@@ -1451,19 +1538,6 @@ const exportarDatos = async (formato) => {
   } finally {
     cargando.value = false
   }
-}
-
-// Métodos utilitarios
-const formatearFecha = (fecha) => {
-  if (!fecha) return 'Sin fecha'
-  const f = new Date(fecha)
-  return f.toLocaleString('es-ES', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 const verDetalleCompleto = (record) => {
@@ -2327,13 +2401,8 @@ onMounted(() => {
   border: var(--border-glass);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: var(--shadow-modern);
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
   transition: var(--transition-smooth);
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
-  }
 
   .card-header {
     display: flex;
@@ -2577,6 +2646,169 @@ onMounted(() => {
     width: 100%;
     justify-content: center;
   }
+}
+
+.log-message {
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #42a5f5;
+}
+
+.log-ofice {
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #04b949;
+}
+
+.bordered {
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  padding: 12px;
+}
+
+// Estilos para KPIs
+.kpi-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  &.gradient-blue {
+    background: linear-gradient(145deg, rgba(33, 150, 243, 0.2) 0%, rgba(25, 118, 210, 0.1) 100%);
+    border-color: rgba(33, 150, 243, 0.3);
+  }
+
+  &.gradient-green {
+    background: linear-gradient(145deg, rgba(76, 175, 80, 0.2) 0%, rgba(56, 142, 60, 0.1) 100%);
+    border-color: rgba(76, 175, 80, 0.3);
+  }
+
+  &.gradient-red {
+    background: linear-gradient(145deg, rgba(244, 67, 54, 0.2) 0%, rgba(211, 47, 47, 0.1) 100%);
+    border-color: rgba(244, 67, 54, 0.3);
+  }
+
+  &.gradient-orange {
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
+    border-color: rgba(255, 152, 0, 0.3);
+  }
+
+  &.gradient-cyan {
+    background: linear-gradient(145deg, rgba(0, 188, 212, 0.2) 0%, rgba(0, 150, 136, 0.1) 100%);
+    border-color: rgba(0, 188, 212, 0.3);
+  }
+}
+
+.kpi-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.kpi-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.kpi-icon {
+  color: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.kpi-data {
+  flex: 1;
+}
+
+.kpi-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.kpi-subtitle {
+  font-size: 0.75rem;
+  color: white;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.timeline-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.session-timeline {
+  max-height: 350px;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar vertical u horizontal completo */
+::-webkit-scrollbar {
+  width: 9px; /* ancho de la barra (barStyle width) */
+  height: 9px; /* alto si es horizontal */
+}
+
+/* Track: fondo de la barra */
+::-webkit-scrollbar-track {
+  background-color: #027be3; /* barStyle backgroundColor */
+  border-radius: 9px; /* barStyle borderRadius */
+  opacity: 0.2; /* barStyle opacity */
+}
+
+/* Thumb: la parte que se mueve */
+::-webkit-scrollbar-thumb {
+  background-color: #002c53; /* thumbStyle backgroundColor */
+  border-radius: 5px; /* thumbStyle borderRadius */
+  width: 5px; /* thumbStyle width (opcional, se suele controlar con scrollbar) */
+  opacity: 0.75; /* thumbStyle opacity */
+}
+
+/* Thumb al hacer hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #004883; /* color más oscuro para hover */
 }
 </style>
 

@@ -1,7 +1,7 @@
 <template>
   <q-layout>
     <q-page class="q-pa-md" style="background-color: #121826">
-      <q-card flat bordered class="q-pa-md" style="background-color: #121826">
+      <q-card flat class="q-pa-md" style="background-color: #121826">
         <div v-if="!modoSeleccionado">
           <transition name="fade" mode="out-in">
             <div class="row q-col-gutter-md q-mt-xl justify-center" v-if="!modoSeleccionado">
@@ -59,7 +59,7 @@
           <transition name="slide-fade" mode="out-in">
             <div class="mobile-content" v-if="modoSeleccionado === 'mobile'">
               <!-- Aquí va el flujo actual de la app -->
-              <div class="text-h3 text-white text-center">Logs Biométricos</div>
+              <div class="text-h3 text-white text-center q-mb-lg text-bold">Logs Biométricos</div>
 
               <!-- Mensaje cuando no hay datos -->
               <!-- <div v-if="noHayDatos" class="q-mb-lg">
@@ -75,7 +75,7 @@
 
               <div>
                 <log-filters @filter="onFilter" />
-                <div class="row q-col-gutter-md q-mt-md justify-center">
+                <div class="row q-gutter-y-md q-mt-md justify-center">
                   <!-- Usuarios Offline -->
                   <q-card
                     flat
@@ -119,18 +119,18 @@
                   </q-card>
                   <!-- Fin Porcentaje Offline -->
                 </div>
-                <div class="row q-col-gutter-md q-mt-lg justify-center">
-                  <br />
-                  <div class="col-12 col-lg-6 q-mx-sm text-white">
-                    <!-- Funcionalidades más usadas -->
-                    <q-card style="background-color: #1e1e2f">
-                      <q-card-section>
-                        <div class="text-h6 text-center">Funcionalidades más usadas</div>
-                        <div class="chart-wrapper">
-                          <canvas
-                            ref="funcionalidadesChartRef"
-                            style="height: 420px; max-width: 100%"
-                          ></canvas>
+
+                <div class="row justify-center q-gutter-sm q-mt-lg">
+                  <q-card
+                    class="col-12 row justify-center text-white q-pa-md q-gutter-y-sm"
+                    style="background-color: #1e1e2f; border-radius: 1rem"
+                  >
+                    <div class="col-sm-12 col-md-3 col-lg-6 text-white">
+                      <!-- Funcionalidades más usadas -->
+                      <q-card class="no-shadow" style="background-color: #1e1e2f">
+                        <q-card-section>
+                          <div class="text-h6 text-center">Funcionalidades más usadas</div>
+                          <canvas ref="funcionalidadesChartRef"></canvas>
                           <div
                             v-if="!funcionalidadesData || funcionalidadesData.length === 0"
                             class="no-data-overlay"
@@ -144,22 +144,15 @@
                               :animated="true"
                             />
                           </div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                    <!--Fin de la grafica resultado De-->
-                  </div>
-                  <br />
-                  <div class="col-12 col-lg-6 q-mx-sm text-white">
-                    <!-- Tiempo de Respuesta Promedio -->
-                    <q-card style="background-color: #1e1e2f">
-                      <q-card-section>
-                        <div class="text-h6 text-center">Tiempo de Respuesta Promedio</div>
-                        <div class="chart-wrapper">
-                          <canvas
-                            ref="chartTiempoRef"
-                            style="height: 420px; max-width: 100%"
-                          ></canvas>
+                        </q-card-section>
+                      </q-card>
+                    </div>
+                    <div class="col-sm-12 col-md-3 col-lg-6 text-white">
+                      <!-- Tiempo de Respuesta Promedio -->
+                      <q-card class="no-shadow" style="background-color: #1e1e2f">
+                        <q-card-section>
+                          <div class="text-h6 text-center">Tiempo de Respuesta Promedio</div>
+                          <canvas ref="chartTiempoRef"></canvas>
                           <div
                             v-if="!tiempoPromedioData || tiempoPromedioData.length === 0"
                             class="no-data-overlay"
@@ -173,22 +166,15 @@
                               :animated="true"
                             />
                           </div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                    <!--Fin de la grafica timpo de respuesta promedio-->
-                  </div>
-                  <br />
-                  <div class="col-12 col-lg-6 q-mx-sm text-white">
-                    <!-- Resultado del Evento -->
-                    <q-card style="background-color: #1e1e2f">
-                      <q-card-section>
-                        <div class="text-h6 text-center">Resultado del Evento</div>
-                        <div class="chart-wrapper">
-                          <canvas
-                            ref="ovalChartRef"
-                            style="height: 420px; max-width: 100%"
-                          ></canvas>
+                        </q-card-section>
+                      </q-card>
+                    </div>
+                    <div class="col-sm-12 col-md-3 col-lg-6 q-mx-sm text-white">
+                      <!-- Resultado del Evento -->
+                      <q-card class="no-shadow" style="background-color: #1e1e2f">
+                        <q-card-section>
+                          <div class="text-h6 text-center">Resultado del Evento</div>
+                          <canvas ref="ovalChartRef"></canvas>
                           <div
                             v-if="!ovalAlineadoData || ovalAlineadoData.length === 0"
                             class="no-data-overlay"
@@ -202,11 +188,10 @@
                               :animated="true"
                             />
                           </div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                    <!--Fin de la grafica resultado Del evento-->
-                  </div>
+                        </q-card-section>
+                      </q-card>
+                    </div>
+                  </q-card>
                 </div>
                 <br />
                 <!-- Tabla de logs de dispositivos de usuarios -->
@@ -855,12 +840,6 @@ function renderChartFuncionalidades(labels, data) {
 
 .selector-card:hover .q-icon {
   animation: pulse 0.6s ease-in-out;
-}
-
-/* Estilos para las gráficas */
-.chart-wrapper {
-  position: relative;
-  min-height: 420px;
 }
 
 /* Overlay para mensajes de no hay datos */

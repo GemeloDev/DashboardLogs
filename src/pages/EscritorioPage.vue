@@ -3,10 +3,9 @@
     <!-- Header de Escritorio -->
     <div class="escritorio-header bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
       <div class="container">
-        <div class="row items-center q-col-gutter-md">
+        <div class="row items-center q-col-gutter-md q-pt-md">
           <div class="col-12 col-md-8">
-            <div class="text-h3 escritorio-title q-mb-md">
-              <q-icon name="desktop_windows" class="q-mr-sm" color="blue-4" size="48px" />
+            <div class="text-h3 escritorio-title q-pt-lg">
               <span class="escritorio-title-text">🖥️ Dashboard de Escritorio</span>
             </div>
             <div class="text-h6 text-blue-3 escritorio-subtitle q-mb-md">
@@ -15,8 +14,6 @@
               >
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
@@ -80,7 +77,6 @@ import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGrafi
   }
 
   .escritorio-title {
-    font-size: 1.5rem !important;
     text-align: center;
   }
 
@@ -113,12 +109,8 @@ import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGrafi
 }
 
 @media (max-width: 480px) {
-  .escritorio-title {
-    font-size: 1.2rem !important;
-  }
-
   .escritorio-title-text {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
   }
 
   .escritorio-subtitle-text {
