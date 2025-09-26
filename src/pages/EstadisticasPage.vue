@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <q-page class="q-pa-md" style="background-color: #121826">
     <!-- Indicador de carga general para mobile -->
     <q-inner-loading
       :showing="loadingCharts && modoSeleccionado === 'mobile'"
-      label="Cargando estadísticas..."
+      label="Cargando estadsticas..."
       label-class="text-white"
       color="primary"
       size="50px"
@@ -56,7 +56,7 @@
           class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
           style="background-color: #1e1e2f; border-radius: 12px"
         >
-          <div class="text-subtitle1 text-center">Dispositivos más usados</div>
+          <div class="text-subtitle1 text-center">Dispositivos ms usados</div>
           <q-inner-loading
             :showing="loadingCharts && modoSeleccionado === 'mobile'"
             label="Cargando..."
@@ -71,7 +71,7 @@
       </div>
 
       <!-- Donut Chart Section -->
-      <!-- Sección inferior dividida en dos columnas -->
+      <!-- Seccin inferior dividida en dos columnas -->
       <!-- Donut Chart: Uso por funcionalidad -->
       <q-card
         flat
@@ -91,11 +91,65 @@
           <div class="chart-container flex flex-center">
             <canvas ref="chart" class="donut-canvas" />
           </div>
+
+          <!-- ✨ CUADROS DE RESUMEN ESTILO MAPA - Uso por Funcionalidad -->
+          <div
+            v-if="tiemposFuncionalidad && tiemposFuncionalidad.length > 0"
+            class="legend-summary q-mt-sm"
+          >
+            <div class="row q-col-gutter-xs">
+              <div
+                v-for="(funcionalidad, index) in tiemposFuncionalidad.slice(0, 6)"
+                :key="`func-${index}`"
+                class="col-6 col-sm-4"
+              >
+                <div
+                  class="summary-item"
+                  :style="{
+                    background: getFuncionalidadColor(index, 0.2),
+                    borderLeft: `3px solid ${getFuncionalidadColor(index, 1)}`,
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                  }"
+                >
+                  <div class="row items-center no-wrap">
+                    <q-icon
+                      name="analytics"
+                      size="14px"
+                      :color="getFuncionalidadIconColor(index)"
+                      class="q-mr-xs"
+                    />
+                    <div class="text-caption text-weight-bold">
+                      {{ Math.round(funcionalidad.totalSegundos) }}s
+                    </div>
+                  </div>
+                  <div class="text-caption text-grey-4">{{ funcionalidad.funcionalidad }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Total general -->
+            <div class="q-mt-sm">
+              <div
+                class="summary-total"
+                style="
+                  background: rgba(255, 255, 255, 0.1);
+                  padding: 6px 8px;
+                  border-radius: 4px;
+                  text-align: center;
+                "
+              >
+                <div class="text-caption text-weight-bold text-white">
+                  Total Funcionalidades: {{ tiemposFuncionalidad.length }}
+                </div>
+              </div>
+            </div>
+          </div>
         </q-card-section>
       </q-card>
       <br />
 
-      <!-- Gráfico de Funcionalidades por Tipo de Evento -->
+      <!-- Grfico de Funcionalidades por Tipo de Evento con Resumen -->
       <div class="row q-col-gutter-md q-mb-md justify-center">
         <q-card
           v-for="func in funcionalidades"
@@ -114,15 +168,124 @@
               color="primary"
               size="30px"
             />
-            <div class="pie-chart-container flex flex-center">
+
+            <!-- Contenedor del grfico -->
+            <div
+              class="pie-chart-container flex flex-center"
+              style="height: 200px; margin-bottom: 16px"
+            >
               <canvas :ref="(el) => setPieRef(func.clave, el)" class="pie-canvas"></canvas>
+            </div>
+
+            <!--  CUADROS DE RESUMEN ESTILO MAPA -->
+            <div class="legend-summary q-mt-sm">
+              <div class="row q-col-gutter-xs">
+                <!-- Fallidos -->
+                <div v-if="func.total_fallido > 0" class="col-6">
+                  <div
+                    class="summary-item"
+                    style="
+                      background: rgba(244, 67, 54, 0.2);
+                      border-left: 3px solid #f44336;
+                      padding: 6px 8px;
+                      border-radius: 4px;
+                    "
+                  >
+                    <div class="row items-center no-wrap">
+                      <q-icon name="cancel" size="14px" color="red-4" class="q-mr-xs" />
+                      <div class="text-caption text-weight-bold">{{ func.total_fallido }}</div>
+                    </div>
+                    <div class="text-caption text-grey-4">Fallidos</div>
+                  </div>
+                </div>
+
+                <!-- Exitosos -->
+                <div v-if="func.total_exito > 0" class="col-6">
+                  <div
+                    class="summary-item"
+                    style="
+                      background: rgba(76, 175, 80, 0.2);
+                      border-left: 3px solid #4caf50;
+                      padding: 6px 8px;
+                      border-radius: 4px;
+                    "
+                  >
+                    <div class="row items-center no-wrap">
+                      <q-icon name="check_circle" size="14px" color="green-4" class="q-mr-xs" />
+                      <div class="text-caption text-weight-bold">{{ func.total_exito }}</div>
+                    </div>
+                    <div class="text-caption text-grey-4">Exitosos</div>
+                  </div>
+                </div>
+
+                <!-- Cancelados -->
+                <div v-if="func.total_cancelado > 0" class="col-6">
+                  <div
+                    class="summary-item"
+                    style="
+                      background: rgba(255, 152, 0, 0.2);
+                      border-left: 3px solid #ff9800;
+                      padding: 6px 8px;
+                      border-radius: 4px;
+                    "
+                  >
+                    <div class="row items-center no-wrap">
+                      <q-icon name="remove_circle" size="14px" color="orange-4" class="q-mr-xs" />
+                      <div class="text-caption text-weight-bold">{{ func.total_cancelado }}</div>
+                    </div>
+                    <div class="text-caption text-grey-4">Cancelados</div>
+                  </div>
+                </div>
+
+                <!-- Errores -->
+                <div v-if="func.total_error > 0" class="col-6">
+                  <div
+                    class="summary-item"
+                    style="
+                      background: rgba(33, 150, 243, 0.2);
+                      border-left: 3px solid #2196f3;
+                      padding: 6px 8px;
+                      border-radius: 4px;
+                    "
+                  >
+                    <div class="row items-center no-wrap">
+                      <q-icon name="error" size="14px" color="blue-4" class="q-mr-xs" />
+                      <div class="text-caption text-weight-bold">{{ func.total_error }}</div>
+                    </div>
+                    <div class="text-caption text-grey-4">Errores</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Total general -->
+              <div class="q-mt-sm">
+                <div
+                  class="summary-total"
+                  style="
+                    background: rgba(255, 255, 255, 0.1);
+                    padding: 6px 8px;
+                    border-radius: 4px;
+                    text-align: center;
+                  "
+                >
+                  <div class="text-caption text-weight-bold text-white">
+                    Total:
+                    {{
+                      func.total_fallido +
+                      func.total_exito +
+                      func.total_cancelado +
+                      func.total_error
+                    }}
+                  </div>
+                </div>
+              </div>
             </div>
           </q-card-section>
         </q-card>
       </div>
 
       <br />
-      <!-- Mapa con Geolocalización -->
+      <!-- Mapa con Geolocalizacin -->
       <q-card
         flat
         bordered
@@ -132,15 +295,15 @@
         <q-card-section>
           <div class="text-h6 text-center q-mb-sm">
             <q-icon name="map" size="sm" class="q-mr-sm text-primary" />
-            Mapa Interactivo de Eventos Biométricos
+            Mapa Interactivo de Eventos Biomtricos
             <q-icon name="location_on" size="sm" class="q-ml-sm text-secondary" />
           </div>
           <div class="text-caption text-center q-mb-md text-grey-6">
-            🎯 Haz clic en los marcadores individuales para análisis detallado
+            Haz clic en los marcadores individuales para anlisis detallado
             <br />
-            🔍 Haz clic en los clusters (círculos con números) para resumen grupal
+            Haz clic en los clusters (crculos con nmeros) para resumen grupal
             <br />
-            🗺️ Haz clic en cualquier área del mapa para explorar la zona
+            Haz clic en cualquier rea del mapa para explorar la zona
           </div>
 
           <!-- Indicadores de estado del mapa -->
@@ -186,7 +349,7 @@
         </q-card-section>
       </q-card>
 
-      <!-- Resumen del Área Seleccionada -->
+      <!-- Resumen del rea Seleccionada -->
       <q-card
         v-if="mostrarResumen"
         flat
@@ -199,7 +362,7 @@
         "
       >
         <q-card-section>
-          <!-- Header con animación -->
+          <!-- Header con animacin -->
           <div class="row items-center q-mb-md">
             <q-icon
               :name="
@@ -215,10 +378,10 @@
             <div class="text-h6 flex-grow">
               {{
                 resumenArea?.eventoFocal
-                  ? '🎯 Análisis del Evento Seleccionado'
+                  ? ' Anlisis del Evento Seleccionado'
                   : resumenArea?.clusterInfo
-                  ? '🔍 Resumen del Cluster'
-                  : '🗺️ Resumen del Área Seleccionada'
+                  ? ' Resumen del Cluster'
+                  : ' Resumen del rea Seleccionada'
               }}
             </div>
             <q-space />
@@ -233,15 +396,15 @@
             />
           </div>
 
-          <!-- Loading con mejor animación -->
+          <!-- Loading con mejor animacin -->
           <div v-if="cargandoResumen" class="text-center q-py-xl">
             <q-spinner-grid size="60px" color="primary" class="q-mb-md" />
             <div class="text-h6 q-mb-sm text-primary">Analizando datos...</div>
-            <div class="text-caption text-grey-6">Procesando información geográfica</div>
+            <div class="text-caption text-grey-6">Procesando informacin geogrfica</div>
           </div>
 
           <div v-else-if="resumenArea" class="animated-content">
-            <!-- Información del evento focal con mejor diseño -->
+            <!-- Informacin del evento focal con mejor diseo -->
             <div v-if="resumenArea.eventoFocal" class="q-mb-lg">
               <q-card
                 dark
@@ -350,7 +513,7 @@
               </q-card>
             </div>
 
-            <!-- 🆕 Información del cluster con diseño mejorado -->
+            <!--  Informacin del cluster con diseo mejorado -->
             <div v-else-if="resumenArea.clusterInfo" class="q-mb-lg">
               <q-card
                 dark
@@ -363,7 +526,7 @@
               >
                 <div class="text-h5 text-center q-mb-md">
                   <q-icon name="hub" size="lg" class="q-mr-sm" />
-                  Análisis del Cluster
+                  Anlisis del Cluster
                 </div>
                 <div class="row q-col-gutter-md">
                   <div class="col-12 col-md-6">
@@ -398,7 +561,7 @@
                         <q-icon name="people" color="white" />
                       </q-item-section>
                       <q-item-section>
-                        <q-item-label class="text-weight-medium">Usuarios Únicos</q-item-label>
+                        <q-item-label class="text-weight-medium">Usuarios nicos</q-item-label>
                         <q-item-label caption class="text-white">{{
                           resumenArea.clusterInfo.usuariosUnicos
                         }}</q-item-label>
@@ -411,7 +574,7 @@
                         <q-icon name="devices" color="white" />
                       </q-item-section>
                       <q-item-section>
-                        <q-item-label class="text-weight-medium">Dispositivos Únicos</q-item-label>
+                        <q-item-label class="text-weight-medium">Dispositivos nicos</q-item-label>
                         <q-item-label caption class="text-white">{{
                           resumenArea.clusterInfo.dispositivosUnicos
                         }}</q-item-label>
@@ -424,7 +587,7 @@
                         <q-icon name="calendar_today" color="white" />
                       </q-item-section>
                       <q-item-section>
-                        <q-item-label class="text-weight-medium">Días con Actividad</q-item-label>
+                        <q-item-label class="text-weight-medium">Das con Actividad</q-item-label>
                         <q-item-label caption class="text-white">{{
                           resumenArea.clusterInfo.fechasConActividad
                         }}</q-item-label>
@@ -437,7 +600,7 @@
                         <q-icon name="place" color="white" />
                       </q-item-section>
                       <q-item-section>
-                        <q-item-label class="text-weight-medium">Ubicación</q-item-label>
+                        <q-item-label class="text-weight-medium">Ubicacin</q-item-label>
                         <q-item-label caption class="text-white">{{
                           resumenArea.clusterInfo.ubicacion
                         }}</q-item-label>
@@ -448,7 +611,7 @@
               </q-card>
             </div>
 
-            <!-- Sección de métricas principales con mejor diseño -->
+            <!-- Seccin de mtricas principales con mejor diseo -->
             <div class="row q-col-gutter-lg q-mb-lg">
               <!-- KPI Principal -->
               <div class="col-12 col-md-4">
@@ -466,7 +629,7 @@
                   <div class="text-h6 q-mb-md">
                     {{
                       resumenArea.eventoFocal
-                        ? 'Eventos en el Área'
+                        ? 'Eventos en el rea'
                         : resumenArea.clusterInfo
                         ? 'Eventos en el Cluster'
                         : 'Total de Eventos'
@@ -475,7 +638,7 @@
                 </q-card>
               </div>
 
-              <!-- Gráfico de Estados -->
+              <!-- Grfico de Estados -->
               <div class="col-12 col-md-4">
                 <q-card
                   dark
@@ -495,7 +658,7 @@
                     Estados de Eventos
                   </div>
 
-                  <!-- Contenedor del gráficUsuario:
+                  <!-- Contenedor del grficUsuario:
 o con mejor control -->
                   <div
                     class="chart-container flex-grow-1"
@@ -519,7 +682,7 @@ o con mejor control -->
                     ></canvas>
                   </div>
 
-                  <!-- Leyenda dinámica sincronizada -->
+                  <!-- Leyenda dinmica sincronizada -->
                   <div class="q-mt-sm" style="margin-top: auto">
                     <div
                       v-if="resumenArea.eventosPorEstado && resumenArea.eventosPorEstado.length > 0"
@@ -568,7 +731,7 @@ o con mejor control -->
                 </q-card>
               </div>
 
-              <!-- Información adicional -->
+              <!-- Informacin adicional -->
               <div class="col-12 col-md-4">
                 <q-card
                   dark
@@ -589,20 +752,20 @@ o con mejor control -->
                     <q-icon name="list" class="q-mr-sm" />
                     {{
                       resumenArea.eventoFocal
-                        ? 'Dispositivos en el Área'
+                        ? 'Dispositivos en el rea'
                         : resumenArea.clusterInfo
                         ? 'Dispositivos en el Cluster'
                         : 'Tipos de Eventos'
                     }}
                   </div>
 
-                  <!-- Contenedor scrolleable con mejor diseño -->
+                  <!-- Contenedor scrolleable con mejor diseo -->
                   <div
                     class="custom-scroll flex-grow-1"
                     style="max-height: 220px; overflow-y: auto; padding-right: 4px"
                   >
                     <q-list dense dark style="padding: 0">
-                      <!-- Si es un análisis de evento específico, mostrar dispositivos -->
+                      <!-- Si es un anlisis de evento especfico, mostrar dispositivos -->
                       <template v-if="resumenArea.eventoFocal && resumenArea.dispositivosEnArea">
                         <q-item
                           v-for="dispositivo in resumenArea.dispositivosEnArea"
@@ -634,7 +797,7 @@ o con mejor control -->
                         </q-item>
                       </template>
 
-                      <!-- Si es un análisis de área general, mostrar tipos -->
+                      <!-- Si es un anlisis de rea general, mostrar tipos -->
                       <template v-else>
                         <q-item
                           v-for="tipo in resumenArea.eventosPorTipo"
@@ -671,7 +834,7 @@ o con mejor control -->
               </div>
             </div>
 
-            <!-- Gráfico adicional para clusters -->
+            <!-- Grfico adicional para clusters -->
             <div
               v-if="resumenArea.fechasPorDia && resumenArea.fechasPorDia.length > 0"
               class="q-mb-lg"
@@ -699,7 +862,7 @@ o con mejor control -->
               </q-card>
             </div>
 
-            <!-- Eventos recientes con mejor diseño -->
+            <!-- Eventos recientes con mejor diseo -->
             <div class="q-mt-lg" v-if="resumenArea.eventos && resumenArea.eventos.length > 0">
               <q-card
                 dark
@@ -766,7 +929,7 @@ o con mejor control -->
                     <q-btn
                       flat
                       color="primary"
-                      label="Ver más eventos"
+                      label="Ver ms eventos"
                       icon="expand_more"
                       @click="mostrarMasEventos = !mostrarMasEventos"
                     />
@@ -775,11 +938,11 @@ o con mejor control -->
               </q-card>
             </div>
 
-            <!-- Sección de información adicional -->
+            <!-- Seccin de informacin adicional -->
             <div class="row q-gutter-md q-mt-lg">
-              <!-- Información de coordenadas y radio -->
+              <!-- Informacin de coordenadas y radio -->
 
-              <!-- Estadísticas de usuario adicionales -->
+              <!-- Estadsticas de usuario adicionales -->
               <div class="col-12 col-lg-6">
                 <q-card
                   dark
@@ -793,12 +956,12 @@ o con mejor control -->
                   <q-card-section class="q-pa-none">
                     <div class="text-h6 q-mb-md text-center text-weight-bold">
                       <q-icon name="analytics" class="q-mr-sm" />
-                      Análisis de Actividad
+                      Anlisis de Actividad
                     </div>
 
-                    <!-- Layout responsivo para estadísticas -->
+                    <!-- Layout responsivo para estadsticas -->
                     <div class="column q-gutter-md" v-if="resumenArea.totalEventos > 0">
-                      <!-- Usuarios únicos -->
+                      <!-- Usuarios nicos -->
                       <div class="activity-stat-item">
                         <div class="row items-center justify-between">
                           <div class="row items-center">
@@ -810,8 +973,8 @@ o con mejor control -->
                               class="q-mr-sm"
                             />
                             <div>
-                              <div class="text-body2 text-weight-medium">Usuarios Únicos</div>
-                              <div class="text-caption text-grey-3">En el área seleccionada</div>
+                              <div class="text-body2 text-weight-medium">Usuarios nicos</div>
+                              <div class="text-caption text-grey-3">En el rea seleccionada</div>
                             </div>
                           </div>
                           <div class="text-h5 text-weight-bold text-orange-3">
@@ -833,7 +996,7 @@ o con mejor control -->
                             />
                             <div>
                               <div class="text-body2 text-weight-medium">Total de Eventos</div>
-                              <div class="text-caption text-grey-3">Registrados en el período</div>
+                              <div class="text-caption text-grey-3">Registrados en el perodo</div>
                             </div>
                           </div>
                           <div class="text-h5 text-weight-bold text-blue-3">
@@ -868,17 +1031,17 @@ o con mejor control -->
                     <!-- Estado cuando no hay actividad -->
                     <div v-else-if="resumenArea.mensaje" class="text-center q-py-md">
                       <q-icon name="inbox" size="48px" color="grey-5" class="q-mb-sm" />
-                      <div class="text-body2 text-grey-4 q-mb-xs">Sin actividad en esta área</div>
+                      <div class="text-body2 text-grey-4 q-mb-xs">Sin actividad en esta rea</div>
                       <div class="text-caption text-grey-5">
                         {{ resumenArea.mensaje }}
                       </div>
                     </div>
 
-                    <!-- Estado cuando no se ha seleccionado área -->
+                    <!-- Estado cuando no se ha seleccionado rea -->
                     <div v-else class="text-center q-py-md">
                       <q-icon name="analytics" size="48px" color="grey-5" class="q-mb-sm" />
                       <div class="text-body2 text-grey-4">
-                        Selecciona un área en el mapa para ver estadísticas de actividad
+                        Selecciona un rea en el mapa para ver estadsticas de actividad
                       </div>
                     </div>
                   </q-card-section>
@@ -951,12 +1114,7 @@ Chart.register(
 
 const tiemposFuncionalidad = ref([])
 
-// const kpis = [
-//   { label: 'Duración Promedio', value: '520 seg', icon: 'schedule', color: 'text-info' },
-//   { label: 'Funcionalidad más usada', value: 'Validación Facial', icon: 'insights', color: 'text-accent' },
-//   { label: 'Día con más uso', value: '2025-06-28', icon: 'event', color: 'text-positive' },
-//   { label: 'Repeticiones por Día', value: '12', icon: 'repeat', color: 'text-warning' }
-// ]
+
 
 const filtroFechasStore = useFiltroFechasStore()
 
@@ -971,33 +1129,30 @@ const modoSeleccionado = computed(() =>
   selectedFlow.value === 'escritorio' ? 'escritorio' : 'mobile'
 )
 
-// Función para actualizar todos los datos cuando cambien los filtros
+// Funcin para actualizar todos los datos cuando cambien los filtros
 const actualizarDatos = async () => {
-  if (loadingCharts.value) return // Evitar múltiples llamadas simultáneas
+  if (loadingCharts.value) return
 
   loadingCharts.value = true
 
   try {
     console.log(
-      '📅 Actualizando datos con nuevas fechas:',
+      ' Actualizando datos con nuevas fechas:',
       filtroFechasStore.obtenerFechasFormateadas()
     )
 
-    // 🔥 PASO 1: Destruir todos los gráficos existentes PRIMERO
     destroyExistingCharts()
-    console.log('🧹 Todos los gráficos destruidos antes de actualizar')
+    console.log(' Todos los grficos destruidos antes de actualizar')
 
-    // 🔥 PASO 2: Actualizar eventos para el timeline
     try {
       const filtros = filtroFechasStore.obtenerFechasFormateadas()
       const eventosData = await getEventosBiometricosPorFiltro(filtros)
       eventos.value = eventosData
-      console.log('📊 Eventos actualizados para timeline:', eventosData?.length || 0)
+      console.log(' Eventos actualizados para timeline:', eventosData?.length || 0)
     } catch (error) {
       console.error('Error al cargar eventos:', error)
     }
 
-    // 🔥 PASO 3: Actualizar datos de duración promedio ANTES de renderizar
     try {
       const respuesta = await getDuracionPromedioFuncionalidad(
         filtroFechasStore.obtenerFechasFormateadas()
@@ -1006,49 +1161,44 @@ const actualizarDatos = async () => {
         funcionalidad: item.funcionalidad.replace(/_/g, ' '),
         totalSegundos: tiempoASegundos(item.duracion),
       }))
-      console.log('📊 Datos de funcionalidad actualizados:', tiemposFuncionalidad.value.length)
+      console.log(' Datos de funcionalidad actualizados:', tiemposFuncionalidad.value.length)
     } catch (error) {
       console.error('Error al obtener datos de funcionalidad:', error)
     }
 
-    // 🔥 PASO 4: Renderizar gráficos principales con mejor timing
     try {
-      // Renderizar device chart primero
       await renderDeviceChart()
-      console.log('✅ Gráfico de dispositivos renderizado')
+      console.log(' Grfico de dispositivos renderizado')
 
-      // Breve pausa para el DOM
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // Renderizar barras y doughnut
       renderCharts()
-      console.log('✅ Gráficos principales renderizados')
+      console.log(' Grficos principales renderizados')
 
-      // Pausa más larga para asegurar que todo esté listo
       await new Promise((resolve) => setTimeout(resolve, 200))
     } catch (error) {
-      console.error('❌ Error renderizando gráficos principales:', error)
+      console.error(' Error renderizando grficos principales:', error)
     }
 
-    // 🔥 PASO 5: Renderizar gráficos de pie después de asegurar el DOM
+    //  PASO 5: Renderizar grficos de pie despus de asegurar el DOM
     await nextTick()
     try {
       renderPiePorFuncionalidad()
-      console.log('✅ Gráficos de pie renderizados')
+      console.log(' Grficos de pie renderizados')
     } catch (error) {
-      console.error('❌ Error renderizando gráficos de pie:', error)
+      console.error(' Error renderizando grficos de pie:', error)
     }
 
-    // 🔥 PASO 6: Crear timeline al final con delay adicional
+    //  PASO 6: Crear timeline al final con delay adicional
     await new Promise((resolve) => setTimeout(resolve, 300))
     try {
       crearGraficoTimeline()
-      console.log('✅ Timeline renderizado')
+      console.log(' Timeline renderizado')
     } catch (error) {
-      console.error('❌ Error renderizando timeline:', error)
+      console.error(' Error renderizando timeline:', error)
     }
 
-    console.log('✅ Todos los gráficos actualizados correctamente')
+    console.log(' Todos los grficos actualizados correctamente')
   } finally {
     loadingCharts.value = false
   }
@@ -1057,7 +1207,7 @@ const actualizarDatos = async () => {
 const fallosPorEstado = ref([])
 
 // Variables para el resumen del mapa
-// 📋 VARIABLES DE ESTADO PARA EL MAPA Y ANÁLISIS
+//  VARIABLES DE ESTADO PARA EL MAPA Y ANLISIS
 const resumenArea = ref({
   totalEventos: 0,
   eventosPorEstado: [],
@@ -1091,7 +1241,27 @@ function setPieRef(clave, el) {
   if (el) pieRefs.value[clave] = el
 }
 
-// Función para hacer scroll hacia el resumen
+// ✨ FUNCIONES PARA COLORES DE FUNCIONALIDADES
+function getFuncionalidadColor(index, opacity = 1) {
+  const colors = ['#26A69A', '#7E57C2', '#1976D2', '#66BB6A', '#FFA726', '#FF7043']
+  const baseColor = colors[index % colors.length]
+
+  if (opacity < 1) {
+    // Convertir hex a rgba
+    const r = parseInt(baseColor.slice(1, 3), 16)
+    const g = parseInt(baseColor.slice(3, 5), 16)
+    const b = parseInt(baseColor.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`
+  }
+  return baseColor
+}
+
+function getFuncionalidadIconColor(index) {
+  const iconColors = ['teal-4', 'deep-purple-4', 'blue-4', 'green-4', 'orange-4', 'deep-orange-4']
+  return iconColors[index % iconColors.length]
+}
+
+// Funcin para hacer scroll hacia el resumen
 const scrollToResumen = () => {
   const resumenElement = document.querySelector('.resumen-card')
   if (resumenElement) {
@@ -1102,15 +1272,15 @@ const scrollToResumen = () => {
   }
 }
 
-// Función para cerrar el resumen con animación
+// Funcin para cerrar el resumen con animacin
 const cerrarResumen = () => {
-  // Limpiar gráficos existentes de manera segura
+  // Limpiar grficos existentes de manera segura
   if (window.graficoResumenArea && typeof window.graficoResumenArea.destroy === 'function') {
     try {
       window.graficoResumenArea.destroy()
-      console.log('✅ Gráfico de resumen destruido correctamente')
+      console.log(' Grfico de resumen destruido correctamente')
     } catch (error) {
-      console.warn('⚠️ Error al destruir gráfico de resumen:', error)
+      console.warn(' Error al destruir grfico de resumen:', error)
     }
     window.graficoResumenArea = null
   }
@@ -1118,9 +1288,9 @@ const cerrarResumen = () => {
   if (window.timelineChart && typeof window.timelineChart.destroy === 'function') {
     try {
       window.timelineChart.destroy()
-      console.log('✅ Gráfico timeline destruido correctamente')
+      console.log(' Grfico timeline destruido correctamente')
     } catch (error) {
-      console.warn('⚠️ Error al destruir gráfico timeline:', error)
+      console.warn(' Error al destruir grfico timeline:', error)
     }
     window.timelineChart = null
   }
@@ -1130,7 +1300,7 @@ const cerrarResumen = () => {
   resumenArea.value = null
 }
 
-// Función para formatear fechas
+// Funcin para formatear fechas
 const formatFecha = (evento) => {
   return evento.fechaHoraDia
     ? new Date(evento.fechaHoraDia).toLocaleDateString('es-ES', {
@@ -1147,7 +1317,7 @@ const formatFecha = (evento) => {
     : 'Sin fecha'
 }
 
-// Función para reintentar carga
+// Funcin para reintentar carga
 const reintentarCarga = () => {
   if (eventoSeleccionado.value) {
     mostrarResumenEvento(eventoSeleccionado.value, eventos.value)
@@ -1156,7 +1326,7 @@ const reintentarCarga = () => {
   }
 }
 
-// Función para obtener color según el estado (sincronizada con el gráfico)
+// Funcin para obtener color segn el estado (sincronizada con el grfico)
 const obtenerColorEstado = (estado) => {
   const estadoLower = estado.toLowerCase()
   if (
@@ -1180,7 +1350,7 @@ const obtenerColorEstado = (estado) => {
   }
 }
 
-// Función para convertir "HH:MM:SS" en segundos
+// Funcin para convertir "HH:MM:SS" en segundos
 function tiempoASegundos(tiempoStr) {
   const [hh, mm, ss] = tiempoStr.split(':').map(Number)
   return hh * 3600 + mm * 60 + ss
@@ -1193,8 +1363,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
 })
 
-// Función para convertir coordenadas GPS en nombre de estado
-// (usa tu reverse-geocoding favorito; aquí un ejemplo con Nominatim)
+// Funcin para convertir coordenadas GPS en nombre de estado
+// (usa tu reverse-geocoding favorito; aqu un ejemplo con Nominatim)
 async function gpsToEstado(gps) {
   const [lat, lon] = gps.split(',').map(Number)
   const res = await fetch(
@@ -1236,13 +1406,13 @@ async function agruparFallosPorEstado(eventos) {
   }))
 }
 
-// Función para obtener resumen de un área específica del mapa
+// Funcin para obtener resumen de un rea especfica del mapa
 const obtenerResumenArea = async (lat, lng) => {
   try {
     cargandoResumen.value = true
     mostrarResumen.value = true
 
-    console.log('📍 Obteniendo resumen para área:', { lat, lng })
+    console.log(' Obteniendo resumen para rea:', { lat, lng })
 
     // Obtener filtros actuales del store
     const filtros = {
@@ -1253,38 +1423,38 @@ const obtenerResumenArea = async (lat, lng) => {
     const resumen = await getResumenLogsPorArea(lat, lng, 0.02, filtros) // Radio de ~2km aprox
     resumenArea.value = resumen
 
-    console.log('📊 Resumen obtenido:', resumen)
+    console.log(' Resumen obtenido:', resumen)
 
-    // Crear gráfico con los datos del resumen después de un breve delay
+    // Crear grfico con los datos del resumen despus de un breve delay
     await nextTick()
     // Usar setTimeout para asegurar que el DOM se haya renderizado completamente
     setTimeout(() => {
       crearGraficoResumen()
       crearGraficoTimeline()
-      // Hacer scroll hacia el resumen después de crear los gráficos
+      // Hacer scroll hacia el resumen despus de crear los grficos
       scrollToResumen()
     }, 100)
   } catch (error) {
-    console.error('❌ Error al obtener resumen del área:', error)
+    console.error(' Error al obtener resumen del rea:', error)
     resumenArea.value = {
       totalEventos: 0,
       eventosPorTipo: [],
       eventosPorEstado: [],
       ubicacion: { lat, lng },
-      error: 'Error al cargar datos del área',
+      error: 'Error al cargar datos del rea',
     }
   } finally {
     cargandoResumen.value = false
   }
 }
 
-// Función para mostrar resumen de un evento específico al hacer clic en un marcador
+// Funcin para mostrar resumen de un evento especfico al hacer clic en un marcador
 const mostrarResumenEvento = async (eventoClicado, todosLosEventos) => {
   try {
     cargandoResumen.value = true
     mostrarResumen.value = true
 
-    console.log('🎯 Analizando evento seleccionado:', eventoClicado)
+    console.log(' Analizando evento seleccionado:', eventoClicado)
 
     // Almacenar el evento seleccionado
     eventoSeleccionado.value = eventoClicado
@@ -1307,74 +1477,74 @@ const mostrarResumenEvento = async (eventoClicado, todosLosEventos) => {
 
     eventosEnArea.value = eventosEnRadio
 
-    console.log('📍 Eventos en área cercana:', eventosEnRadio.length)
+    console.log(' Eventos en rea cercana:', eventosEnRadio.length)
 
     // Analizar los datos para el resumen
     const analisisEventos = analizarEventosEnArea(eventosEnRadio, eventoClicado)
     resumenArea.value = analisisEventos
 
-    console.log('📊 Análisis completado:', analisisEventos)
+    console.log(' Anlisis completado:', analisisEventos)
 
-    // Crear gráfico con los datos del análisis después de un breve delay
+    // Crear grfico con los datos del anlisis despus de un breve delay
     await nextTick()
     // Usar setTimeout para asegurar que el DOM se haya renderizado completamente
     setTimeout(() => {
       crearGraficoResumen()
       crearGraficoTimeline()
-      // Hacer scroll hacia el resumen después de crear los gráficos
+      // Hacer scroll hacia el resumen despus de crear los grficos
       scrollToResumen()
     }, 100)
   } catch (error) {
-    console.error('❌ Error al analizar evento:', error)
+    console.error(' Error al analizar evento:', error)
     resumenArea.value = {
       totalEventos: 1,
       eventosPorTipo: [],
       eventosPorEstado: [],
       ubicacion: { lat: 0, lng: 0 },
-      error: 'Error al cargar análisis del evento',
+      error: 'Error al cargar anlisis del evento',
     }
   } finally {
     cargandoResumen.value = false
   }
 }
 
-// 🆕 Función para mostrar resumen de un cluster al hacer clic en él
+//  Funcin para mostrar resumen de un cluster al hacer clic en l
 const mostrarResumenCluster = async (eventosDelCluster, posicionCluster) => {
   try {
     cargandoResumen.value = true
     mostrarResumen.value = true
 
-    console.log('🔍 Analizando cluster con eventos:', eventosDelCluster.length)
-    console.log('📍 Posición del cluster:', posicionCluster)
+    console.log(' Analizando cluster con eventos:', eventosDelCluster.length)
+    console.log(' Posicin del cluster:', posicionCluster)
 
-    // No hay un evento focal específico, es análisis de cluster
+    // No hay un evento focal especfico, es anlisis de cluster
     eventoSeleccionado.value = null
     eventosEnArea.value = eventosDelCluster
 
     // Analizar todos los eventos del cluster
     const analisisCluster = analizarEventosEnAreaCluster(eventosDelCluster, posicionCluster)
 
-    // Agregar información específica del cluster
+    // Agregar informacin especfica del cluster
     analisisCluster.tipoAnalisis = 'cluster'
     analisisCluster.totalEventos = eventosDelCluster.length
 
     resumenArea.value = analisisCluster
 
-    console.log('📊 Análisis de cluster completado:', analisisCluster)
+    console.log(' Anlisis de cluster completado:', analisisCluster)
 
-    // Crear gráfico con los datos del análisis después de un breve delay
+    // Crear grfico con los datos del anlisis despus de un breve delay
     await nextTick()
     // Usar setTimeout para asegurar que el DOM se haya renderizado completamente
     setTimeout(() => {
       crearGraficoResumen()
       crearGraficoTimeline()
-      // Hacer scroll hacia el resumen después de crear los gráficos
+      // Hacer scroll hacia el resumen despus de crear los grficos
       scrollToResumen()
     }, 100)
   } catch (error) {
-    console.error('❌ Error al analizar cluster:', error)
+    console.error(' Error al analizar cluster:', error)
     resumenArea.value = {
-      error: 'Error al cargar análisis del cluster',
+      error: 'Error al cargar anlisis del cluster',
       totalEventos: eventosDelCluster?.length || 0,
       eventosPorTipo: [],
       eventosPorEstado: [],
@@ -1388,9 +1558,9 @@ const mostrarResumenCluster = async (eventosDelCluster, posicionCluster) => {
   }
 }
 
-// Función para analizar eventos en un área y generar estadísticas
+// Funcin para analizar eventos en un rea y generar estadsticas
 const analizarEventosEnArea = (eventos, eventoFocal) => {
-  console.log('🔍 Analizando', eventos.length, 'eventos en el área')
+  console.log(' Analizando', eventos.length, 'eventos en el rea')
 
   // Extraer coordenadas del evento focal
   const [lat, lng] = eventoFocal.gps.split(',').map(parseFloat)
@@ -1420,7 +1590,7 @@ const analizarEventosEnArea = (eventos, eventoFocal) => {
     usuarios[usuario] = (usuarios[usuario] || 0) + 1
   })
 
-  // Convertir a arrays para los gráficos
+  // Convertir a arrays para los grficos
   const estadosArray = Object.entries(eventosPorEstado).map(([estado, cantidad]) => ({
     estado,
     cantidad,
@@ -1460,9 +1630,9 @@ const analizarEventosEnArea = (eventos, eventoFocal) => {
   }
 }
 
-// 🆕 Función específica para analizar eventos de un cluster (sin evento focal)
+//  Funcin especfica para analizar eventos de un cluster (sin evento focal)
 const analizarEventosEnAreaCluster = (eventos, posicionCluster) => {
-  console.log('🔍 Analizando cluster con', eventos.length, 'eventos')
+  console.log(' Analizando cluster con', eventos.length, 'eventos')
 
   // Agrupar por tipo de resultado
   const eventosPorEstado = {}
@@ -1489,7 +1659,7 @@ const analizarEventosEnAreaCluster = (eventos, posicionCluster) => {
     const usuario = evento.usuario?.usuario || evento.usuario || 'Usuario desconocido'
     usuarios[usuario] = (usuarios[usuario] || 0) + 1
 
-    // Por fecha (para análisis temporal)
+    // Por fecha (para anlisis temporal)
     const fecha = evento.fechaHoraDia
       ? new Date(evento.fechaHoraDia).toLocaleDateString()
       : evento.fecha
@@ -1498,7 +1668,7 @@ const analizarEventosEnAreaCluster = (eventos, posicionCluster) => {
     fechas[fecha] = (fechas[fecha] || 0) + 1
   })
 
-  // Convertir a arrays para los gráficos
+  // Convertir a arrays para los grficos
   const estadosArray = Object.entries(eventosPorEstado).map(([estado, cantidad]) => ({
     estado,
     cantidad,
@@ -1519,13 +1689,13 @@ const analizarEventosEnAreaCluster = (eventos, posicionCluster) => {
     cantidad,
   }))
 
-  // Encontrar el tipo de evento más común para mostrar como principal
+  // Encontrar el tipo de evento ms comn para mostrar como principal
   const tipoMasComun =
     tiposArray.length > 0
       ? tiposArray.reduce((prev, current) => (prev.cantidad > current.cantidad ? prev : current))
       : { tipo: 'No especificado', cantidad: 0 }
 
-  // Encontrar el estado más común
+  // Encontrar el estado ms comn
   const estadoMasComun =
     estadosArray.length > 0
       ? estadosArray.reduce((prev, current) => (prev.cantidad > current.cantidad ? prev : current))
@@ -1533,7 +1703,7 @@ const analizarEventosEnAreaCluster = (eventos, posicionCluster) => {
 
   return {
     totalEventos: eventos.length,
-    // Información del cluster en lugar de evento focal
+    // Informacin del cluster en lugar de evento focal
     clusterInfo: {
       tipoEventoPrincipal: tipoMasComun.tipo,
       estadoPrincipal: estadoMasComun.estado,
@@ -1552,21 +1722,21 @@ const analizarEventosEnAreaCluster = (eventos, posicionCluster) => {
   }
 }
 
-// Función para crear gráfico del resumen del área
+// Funcin para crear grfico del resumen del rea
 const crearGraficoResumen = () => {
-  console.log('📊 Creando gráfico de resumen...')
+  console.log(' Creando grfico de resumen...')
 
   const canvas = document.getElementById('graficoResumenArea')
   if (!canvas) {
-    console.warn('❌ No se encontró el canvas graficoResumenArea')
-    // Intentar de nuevo después de un breve delay
+    console.warn(' No se encontr el canvas graficoResumenArea')
+    // Intentar de nuevo despus de un breve delay
     setTimeout(() => {
       const retryCanvas = document.getElementById('graficoResumenArea')
       if (retryCanvas) {
-        console.log('✅ Canvas encontrado en reintento, creando gráfico...')
+        console.log(' Canvas encontrado en reintento, creando grfico...')
         crearGraficoResumenInterno(retryCanvas)
       } else {
-        console.error('❌ Canvas graficoResumenArea aún no disponible después del reintento')
+        console.error(' Canvas graficoResumenArea an no disponible despus del reintento')
       }
     }, 200)
     return
@@ -1577,28 +1747,28 @@ const crearGraficoResumen = () => {
 
 const crearGraficoResumenInterno = (canvas) => {
   if (!resumenArea.value) {
-    console.warn('❌ No hay datos en resumenArea.value')
+    console.warn(' No hay datos en resumenArea.value')
     return
   }
 
-  console.log('📊 Datos del resumen:', resumenArea.value)
-  console.log('📊 Estados disponibles:', resumenArea.value.eventosPorEstado)
+  console.log(' Datos del resumen:', resumenArea.value)
+  console.log(' Estados disponibles:', resumenArea.value.eventosPorEstado)
 
   const ctx = canvas.getContext('2d')
 
-  // Destruir gráfico anterior si existe (verificar que sea una instancia válida)
+  // Destruir grfico anterior si existe (verificar que sea una instancia vlida)
   if (window.graficoResumenArea && typeof window.graficoResumenArea.destroy === 'function') {
     try {
       window.graficoResumenArea.destroy()
-      console.log('✅ Gráfico anterior destruido correctamente')
+      console.log(' Grfico anterior destruido correctamente')
     } catch (error) {
-      console.warn('⚠️ Error al destruir gráfico anterior:', error)
+      console.warn(' Error al destruir grfico anterior:', error)
     }
   }
   window.graficoResumenArea = null
 
   if (!resumenArea.value.eventosPorEstado || resumenArea.value.eventosPorEstado.length === 0) {
-    console.warn('❌ No hay eventos por estado para mostrar')
+    console.warn(' No hay eventos por estado para mostrar')
 
     // Mostrar mensaje informativo en el canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -1618,7 +1788,7 @@ const crearGraficoResumenInterno = (canvas) => {
       )
     })
 
-    // Crear un gráfico vacío elegante
+    // Crear un grfico vaco elegante
     window.graficoResumenArea = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -1649,9 +1819,9 @@ const crearGraficoResumenInterno = (canvas) => {
     return
   }
 
-  console.log('✅ Creando gráfico con datos:', resumenArea.value.eventosPorEstado)
+  console.log(' Creando grfico con datos:', resumenArea.value.eventosPorEstado)
 
-  // Mapear colores según el tipo de estado para mejor interpretación visual
+  // Mapear colores segn el tipo de estado para mejor interpretacin visual
   const coloresEstado = resumenArea.value.eventosPorEstado.map((item) => {
     const estado = item.estado.toLowerCase()
     if (estado.includes('exitoso') || estado.includes('correcto') || estado.includes('success')) {
@@ -1689,18 +1859,7 @@ const crearGraficoResumenInterno = (canvas) => {
       cutout: '60%',
       plugins: {
         legend: {
-          position: 'bottom',
-          labels: {
-            padding: 20,
-            usePointStyle: true,
-            pointStyle: 'circle',
-            font: {
-              size: 12,
-              family: 'Inter, sans-serif',
-              weight: '500',
-            },
-            color: '#374151',
-          },
+          display: false, // LEYENDAS DESHABILITADAS - Usamos cuadros de resumen
         },
         tooltip: {
           backgroundColor: '#1f2937',
@@ -1734,70 +1893,70 @@ const crearGraficoResumenInterno = (canvas) => {
   })
 }
 
-// 📊 FUNCIÓN ROBUSTA: Crear gráfico de timeline con validaciones completas
+//  FUNCIN ROBUSTA: Crear grfico de timeline con validaciones completas
 function crearGraficoTimeline() {
-  console.log('⏰ Iniciando creación de gráfico timeline...')
+  console.log(' Iniciando creacin de grfico timeline...')
 
-  // 🔍 VALIDACIÓN 1: Verificar que resumenArea esté inicializado
+  //  VALIDACIN 1: Verificar que resumenArea est inicializado
   if (!resumenArea.value) {
-    console.warn('⚠️ resumenArea no está inicializado')
+    console.warn(' resumenArea no est inicializado')
     return
   }
 
-  // 🔍 VALIDACIÓN 2: Verificar si hay datos disponibles para el timeline
+  //  VALIDACIN 2: Verificar si hay datos disponibles para el timeline
   if (!resumenArea.value.fechasPorDia || resumenArea.value.fechasPorDia.length === 0) {
-    console.warn('⚠️ No hay datos disponibles para el timeline (fechasPorDia vacío o no existe)')
+    console.warn(' No hay datos disponibles para el timeline (fechasPorDia vaco o no existe)')
     return
   }
 
-  console.log('✅ Datos timeline disponibles:', resumenArea.value.fechasPorDia.length, 'fechas')
+  console.log(' Datos timeline disponibles:', resumenArea.value.fechasPorDia.length, 'fechas')
 
-  // 🔍 PASO 2: Verificar si ya existe una instancia y destruirla
+  //  PASO 2: Verificar si ya existe una instancia y destruirla
   if (timelineChartInstance && typeof timelineChartInstance.destroy === 'function') {
     try {
       timelineChartInstance.destroy()
-      console.log('✅ Timeline anterior destruido')
+      console.log(' Timeline anterior destruido')
     } catch (error) {
-      console.warn('⚠️ Error destruyendo timeline anterior:', error)
+      console.warn(' Error destruyendo timeline anterior:', error)
     }
     timelineChartInstance = null
   }
 
-  // 🔍 PASO 3: Intentar encontrar el canvas con múltiples reintentos
+  //  PASO 3: Intentar encontrar el canvas con mltiples reintentos
   const buscarCanvas = (intento = 0) => {
     const ctx = document.getElementById('timelineChart')
 
     if (!ctx) {
       if (intento < 5) {
-        console.warn(`⏰ Canvas timelineChart no encontrado, reintento ${intento + 1}/5...`)
+        console.warn(` Canvas timelineChart no encontrado, reintento ${intento + 1}/5...`)
         setTimeout(() => {
           buscarCanvas(intento + 1)
         }, 200 * (intento + 1)) // Delay incremental
         return
       } else {
         console.error(
-          '❌ Canvas timelineChart no encontrado después de 5 intentos - verificar que v-if de fechasPorDia esté cumplido'
+          ' Canvas timelineChart no encontrado despus de 5 intentos - verificar que v-if de fechasPorDia est cumplido'
         )
         return
       }
     }
 
-    console.log('✅ Canvas timeline encontrado, creando gráfico...')
+    console.log(' Canvas timeline encontrado, creando grfico...')
     crearGraficoTimelineInterno(ctx)
   }
 
-  // Iniciar búsqueda del canvas
+  // Iniciar bsqueda del canvas
   buscarCanvas()
 }
 
 function crearGraficoTimelineInterno(ctx) {
-  console.log('📊 Eventos disponibles para timeline:', eventos.value?.length || 0)
+  console.log(' Eventos disponibles para timeline:', eventos.value?.length || 0)
 
-  // Agrupar eventos por día
+  // Agrupar eventos por da
   const eventosPorDia = {}
   const diasCompletos = []
 
-  // Generar los últimos 30 días
+  // Generar los ltimos 30 das
   for (let i = 29; i >= 0; i--) {
     const dia = new Date()
     dia.setDate(dia.getDate() - i)
@@ -1807,7 +1966,7 @@ function crearGraficoTimelineInterno(ctx) {
     diasCompletos.push(diaKey)
   }
 
-  // Contar eventos por día
+  // Contar eventos por da
   if (eventos.value && eventos.value.length > 0) {
     eventos.value.forEach((evento) => {
       if (evento.fecha || evento.fechaHoraDia) {
@@ -1820,20 +1979,20 @@ function crearGraficoTimelineInterno(ctx) {
     })
   }
 
-  console.log('📊 Eventos por día calculados:', eventosPorDia)
+  console.log(' Eventos por da calculados:', eventosPorDia)
 
-  // Destruir gráfico anterior usando la nueva variable de instancia
+  // Destruir grfico anterior usando la nueva variable de instancia
   if (timelineChartInstance && typeof timelineChartInstance.destroy === 'function') {
     try {
       timelineChartInstance.destroy()
-      console.log('✅ Timeline anterior destruido correctamente')
+      console.log(' Timeline anterior destruido correctamente')
     } catch (error) {
-      console.warn('⚠️ Error destruyendo timeline anterior:', error)
+      console.warn(' Error destruyendo timeline anterior:', error)
     }
   }
   timelineChartInstance = null
 
-  // Limpiar también la variable global legacy
+  // Limpiar tambin la variable global legacy
   if (window.timelineChart) {
     window.timelineChart = null
   }
@@ -1851,7 +2010,7 @@ function crearGraficoTimelineInterno(ctx) {
       }),
       datasets: [
         {
-          label: 'Eventos por Día',
+          label: 'Eventos por Da',
           data: diasCompletos.map((dia) => eventosPorDia[dia]),
           borderColor: '#1976D2',
           backgroundColor: 'rgba(25, 118, 210, 0.1)',
@@ -1885,7 +2044,7 @@ function crearGraficoTimelineInterno(ctx) {
           borderWidth: 1,
           callbacks: {
             title: function (context) {
-              return `Día: ${context[0].label}`
+              return `Da: ${context[0].label}`
             },
             label: function (context) {
               return `${context.parsed.y} evento${context.parsed.y !== 1 ? 's' : ''}`
@@ -1945,21 +2104,21 @@ onMounted(async () => {
     // Obtener fechas del store de filtros
     const filtros = filtroFechasStore.obtenerFechasFormateadas()
 
-    console.log('🗺️ Cargando eventos para el mapa con filtros:', filtros)
+    console.log(' Cargando eventos para el mapa con filtros:', filtros)
     const eventosData = await getEventosBiometricosPorFiltro(filtros)
     eventos.value = eventosData // Almacenar en variable global
 
-    console.log('📊 Eventos obtenidos:', eventosData?.length || 0)
+    console.log(' Eventos obtenidos:', eventosData?.length || 0)
 
     if (!eventosData || eventosData.length === 0) {
-      console.warn('⚠️ No se encontraron eventos para mostrar en el mapa')
+      console.warn(' No se encontraron eventos para mostrar en el mapa')
       // Mostrar mensaje al usuario de que no hay datos
       return
     }
 
     const eventosConGps = eventosData
       .filter((e) => {
-        // Verificar que el evento tenga GPS válido
+        // Verificar que el evento tenga GPS vlido
         if (!e.gps || typeof e.gps !== 'string') return false
         if (!e.gps.includes(',')) return false
 
@@ -1977,46 +2136,46 @@ onMounted(async () => {
           lng,
           usuario: e.usuario?.usuario || e.usuario || 'Usuario desconocido',
           detalle: e.tipoEvento?.detalle || e.tipoEvento || 'Sin especificar',
-          descripcion: e.resultadoDescripcion || e.resultadoEvento || 'Sin descripción',
+          descripcion: e.resultadoDescripcion || e.resultadoEvento || 'Sin descripcin',
           fecha: e.fechaHoraDia
             ? new Date(e.fechaHoraDia).toLocaleString()
             : e.fecha
             ? new Date(e.fecha).toLocaleString()
             : 'Fecha no disponible',
-          // Mantener referencia al evento original completo para análisis
+          // Mantener referencia al evento original completo para anlisis
           eventoOriginal: e,
         }
       })
 
-    console.log('🗺️ Eventos con GPS válido:', eventosConGps.length)
+    console.log(' Eventos con GPS vlido:', eventosConGps.length)
     const map = L.map('mapaEventos').setView([19.4326, -99.1332], 5)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+      attribution: ' OpenStreetMap contributors',
       maxZoom: 18,
     }).addTo(map)
 
     // Agregar listener para clicks en el mapa
     map.on('click', async (e) => {
       const { lat, lng } = e.latlng
-      console.log('🖱️ Click en mapa:', { lat, lng })
+      console.log(' Click en mapa:', { lat, lng })
       await obtenerResumenArea(lat, lng)
     })
 
     const markers = L.markerClusterGroup({
-      // Configuración mejorada del cluster para mejor experiencia
+      // Configuracin mejorada del cluster para mejor experiencia
       chunkedLoading: true,
-      maxClusterRadius: 60, // Radio reducido para menos agrupación
+      maxClusterRadius: 60, // Radio reducido para menos agrupacin
       spiderfyOnMaxZoom: true, // Reactivar spiderfy para mostrar marcadores individuales
-      showCoverageOnHover: false, // Desactivar cobertura al hacer hover para menos distracción
+      showCoverageOnHover: false, // Desactivar cobertura al hacer hover para menos distraccin
       zoomToBoundsOnClick: true, // Permitir zoom al hacer clic (funcionalidad original)
-      spiderfyOnEveryZoom: false, // Reducir spiderfy para menos animación
+      spiderfyOnEveryZoom: false, // Reducir spiderfy para menos animacin
       removeOutsideVisibleBounds: false, // Mantener marcadores para mejor rendimiento
-      animate: false, // Desactivar animaciones para menos exageración
-      animateAddingMarkers: false, // Desactivar animación al agregar marcadores
+      animate: false, // Desactivar animaciones para menos exageracin
+      animateAddingMarkers: false, // Desactivar animacin al agregar marcadores
       disableClusteringAtZoom: 15, // Desagrupar a nivel de zoom alto para mejor detalle
       spiderfyDistanceMultiplier: 1.2, // Reducir distancia del spiderfy
 
-      // Personalización visual de clusters
+      // Personalizacin visual de clusters
       iconCreateFunction: function (cluster) {
         const count = cluster.getChildCount()
         let className = 'marker-cluster marker-cluster-'
@@ -2049,9 +2208,9 @@ onMounted(async () => {
       },
     })
 
-    // 🆕 Mejorar evento de clic en clusters
+    //  Mejorar evento de clic en clusters
     markers.on('clusterclick', async (event) => {
-      console.log('🔍 Click en cluster detectado:', event)
+      console.log(' Click en cluster detectado:', event)
 
       // Evitar el comportamiento por defecto solo temporalmente
       L.DomEvent.stopPropagation(event)
@@ -2059,7 +2218,7 @@ onMounted(async () => {
       const cluster = event.layer
       const childMarkers = cluster.getAllChildMarkers()
 
-      console.log(`📍 Cluster contiene ${childMarkers.length} marcadores`)
+      console.log(` Cluster contiene ${childMarkers.length} marcadores`)
 
       // Si el cluster tiene pocos elementos, hacer zoom normalmente
       if (childMarkers.length <= 5) {
@@ -2068,7 +2227,7 @@ onMounted(async () => {
         return
       }
 
-      // Para clusters grandes, mostrar análisis
+      // Para clusters grandes, mostrar anlisis
       const eventosDelCluster = childMarkers
         .map((marker) => {
           const markerLatLng = marker.getLatLng()
@@ -2086,7 +2245,7 @@ onMounted(async () => {
       }
     })
 
-    // Mejorar visualización de marcadores individuales
+    // Mejorar visualizacin de marcadores individuales
     eventosConGps.forEach((e) => {
       // Crear icono personalizado basado en el resultado
       const isSuccess = e.descripcion && e.descripcion.toLowerCase().includes('exitoso')
@@ -2108,8 +2267,8 @@ onMounted(async () => {
           cursor: pointer;
           user-select: none;
           pointer-events: auto;
-        " title="Click para más detalles">
-          🌍
+        " title="Click para ms detalles">
+
         </div>`,
         className: 'custom-marker-location',
         iconSize: [24, 24],
@@ -2117,7 +2276,7 @@ onMounted(async () => {
       })
 
       const marker = L.marker([e.lat, e.lng], { icon: customIcon }).bindTooltip(
-        `Click para más detalles`,
+        `Click para ms detalles`,
         {
           permanent: false,
           direction: 'top',
@@ -2127,7 +2286,7 @@ onMounted(async () => {
         }
       )
 
-      // Efecto hover más estable - sin cambio de tamaño brusco
+      // Efecto hover ms estable - sin cambio de tamao brusco
       marker.on('mouseover', function () {
         this.getElement().style.zIndex = '1000'
         this.getElement().style.opacity = '0.9'
@@ -2142,15 +2301,12 @@ onMounted(async () => {
 
       // Evento de clic en marcador individual
       marker.on('click', async (markerEvent) => {
-        console.log(
-          '🎯 Click en marcador - datos del evento procesado:',
-          JSON.stringify(e, null, 2)
-        )
+        console.log(' Click en marcador - datos del evento procesado:', JSON.stringify(e, null, 2))
 
-        // Prevenir propagación al mapa
+        // Prevenir propagacin al mapa
         L.DomEvent.stopPropagation(markerEvent)
 
-        // Mostrar análisis del evento específico
+        // Mostrar anlisis del evento especfico
         await mostrarResumenEvento(e.eventoOriginal || e, eventos.value)
 
         // Hacer scroll hacia el resumen
@@ -2168,7 +2324,7 @@ onMounted(async () => {
       markers.addLayer(marker)
     })
     map.addLayer(markers)
-    // ←–––––– NUEVO: agrupamos solo los FALLIDO y actualizamos la lista
+    //  NUEVO: agrupamos solo los FALLIDO y actualizamos la lista
     try {
       const agrupados = await agruparFallosPorEstado(eventos.value)
       fallosPorEstado.value = agrupados
@@ -2179,11 +2335,11 @@ onMounted(async () => {
     console.error('Error al cargar eventos para el mapa:', error)
   }
 
-  // No crear timeline aquí porque el canvas solo existe cuando se muestra el resumen
-  console.log('✅ Mapa y eventos cargados correctamente')
+  // No crear timeline aqu porque el canvas solo existe cuando se muestra el resumen
+  console.log(' Mapa y eventos cargados correctamente')
 })
 
-// Watcher para actualizar gráficas automáticamente cuando cambien las fechas
+// Watcher para actualizar grficas automticamente cuando cambien las fechas
 watch(
   () => [filtroFechasStore.fechaInicio, filtroFechasStore.fechaFin],
   async (newDates, oldDates) => {
@@ -2191,7 +2347,7 @@ watch(
       modoSeleccionado.value === 'mobile' &&
       (newDates[0] !== oldDates[0] || newDates[1] !== oldDates[1])
     ) {
-      console.log('📅 Fechas cambiadas en mobile, actualizando gráficas:', {
+      console.log(' Fechas cambiadas en mobile, actualizando grficas:', {
         old: oldDates,
         new: newDates,
       })
@@ -2201,18 +2357,18 @@ watch(
   { immediate: false }
 )
 
-// Variable para almacenar instancias de gráficos
+// Variable para almacenar instancias de grficos
 let barChartInstance = null
 let doughnutChartInstance = null
 let deviceChartInstance = null
 let timelineChartInstance = null
 
-// Map para gestionar instancias de gráficos de pie
+// Map para gestionar instancias de grficos de pie
 const pieChartInstances = new Map()
 
-// 🔥 FUNCIÓN ROBUSTA: Destruir gráficos existentes y limpiar registro global de Chart.js
+//  FUNCIN ROBUSTA: Destruir grficos existentes y limpiar registro global de Chart.js
 function destroyExistingCharts() {
-  console.log('🧹 Iniciando limpieza ROBUSTA de gráficos existentes...')
+  console.log(' Iniciando limpieza ROBUSTA de grficos existentes...')
 
   try {
     // 1. Destruir instancias principales
@@ -2227,9 +2383,9 @@ function destroyExistingCharts() {
       if (instance && typeof instance.destroy === 'function') {
         try {
           instance.destroy()
-          console.log(`✅ Gráfico de ${name} destruido correctamente`)
+          console.log(` Grfico de ${name} destruido correctamente`)
         } catch (error) {
-          console.warn(`⚠️ Error destruyendo gráfico de ${name}:`, error)
+          console.warn(` Error destruyendo grfico de ${name}:`, error)
         }
       }
     })
@@ -2240,34 +2396,34 @@ function destroyExistingCharts() {
     deviceChartInstance = null
     timelineChartInstance = null
 
-    // 2. Destruir gráficos de pie usando el Map
+    // 2. Destruir grficos de pie usando el Map
     pieChartInstances.forEach((instance, key) => {
       if (instance && typeof instance.destroy === 'function') {
         try {
           instance.destroy()
-          console.log(`✅ Gráfico de pie ${key} destruido`)
+          console.log(` Grfico de pie ${key} destruido`)
         } catch (error) {
-          console.warn(`⚠️ Error destruyendo gráfico de pie ${key}:`, error)
+          console.warn(` Error destruyendo grfico de pie ${key}:`, error)
         }
       }
     })
     pieChartInstances.clear()
 
-    // 3. Limpiar también referencias legacy
+    // 3. Limpiar tambin referencias legacy
     Object.keys(pieRefs.value).forEach((key) => {
       const canvas = pieRefs.value[key]
       if (canvas && canvas.chart) {
         try {
           canvas.chart.destroy()
-          console.log(`✅ Gráfico legacy ${key} destruido`)
+          console.log(` Grfico legacy ${key} destruido`)
         } catch (error) {
-          console.warn(`⚠️ Error destruyendo gráfico legacy ${key}:`, error)
+          console.warn(` Error destruyendo grfico legacy ${key}:`, error)
         }
         canvas.chart = null
       }
     })
 
-    // 4. 🚀 LIMPIAR REGISTRO GLOBAL DE CHART.JS
+    // 4.  LIMPIAR REGISTRO GLOBAL DE CHART.JS
     // Esto elimina todas las referencias internas que Chart.js mantiene
     if (window.Chart && window.Chart.instances) {
       Object.keys(window.Chart.instances).forEach((id) => {
@@ -2275,15 +2431,15 @@ function destroyExistingCharts() {
         if (instance && typeof instance.destroy === 'function') {
           try {
             instance.destroy()
-            console.log(`🔥 Instancia global ${id} eliminada`)
+            console.log(` Instancia global ${id} eliminada`)
           } catch (error) {
-            console.warn(`⚠️ Error eliminando instancia global ${id}:`, error)
+            console.warn(` Error eliminando instancia global ${id}:`, error)
           }
         }
       })
       // Limpiar el objeto de instancias
       window.Chart.instances = {}
-      console.log('🧹 Registro global de Chart.js limpiado')
+      console.log(' Registro global de Chart.js limpiado')
     }
 
     // 5. Limpiar canvas elements que puedan tener referencias colgadas
@@ -2314,35 +2470,35 @@ function destroyExistingCharts() {
     if (window.timelineChart && typeof window.timelineChart.destroy === 'function') {
       try {
         window.timelineChart.destroy()
-        console.log('✅ Timeline chart legacy destruido')
+        console.log(' Timeline chart legacy destruido')
       } catch (error) {
-        console.warn('⚠️ Error destruyendo timeline chart legacy:', error)
+        console.warn(' Error destruyendo timeline chart legacy:', error)
       }
       window.timelineChart = null
     }
 
-    console.log('🧹 Limpieza ROBUSTA de gráficos completada exitosamente')
+    console.log(' Limpieza ROBUSTA de grficos completada exitosamente')
   } catch (error) {
-    console.error('❌ Error durante la limpieza robusta:', error)
+    console.error(' Error durante la limpieza robusta:', error)
   }
 }
 
-// Función mejorada para renderizar gráficas con verificación de datos
+// Funcin mejorada para renderizar grficas con verificacin de datos
 function renderCharts() {
-  console.log('📊 Iniciando renderCharts - destruyendo gráficos existentes')
+  console.log(' Iniciando renderCharts - destruyendo grficos existentes')
 
-  // Destruir gráficos existentes antes de crear nuevos
+  // Destruir grficos existentes antes de crear nuevos
   destroyExistingCharts()
 
-  // Verificar que los canvas estén disponibles
+  // Verificar que los canvas estn disponibles
   if (!barChart.value) {
-    console.warn('⚠️ Canvas barChart no disponible')
+    console.warn(' Canvas barChart no disponible')
     return
   }
 
-  // Verificar que los datos estén listos antes de renderizar
+  // Verificar que los datos estn listos antes de renderizar
   if (!tiemposFuncionalidad.value || tiemposFuncionalidad.value.length === 0) {
-    console.log('⏳ Datos de funcionalidad no listos, esperando...')
+    console.log(' Datos de funcionalidad no listos, esperando...')
     return
   }
 
@@ -2350,9 +2506,9 @@ function renderCharts() {
     const labels = tiemposFuncionalidad.value.map((t) => t.funcionalidad)
     const data = tiemposFuncionalidad.value.map((t) => t.totalSegundos)
 
-    // Verificar que tenemos datos válidos
+    // Verificar que tenemos datos vlidos
     if (labels.length === 0 || data.length === 0) {
-      console.warn('⚠️ No hay datos válidos para el gráfico de barras')
+      console.warn(' No hay datos vlidos para el grfico de barras')
       return
     }
 
@@ -2410,16 +2566,16 @@ function renderCharts() {
     })
     renderDeviceChart()
     renderPiePorFuncionalidad()
-    console.log('✅ Gráfico de barras creado exitosamente con', labels.length, 'elementos')
+    console.log(' Grfico de barras creado exitosamente con', labels.length, 'elementos')
   } catch (error) {
-    console.error('❌ Error creando gráfico de barras:', error)
+    console.error(' Error creando grfico de barras:', error)
   }
 
-  // Crear gráfico doughnut solo si el canvas está disponible
+  // Crear grfico doughnut solo si el canvas est disponible
   if (chart.value) {
-    // Verificar que los datos estén disponibles
+    // Verificar que los datos estn disponibles
     if (!tiemposFuncionalidad.value || tiemposFuncionalidad.value.length === 0) {
-      console.warn('⚠️ No hay datos para el gráfico doughnut')
+      console.warn(' No hay datos para el grfico doughnut')
       return
     }
 
@@ -2433,9 +2589,9 @@ function renderCharts() {
           labels: labels,
           datasets: [
             {
-              label: 'Distribución',
+              label: 'Distribucin',
               data: data,
-              backgroundColor: ['#26A69A', '#7E57C2', '#1976D2', '#66BB6A', '#FFA726'], // Colores más acordes al flujo
+              backgroundColor: ['#26A69A', '#7E57C2', '#1976D2', '#66BB6A', '#FFA726'], // Colores ms acordes al flujo
               borderColor: '#1e1e2f',
               borderWidth: 2,
             },
@@ -2453,40 +2609,31 @@ function renderCharts() {
               bodyColor: '#fff',
             },
             legend: {
-              display: true,
-              position: 'bottom',
-              labels: {
-                color: '#ccc',
-                padding: 15,
-                usePointStyle: true,
-                font: {
-                  size: 12,
-                },
-              },
+              display: false, // LEYENDAS DESHABILITADAS - Usamos cuadros de resumen
             },
           },
         },
       })
-      console.log('✅ Gráfico doughnut creado exitosamente con', labels.length, 'elementos')
+      console.log(' Grfico doughnut creado exitosamente con', labels.length, 'elementos')
     } catch (error) {
-      console.error('❌ Error creando gráfico doughnut:', error)
+      console.error(' Error creando grfico doughnut:', error)
     }
   } else {
-    console.warn('⚠️ Canvas chart no disponible para doughnut')
+    console.warn(' Canvas chart no disponible para doughnut')
   }
 }
-// 📊 FUNCIÓN MEJORADA: Renderizar gráfico de dispositivos con debugging
+//  FUNCIN MEJORADA: Renderizar grfico de dispositivos con debugging
 async function renderDeviceChart() {
-  console.log('🔧 Iniciando renderDeviceChart...')
+  console.log(' Iniciando renderDeviceChart...')
 
   try {
-    // Destruir gráfico de dispositivos existente si existe
+    // Destruir grfico de dispositivos existente si existe
     if (deviceChartInstance) {
       try {
         deviceChartInstance.destroy()
-        console.log('✅ Gráfico de dispositivos anterior destruido')
+        console.log(' Grfico de dispositivos anterior destruido')
       } catch (error) {
-        console.warn('⚠️ Error destruyendo gráfico de dispositivos anterior:', error)
+        console.warn(' Error destruyendo grfico de dispositivos anterior:', error)
       }
       deviceChartInstance = null
     }
@@ -2495,36 +2642,36 @@ async function renderDeviceChart() {
       fechaInicio: filtroFechasStore.fechaInicio,
       fechaFin: filtroFechasStore.fechaFin,
     }
-    console.log('📅 Payload para dispositivos:', payload)
+    console.log(' Payload para dispositivos:', payload)
 
     const data = await getDispositivosMasUsados(payload)
-    console.log('📊 Datos de dispositivos recibidos:', data)
+    console.log(' Datos de dispositivos recibidos:', data)
 
     if (!data || data.length === 0) {
-      console.warn('⚠️ No hay datos de dispositivos para mostrar')
+      console.warn(' No hay datos de dispositivos para mostrar')
       return
     }
 
     const labels = data.map((d) => d.dispositivo)
     const valores = data.map((d) => d.total)
 
-    console.log('🏷️ Labels dispositivos:', labels)
-    console.log('🔢 Valores dispositivos:', valores)
+    console.log(' Labels dispositivos:', labels)
+    console.log(' Valores dispositivos:', valores)
 
-    // Verificar que el canvas esté disponible
+    // Verificar que el canvas est disponible
     if (!deviceChart.value) {
-      console.warn('⚠️ Canvas deviceChart no disponible')
-      // Intentar nuevamente después de un pequeño delay
+      console.warn(' Canvas deviceChart no disponible')
+      // Intentar nuevamente despus de un pequeo delay
       setTimeout(() => {
         if (deviceChart.value) {
-          console.log('✅ Canvas deviceChart encontrado en reintento')
+          console.log(' Canvas deviceChart encontrado en reintento')
           renderDeviceChart()
         }
       }, 200)
       return
     }
 
-    console.log('✅ Canvas deviceChart disponible, creando gráfico...')
+    console.log(' Canvas deviceChart disponible, creando grfico...')
 
     deviceChartInstance = new Chart(deviceChart.value, {
       type: 'bar',
@@ -2593,16 +2740,16 @@ async function renderDeviceChart() {
         },
       },
     })
-    console.log('✅ Gráfico de dispositivos creado exitosamente')
+    console.log(' Grfico de dispositivos creado exitosamente')
   } catch (error) {
-    console.error('❌ Error al cargar dispositivos:', error)
-    console.error('❌ Stack trace:', error.stack)
+    console.error(' Error al cargar dispositivos:', error)
+    console.error(' Stack trace:', error.stack)
   }
 }
 
-// 🔧 FUNCIÓN MEJORADA: renderPiePorFuncionalidad con mejor persistencia de leyendas
+//  FUNCIN MEJORADA: renderPiePorFuncionalidad con mejor persistencia de leyendas
 function renderPiePorFuncionalidad() {
-  console.log('🍰 Iniciando renderPiePorFuncionalidad...')
+  console.log(' Iniciando renderPiePorFuncionalidad...')
 
   getFuncionalidadesEstado({
     fechaInicio: filtroFechasStore.fechaInicio,
@@ -2610,14 +2757,14 @@ function renderPiePorFuncionalidad() {
   })
     .then(async (data) => {
       if (!data || data.length === 0) {
-        console.warn('⚠️ No hay datos para gráficos de funcionalidad')
+        console.warn(' No hay datos para grficos de funcionalidad')
         return
       }
 
       funcionalidades.value = data
-      console.log('📊 Datos de funcionalidades:', data.length, 'funcionalidades')
+      console.log(' Datos de funcionalidades:', data.length, 'funcionalidades')
 
-      // 🕒 ESPERAR MÁS TIEMPO para que el DOM esté completamente listo
+      //  ESPERAR MS TIEMPO para que el DOM est completamente listo
       await nextTick()
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -2630,20 +2777,20 @@ function renderPiePorFuncionalidad() {
         const ref = pieRefs.value[func.clave]
 
         if (ref && valores.some((v) => v > 0)) {
-          console.log(`🍰 Procesando gráfico para ${func.clave} con valores:`, valores)
+          console.log(` Procesando grfico para ${func.clave} con valores:`, valores)
 
-          // 🔥 DESTRUIR SOLO LA INSTANCIA ESPECÍFICA
+          //  DESTRUIR SOLO LA INSTANCIA ESPECFICA
           const existingInstance = pieChartInstances.get(func.clave)
           if (existingInstance && typeof existingInstance.destroy === 'function') {
             try {
               existingInstance.destroy()
-              console.log(`🧹 Instancia ${func.clave} destruida`)
+              console.log(` Instancia ${func.clave} destruida`)
             } catch (error) {
-              console.warn(`⚠️ Error destruyendo gráfico pie ${func.clave}:`, error)
+              console.warn(` Error destruyendo grfico pie ${func.clave}:`, error)
             }
           }
 
-          // ✅ CREAR NUEVA INSTANCIA CON CONFIGURACIÓN ROBUSTA
+
           const chartInstance = new Chart(ref, {
             type: 'doughnut',
             data: {
@@ -2664,77 +2811,7 @@ function renderPiePorFuncionalidad() {
               cutout: '50%',
               plugins: {
                 legend: {
-                  display: true,
-                  position: 'bottom',
-                  align: 'center',
-                  labels: {
-                    color: '#e5e7eb',
-                    padding: 20,
-                    usePointStyle: true,
-                    pointStyle: 'circle',
-                    boxWidth: 12,
-                    boxHeight: 12,
-                    font: {
-                      size: 12,
-                      weight: '600',
-                      family: 'Inter, system-ui, sans-serif',
-                    },
-                    // 🔧 FUNCIÓN PERSONALIZADA ROBUSTA para generar leyendas
-                    generateLabels: function (chart) {
-                      console.log(`🏷️ Generando leyendas para ${func.clave}`)
-                      const data = chart.data
-
-                      if (!data || !data.labels || !data.datasets || data.datasets.length === 0) {
-                        console.warn(`⚠️ Datos insuficientes para leyendas en ${func.clave}`)
-                        return []
-                      }
-
-                      const dataset = data.datasets[0]
-                      const labels = []
-
-                      data.labels.forEach((label, index) => {
-                        const value = dataset.data[index]
-                        const backgroundColor = Array.isArray(dataset.backgroundColor)
-                          ? dataset.backgroundColor[index]
-                          : dataset.backgroundColor
-
-                        // Solo mostrar leyenda si hay datos > 0
-                        if (value > 0) {
-                          labels.push({
-                            text: `${label} (${value})`,
-                            fillStyle: backgroundColor,
-                            strokeStyle: backgroundColor,
-                            lineWidth: 0,
-                            pointStyle: 'circle',
-                            hidden: false,
-                            index: index,
-                            fontColor: '#e5e7eb',
-                            // 🔧 Propiedades adicionales para persistencia
-                            datasetIndex: 0,
-                            value: value,
-                          })
-                        }
-                      })
-
-                      console.log(`✅ ${labels.length} leyendas generadas para ${func.clave}`)
-                      return labels
-                    },
-                  },
-                  // 🔧 Callbacks para mantener estado
-                  onClick: function (e, legendItem, legend) {
-                    const index = legendItem.index
-                    const chart = legend.chart
-                    const meta = chart.getDatasetMeta(0)
-
-                    meta.data[index].hidden = !meta.data[index].hidden
-                    chart.update()
-                  },
-                  onHover: function (e, legendItem, legend) {
-                    legend.chart.canvas.style.cursor = 'pointer'
-                  },
-                  onLeave: function (e, legendItem, legend) {
-                    legend.chart.canvas.style.cursor = 'default'
-                  },
+                  display: false,
                 },
                 tooltip: {
                   enabled: true,
@@ -2758,22 +2835,19 @@ function renderPiePorFuncionalidad() {
                   },
                 },
               },
-              // 🔧 Animación más suave para evitar conflictos
               animation: {
                 duration: 600,
                 easing: 'easeInOutQuart',
                 animateRotate: true,
                 animateScale: true,
                 onComplete: function () {
-                  console.log(`🎬 Animación completada para ${func.clave}`)
+                  console.log(` Animacin completada para ${func.clave}`)
                 },
               },
-              // 🔧 Interacción mejorada
               interaction: {
                 intersect: false,
                 mode: 'nearest',
               },
-              // 🔧 Layout para mejor spacing
               layout: {
                 padding: {
                   top: 10,
@@ -2785,24 +2859,22 @@ function renderPiePorFuncionalidad() {
             },
           })
 
-          // Guardar referencia de la instancia
           pieChartInstances.set(func.clave, chartInstance)
-          console.log(`✅ Gráfico de pie ${func.clave} creado con datos:`, valores)
+          console.log(` Grfico de pie ${func.clave} creado con datos:`, valores)
         } else {
           console.warn(
-            `⚠️ No se puede crear gráfico para ${func.clave}: canvas no disponible o datos vacíos`
+            ` No se puede crear grfico para ${func.clave}: canvas no disponible o datos vacos`
           )
         }
       })
     })
     .catch((error) => {
-      console.error('❌ Error al cargar funcionalidades:', error)
+      console.error(' Error al cargar funcionalidades:', error)
     })
 }
 
-// Limpieza al desmontar el componente
 onBeforeUnmount(() => {
-  console.log('🧹 Limpiando gráficos antes de desmontar EstadisticasPage')
+  console.log(' Limpiando grficos antes de desmontar EstadisticasPage')
   destroyExistingCharts()
 })
 </script>
@@ -3010,7 +3082,7 @@ onBeforeUnmount(() => {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Contenedores de gráficos */
+/* Contenedores de grficos */
 .chart-container,
 .timeline-container {
   position: relative;
@@ -3032,7 +3104,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
 }
 
-/* Estilos específicos del mapa */
+/* Estilos especficos del mapa */
 .mapa-card {
   background: linear-gradient(135deg, #1e1e2f 0%, #2a2a3e 100%);
 }
@@ -3056,7 +3128,7 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Personalización de clusters del mapa */
+/* Personalizacin de clusters del mapa */
 :deep(.marker-cluster-small) {
   background-color: rgba(59, 130, 246, 0.6);
 }
@@ -3137,7 +3209,7 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.5);
 }
 
-/* Mejoras visuales para el contenedor de información */
+/* Mejoras visuales para el contenedor de informacin */
 .info-container {
   transition: all 0.3s ease;
 }
@@ -3168,12 +3240,12 @@ onBeforeUnmount(() => {
   margin-bottom: 0 !important;
 }
 
-/* Ajustes para gráficos responsivos */
+/* Ajustes para grficos responsivos */
 .grafico-card {
   min-height: 280px !important;
 }
 
-/* Estilos para la información geográfica responsiva */
+/* Estilos para la informacin geogrfica responsiva */
 .geo-info-item {
   padding: 12px;
   background: rgba(255, 255, 255, 0.1);
@@ -3186,7 +3258,7 @@ onBeforeUnmount(() => {
   transform: translateY(-2px);
 }
 
-/* Estilos para estadísticas de actividad */
+/* Estilos para estadsticas de actividad */
 .activity-stat-item {
   padding: 12px;
   background: rgba(255, 255, 255, 0.1);
@@ -3199,7 +3271,7 @@ onBeforeUnmount(() => {
   transform: translateY(-2px);
 }
 
-/* Responsividad mejorada para móviles */
+/* Responsividad mejorada para mviles */
 @media (max-width: 768px) {
   .info-geo-card,
   .info-users-card {
@@ -3219,7 +3291,7 @@ onBeforeUnmount(() => {
     font-size: 1.25rem !important;
   }
 
-  /* Mejoras específicas para gráficas en móvil */
+  /* Mejoras especficas para grficas en mvil */
   .chart-card {
     margin-bottom: 16px !important;
     padding: 12px !important;
@@ -3237,7 +3309,7 @@ onBeforeUnmount(() => {
     height: 300px !important;
   }
 
-  /* Ajustes para indicadores de carga en móvil */
+  /* Ajustes para indicadores de carga en mvil */
   .q-inner-loading {
     z-index: 10;
   }
@@ -3264,7 +3336,7 @@ onBeforeUnmount(() => {
     align-self: flex-end;
   }
 
-  /* Ajustes adicionales para móviles pequeños */
+  /* Ajustes adicionales para mviles pequeos */
   .stats-container {
     padding: 12px !important;
   }
@@ -3277,7 +3349,7 @@ onBeforeUnmount(() => {
     height: 250px !important;
   }
 
-  /* Mejorar espaciado en móviles */
+  /* Mejorar espaciado en mviles */
   .q-pa-md {
     padding: 8px !important;
   }
@@ -3287,7 +3359,7 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Contenedores de gráficos con altura fija */
+/* Contenedores de grficos con altura fija */
 .chart-container {
   position: relative;
   height: 250px !important;
@@ -3304,7 +3376,7 @@ onBeforeUnmount(() => {
   object-fit: contain;
 }
 
-/* Timeline container específico */
+/* Timeline container especfico */
 .timeline-container {
   position: relative;
   height: 200px !important;
@@ -3320,7 +3392,7 @@ onBeforeUnmount(() => {
   width: auto !important;
 }
 
-/* Contenedores específicos para diferentes tipos de gráficos */
+/* Contenedores especficos para diferentes tipos de grficos */
 .pie-chart-container {
   position: relative;
   height: 200px !important;
@@ -3339,7 +3411,7 @@ onBeforeUnmount(() => {
   width: auto !important;
 }
 
-/* Estilos específicos para donut canvas */
+/* Estilos especficos para donut canvas */
 .donut-canvas {
   max-width: 100% !important;
   max-height: 100% !important;
@@ -3396,3 +3468,5 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+
+

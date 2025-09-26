@@ -205,6 +205,7 @@ import {
 import EventosAbiertosTable from 'src/components/EventosAbiertosTable.vue'
 import FuncionalidadesMulTable from 'src/components/FuncionalidadesMulTable.vue'
 import LogFilters from 'src/components/LogFilters.vue'
+import { useFiltroFechasStore } from 'src/stores/filtroFechasStore'
 
 // Registramos los componentes necesarios
 Chart.register(
@@ -222,8 +223,12 @@ Chart.register(
 
 // Variables para mobile flow
 const loadingCharts = ref(false)
-const flow = inject('flow')
-const modoSeleccionado = computed(() => flow?.value || 'desktop')
+// Inyectar el estado del flujo desde el layout padre
+const selectedFlow = inject('selectedFlow', ref('mobile'))
+// Usar computed para determinar el modo seleccionado basado en el flujo inyectado
+const modoSeleccionado = computed(() =>
+  selectedFlow.value === 'escritorio' ? 'escritorio' : 'mobile'
+)
 
 // Referencia al canvas
 const eventosPorMesChart = ref(null)
@@ -245,8 +250,13 @@ const chartTiempoUsoRef = ref(null)
 const eventosAbiertos = ref([])
 const funcionalidadesMultiplesUsos = ref([])
 
-// Función principal para actualizar todos los datos
-async function actualizarDatos() {
+// Store de filtros de fechas
+const filtroFechasStore = useFiltroFechasStore() // Usado en todas las funciones de API
+
+// Función principal para actualizar todos los datos con filtros
+async function actualizarDatos(filtros = null) {
+  console.log('🔄 Actualizando datos de EventosPage con filtros:', filtros)
+
   if (modoSeleccionado.value === 'mobile') {
     loadingCharts.value = true
     console.log('📱 Mobile: Actualizando gráficas de eventos...')
@@ -277,12 +287,31 @@ async function actualizarDatos() {
   }
 }
 
-// Watcher para cambios de fecha en mobile
+// Watcher para cambios de flujo en mobile
 watch(
-  () => flow?.value,
+  () => selectedFlow.value,
   (newFlow, oldFlow) => {
     if (newFlow === 'mobile' && oldFlow !== 'mobile') {
       console.log('📱 Detectado cambio a modo mobile en EventosPage')
+      actualizarDatos()
+    }
+  },
+  { immediate: false }
+)
+
+// 📅 WATCHER PARA FILTROS DE FECHAS
+watch(
+  () => [filtroFechasStore.fechaInicio, filtroFechasStore.fechaFin],
+  ([nuevaFechaInicio, nuevaFechaFin], [viejaFechaInicio, viejaFechaFin]) => {
+    if (
+      (nuevaFechaInicio !== viejaFechaInicio || nuevaFechaFin !== viejaFechaFin) &&
+      nuevaFechaInicio &&
+      nuevaFechaFin
+    ) {
+      console.log('📅 Filtros de fechas cambiaron en EventosPage:', {
+        nuevaFechaInicio,
+        nuevaFechaFin,
+      })
       actualizarDatos()
     }
   },
@@ -324,9 +353,10 @@ async function renderEventosPorMesChart() {
     }
 
     const payload = {
-      fechaInicio: '2025-01-01',
-      fechaFin: '2025-12-31',
+      fechaInicio: filtroFechasStore.fechaInicio || '2025-01-01',
+      fechaFin: filtroFechasStore.fechaFin || '2025-12-31',
     }
+    console.log('📅 Payload para eventos por mes:', payload)
     const data = await getEventosPorMes(payload)
     const labels = data.map((item) => formatearMes(item.mes))
     const valoresBarras = data.map((item) => item.total)
@@ -626,13 +656,14 @@ async function renderEventosPorTipoChart() {
 }
 
 // Funcion para obtener eventos por tiempo de respuesta
-async function cargarEventosTiempoRespuesta(start_date, end_date) {
+async function cargarEventosTiempoRespuesta() {
   try {
     const payload = {
       tiempoMs: 1000,
-      fechaInicio: start_date,
-      fechaFin: end_date,
+      fechaInicio: filtroFechasStore.fechaInicio || '2025-01-01',
+      fechaFin: filtroFechasStore.fechaFin || '2025-12-31',
     }
+    console.log('📅 Payload para eventos tiempo respuesta:', payload)
     const data = await getEventosTiempoRespuesta(payload)
     console.log('Eventos por tiempo de respuesta:', data)
     eventosTiempoRespuesta.value = data
@@ -680,13 +711,14 @@ function renderChartEventosTiempo() {
 }
 
 // Cargar el tiempo de uso por día para una funcionalidad específica
-async function cargarTiempoUsoPorDia(funcionalidad, start_date, end_date) {
+async function cargarTiempoUsoPorDia(funcionalidad) {
   try {
     const payload = {
       funcionalidad,
-      fechaInicio: start_date,
-      fechaFin: end_date,
+      fechaInicio: filtroFechasStore.fechaInicio || '2025-01-01',
+      fechaFin: filtroFechasStore.fechaFin || '2025-12-31',
     }
+    console.log('📅 Payload para tiempo uso por día:', payload)
     const data = await getMayorTiempoUsoFuncionalidad(payload)
     tiempoUsoPorDia.value = data.map((d) => ({
       fecha: d.fecha,
@@ -736,9 +768,10 @@ function renderChartTiempoUso() {
 async function cargarEventosAbiertos() {
   try {
     const payload = {
-      fechaInicio: '2025-04-01',
-      fechaFin: '2025-06-30',
+      fechaInicio: filtroFechasStore.fechaInicio || '2025-01-01',
+      fechaFin: filtroFechasStore.fechaFin || '2025-12-31',
     }
+    console.log('📅 Payload para eventos abiertos:', payload)
     const data = await getEventosAbiertos(payload)
     eventosAbiertos.value = data
     console.log('Eventos abiertos cargados:', data)
