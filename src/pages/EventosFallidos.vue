@@ -19,51 +19,155 @@
         <q-card
           flat
           bordered
-          class="q-pa-md text-white q-mb-md"
-          style="background-color: #1e1e2f; border-radius: 12px"
+          class="q-pa-lg text-white q-mb-md resumen-card"
+          style="
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.25);
+          "
         >
-          <div class="text-subtitle1 q-mb-sm text-center">Resumen</div>
-          <br />
+          <div class="row items-center q-mb-md">
+            <q-icon name="assessment" size="28px" color="white" class="q-mr-sm" />
+            <div class="text-h5 text-weight-bold">Resumen Ejecutivo</div>
+          </div>
+
           <div class="row q-col-gutter-md">
-            <div class="col-6">
-              <div>
-                Total eventos fallidos: <b>{{ logs.length }}</b>
-              </div>
+            <!-- KPI Principal -->
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-card
+                class="kpi-card text-center q-pa-md"
+                style="background: rgba(255, 255, 255, 0.1); border-radius: 12px"
+              >
+                <q-icon name="error_outline" size="32px" color="red-4" class="q-mb-sm" />
+                <div class="text-h4 text-weight-bold text-red-4">{{ logs.length }}</div>
+                <div class="text-caption text-grey-3">Total Eventos Fallidos</div>
+              </q-card>
             </div>
-            <div class="col-6">
-              <div>
-                Última fecha: <b>{{ logs[0]?.fecha || 'N/A' }}</b>
-              </div>
+
+            <!-- Última Fecha -->
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-card
+                class="kpi-card text-center q-pa-md"
+                style="background: rgba(255, 255, 255, 0.1); border-radius: 12px"
+              >
+                <q-icon name="schedule" size="32px" color="blue-4" class="q-mb-sm" />
+                <div class="text-body1 text-weight-bold">
+                  {{ logs[0]?.fecha ? formatearFecha(logs[0].fecha) : 'N/A' }}
+                </div>
+                <div class="text-caption text-grey-3">Último Evento</div>
+              </q-card>
+            </div>
+
+            <!-- Estados Dinámicos -->
+            <div
+              v-for="estado in eventosPorEstado.slice(0, 2)"
+              :key="estado.resultadoEvento"
+              class="col-12 col-sm-6 col-md-3"
+            >
+              <q-card
+                class="kpi-card text-center q-pa-md"
+                style="background: rgba(255, 255, 255, 0.1); border-radius: 12px"
+              >
+                <q-icon
+                  :name="getIconoEstado(estado.resultadoEvento)"
+                  size="32px"
+                  :color="getColorEstado(estado.resultadoEvento)"
+                  class="q-mb-sm"
+                />
+                <div
+                  class="text-h5 text-weight-bold"
+                  :class="'text-' + getColorEstado(estado.resultadoEvento)"
+                >
+                  {{ estado.total }}
+                </div>
+                <div class="text-caption text-grey-3">{{ estado.resultadoEvento }}</div>
+              </q-card>
             </div>
           </div>
-          <div class="row q-col-gutter-md q-mt-sm">
-            <div v-for="estado in eventosPorEstado" :key="estado.resultadoEvento" class="col-6">
-              <div>
-                {{ estado.resultadoEvento }}: <b>{{ estado.total }}</b>
-              </div>
+
+          <!-- Estados adicionales si hay más de 2 -->
+          <div v-if="eventosPorEstado.length > 2" class="row q-col-gutter-md q-mt-sm">
+            <div
+              v-for="estado in eventosPorEstado.slice(2)"
+              :key="estado.resultadoEvento"
+              class="col-12 col-sm-6 col-md-3"
+            >
+              <q-card
+                class="kpi-card text-center q-pa-md"
+                style="background: rgba(255, 255, 255, 0.1); border-radius: 12px"
+              >
+                <q-icon
+                  :name="getIconoEstado(estado.resultadoEvento)"
+                  size="28px"
+                  :color="getColorEstado(estado.resultadoEvento)"
+                  class="q-mb-sm"
+                />
+                <div
+                  class="text-h6 text-weight-bold"
+                  :class="'text-' + getColorEstado(estado.resultadoEvento)"
+                >
+                  {{ estado.total }}
+                </div>
+                <div class="text-caption text-grey-3">{{ estado.resultadoEvento }}</div>
+              </q-card>
             </div>
           </div>
         </q-card>
-        <div class="text-subtitle1 text-center q-mb-sm text-white">Tabla de Eventos Fallidos</div>
-        <br />
+
+        <!-- Título de tabla mejorado con colores profesionales -->
+        <q-card
+          flat
+          class="q-pa-md text-center q-mb-sm tabla-header"
+          style="
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 4px 16px rgba(25, 118, 210, 0.25);
+          "
+        >
+          <div class="row items-center justify-center">
+            <q-icon name="table_view" size="24px" color="white" class="q-mr-sm" />
+            <div class="text-h6 text-weight-bold text-white">Detalle de Eventos Fallidos</div>
+            <q-chip
+              color="white"
+              text-color="primary"
+              :label="`${logs.length} registros`"
+              class="q-ml-md"
+            />
+          </div>
+        </q-card>
         <EventosFallidosTable :logs="logs" />
       </div>
       <div class="col-12 col-md-4">
         <q-card
           flat
           bordered
-          class="q-pa-md text-white"
-          style="background-color: #1e1e2f; border-radius: 12px"
+          class="q-pa-md text-white grafica-dispositivos-card"
+          style="
+            background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(55, 71, 79, 0.3);
+          "
         >
-          <div class="text-subtitle1 text-center">Dispositivos más usados</div>
+          <div class="row items-center justify-center q-mb-md">
+            <q-icon name="pie_chart" size="24px" color="white" class="q-mr-sm" />
+            <div class="text-h6 text-weight-bold">Distribución por Estado</div>
+          </div>
+
           <q-inner-loading
             :showing="loadingCharts && modoSeleccionado === 'mobile'"
             label="Cargando..."
             label-class="text-white"
-            color="primary"
+            color="white"
             size="30px"
           />
-          <canvas ref="chartPorEstado" style="height: 250px" />
+
+          <!-- Contenedor con altura fija para controlar crecimiento -->
+          <div
+            class="chart-container"
+            style="position: relative; height: 280px; max-height: 280px; overflow: hidden"
+          >
+            <canvas ref="chartPorEstado"></canvas>
+          </div>
         </q-card>
       </div>
     </div>
@@ -73,7 +177,7 @@
 <script setup>
 import EventosFallidosTable from 'src/components/EventosFallidosTable.vue'
 import LogFilters from 'src/components/LogFilters.vue'
-import { ref, onMounted, watch, computed, inject } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, inject } from 'vue'
 import { getEventosFallidos, getEventosPorEstado } from 'src/services/api'
 import Chart from 'chart.js/auto'
 
@@ -83,8 +187,64 @@ const eventosPorEstado = ref([])
 
 // Variables para mobile flow
 const loadingCharts = ref(false)
-const flow = inject('flow')
+const flow = inject('flow', ref('desktop')) // 🔧 Valor por defecto para evitar warning
 const modoSeleccionado = computed(() => flow?.value || 'desktop')
+
+// Instancia de Chart.js para gestión de memoria
+let chartPorEstadoInstance = null
+
+// 🔥 FUNCIÓN ROBUSTA: Destruir gráfico existente y limpiar registro global
+function destroyChartPorEstado() {
+  console.log('🧹 Iniciando limpieza ROBUSTA de gráficos en EventosFallidos...')
+
+  try {
+    if (chartPorEstadoInstance && typeof chartPorEstadoInstance.destroy === 'function') {
+      try {
+        chartPorEstadoInstance.destroy()
+        console.log('✅ Gráfico de eventos por estado destruido correctamente')
+      } catch (error) {
+        console.warn('⚠️ Error destruyendo gráfico de eventos por estado:', error)
+      }
+      chartPorEstadoInstance = null
+    }
+
+    // 🚀 LIMPIAR REGISTRO GLOBAL DE CHART.JS
+    if (window.Chart && window.Chart.instances) {
+      Object.keys(window.Chart.instances).forEach((id) => {
+        const instance = window.Chart.instances[id]
+        if (instance && typeof instance.destroy === 'function') {
+          try {
+            instance.destroy()
+            console.log(`🔥 Instancia global ${id} eliminada (EventosFallidos)`)
+          } catch (error) {
+            console.warn(`⚠️ Error eliminando instancia global ${id} (EventosFallidos):`, error)
+          }
+        }
+      })
+      // Limpiar el objeto de instancias
+      window.Chart.instances = {}
+      console.log('🧹 Registro global de Chart.js limpiado (EventosFallidos)')
+    }
+
+    // Limpiar canvas específico de EventosFallidos
+    const canvas = document.getElementById('eventosPorEstadoChart')
+    if (canvas) {
+      const context = canvas.getContext('2d')
+      if (context) {
+        context.clearRect(0, 0, canvas.width, canvas.height)
+      }
+      canvas.removeAttribute('data-chartjs-id')
+      canvas.style.display = 'block'
+      canvas.style.position = 'relative'
+      canvas.style.height = 'auto'
+      canvas.style.width = 'auto'
+    }
+
+    console.log('🧹 Limpieza ROBUSTA completada en EventosFallidos')
+  } catch (error) {
+    console.error('❌ Error durante la limpieza robusta en EventosFallidos:', error)
+  }
+}
 
 // Función principal para actualizar todos los datos
 async function actualizarDatos() {
@@ -94,7 +254,11 @@ async function actualizarDatos() {
   }
 
   try {
-    // Cargar datos de eventos fallidos
+    // 🔥 PASO 1: Destruir gráfico existente PRIMERO
+    destroyChartPorEstado()
+    console.log('🧹 Gráfico de estado destruido antes de actualizar')
+
+    // 🔥 PASO 2: Cargar datos de eventos fallidos
     const payload = {
       resultado: 'FALLIDO',
       fechaInicio: '2025-01-20',
@@ -103,7 +267,10 @@ async function actualizarDatos() {
     logs.value = await getEventosFallidos(payload)
     console.log('Logs de eventos fallidos:', logs.value)
 
-    // Renderizar gráfica
+    // 🔥 PASO 3: Pequeño delay para asegurar que el DOM esté listo
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // 🔥 PASO 4: Renderizar gráfica después del delay
     await renderEventosPorEstadoChart()
 
     if (modoSeleccionado.value === 'mobile') {
@@ -122,6 +289,12 @@ onMounted(() => {
   actualizarDatos()
 })
 
+// Limpieza al desmontar el componente
+onBeforeUnmount(() => {
+  console.log('🧹 Limpiando gráficos antes de desmontar EventosFallidos')
+  destroyChartPorEstado()
+})
+
 // Watcher para cambios de fecha en mobile
 watch(
   () => flow?.value,
@@ -134,40 +307,83 @@ watch(
   { immediate: false }
 )
 
+// 📊 FUNCIÓN MEJORADA: Renderizar gráfico de eventos por estado
 async function renderEventosPorEstadoChart() {
+  console.log('📊 Iniciando renderEventosPorEstadoChart...')
+
   try {
+    // 🔥 PASO 1: Destruir gráfico existente ANTES de crear uno nuevo
+    destroyChartPorEstado()
+
+    // Verificar que el canvas esté disponible
+    if (!chartPorEstado.value) {
+      console.warn('⚠️ Canvas chartPorEstado no disponible')
+      // Intentar nuevamente con delay
+      setTimeout(() => {
+        if (chartPorEstado.value) {
+          console.log('✅ Canvas chartPorEstado encontrado en reintento')
+          renderEventosPorEstadoChart()
+        }
+      }, 200)
+      return
+    }
+
     const payload = {
       fechaInicio: '2025-01-01',
       fechaFin: '2025-06-30',
     }
     const data = await getEventosPorEstado(payload)
     eventosPorEstado.value = data
-    console.log('Datos recibidos para eventos por estado:', data)
+    console.log('📊 Datos recibidos para eventos por estado:', data)
+
+    // Verificar que tengamos datos válidos
+    if (!data || data.length === 0) {
+      console.warn('⚠️ No hay datos para eventos por estado')
+      return
+    }
+
     const labels = data.map((d) => d.resultadoEvento)
     const valores = data.map((d) => d.total)
 
-    new Chart(chartPorEstado.value, {
-      type: 'doughnut', // también puedes usar 'pie'
+    console.log('🏷️ Labels eventos por estado:', labels)
+    console.log('🔢 Valores eventos por estado:', valores)
+
+    chartPorEstadoInstance = new Chart(chartPorEstado.value, {
+      type: 'doughnut',
       data: {
         labels: labels,
         datasets: [
           {
             label: 'Eventos por Estado',
             data: valores,
-            backgroundColor: ['#66bb6a', '#ef5350', '#ffa726', '#42a5f5'],
-            borderColor: '#fff',
+            backgroundColor: ['#66bb6a', '#ef5350', '#ffa726', '#42a5f5', '#ab47bc', '#26c6da'],
+            borderColor: '#1a1a1a',
             borderWidth: 2,
           },
         ],
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { color: '#fff' },
-            position: 'top',
+            display: true,
+            position: 'bottom',
+            labels: {
+              color: '#fff',
+              font: {
+                size: 12,
+                weight: 'normal',
+              },
+              padding: 15,
+              usePointStyle: true,
+              pointStyle: 'circle',
+            },
           },
           tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
             callbacks: {
               label: function (context) {
                 const total = context.dataset.data.reduce((a, b) => a + b, 0)
@@ -180,78 +396,250 @@ async function renderEventosPorEstadoChart() {
         },
       },
     })
+    console.log('✅ Gráfico eventos por estado creado exitosamente con', labels.length, 'elementos')
   } catch (error) {
-    console.error('Error al cargar eventos por estado:', error)
+    console.error('❌ Error al cargar eventos por estado:', error)
+    console.error('❌ Stack trace:', error.stack)
+  }
+}
+
+// 🎨 FUNCIONES DE UTILIDAD PARA EL DISEÑO
+
+// Función para obtener iconos según el estado
+function getIconoEstado(estado) {
+  const iconos = {
+    EXITO: 'check_circle',
+    FALLIDO: 'cancel',
+    CANCELADO: 'remove_circle',
+    ERROR: 'error',
+    PENDIENTE: 'schedule',
+    PROCESANDO: 'sync',
+  }
+  return iconos[estado] || 'help'
+}
+
+// Función para obtener colores según el estado
+function getColorEstado(estado) {
+  const colores = {
+    EXITO: 'green-4',
+    FALLIDO: 'red-4',
+    CANCELADO: 'orange-4',
+    ERROR: 'red-6',
+    PENDIENTE: 'blue-4',
+    PROCESANDO: 'purple-4',
+  }
+  return colores[estado] || 'grey-4'
+}
+
+// Función para formatear fechas de manera amigable
+function formatearFecha(fecha) {
+  if (!fecha) return 'N/A'
+  try {
+    const fechaObj = new Date(fecha)
+    return fechaObj.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  } catch {
+    return fecha
   }
 }
 </script>
 
 <style scoped>
-/* Estilos responsivos para móviles */
+/* 🎨 ESTILOS MEJORADOS PARA EVENTOS FALLIDOS */
+
+/* Animaciones suaves para las KPI cards */
+.kpi-card {
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Estilos para la tarjeta de resumen */
+.resumen-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.resumen-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.resumen-card:hover::before {
+  transform: translateX(100%);
+}
+
+/* Estilos para el header de la tabla */
+.tabla-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.tabla-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%
+  );
+  border-radius: 2px;
+}
+
+/* Contenedor de gráfica con control de tamaño */
+.chart-container {
+  width: 100%;
+  position: relative;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 280px !important;
+}
+
+/* Estilos para la tarjeta de gráficas */
+.grafica-dispositivos-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.grafica-dispositivos-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: rotate 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animaciones de entrada */
+.resumen-card,
+.tabla-header,
+.grafica-dispositivos-card {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Efectos de glow para iconos */
+.q-icon {
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.3));
+  transition: all 0.3s ease;
+}
+
+.kpi-card:hover .q-icon {
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
+  transform: scale(1.1);
+}
+
+/* Mejoras para los chips */
+.q-chip {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Mejoras para el loading */
+.q-inner-loading {
+  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Responsividad mejorada */
 @media (max-width: 768px) {
   .q-mb-md {
     margin-bottom: 8px !important;
   }
 
-  .q-pa-md {
-    padding: 8px !important;
+  .kpi-card {
+    margin-bottom: 12px;
   }
 
-  .q-card {
-    margin-bottom: 16px !important;
-    border-radius: 8px !important;
-  }
-
-  /* Ajustes para la gráfica en móvil */
-  canvas {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-
-  /* Mejorar indicadores de carga en móvil */
-  .q-inner-loading {
-    z-index: 10;
-  }
-
-  /* Ajustes para texto en móvil */
   .text-h4 {
     font-size: 1.5rem !important;
   }
 
-  .text-subtitle1 {
-    font-size: 1rem !important;
+  .text-h5 {
+    font-size: 1.2rem !important;
+  }
+
+  .chart-container {
+    height: 220px !important;
+    max-height: 220px !important;
+  }
+
+  .chart-container canvas {
+    max-height: 220px !important;
   }
 }
 
 @media (max-width: 480px) {
-  .q-mb-md {
-    margin-bottom: 4px !important;
+  .resumen-card {
+    padding: 1rem !important;
   }
 
-  .q-pa-md {
-    padding: 4px !important;
+  .kpi-card {
+    padding: 0.75rem !important;
   }
 
-  /* Ajustes adicionales para móviles pequeños */
-  .text-h4 {
-    font-size: 1.25rem !important;
+  .text-h6 {
+    font-size: 1rem !important;
   }
 
-  .text-subtitle1 {
-    font-size: 0.9rem !important;
-  }
-
-  canvas {
+  .chart-container {
     height: 200px !important;
+    max-height: 200px !important;
   }
 
-  /* Mejorar espaciado en móviles */
-  .row {
-    margin: 0 !important;
-  }
-
-  .col-6 {
-    padding: 4px !important;
+  .chart-container canvas {
+    max-height: 200px !important;
   }
 }
 </style>

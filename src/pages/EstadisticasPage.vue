@@ -42,7 +42,9 @@
             color="primary"
             size="30px"
           />
-          <canvas ref="barChart" height="200" />
+          <div class="chart-container">
+            <canvas ref="barChart"></canvas>
+          </div>
         </q-card>
       </div>
 
@@ -62,7 +64,9 @@
             color="primary"
             size="30px"
           />
-          <canvas ref="deviceChart" height="300" />
+          <div class="chart-container">
+            <canvas ref="deviceChart"></canvas>
+          </div>
         </q-card>
       </div>
 
@@ -84,7 +88,7 @@
             color="primary"
             size="30px"
           />
-          <div class="flex flex-center">
+          <div class="chart-container flex flex-center">
             <canvas ref="chart" class="donut-canvas" />
           </div>
         </q-card-section>
@@ -110,13 +114,8 @@
               color="primary"
               size="30px"
             />
-            <div class="flex flex-center">
-              <canvas
-                :ref="(el) => setPieRef(func.clave, el)"
-                class="pie-canvas"
-                height="200"
-                width="200"
-              ></canvas>
+            <div class="pie-chart-container flex flex-center">
+              <canvas :ref="(el) => setPieRef(func.clave, el)" class="pie-canvas"></canvas>
             </div>
           </q-card-section>
         </q-card>
@@ -690,7 +689,12 @@ o con mejor control -->
                   Actividad por Fecha
                 </div>
                 <div class="timeline-container">
-                  <canvas id="timelineChart" style="height: 200px"></canvas>
+                  <div
+                    class="timeline-container"
+                    style="position: relative; height: 200px; max-height: 200px"
+                  >
+                    <canvas id="timelineChart"></canvas>
+                  </div>
                 </div>
               </q-card>
             </div>
@@ -911,6 +915,9 @@ import {
   BarElement,
   CategoryScale,
   LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
   Tooltip,
   ArcElement,
   DoughnutController,
@@ -934,6 +941,9 @@ Chart.register(
   CategoryScale,
   DoughnutController,
   LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
   Tooltip,
   ArcElement,
   PieController
@@ -973,7 +983,11 @@ const actualizarDatos = async () => {
       filtroFechasStore.obtenerFechasFormateadas()
     )
 
-    // Actualizar eventos primero para el timeline
+    // 🔥 PASO 1: Destruir todos los gráficos existentes PRIMERO
+    destroyExistingCharts()
+    console.log('🧹 Todos los gráficos destruidos antes de actualizar')
+
+    // 🔥 PASO 2: Actualizar eventos para el timeline
     try {
       const filtros = filtroFechasStore.obtenerFechasFormateadas()
       const eventosData = await getEventosBiometricosPorFiltro(filtros)
@@ -983,12 +997,7 @@ const actualizarDatos = async () => {
       console.error('Error al cargar eventos:', error)
     }
 
-    // Actualizar gráficos y datos
-    await renderDeviceChart()
-    renderPiePorFuncionalidad()
-    crearGraficoTimeline() // Agregar el timeline
-
-    // Actualizar datos de duración promedio
+    // 🔥 PASO 3: Actualizar datos de duración promedio ANTES de renderizar
     try {
       const respuesta = await getDuracionPromedioFuncionalidad(
         filtroFechasStore.obtenerFechasFormateadas()
@@ -997,10 +1006,49 @@ const actualizarDatos = async () => {
         funcionalidad: item.funcionalidad.replace(/_/g, ' '),
         totalSegundos: tiempoASegundos(item.duracion),
       }))
-      renderCharts()
+      console.log('📊 Datos de funcionalidad actualizados:', tiemposFuncionalidad.value.length)
     } catch (error) {
       console.error('Error al obtener datos de funcionalidad:', error)
     }
+
+    // 🔥 PASO 4: Renderizar gráficos principales con mejor timing
+    try {
+      // Renderizar device chart primero
+      await renderDeviceChart()
+      console.log('✅ Gráfico de dispositivos renderizado')
+
+      // Breve pausa para el DOM
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // Renderizar barras y doughnut
+      renderCharts()
+      console.log('✅ Gráficos principales renderizados')
+
+      // Pausa más larga para asegurar que todo esté listo
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    } catch (error) {
+      console.error('❌ Error renderizando gráficos principales:', error)
+    }
+
+    // 🔥 PASO 5: Renderizar gráficos de pie después de asegurar el DOM
+    await nextTick()
+    try {
+      renderPiePorFuncionalidad()
+      console.log('✅ Gráficos de pie renderizados')
+    } catch (error) {
+      console.error('❌ Error renderizando gráficos de pie:', error)
+    }
+
+    // 🔥 PASO 6: Crear timeline al final con delay adicional
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    try {
+      crearGraficoTimeline()
+      console.log('✅ Timeline renderizado')
+    } catch (error) {
+      console.error('❌ Error renderizando timeline:', error)
+    }
+
+    console.log('✅ Todos los gráficos actualizados correctamente')
   } finally {
     loadingCharts.value = false
   }
@@ -1009,7 +1057,22 @@ const actualizarDatos = async () => {
 const fallosPorEstado = ref([])
 
 // Variables para el resumen del mapa
-const resumenArea = ref(null)
+// 📋 VARIABLES DE ESTADO PARA EL MAPA Y ANÁLISIS
+const resumenArea = ref({
+  totalEventos: 0,
+  eventosPorEstado: [],
+  eventosPorTipo: [],
+  dispositivosEnArea: [],
+  usuariosUnicos: 0,
+  fechasPorDia: [],
+  clusterInfo: null,
+  eventoFocal: null,
+  eventos: [],
+  ubicacion: null,
+  radioAnalizado: null,
+  mensaje: null,
+  error: null,
+})
 const mostrarResumen = ref(false)
 const cargandoResumen = ref(false)
 const eventoSeleccionado = ref(null)
@@ -1671,26 +1734,60 @@ const crearGraficoResumenInterno = (canvas) => {
   })
 }
 
-// Crear gráfico de timeline para mostrar la evolución temporal de los clusters
+// 📊 FUNCIÓN ROBUSTA: Crear gráfico de timeline con validaciones completas
 function crearGraficoTimeline() {
-  console.log('⏰ Creando gráfico timeline...')
-  const ctx = document.getElementById('timelineChart')
-  if (!ctx) {
-    console.warn('❌ No se encontró el canvas timelineChart')
-    // Intentar de nuevo después de un breve delay
-    setTimeout(() => {
-      const retryCanvas = document.getElementById('timelineChart')
-      if (retryCanvas) {
-        console.log('✅ Canvas timeline encontrado en reintento, creando gráfico...')
-        crearGraficoTimelineInterno(retryCanvas)
-      } else {
-        console.error('❌ Canvas timelineChart aún no disponible después del reintento')
-      }
-    }, 200)
+  console.log('⏰ Iniciando creación de gráfico timeline...')
+
+  // 🔍 VALIDACIÓN 1: Verificar que resumenArea esté inicializado
+  if (!resumenArea.value) {
+    console.warn('⚠️ resumenArea no está inicializado')
     return
   }
 
-  crearGraficoTimelineInterno(ctx)
+  // 🔍 VALIDACIÓN 2: Verificar si hay datos disponibles para el timeline
+  if (!resumenArea.value.fechasPorDia || resumenArea.value.fechasPorDia.length === 0) {
+    console.warn('⚠️ No hay datos disponibles para el timeline (fechasPorDia vacío o no existe)')
+    return
+  }
+
+  console.log('✅ Datos timeline disponibles:', resumenArea.value.fechasPorDia.length, 'fechas')
+
+  // 🔍 PASO 2: Verificar si ya existe una instancia y destruirla
+  if (timelineChartInstance && typeof timelineChartInstance.destroy === 'function') {
+    try {
+      timelineChartInstance.destroy()
+      console.log('✅ Timeline anterior destruido')
+    } catch (error) {
+      console.warn('⚠️ Error destruyendo timeline anterior:', error)
+    }
+    timelineChartInstance = null
+  }
+
+  // 🔍 PASO 3: Intentar encontrar el canvas con múltiples reintentos
+  const buscarCanvas = (intento = 0) => {
+    const ctx = document.getElementById('timelineChart')
+
+    if (!ctx) {
+      if (intento < 5) {
+        console.warn(`⏰ Canvas timelineChart no encontrado, reintento ${intento + 1}/5...`)
+        setTimeout(() => {
+          buscarCanvas(intento + 1)
+        }, 200 * (intento + 1)) // Delay incremental
+        return
+      } else {
+        console.error(
+          '❌ Canvas timelineChart no encontrado después de 5 intentos - verificar que v-if de fechasPorDia esté cumplido'
+        )
+        return
+      }
+    }
+
+    console.log('✅ Canvas timeline encontrado, creando gráfico...')
+    crearGraficoTimelineInterno(ctx)
+  }
+
+  // Iniciar búsqueda del canvas
+  buscarCanvas()
 }
 
 function crearGraficoTimelineInterno(ctx) {
@@ -1725,18 +1822,23 @@ function crearGraficoTimelineInterno(ctx) {
 
   console.log('📊 Eventos por día calculados:', eventosPorDia)
 
-  // Destruir gráfico anterior si existe (verificar que sea una instancia válida)
-  if (window.timelineChart && typeof window.timelineChart.destroy === 'function') {
+  // Destruir gráfico anterior usando la nueva variable de instancia
+  if (timelineChartInstance && typeof timelineChartInstance.destroy === 'function') {
     try {
-      window.timelineChart.destroy()
-      console.log('✅ Gráfico timeline anterior destruido correctamente')
+      timelineChartInstance.destroy()
+      console.log('✅ Timeline anterior destruido correctamente')
     } catch (error) {
-      console.warn('⚠️ Error al destruir gráfico timeline anterior:', error)
+      console.warn('⚠️ Error destruyendo timeline anterior:', error)
     }
   }
-  window.timelineChart = null
+  timelineChartInstance = null
 
-  window.timelineChart = new Chart(ctx, {
+  // Limpiar también la variable global legacy
+  if (window.timelineChart) {
+    window.timelineChart = null
+  }
+
+  timelineChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels: diasCompletos.map((dia) => {
@@ -1869,13 +1971,7 @@ onMounted(async () => {
       })
       .map((e) => {
         const [lat, lng] = e.gps.split(',').map(parseFloat)
-        console.log('🗺️ Procesando evento:', {
-          gps: e.gps,
-          lat,
-          lng,
-          usuario: e.usuario?.usuario || e.usuario,
-          evento: e.tipoEvento?.detalle || e.tipoEvento,
-        })
+
         return {
           lat,
           lng,
@@ -2109,41 +2205,129 @@ watch(
 let barChartInstance = null
 let doughnutChartInstance = null
 let deviceChartInstance = null
+let timelineChartInstance = null
 
-// Función para destruir gráficos existentes
+// Map para gestionar instancias de gráficos de pie
+const pieChartInstances = new Map()
+
+// 🔥 FUNCIÓN ROBUSTA: Destruir gráficos existentes y limpiar registro global de Chart.js
 function destroyExistingCharts() {
-  if (barChartInstance) {
-    try {
-      barChartInstance.destroy()
-      console.log('✅ Gráfico de barras destruido correctamente')
-    } catch (error) {
-      console.warn('⚠️ Error destruyendo gráfico de barras:', error)
-    }
+  console.log('🧹 Iniciando limpieza ROBUSTA de gráficos existentes...')
+
+  try {
+    // 1. Destruir instancias principales
+    const charts = [
+      { instance: barChartInstance, name: 'barras' },
+      { instance: doughnutChartInstance, name: 'doughnut' },
+      { instance: deviceChartInstance, name: 'dispositivos' },
+      { instance: timelineChartInstance, name: 'timeline' },
+    ]
+
+    charts.forEach(({ instance, name }) => {
+      if (instance && typeof instance.destroy === 'function') {
+        try {
+          instance.destroy()
+          console.log(`✅ Gráfico de ${name} destruido correctamente`)
+        } catch (error) {
+          console.warn(`⚠️ Error destruyendo gráfico de ${name}:`, error)
+        }
+      }
+    })
+
+    // Limpiar referencias principales
     barChartInstance = null
-  }
-
-  if (doughnutChartInstance) {
-    try {
-      doughnutChartInstance.destroy()
-      console.log('✅ Gráfico doughnut destruido correctamente')
-    } catch (error) {
-      console.warn('⚠️ Error destruyendo gráfico doughnut:', error)
-    }
     doughnutChartInstance = null
-  }
-
-  if (deviceChartInstance) {
-    try {
-      deviceChartInstance.destroy()
-      console.log('✅ Gráfico de dispositivos destruido correctamente')
-    } catch (error) {
-      console.warn('⚠️ Error destruyendo gráfico de dispositivos:', error)
-    }
     deviceChartInstance = null
+    timelineChartInstance = null
+
+    // 2. Destruir gráficos de pie usando el Map
+    pieChartInstances.forEach((instance, key) => {
+      if (instance && typeof instance.destroy === 'function') {
+        try {
+          instance.destroy()
+          console.log(`✅ Gráfico de pie ${key} destruido`)
+        } catch (error) {
+          console.warn(`⚠️ Error destruyendo gráfico de pie ${key}:`, error)
+        }
+      }
+    })
+    pieChartInstances.clear()
+
+    // 3. Limpiar también referencias legacy
+    Object.keys(pieRefs.value).forEach((key) => {
+      const canvas = pieRefs.value[key]
+      if (canvas && canvas.chart) {
+        try {
+          canvas.chart.destroy()
+          console.log(`✅ Gráfico legacy ${key} destruido`)
+        } catch (error) {
+          console.warn(`⚠️ Error destruyendo gráfico legacy ${key}:`, error)
+        }
+        canvas.chart = null
+      }
+    })
+
+    // 4. 🚀 LIMPIAR REGISTRO GLOBAL DE CHART.JS
+    // Esto elimina todas las referencias internas que Chart.js mantiene
+    if (window.Chart && window.Chart.instances) {
+      Object.keys(window.Chart.instances).forEach((id) => {
+        const instance = window.Chart.instances[id]
+        if (instance && typeof instance.destroy === 'function') {
+          try {
+            instance.destroy()
+            console.log(`🔥 Instancia global ${id} eliminada`)
+          } catch (error) {
+            console.warn(`⚠️ Error eliminando instancia global ${id}:`, error)
+          }
+        }
+      })
+      // Limpiar el objeto de instancias
+      window.Chart.instances = {}
+      console.log('🧹 Registro global de Chart.js limpiado')
+    }
+
+    // 5. Limpiar canvas elements que puedan tener referencias colgadas
+    const canvasElements = [
+      'grafico-captura-facial',
+      'grafico-vida-util',
+      'grafico-uso-funcionalidad',
+      'timelineChart',
+    ]
+    canvasElements.forEach((canvasId) => {
+      const canvas = document.getElementById(canvasId)
+      if (canvas) {
+        // Remover cualquier evento o contexto asociado
+        const context = canvas.getContext('2d')
+        if (context) {
+          context.clearRect(0, 0, canvas.width, canvas.height)
+        }
+        // Limpiar atributos de Chart.js
+        canvas.removeAttribute('data-chartjs-id')
+        canvas.style.display = 'block' // Reset display
+        canvas.style.position = 'relative' // Reset position
+        canvas.style.height = 'auto' // Reset height
+        canvas.style.width = 'auto' // Reset width
+      }
+    })
+
+    // Limpiar variable global legacy del timeline
+    if (window.timelineChart && typeof window.timelineChart.destroy === 'function') {
+      try {
+        window.timelineChart.destroy()
+        console.log('✅ Timeline chart legacy destruido')
+      } catch (error) {
+        console.warn('⚠️ Error destruyendo timeline chart legacy:', error)
+      }
+      window.timelineChart = null
+    }
+
+    console.log('🧹 Limpieza ROBUSTA de gráficos completada exitosamente')
+  } catch (error) {
+    console.error('❌ Error durante la limpieza robusta:', error)
   }
 }
 
-// Función para renderizar gráficas con destrucción segura
+// Función mejorada para renderizar gráficas con verificación de datos
 function renderCharts() {
   console.log('📊 Iniciando renderCharts - destruyendo gráficos existentes')
 
@@ -2156,55 +2340,134 @@ function renderCharts() {
     return
   }
 
+  // Verificar que los datos estén listos antes de renderizar
+  if (!tiemposFuncionalidad.value || tiemposFuncionalidad.value.length === 0) {
+    console.log('⏳ Datos de funcionalidad no listos, esperando...')
+    return
+  }
+
   try {
+    const labels = tiemposFuncionalidad.value.map((t) => t.funcionalidad)
+    const data = tiemposFuncionalidad.value.map((t) => t.totalSegundos)
+
+    // Verificar que tenemos datos válidos
+    if (labels.length === 0 || data.length === 0) {
+      console.warn('⚠️ No hay datos válidos para el gráfico de barras')
+      return
+    }
+
     barChartInstance = new Chart(barChart.value, {
       type: 'bar',
       data: {
-        labels: tiemposFuncionalidad.value.map((t) => t.funcionalidad),
+        labels: labels,
         datasets: [
           {
             label: 'Segundos Totales',
-            data: tiemposFuncionalidad.value.map((t) => t.totalSegundos),
+            data: data,
             backgroundColor: '#26A69A',
           },
         ],
       },
       options: {
         responsive: true,
-        plugins: { tooltip: { enabled: true } },
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index',
+        },
+        layout: {
+          padding: {
+            top: 10,
+            bottom: 10,
+            left: 10,
+            right: 10,
+          },
+        },
+        plugins: {
+          tooltip: { enabled: true },
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: '#ccc',
+              padding: 20,
+              usePointStyle: true,
+            },
+          },
+        },
         scales: {
-          x: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
-          y: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
+          x: {
+            ticks: { color: '#ccc', maxRotation: 45 },
+            grid: { color: '#444', display: false },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#ccc' },
+            grid: { color: '#444' },
+          },
         },
       },
     })
-    console.log('✅ Gráfico de barras creado exitosamente')
+    renderDeviceChart()
+    renderPiePorFuncionalidad()
+    console.log('✅ Gráfico de barras creado exitosamente con', labels.length, 'elementos')
   } catch (error) {
     console.error('❌ Error creando gráfico de barras:', error)
   }
 
   // Crear gráfico doughnut solo si el canvas está disponible
   if (chart.value) {
+    // Verificar que los datos estén disponibles
+    if (!tiemposFuncionalidad.value || tiemposFuncionalidad.value.length === 0) {
+      console.warn('⚠️ No hay datos para el gráfico doughnut')
+      return
+    }
+
     try {
+      const labels = tiemposFuncionalidad.value.map((t) => t.funcionalidad)
+      const data = tiemposFuncionalidad.value.map((t) => t.totalSegundos)
+
       doughnutChartInstance = new Chart(chart.value, {
         type: 'doughnut',
         data: {
-          labels: tiemposFuncionalidad.value.map((t) => t.funcionalidad),
+          labels: labels,
           datasets: [
             {
               label: 'Distribución',
-              data: tiemposFuncionalidad.value.map((t) => t.totalSegundos),
+              data: data,
               backgroundColor: ['#26A69A', '#7E57C2', '#1976D2', '#66BB6A', '#FFA726'], // Colores más acordes al flujo
-              borderWidth: 1,
+              borderColor: '#1e1e2f',
+              borderWidth: 2,
             },
           ],
         },
         options: {
           responsive: true,
-          plugins: { tooltip: { enabled: true }, legend: { labels: { color: '#ccc' } } },
+          maintainAspectRatio: false,
+          cutout: '50%',
+          plugins: {
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+            },
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: {
+                color: '#ccc',
+                padding: 15,
+                usePointStyle: true,
+                font: {
+                  size: 12,
+                },
+              },
+            },
+          },
         },
       })
-      console.log('✅ Gráfico doughnut creado exitosamente')
+      console.log('✅ Gráfico doughnut creado exitosamente con', labels.length, 'elementos')
     } catch (error) {
       console.error('❌ Error creando gráfico doughnut:', error)
     }
@@ -2212,7 +2475,10 @@ function renderCharts() {
     console.warn('⚠️ Canvas chart no disponible para doughnut')
   }
 }
+// 📊 FUNCIÓN MEJORADA: Renderizar gráfico de dispositivos con debugging
 async function renderDeviceChart() {
+  console.log('🔧 Iniciando renderDeviceChart...')
+
   try {
     // Destruir gráfico de dispositivos existente si existe
     if (deviceChartInstance) {
@@ -2229,16 +2495,36 @@ async function renderDeviceChart() {
       fechaInicio: filtroFechasStore.fechaInicio,
       fechaFin: filtroFechasStore.fechaFin,
     }
+    console.log('📅 Payload para dispositivos:', payload)
+
     const data = await getDispositivosMasUsados(payload)
+    console.log('📊 Datos de dispositivos recibidos:', data)
+
+    if (!data || data.length === 0) {
+      console.warn('⚠️ No hay datos de dispositivos para mostrar')
+      return
+    }
 
     const labels = data.map((d) => d.dispositivo)
     const valores = data.map((d) => d.total)
 
+    console.log('🏷️ Labels dispositivos:', labels)
+    console.log('🔢 Valores dispositivos:', valores)
+
     // Verificar que el canvas esté disponible
     if (!deviceChart.value) {
       console.warn('⚠️ Canvas deviceChart no disponible')
+      // Intentar nuevamente después de un pequeño delay
+      setTimeout(() => {
+        if (deviceChart.value) {
+          console.log('✅ Canvas deviceChart encontrado en reintento')
+          renderDeviceChart()
+        }
+      }, 200)
       return
     }
+
+    console.log('✅ Canvas deviceChart disponible, creando gráfico...')
 
     deviceChartInstance = new Chart(deviceChart.value, {
       type: 'bar',
@@ -2248,25 +2534,61 @@ async function renderDeviceChart() {
           {
             label: 'Total de usos',
             data: valores,
-            backgroundColor: '#26A69A',
+            backgroundColor: [
+              '#26A69A',
+              '#42A5F5',
+              '#AB47BC',
+              '#FF7043',
+              '#FFCA28',
+              '#66BB6A',
+              '#EF5350',
+              '#5C6BC0',
+            ],
+            borderColor: '#1A1A1A',
+            borderWidth: 1,
           },
         ],
       },
       options: {
         indexAxis: 'y',
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          tooltip: { enabled: true },
-          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+          },
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: '#fff',
+              font: {
+                size: 12,
+              },
+            },
+          },
         },
         scales: {
           x: {
-            ticks: { color: '#ccc' },
-            grid: { color: '#444' },
+            ticks: {
+              color: '#ccc',
+              font: {
+                size: 11,
+              },
+            },
+            grid: { color: 'rgba(255,255,255,0.1)' },
           },
           y: {
-            ticks: { color: '#ccc' },
-            grid: { color: '#444' },
+            ticks: {
+              color: '#ccc',
+              font: {
+                size: 11,
+              },
+            },
+            grid: { color: 'rgba(255,255,255,0.1)' },
           },
         },
       },
@@ -2274,67 +2596,214 @@ async function renderDeviceChart() {
     console.log('✅ Gráfico de dispositivos creado exitosamente')
   } catch (error) {
     console.error('❌ Error al cargar dispositivos:', error)
+    console.error('❌ Stack trace:', error.stack)
   }
 }
 
-// Nueva función para graficar funcionalidades por tipo de evento
+// 🔧 FUNCIÓN MEJORADA: renderPiePorFuncionalidad con mejor persistencia de leyendas
 function renderPiePorFuncionalidad() {
+  console.log('🍰 Iniciando renderPiePorFuncionalidad...')
+
   getFuncionalidadesEstado({
     fechaInicio: filtroFechasStore.fechaInicio,
     fechaFin: filtroFechasStore.fechaFin,
-  }).then(async (data) => {
-    funcionalidades.value = data
-    await nextTick() // Espera a que los canvas estén en el DOM
-
-    const colores = ['#f44336', '#ff9800', '#2196f3', '#4caf50']
-    const tipos = ['total_fallido', 'total_cancelado', 'total_error', 'total_exito']
-    const tipoLabels = ['Fallido', 'Cancelado', 'Error', 'Éxito']
-
-    data.forEach((func) => {
-      const valores = tipos.map((tipo) => func[tipo])
-      const ref = pieRefs.value[func.clave]
-      if (ref) {
-        new Chart(ref, {
-          type: 'pie',
-          data: {
-            labels: tipoLabels,
-            datasets: [
-              {
-                label: func.clave,
-                data: valores,
-                backgroundColor: colores,
-                borderWidth: 1,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { labels: { color: '#ccc' } },
-              tooltip: { enabled: true },
-            },
-          },
-        })
-      }
-    })
   })
+    .then(async (data) => {
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No hay datos para gráficos de funcionalidad')
+        return
+      }
+
+      funcionalidades.value = data
+      console.log('📊 Datos de funcionalidades:', data.length, 'funcionalidades')
+
+      // 🕒 ESPERAR MÁS TIEMPO para que el DOM esté completamente listo
+      await nextTick()
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      const colores = ['#f44336', '#ff9800', '#2196f3', '#4caf50']
+      const tipos = ['total_fallido', 'total_cancelado', 'total_error', 'total_exito']
+      const tipoLabels = ['Fallido', 'Cancelado', 'Error', 'Éxito']
+
+      data.forEach((func) => {
+        const valores = tipos.map((tipo) => func[tipo])
+        const ref = pieRefs.value[func.clave]
+
+        if (ref && valores.some((v) => v > 0)) {
+          console.log(`🍰 Procesando gráfico para ${func.clave} con valores:`, valores)
+
+          // 🔥 DESTRUIR SOLO LA INSTANCIA ESPECÍFICA
+          const existingInstance = pieChartInstances.get(func.clave)
+          if (existingInstance && typeof existingInstance.destroy === 'function') {
+            try {
+              existingInstance.destroy()
+              console.log(`🧹 Instancia ${func.clave} destruida`)
+            } catch (error) {
+              console.warn(`⚠️ Error destruyendo gráfico pie ${func.clave}:`, error)
+            }
+          }
+
+          // ✅ CREAR NUEVA INSTANCIA CON CONFIGURACIÓN ROBUSTA
+          const chartInstance = new Chart(ref, {
+            type: 'doughnut',
+            data: {
+              labels: tipoLabels,
+              datasets: [
+                {
+                  label: func.clave,
+                  data: valores,
+                  backgroundColor: colores,
+                  borderColor: '#1e1e2f',
+                  borderWidth: 2,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '50%',
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'bottom',
+                  align: 'center',
+                  labels: {
+                    color: '#e5e7eb',
+                    padding: 20,
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    boxWidth: 12,
+                    boxHeight: 12,
+                    font: {
+                      size: 12,
+                      weight: '600',
+                      family: 'Inter, system-ui, sans-serif',
+                    },
+                    // 🔧 FUNCIÓN PERSONALIZADA ROBUSTA para generar leyendas
+                    generateLabels: function (chart) {
+                      console.log(`🏷️ Generando leyendas para ${func.clave}`)
+                      const data = chart.data
+
+                      if (!data || !data.labels || !data.datasets || data.datasets.length === 0) {
+                        console.warn(`⚠️ Datos insuficientes para leyendas en ${func.clave}`)
+                        return []
+                      }
+
+                      const dataset = data.datasets[0]
+                      const labels = []
+
+                      data.labels.forEach((label, index) => {
+                        const value = dataset.data[index]
+                        const backgroundColor = Array.isArray(dataset.backgroundColor)
+                          ? dataset.backgroundColor[index]
+                          : dataset.backgroundColor
+
+                        // Solo mostrar leyenda si hay datos > 0
+                        if (value > 0) {
+                          labels.push({
+                            text: `${label} (${value})`,
+                            fillStyle: backgroundColor,
+                            strokeStyle: backgroundColor,
+                            lineWidth: 0,
+                            pointStyle: 'circle',
+                            hidden: false,
+                            index: index,
+                            fontColor: '#e5e7eb',
+                            // 🔧 Propiedades adicionales para persistencia
+                            datasetIndex: 0,
+                            value: value,
+                          })
+                        }
+                      })
+
+                      console.log(`✅ ${labels.length} leyendas generadas para ${func.clave}`)
+                      return labels
+                    },
+                  },
+                  // 🔧 Callbacks para mantener estado
+                  onClick: function (e, legendItem, legend) {
+                    const index = legendItem.index
+                    const chart = legend.chart
+                    const meta = chart.getDatasetMeta(0)
+
+                    meta.data[index].hidden = !meta.data[index].hidden
+                    chart.update()
+                  },
+                  onHover: function (e, legendItem, legend) {
+                    legend.chart.canvas.style.cursor = 'pointer'
+                  },
+                  onLeave: function (e, legendItem, legend) {
+                    legend.chart.canvas.style.cursor = 'default'
+                  },
+                },
+                tooltip: {
+                  enabled: true,
+                  backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                  titleColor: '#f9fafb',
+                  bodyColor: '#e5e7eb',
+                  borderColor: 'rgba(75, 85, 99, 0.3)',
+                  borderWidth: 1,
+                  cornerRadius: 8,
+                  displayColors: true,
+                  callbacks: {
+                    title: function (tooltipItems) {
+                      return tooltipItems[0].label || 'Datos'
+                    },
+                    label: function (context) {
+                      const value = context.raw || 0
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                      const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
+                      return `${context.label}: ${value} (${percentage}%)`
+                    },
+                  },
+                },
+              },
+              // 🔧 Animación más suave para evitar conflictos
+              animation: {
+                duration: 600,
+                easing: 'easeInOutQuart',
+                animateRotate: true,
+                animateScale: true,
+                onComplete: function () {
+                  console.log(`🎬 Animación completada para ${func.clave}`)
+                },
+              },
+              // 🔧 Interacción mejorada
+              interaction: {
+                intersect: false,
+                mode: 'nearest',
+              },
+              // 🔧 Layout para mejor spacing
+              layout: {
+                padding: {
+                  top: 10,
+                  bottom: 10,
+                  left: 10,
+                  right: 10,
+                },
+              },
+            },
+          })
+
+          // Guardar referencia de la instancia
+          pieChartInstances.set(func.clave, chartInstance)
+          console.log(`✅ Gráfico de pie ${func.clave} creado con datos:`, valores)
+        } else {
+          console.warn(
+            `⚠️ No se puede crear gráfico para ${func.clave}: canvas no disponible o datos vacíos`
+          )
+        }
+      })
+    })
+    .catch((error) => {
+      console.error('❌ Error al cargar funcionalidades:', error)
+    })
 }
 
 // Limpieza al desmontar el componente
 onBeforeUnmount(() => {
   console.log('🧹 Limpiando gráficos antes de desmontar EstadisticasPage')
   destroyExistingCharts()
-
-  // Limpiar también el timeline chart si existe
-  if (window.timelineChart && typeof window.timelineChart.destroy === 'function') {
-    try {
-      window.timelineChart.destroy()
-      console.log('✅ Timeline chart destruido correctamente')
-    } catch (error) {
-      console.warn('⚠️ Error destruyendo timeline chart:', error)
-    }
-    window.timelineChart = null
-  }
 })
 </script>
 <style scoped>
@@ -2355,8 +2824,10 @@ onBeforeUnmount(() => {
 }
 
 .donut-canvas {
-  width: 300px !important;
-  height: 300px !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
 }
 
 .map-container {
@@ -2816,8 +3287,71 @@ onBeforeUnmount(() => {
   }
 }
 
+/* Contenedores de gráficos con altura fija */
+.chart-container {
+  position: relative;
+  height: 250px !important;
+  max-height: 250px !important;
+  width: 100%;
+  overflow: hidden;
+}
+
 .chart-container canvas {
   max-width: 100% !important;
+  max-height: 100% !important;
+  height: 250px !important;
+  width: auto !important;
+  object-fit: contain;
+}
+
+/* Timeline container específico */
+.timeline-container {
+  position: relative;
+  height: 200px !important;
+  max-height: 200px !important;
+  width: 100%;
+  overflow: hidden;
+}
+
+.timeline-container canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  height: 200px !important;
+  width: auto !important;
+}
+
+/* Contenedores específicos para diferentes tipos de gráficos */
+.pie-chart-container {
+  position: relative;
+  height: 200px !important;
+  max-height: 200px !important;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pie-chart-container canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  height: 200px !important;
+  width: auto !important;
+}
+
+/* Estilos específicos para donut canvas */
+.donut-canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Ajustes para pie canvas */
+.pie-canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
   height: auto !important;
 }
 
@@ -2832,12 +3366,25 @@ onBeforeUnmount(() => {
 /* Ajustes responsive para leyendas */
 @media (max-width: 768px) {
   .grafico-card {
-    min-height: 250px !important;
+    min-height: 220px !important;
   }
 
   .chart-container {
-    min-height: 140px !important;
+    height: 180px !important;
+    max-height: 180px !important;
+  }
+
+  .chart-container canvas {
+    height: 180px !important;
+  }
+
+  .pie-chart-container {
+    height: 160px !important;
     max-height: 160px !important;
+  }
+
+  .pie-chart-container canvas {
+    height: 160px !important;
   }
 
   .text-h6 {

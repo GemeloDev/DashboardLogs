@@ -178,7 +178,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed, inject } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, inject } from 'vue'
 import {
   Chart,
   BarController,
@@ -232,6 +232,12 @@ const chartSemana = ref(null)
 const chartPorTipo = ref(null)
 const eventosTiempoRespuesta = ref([])
 const eventosTiempoChartRef = ref(null)
+
+// 📊 INSTANCIAS DE CHART.JS PARA GESTIÓN ROBUSTA
+let eventosPorMesChartInstance = null
+let chartDiaInstance = null
+let chartSemanaInstance = null
+let chartPorTipoInstance = null
 let eventosTiempoChartInstance = null
 const tiempoUsoPorDia = ref([])
 let chartTiempoUsoInstance = null
@@ -295,9 +301,28 @@ function formatearMes(mesISO) {
   return fecha.toLocaleString('es-MX', { month: 'short', year: 'numeric' }).replace('.', '')
 }
 
-//Funcion para obtener eventos por mes
+//📊 FUNCIÓN CORREGIDA: Obtener eventos por mes con destrucción robusta
 async function renderEventosPorMesChart() {
+  console.log('📅 Iniciando renderEventosPorMesChart...')
+
   try {
+    // 🔥 PASO 1: DESTRUIR INSTANCIA ESPECÍFICA
+    if (eventosPorMesChartInstance && typeof eventosPorMesChartInstance.destroy === 'function') {
+      try {
+        eventosPorMesChartInstance.destroy()
+        console.log('✅ Instancia eventosPorMes destruida')
+      } catch (error) {
+        console.warn('⚠️ Error destruyendo eventosPorMes:', error)
+      }
+      eventosPorMesChartInstance = null
+    }
+
+    // Verificar que el canvas esté disponible
+    if (!eventosPorMesChart.value) {
+      console.warn('⚠️ Canvas eventosPorMesChart no disponible')
+      return
+    }
+
     const payload = {
       fechaInicio: '2025-01-01',
       fechaFin: '2025-12-31',
@@ -308,7 +333,8 @@ async function renderEventosPorMesChart() {
     const valoresLinea = valoresBarras.map((v, i) =>
       valoresBarras.slice(0, i + 1).reduce((a, b) => a + b, 0)
     )
-    new Chart(eventosPorMesChart.value, {
+    // ✅ CREAR NUEVA INSTANCIA Y ASIGNARLA
+    eventosPorMesChartInstance = new Chart(eventosPorMesChart.value, {
       type: 'bar',
       data: {
         labels,
@@ -369,9 +395,28 @@ async function renderEventosPorMesChart() {
   }
 }
 
-// Funcion para obtener eventos por día
+// 📅 FUNCIÓN CORREGIDA: Renderizar eventos por día con destrucción robusta
 async function renderEventosDia() {
+  console.log('📅 Iniciando renderEventosDia...')
+
   try {
+    // 🔥 DESTRUIR INSTANCIA ESPECÍFICA PRIMERO
+    if (chartDiaInstance && typeof chartDiaInstance.destroy === 'function') {
+      try {
+        chartDiaInstance.destroy()
+        console.log('✅ Instancia chartDia destruida')
+      } catch (error) {
+        console.warn('⚠️ Error destruyendo chartDia:', error)
+      }
+      chartDiaInstance = null
+    }
+
+    // Verificar canvas
+    if (!chartDia.value) {
+      console.warn('⚠️ Canvas chartDia no disponible')
+      return
+    }
+
     const payload = {
       fechaInicio: '2025-01-01',
       fechaFin: '2025-06-30',
@@ -383,7 +428,8 @@ async function renderEventosDia() {
       acc.push((acc[idx - 1] || 0) + curr)
       return acc
     }, [])
-    new Chart(chartDia.value, {
+    // ✅ CREAR NUEVA INSTANCIA Y ASIGNARLA
+    chartDiaInstance = new Chart(chartDia.value, {
       type: 'bar',
       data: {
         labels,
@@ -436,8 +482,28 @@ async function renderEventosDia() {
 }
 
 // Funcion para obtener eventos por semana
+// 📅 FUNCIÓN CORREGIDA: Renderizar eventos por semana con destrucción robusta
 async function renderEventosSemana() {
+  console.log('📅 Iniciando renderEventosSemana...')
+
   try {
+    // 🔥 DESTRUIR INSTANCIA ESPECÍFICA PRIMERO
+    if (chartSemanaInstance && typeof chartSemanaInstance.destroy === 'function') {
+      try {
+        chartSemanaInstance.destroy()
+        console.log('✅ Instancia chartSemana destruida')
+      } catch (error) {
+        console.warn('⚠️ Error destruyendo chartSemana:', error)
+      }
+      chartSemanaInstance = null
+    }
+
+    // Verificar canvas
+    if (!chartSemana.value) {
+      console.warn('⚠️ Canvas chartSemana no disponible')
+      return
+    }
+
     const payload = {
       fechaInicio: '2025-01-01',
       fechaFin: '2025-06-30',
@@ -446,7 +512,8 @@ async function renderEventosSemana() {
     const labels = datos.map((d) => d.semana_iso) // ajusta según tu JSON
     const valores = datos.map((d) => d.total)
     console.log('Datos por semana:', datos)
-    new Chart(chartSemana.value, {
+    // ✅ CREAR NUEVA INSTANCIA Y ASIGNARLA
+    chartSemanaInstance = new Chart(chartSemana.value, {
       type: 'line',
       data: {
         labels: labels,
@@ -490,8 +557,28 @@ async function renderEventosSemana() {
 }
 
 // Funcion para obtener eventos por tipo
+// 📅 FUNCIÓN CORREGIDA: Renderizar eventos por tipo con destrucción robusta
 async function renderEventosPorTipoChart() {
+  console.log('📅 Iniciando renderEventosPorTipoChart...')
+
   try {
+    // 🔥 DESTRUIR INSTANCIA ESPECÍFICA PRIMERO
+    if (chartPorTipoInstance && typeof chartPorTipoInstance.destroy === 'function') {
+      try {
+        chartPorTipoInstance.destroy()
+        console.log('✅ Instancia chartPorTipo destruida')
+      } catch (error) {
+        console.warn('⚠️ Error destruyendo chartPorTipo:', error)
+      }
+      chartPorTipoInstance = null
+    }
+
+    // Verificar canvas
+    if (!chartPorTipo.value) {
+      console.warn('⚠️ Canvas chartPorTipo no disponible')
+      return
+    }
+
     const payload = {
       fechaInicio: '2025-01-01',
       fechaFin: '2025-06-30',
@@ -499,7 +586,8 @@ async function renderEventosPorTipoChart() {
     const data = await getEventosPorTipo(payload)
     const labels = data.map((d) => d.tipoEvento)
     const valores = data.map((d) => d.total_eventos)
-    new Chart(chartPorTipo.value, {
+    // ✅ CREAR NUEVA INSTANCIA Y ASIGNARLA
+    chartPorTipoInstance = new Chart(chartPorTipo.value, {
       type: 'bar',
       data: {
         labels: labels,
@@ -670,8 +758,49 @@ async function cargarFuncionalidadesMultiplesUsos() {
   }
 }
 
+// 🧹 FUNCIÓN DE LIMPIEZA ROBUSTA PARA CHART.JS
+function destroyAllChartInstances() {
+  console.log('🧹 Iniciando limpieza de todas las instancias Chart.js...')
+
+  const instances = {
+    eventosPorMesChartInstance,
+    chartDiaInstance,
+    chartSemanaInstance,
+    chartPorTipoInstance,
+    eventosTiempoChartInstance,
+    chartTiempoUsoInstance,
+  }
+
+  Object.entries(instances).forEach(([name, instance]) => {
+    if (instance && typeof instance.destroy === 'function') {
+      try {
+        instance.destroy()
+        console.log(`✅ ${name} destruida`)
+      } catch (error) {
+        console.warn(`⚠️ Error destruyendo ${name}:`, error)
+      }
+    }
+  })
+
+  // Limpiar referencias
+  eventosPorMesChartInstance = null
+  chartDiaInstance = null
+  chartSemanaInstance = null
+  chartPorTipoInstance = null
+  eventosTiempoChartInstance = null
+  chartTiempoUsoInstance = null
+
+  console.log('✨ Limpieza de Chart.js completada')
+}
+
 onMounted(() => {
   actualizarDatos()
+})
+
+// 🧹 Limpieza al desmontar el componente
+onBeforeUnmount(() => {
+  console.log('🧹 Limpiando gráficos antes de desmontar EventosPage')
+  destroyAllChartInstances()
 })
 </script>
 

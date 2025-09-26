@@ -30,31 +30,31 @@
           <div class="col-12">
             <q-input
               v-model="rangoFechasTexto"
-              label="Rango de Fechas"
+              label="Fechas"
               filled
-              dense
-              color="blue-4"
-              label-color="blue-4"
-              input-class="text-white text-weight-medium"
-              class="fecha-input"
+              dark
+              color="primary"
+              clearable
               readonly
+              dense
             >
               <template v-slot:prepend>
-                <q-icon name="date_range" color="blue-4" />
+                <q-icon name="date_range" color="amber" />
               </template>
               <template v-slot:append>
-                <q-icon name="calendar_today" class="cursor-pointer" color="blue-4">
-                  <q-popup-proxy cover>
-                    <q-date
-                      v-model="rangoFechas"
-                      range
-                      color="blue-4"
-                      :options="validarFecha"
-                      @update:model-value="actualizarFechasDesdeRango"
-                      :class="{ 'q-pa-sm': $q.screen.lt.sm }"
-                    >
+                <q-icon name="calendar_month" class="cursor-pointer">
+                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                    <q-date v-model="rangoFechas" range mask="YYYY-MM-DD" dark>
                       <div class="row items-center justify-end q-pa-sm">
-                        <q-btn v-close-popup label="Cerrar" color="blue-4" flat />
+                        <q-btn
+                          label="Limpiar"
+                          color="negative"
+                          flat
+                          size="sm"
+                          @click="rangoFechas = null"
+                          class="q-mr-sm"
+                        />
+                        <q-btn v-close-popup label="Aplicar" color="primary" flat size="sm" />
                       </div>
                     </q-date>
                   </q-popup-proxy>
@@ -294,11 +294,6 @@ const resetearAMesActual = () => {
   aplicarFiltros()
 }
 
-// Función para actualizar fechas desde rango
-const actualizarFechasDesdeRango = (nuevoRango) => {
-  rangoFechas.value = nuevoRango
-}
-
 // ========== FUNCIONES PARA EL ASISTENTE IA ==========
 
 // Función para obtener el rango de fechas actual
@@ -495,7 +490,7 @@ onMounted(() => {
   border: 1px solid #3b82f6;
 }
 
-/* Responsive adjustments */
+/* Responsividad para móviles */
 @media (max-width: 599px) {
   .filtros-fechas {
     padding: 1rem !important;
@@ -537,10 +532,6 @@ onMounted(() => {
 .q-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.fecha-input {
-  transition: all 0.3s ease;
 }
 
 /* Dark theme para dropdown */
