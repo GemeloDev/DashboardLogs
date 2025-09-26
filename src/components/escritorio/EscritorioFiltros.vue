@@ -325,7 +325,7 @@ const aplicarFiltros = () => {
   })
 
   loadingFiltros.value = false
-  
+
 }
 
 // Construir objeto de filtros normalizado

@@ -21,9 +21,9 @@
           bordered
           class="q-pa-lg text-white q-mb-md resumen-card"
           style="
-            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
             border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.25);
+            box-shadow: 0 8px 32px rgba(55, 65, 81, 0.25);
           "
         >
           <div class="row items-center q-mb-md">
@@ -38,8 +38,8 @@
                 class="kpi-card text-center q-pa-md"
                 style="background: rgba(255, 255, 255, 0.1); border-radius: 12px"
               >
-                <q-icon name="error_outline" size="32px" color="red-4" class="q-mb-sm" />
-                <div class="text-h4 text-weight-bold text-red-4">{{ logs.length }}</div>
+                <q-icon name="error_outline" size="32px" color="red-6" class="q-mb-sm" />
+                <div class="text-h4 text-weight-bold text-red-6">{{ logs.length }}</div>
                 <div class="text-caption text-grey-3">Total Eventos Fallidos</div>
               </q-card>
             </div>
@@ -119,9 +119,9 @@
           flat
           class="q-pa-md text-center q-mb-sm tabla-header"
           style="
-            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
             border-radius: 12px 12px 0 0;
-            box-shadow: 0 4px 16px rgba(25, 118, 210, 0.25);
+            box-shadow: 0 4px 16px rgba(75, 85, 99, 0.25);
           "
         >
           <div class="row items-center justify-center">
@@ -143,9 +143,9 @@
           bordered
           class="q-pa-md text-white grafica-dispositivos-card"
           style="
-            background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
             border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(55, 71, 79, 0.3);
+            box-shadow: 0 8px 32px rgba(31, 41, 55, 0.3);
           "
         >
           <div class="row items-center justify-center q-mb-md">
@@ -356,7 +356,14 @@ async function renderEventosPorEstadoChart() {
           {
             label: 'Eventos por Estado',
             data: valores,
-            backgroundColor: ['#66bb6a', '#ef5350', '#ffa726', '#42a5f5', '#ab47bc', '#26c6da'],
+            backgroundColor: [
+              '#6b7280', // Gris profesional para éxito
+              '#dc2626', // Rojo elegante para fallidos
+              '#d97706', // Naranja profesional para pendiente
+              '#2563eb', // Azul corporativo para procesando
+              '#7c3aed', // Púrpura elegante para otros
+              '#059669'  // Verde profesional para completados
+            ],
             borderColor: '#1a1a1a',
             borderWidth: 2,
           },

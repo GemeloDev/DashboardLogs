@@ -600,6 +600,8 @@ const abrirConsolaGeneral = (tipo) => {
         Oficina: { Nombre: 'Sistema' },
         Usuario: 'Sistema',
         Dispositivo: 'N/A',
+        ErrorCode: 'NO_DATA_KPI',
+        SessionToken: 'Sistema',
       },
     ]
   }
@@ -642,6 +644,21 @@ const abrirConsolaGeneral = (tipo) => {
       detalle.escaner ||
       detalle.scanner ||
       'No especificado',
+    // 🔥 CAMPOS EXACTOS COMO EN LA CONSOLA DEL NAVBAR - DESDE KPIs 🔥
+    ErrorCode:
+      detalle.errorCode ||
+      detalle.error_code ||
+      detalle.codigo_error ||
+      detalle.ErrorCode ||
+      detalle.Error_Code ||
+      'N/A',
+    SessionToken:
+      detalle.sessionToken ||
+      detalle.session_token ||
+      detalle.Session_Token ||
+      detalle.token ||
+      detalle.Token ||
+      'No disponible',
     // Información adicional para mejor contexto
     PersonaCompleta: detalle.person
       ? {
@@ -670,6 +687,13 @@ const abrirConsolaGeneral = (tipo) => {
     filtrosEspecificos,
     filtrosFinales,
   })
+
+  // 🔥 Log para mostrar códigos de error y tokens desde KPIs
+  const codigosKPI = logsFormateados.filter((log) => log.ErrorCode !== 'N/A').length
+  const tokensKPI = logsFormateados.filter((log) => log.SessionToken !== 'No disponible').length
+  console.log(
+    `🔥 KPI ${tipo.toUpperCase()}: ${codigosKPI} códigos de error, ${tokensKPI} session tokens`
+  )
 
   consolaRef.value.abrirConsola(logsFormateados, titulo, filtrosFinales)
 }
@@ -1601,6 +1625,12 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
   console.log('🎯 CLICK DETECTADO EN GRÁFICA:', { fecha, tipoGrafica, detalles: detalles?.length })
   console.log('📋 MUESTRA DE DATOS RECIBIDOS:', detalles?.slice(0, 2))
 
+  // 🔍 Log para ver todos los campos disponibles en los datos de la API
+  if (detalles && detalles.length > 0) {
+    console.log('🔍 CAMPOS DISPONIBLES EN DATOS DE API:', Object.keys(detalles[0]))
+    console.log('🔍 DETALLE PRIMER ITEM DE API:', detalles[0])
+  }
+
   if (!consolaRef.value) {
     console.warn('❌ Referencia de consola no disponible')
     return
@@ -1654,6 +1684,9 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
       'No especificado',
     Dispositivo: detalle.device || detalle.Dispositivo || detalle.device || 'No especificado',
     Escaner: detalle.scanDevice,
+    // 🔥 CAMPOS EXACTOS COMO EN LA CONSOLA DEL NAVBAR 🔥
+    ErrorCode: detalle.errorCode,
+    SessionToken: detalle.sessionToken,
     // Información adicional para mejor contexto
     PersonaCompleta: detalle.person
       ? {
@@ -1672,6 +1705,28 @@ const abrirConsolaConDatos = (fecha, tipoGrafica, detalles) => {
 
   console.log('🔄 LOGS FORMATEADOS PARA CONSOLA:', logsFormateados.slice(0, 2))
   console.log('📋 CAMPOS DISPONIBLES EN PRIMER LOG:', Object.keys(logsFormateados[0] || {}))
+
+  // 🔥 Log especial para mostrar códigos de error y session tokens de la API
+  console.log(
+    '🎯 CÓDIGOS DE ERROR Y TOKENS DESDE API:',
+    logsFormateados.map((log) => ({
+      fecha: log.Date,
+      tipo: log.Type,
+      codigoError: log.ErrorCode,
+      tokenSesion: log.SessionToken,
+    }))
+  )
+
+  // Mostrar resumen de datos encontrados
+  const codigosEncontrados = logsFormateados.filter(
+    (log) => log['Código de Error'] !== 'N/A'
+  ).length
+  const tokensEncontrados = logsFormateados.filter(
+    (log) => log['Token de Sesión'] !== 'No disponible'
+  ).length
+  console.log(
+    `🔍 RESUMEN: ${codigosEncontrados} códigos de error, ${tokensEncontrados} session tokens encontrados`
+  )
 
   // Determinar el título del filtro
   const tipoLabel =

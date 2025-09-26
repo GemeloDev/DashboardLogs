@@ -10,7 +10,7 @@
             </div>
             <div class="text-h6 text-blue-3 escritorio-subtitle q-mb-md">
               <span class="escritorio-subtitle-text"
-                >📊 Panel de Control Avanzado | 🎯 Optimizado para Pantallas Grandes</span
+                >📊 Panel de Control Avanzado</span
               >
             </div>
           </div>
