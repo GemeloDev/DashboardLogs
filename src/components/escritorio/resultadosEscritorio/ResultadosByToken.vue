@@ -1,31 +1,29 @@
 <template>
-  <q-card class="modern-card text-white session-card row">
-    <q-card-section class="col-4 q-pa-xl">
-      <p class="text-h5 text-bold text-white">Listado de Datos</p>
-
-      <div class="grid column items-center">
-        <q-chip color="green" class="text-white q-mb-lg" clickable @click="personOrOficeCheck('users')">
-          👤 {{ counterUsers }} registros de usuarios encontrados
-        </q-chip>
-        <q-chip color="blue" class="text-white q-mb-lg" clickable @click="personOrOficeCheck('oficina')">
-          🏢 {{ counterOficinas }} registros de oficinas encontradas
-        </q-chip>
+  <q-card class="modern-card text-white session-card">
+    <q-card-section class="q-pa-xl row">
+      <div class="col-sm-12 col-md-12 col-lg-12">
+        <p class="text-h5 text-bold text-white">Listado de Datos</p>
       </div>
 
-      <div class="grid column items-center q-pa-lg" v-if="personOrOffice">
-        <q-chip color="green" class="text-white q-mb-lg shadow-8" v-for="person in duplicateCurps" :key="person">
+      <div class="col-sm-6 col-md-6 col-lg-6 grid column">
+        <p class="text-h6 text-white no-margin q-pt-sm">👤 Usuarios encontrados: {{ duplicateCurps.length }}</p>
+        <q-chip color="green" class="text-white shadow-8" v-for="person in duplicateCurps" :key="person">
           {{ person }}
         </q-chip>
       </div>
-      <div class="grid column items-center q-pa-lg" v-if="!personOrOffice">
-        <q-chip color="blue" class="text-white q-mb-lg shadow-8" v-for="office in duplicateOffice" :key="office">
+      <div class="col-sm-6 col-md-6 col-lg-6 grid column">
+        <p class="text-h6 text-white no-margin q-pt-sm">🏢 Oficinas encontradas: {{ duplicateOffice.length }}</p>
+        <q-chip color="blue" class="text-white shadow-8" v-for="office in duplicateOffice" :key="office">
           {{ office }}
         </q-chip>
       </div>
     </q-card-section>
+  </q-card>
+
+  <q-card class="modern-card text-white session-card q-mt-lg">
     <q-card-section class="col">
       <div class="q-px-lg q-py-md">
-        <q-timeline color="secondary" class="session-timeline q-pl-md">
+        <q-timeline color="secondary" class="session-timeline q-px-xl">
           <q-timeline-entry heading>
             <strong class="text-h5 text-bold">Detalle de la Consulta</strong>
           </q-timeline-entry>
@@ -105,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, watchEffect } from 'vue'
+import { watchEffect } from 'vue'
 
 import { formatearFecha, getEventColor, getEventIcon } from 'src/helpers/index.js'
 
@@ -124,16 +122,6 @@ watchEffect(() => {
 watchEffect(() => {
   props.resultados
 })
-
-const personOrOffice = ref(true)
-
-const personOrOficeCheck = (clicked) => {
-  if(clicked === 'users') {
-    personOrOffice.value = true
-  } else {
-    personOrOffice.value = false
-  }
-}
 
 //  Oficinas dúplicadas
 const withOficinas = props.resultados.data.filter(item => item.oficina && item.oficina.nombre)
@@ -156,7 +144,7 @@ const countsPersonas = withPerson.reduce((acc, item) => {
 
 const duplicateCurps = Object.keys(countsPersonas).filter(curp => countsPersonas[curp] > 1)
 
-console.log(duplicateOffice)
+console.log(duplicateOffice, duplicateCurps)
 </script>
 
 
@@ -297,7 +285,7 @@ console.log(duplicateOffice)
 
 /* Scrollbar vertical u horizontal completo */
 ::-webkit-scrollbar {
-  width: 9px; /* ancho de la barra (barStyle width) */
+  width: 3px; /* ancho de la barra (barStyle width) */
   height: 9px; /* alto si es horizontal */
 }
 
@@ -319,5 +307,56 @@ console.log(duplicateOffice)
 /* Thumb al hacer hover */
 ::-webkit-scrollbar-thumb:hover {
   background-color: #004883; /* color más oscuro para hover */
+}
+
+// Cards modernos
+.modern-card {
+  background: var(--gradient-card);
+  backdrop-filter: var(--blur-glass);
+  border: var(--border-glass);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+  transition: var(--transition-smooth);
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem 2rem 1rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .header-icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gradient-primary);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    }
+
+    .header-content {
+      flex: 1;
+
+      .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .card-subtitle {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+      }
+    }
+  }
+
+  .card-body {
+    padding: 2rem;
+  }
 }
 </style>

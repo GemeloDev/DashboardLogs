@@ -162,9 +162,19 @@
                           color="blue-6"
                           text-color="white"
                           size="sm"
-                          icon="account_circle"
+                          icon="code"
                         >
                           USR02808191331
+                        </q-chip>
+                        <q-chip
+                          clickable
+                          @click="busquedaRapida = 'pBwQdT8snpp7'"
+                          color="purple-6"
+                          text-color="white"
+                          size="sm"
+                          icon="account_circle"
+                        >
+                          pBwQdT8snpp7
                         </q-chip>
                       </div>
                     </div>
@@ -625,7 +635,7 @@
                   </div>
                   <div class="col-md-6 col-xs-12 q-gutter-y-md">
                     <q-input
-                      v-model="tokenSesion"
+                      v-model="formulario.tokenCode"
                       label="Token de Sesión"
                       placeholder="ihJak3VeUMNA"
                       dark
@@ -982,6 +992,7 @@ const formulario = ref({
   errorCode: '',
   sessionToken: '',
   supportCode: '',
+  tokenCode: '',
   device: '',
   user: '',
 })
@@ -1005,7 +1016,6 @@ const opcionesSoporteUsuarios = ref([])
 const resultadoToken = ref(null)
 const countUsers = ref(0)
 const countOficinas = ref(0)
-const tokenSesion = ref('')
 
 const cargarCatalogosSoporte = async () => {
   try {
@@ -1116,6 +1126,11 @@ const realizarBusquedaRapida = async () => {
       formulario.value.sessionToken = codigo
       tabActiva.value = 'session'
       await consultarSesion()
+    } else if(!codigo.startsWith('USR') && !codigo.includes('-')) {
+      // Es un token de sesión
+      formulario.value.tokenCode = codigo
+      tabActiva.value = 'token'
+      await consultarToken()
     } else {
       // Buscar en ambos
       await Promise.all([consultarCodigoError(codigo), consultarSesion(codigo)])
@@ -1289,7 +1304,7 @@ const limpiarCodigoSoporte = () => {
 }
 
 const consultarToken = async (codigo = null) => {
-  const sesion = codigo || tokenSesion.value
+  const sesion = codigo || formulario.value.tokenCode
   if (!sesion || !String(sesion).trim()) return
 
   cargandoBusqueda.value = true

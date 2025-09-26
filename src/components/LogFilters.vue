@@ -9,7 +9,7 @@
   >
     <div class="column text-white colum-responsive">
       <!-- Header con icono y título -->
-      <div class="col row content-center q-mt-md">
+      <div class="col row content-center q-mt-lg">
         <div class="col-8 content-center q-ml-lg">
           <p class="text-h6 text-white">
             <q-icon name="date_range" size="28px" color="blue-4" class="q-mr-sm" />
@@ -66,7 +66,7 @@
       </div>
 
       <!-- Indicador del período seleccionado -->
-      <div class="col row q-gutter-md">
+      <div class="col row q-gutter-md footer-logs">
         <div class="col-sm-12 col-md-2">
           <div class="text-blue-4 text-caption text-weight-medium">
             Período: {{ formatearPeriodo() }}
@@ -554,5 +554,12 @@ onMounted(() => {
 
 .q-item:hover {
   background: rgba(59, 130, 246, 0.1) !important;
+}
+
+@media (max-width: 479px) {
+  .footer-logs {
+    display: flex;
+    justify-content: center;
+  }
 }
 </style>
