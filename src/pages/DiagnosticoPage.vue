@@ -90,7 +90,7 @@
           <q-tab name="busqueda" icon="search" label="🔍 Búsqueda Rápida" />
           <q-tab name="errorCode" icon="error" label="🔴 Código Error" />
           <q-tab name="baseCode" icon="code" label="📟 Análisis Código Base" />
-          <q-tab name="session" icon="account_circle" label="👤 Análisis Sesión" />
+          <q-tab name="token" icon="account_circle" label="👤 Análisis Token" />
         </q-tabs>
 
         <!-- Contenido de Pestañas MODERNIZADO -->
@@ -153,6 +153,14 @@
                       >
                         <q-icon name="account_circle" size="16px" />
                         <span>USR02808191331</span>
+                        <div class="chip-glow"></div>
+                      </div>
+                      <div
+                        class="example-chip token-code"
+                        @click="busquedaRapida = 'pBwQdT8snpp7'"
+                      >
+                        <q-icon name="account_circle" size="16px" />
+                        <span>pBwQdT8snpp7</span>
                         <div class="chip-glow"></div>
                       </div>
                     </div>
@@ -680,7 +688,7 @@
             </q-card>
           </q-tab-panel>
 
-          <q-tab-panel name="session" class="no-border bg-dark">
+          <q-tab-panel name="token" class="no-border bg-dark">
             <q-card class="modern-card text-white session-card">
               <q-card-section>
                 <div class="card-header">
@@ -698,7 +706,7 @@
                 <div class="card-body">
                   <div class="modern-input-group">
                     <q-input
-                      v-model="tokenSesion"
+                      v-model="formulario.tokenCode"
                       class="modern-input"
                       placeholder="Ej: ihJak3VeUMNA"
                       dark
@@ -762,7 +770,6 @@ const route = useRoute()
 const tabActiva = ref('busqueda')
 const cargando = ref(false)
 const diagnosticoActivo = ref('')
-const tokenSesion = ref('')
 
 // Estados EXACTOS al modal original
 const busquedaRapida = ref('')
@@ -772,6 +779,7 @@ const formulario = ref({
   errorCode: '',
   sessionToken: '',
   supportCode: '',
+  tokenCode: '',
   device: '',
   user: '',
 })
@@ -1085,11 +1093,16 @@ const realizarBusquedaRapida = async () => {
       formulario.value.errorCode = busquedaRapida.value
       tabActiva.value = 'errorCode'
       await consultarCodigoError()
-    } else {
+    } else if(busquedaRapida.value.startsWith('USR')) {
       // Es baseCode para sesión
       formulario.value.sessionToken = busquedaRapida.value
       tabActiva.value = 'session'
       await consultarSesion()
+    } else {
+      // Es token de sesión
+      formulario.value.tokenCode = busquedaRapida.value
+      tabActiva.value = 'token'
+      await consultarToken()
     }
   } finally {
     cargandoBusqueda.value = false
@@ -1128,7 +1141,7 @@ const consultarCodigoError = async (codigo = null) => {
 }
 
 const consultarToken = async (codigo = null) => {
-  const sesion = codigo || tokenSesion.value
+  const sesion = codigo || formulario.value.tokenCode
   if (!sesion || !String(sesion).trim()) return
 
   cargandoBusqueda.value = true
@@ -2554,6 +2567,16 @@ onMounted(() => {
     &.user-code {
       background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
       box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4);
+      }
+    }
+
+    &.token-code {
+      background: linear-gradient(135deg, #9c27b0 0%, #2563eb 100%);
+      box-shadow: 0 8px 32px rgba(171, 59, 246, 0.3);
 
       &:hover {
         transform: translateY(-2px);

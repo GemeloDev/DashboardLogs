@@ -385,6 +385,8 @@ function onFiltrar(val) {
     icon: 'filter_list',
     position: 'top-right',
   })
+
+  showFilters.value = false
 }
 
 function onGeminiConfigurado() {
