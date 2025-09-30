@@ -29,9 +29,10 @@
       <!-- Bar Chart Section -->
       <div class="q-pa-md">
         <q-card
+          v-if="tiemposFuncionalidad && tiemposFuncionalidad.length > 0"
           flat
           bordered
-          class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
+          class="col-12 col-sm-4 col-md-2 q-pa-lg text-white q-mx-sm"
           style="background-color: #1e1e2f; border-radius: 12px"
         >
           <div class="text-subtitle1 text-center q-mb-sm">Tiempo total por Funcionalidad</div>
@@ -46,11 +47,15 @@
             <canvas ref="barChart"></canvas>
           </div>
         </q-card>
+        <div v-else class="col-12 col-sm-4 col-md-2 q-pa-lg text-white q-mx-sm">
+          <NoDataMessage />
+        </div>
       </div>
 
       <!--Barra de dispositivos mas usados-->
       <div class="q-pa-md">
         <q-card
+          v-if="deviceChartData && deviceChartData.length > 0"
           flat
           bordered
           class="col-12 col-sm-4 col-md-2 q-pa-md text-white q-mx-sm"
@@ -68,12 +73,16 @@
             <canvas ref="deviceChart"></canvas>
           </div>
         </q-card>
+        <div v-else class="col-12 col-sm-4 col-md-2 q-pa-lg text-white q-mx-sm">
+          <NoDataMessage />
+        </div>
       </div>
 
       <!-- Donut Chart Section -->
       <!-- Seccin inferior dividida en dos columnas -->
       <!-- Donut Chart: Uso por funcionalidad -->
       <q-card
+        v-if="tiemposFuncionalidad && tiemposFuncionalidad.length > 0"
         flat
         bordered
         class="col-12 col-md-6 chart-card donut-chart-card"
@@ -97,7 +106,7 @@
             v-if="tiemposFuncionalidad && tiemposFuncionalidad.length > 0"
             class="legend-summary q-mt-sm"
           >
-            <div class="row q-col-gutter-xs">
+            <div class="row justify-center q-col-gutter-xs">
               <div
                 v-for="(funcionalidad, index) in tiemposFuncionalidad.slice(0, 6)"
                 :key="`func-${index}`"
@@ -147,10 +156,13 @@
           </div>
         </q-card-section>
       </q-card>
+      <div v-else class="col-12 col-sm-4 col-md-2 q-pa-lg text-white q-mx-sm">
+        <NoDataMessage />
+      </div>
       <br />
 
       <!-- Grfico de Funcionalidades por Tipo de Evento con Resumen -->
-      <div class="row q-col-gutter-md q-mb-md justify-center">
+      <div class="row q-col-gutter-md q-my-md justify-center" v-if="pieRefs">
         <q-card
           v-for="func in funcionalidades"
           :key="func.clave"
@@ -282,6 +294,9 @@
             </div>
           </q-card-section>
         </q-card>
+      </div>
+      <div v-else class="col-12 col-sm-4 col-md-2 q-pa-lg text-white q-mx-sm">
+        <NoDataMessage />
       </div>
 
       <br />
@@ -1097,6 +1112,7 @@ import { useFiltroFechasStore } from '../stores/filtroFechasStore.js'
 import 'leaflet.markercluster/dist/leaflet.markercluster.js'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
+import NoDataMessage from 'src/components/NoDataMessage.vue'
 
 Chart.register(
   BarController,
@@ -1113,8 +1129,6 @@ Chart.register(
 )
 
 const tiemposFuncionalidad = ref([])
-
-
 
 const filtroFechasStore = useFiltroFechasStore()
 
@@ -1233,6 +1247,7 @@ const eventos = ref([]) // Variable global para almacenar todos los eventos
 const barChart = ref(null)
 const chart = ref(null)
 const deviceChart = ref(null)
+const deviceChartData = ref([])
 
 const funcionalidades = ref([])
 const pieRefs = ref({})
@@ -1966,7 +1981,7 @@ function crearGraficoTimelineInterno(ctx) {
     diasCompletos.push(diaKey)
   }
 
-  // Contar eventos por da
+  // Contar eventos por da 
   if (eventos.value && eventos.value.length > 0) {
     eventos.value.forEach((evento) => {
       if (evento.fecha || evento.fechaHoraDia) {
@@ -2644,16 +2659,16 @@ async function renderDeviceChart() {
     }
     console.log(' Payload para dispositivos:', payload)
 
-    const data = await getDispositivosMasUsados(payload)
-    console.log(' Datos de dispositivos recibidos:', data)
+    deviceChartData.value = await getDispositivosMasUsados(payload)
+    console.log(' Datos de dispositivos recibidos:', deviceChartData.value)
 
-    if (!data || data.length === 0) {
+    if (!deviceChartData.value || deviceChartData.value.length === 0) {
       console.warn(' No hay datos de dispositivos para mostrar')
       return
     }
 
-    const labels = data.map((d) => d.dispositivo)
-    const valores = data.map((d) => d.total)
+    const labels = deviceChartData.value.map((d) => d.dispositivo)
+    const valores = deviceChartData.value.map((d) => d.total)
 
     console.log(' Labels dispositivos:', labels)
     console.log(' Valores dispositivos:', valores)
@@ -2757,6 +2772,7 @@ function renderPiePorFuncionalidad() {
   })
     .then(async (data) => {
       if (!data || data.length === 0) {
+        funcionalidades.value = []
         console.warn(' No hay datos para grficos de funcionalidad')
         return
       }
@@ -2789,7 +2805,6 @@ function renderPiePorFuncionalidad() {
               console.warn(` Error destruyendo grfico pie ${func.clave}:`, error)
             }
           }
-
 
           const chartInstance = new Chart(ref, {
             type: 'doughnut',
@@ -2865,6 +2880,7 @@ function renderPiePorFuncionalidad() {
           console.warn(
             ` No se puede crear grfico para ${func.clave}: canvas no disponible o datos vacos`
           )
+          funcionalidades.value = []
         }
       })
     })
