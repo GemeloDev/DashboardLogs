@@ -114,8 +114,10 @@
           </div>
         </q-card>
 
-        <!-- Título de tabla mejorado con colores profesionales -->
-        <q-card
+
+      </div>
+          <!-- Título de tabla mejorado con colores profesionales -->
+        <!-- <q-card
           flat
           class="q-pa-md text-center q-mb-sm tabla-header"
           style="
@@ -125,7 +127,7 @@
           "
         >
           <div class="row items-center justify-center">
-            <q-icon name="table_view" size="24px" color="white" class="q-mr-sm" />
+            <q-icon name="table_view"  color="white" class="q-mr-sm" />
             <div class="text-h6 text-weight-bold text-white">Detalle de Eventos Fallidos</div>
             <q-chip
               color="white"
@@ -134,9 +136,7 @@
               class="q-ml-md"
             />
           </div>
-        </q-card>
-        <EventosFallidosTable :logs="logs" />
-      </div>
+        </q-card> -->
       <div class="col-12 col-md-4">
         <q-card
           flat
@@ -170,6 +170,8 @@
           </div>
         </q-card>
       </div>
+        <EventosFallidosTable :logs="logs" />
+
     </div>
   </q-page>
 </template>

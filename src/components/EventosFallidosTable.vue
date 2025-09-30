@@ -25,7 +25,7 @@
             </template>
           </q-input>
         </div>
-        
+
         <div class="col-12 col-md-3">
           <q-select
             v-model="filtroDispositivo"
@@ -68,9 +68,9 @@
     </div>
 
     <!-- Tabla mejorada con funcionalidades avanzadas -->
-    <q-table 
-      :rows="filasFiltradas" 
-      :columns="columnas" 
+    <q-table
+      :rows="filasFiltradas"
+      :columns="columnas"
       row-key="id"
       :pagination="paginacion"
       @request="onRequest"
@@ -96,20 +96,8 @@
           </div>
           <div class="col-auto">
             <q-btn-group flat>
-              <q-btn 
-                icon="refresh"
-                @click="actualizarDatos"
-                color="primary"
-                size="sm"
-                dense
-              />
-              <q-btn 
-                icon="visibility"
-                @click="alternarColumnas"
-                color="primary"
-                size="sm"
-                dense
-              />
+              <q-btn icon="refresh" @click="actualizarDatos" color="primary" size="sm" dense />
+              <q-btn icon="visibility" @click="alternarColumnas" color="primary" size="sm" dense />
             </q-btn-group>
           </div>
         </div>
@@ -118,8 +106,8 @@
       <!-- Slots para células personalizadas -->
       <template v-slot:body-cell-resultado="props">
         <q-td :props="props">
-          <q-badge 
-            :color="getColorResultado(props.value)" 
+          <q-badge
+            :color="getColorResultado(props.value)"
             :label="props.value"
             class="text-weight-bold"
           />
@@ -152,28 +140,28 @@
 
       <template v-slot:body-cell-acciones="props">
         <q-td :props="props">
-          <q-btn-group flat dense>
-            <q-btn
-              icon="visibility"
-              size="sm"
-              color="primary"
-              @click="verDetalle(props.row)"
-              dense
-              round
-            >
-              <q-tooltip>Ver detalle</q-tooltip>
-            </q-btn>
-            <q-btn
-              icon="bug_report"
-              size="sm"
-              color="orange"
-              @click="reportarBug(props.row)"
-              dense
-              round
-            >
-              <q-tooltip>Reportar bug</q-tooltip>
-            </q-btn>
-          </q-btn-group>
+          <q-btn
+            icon="visibility"
+            label="Detalle"
+            size="sm"
+                
+            text-color="primary"
+            @click="verDetalle(props.row)"
+            class="detalle-btn"
+            style="
+              background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              border-radius: 8px;
+              font-weight: 600;
+              letter-spacing: 0.5px;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            "
+            no-caps
+          >
+            <q-tooltip class="bg-primary text-white">
+              Ver información detallada del evento
+            </q-tooltip>
+          </q-btn>
         </q-td>
       </template>
 
@@ -215,28 +203,134 @@
       </div>
     </div>
 
-    <!-- Dialog para ver detalles -->
-    <q-dialog v-model="dialogDetalle">
-      <q-card style="min-width: 400px" dark>
-        <q-card-section>
-          <div class="text-h6">Detalle del Evento</div>
-        </q-card-section>
-
-        <q-card-section class="q-pt-none">
-          <div v-if="eventoSeleccionado">
-            <q-list dense>
-              <q-item v-for="(value, key) in eventoSeleccionado" :key="key">
-                <q-item-section>
-                  <q-item-label class="text-weight-bold">{{ formatearClave(key) }}</q-item-label>
-                  <q-item-label caption>{{ value || 'N/A' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
+    <!-- Dialog para ver detalles - Diseño mejorado -->
+    <q-dialog v-model="dialogDetalle" persistent>
+      <q-card
+        style="
+          min-width: 500px;
+          max-width: 700px;
+          background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        "
+        class="text-white"
+      >
+        <!-- Header del modal -->
+        <q-card-section
+          class="q-pb-none"
+          style="
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+            border-radius: 16px 16px 0 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          "
+        >
+          <div class="row items-center justify-between">
+            <div class="row items-center">
+              <q-icon name="event_note" size="28px" color="white" class="q-mr-sm" />
+              <div class="text-h6 text-weight-bold">Detalle del Evento Fallido</div>
+            </div>
+            <q-btn
+              icon="close"
+              flat
+              round
+              dense
+              color="white"
+              v-close-popup
+              class="hover-close-btn"
+            />
           </div>
         </q-card-section>
 
-        <q-card-actions align="right">
-          <q-btn flat label="Cerrar" color="primary" v-close-popup />
+        <!-- Contenido del modal -->
+        <q-card-section class="q-pt-lg">
+          <div v-if="eventoSeleccionado" class="modal-content">
+            <div class="row q-col-gutter-md">
+              <!-- Información principal -->
+              <div class="col-12 col-md-6">
+                <q-card
+                  flat
+                  class="info-section q-pa-md q-mb-md"
+                  style="
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 12px;
+                  "
+                >
+                  <div class="text-subtitle1 text-weight-bold q-mb-md text-blue-4">
+                    <q-icon name="info" class="q-mr-sm" />
+                    Información General
+                  </div>
+                  <q-list dense class="text-white">
+                    <q-item v-for="campo in camposGenerales" :key="campo.key">
+                      <q-item-section>
+                        <q-item-label class="text-weight-bold text-grey-3">{{
+                          campo.label
+                        }}</q-item-label>
+                        <q-item-label class="text-white q-mt-xs">
+                          <q-badge
+                            v-if="campo.key === 'resultadoEvento'"
+                            :color="getColorResultado(eventoSeleccionado[campo.key])"
+                            :label="eventoSeleccionado[campo.key] || 'N/A'"
+                            class="text-weight-bold"
+                          />
+                          <span v-else>{{ eventoSeleccionado[campo.key] || 'N/A' }}</span>
+                        </q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-card>
+              </div>
+
+              <!-- Información técnica -->
+              <div class="col-12 col-md-6">
+                <q-card
+                  flat
+                  class="info-section q-pa-md q-mb-md"
+                  style="
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 12px;
+                  "
+                >
+                  <div class="text-subtitle1 text-weight-bold q-mb-md text-orange-4">
+                    <q-icon name="settings" class="q-mr-sm" />
+                    Información Técnica
+                  </div>
+                  <q-list dense class="text-white">
+                    <q-item v-for="campo in camposTecnicos" :key="campo.key">
+                      <q-item-section>
+                        <q-item-label class="text-weight-bold text-grey-3">{{
+                          campo.label
+                        }}</q-item-label>
+                        <q-item-label class="text-white q-mt-xs">{{
+                          eventoSeleccionado[campo.key] || 'N/A'
+                        }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-card>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <!-- Footer del modal -->
+        <q-card-actions align="right" class="q-pt-none q-px-lg q-pb-lg">
+          <q-btn
+            label="Cerrar"
+            color="white"
+            text-color="primary"
+            style="
+              background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              border-radius: 8px;
+              font-weight: 600;
+              padding: 8px 24px;
+            "
+            v-close-popup
+            no-caps
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -251,8 +345,8 @@ import { exportFile, useQuasar } from 'quasar'
 const props = defineProps({
   logs: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 })
 
 // Composables
@@ -273,7 +367,7 @@ const paginacion = ref({
   descending: false,
   page: 1,
   rowsPerPage: 10,
-  rowsNumber: 0
+  rowsNumber: 0,
 })
 
 // 📊 COLUMNAS MEJORADAS CON FUNCIONALIDADES AVANZADAS
@@ -285,7 +379,7 @@ const columnas = [
     align: 'left',
     field: 'resultadoEvento',
     sortable: true,
-    style: 'width: 120px'
+    style: 'width: 120px',
   },
   {
     name: 'usuario',
@@ -293,7 +387,7 @@ const columnas = [
     label: 'Usuario',
     field: 'usuario',
     sortable: true,
-    style: 'min-width: 150px'
+    style: 'min-width: 150px',
   },
   {
     name: 'dispositivo',
@@ -301,7 +395,7 @@ const columnas = [
     label: 'Dispositivo',
     field: 'dispositivo',
     sortable: true,
-    style: 'min-width: 120px'
+    style: 'min-width: 120px',
   },
   {
     name: 'tipo',
@@ -309,7 +403,7 @@ const columnas = [
     label: 'Tipo de Evento',
     field: 'tipoEvento',
     sortable: true,
-    style: 'min-width: 140px'
+    style: 'min-width: 140px',
   },
   {
     name: 'android',
@@ -317,7 +411,7 @@ const columnas = [
     label: 'Versión Android',
     field: 'versionAndroidDispositivo',
     sortable: true,
-    style: 'width: 130px'
+    style: 'width: 130px',
   },
   {
     name: 'acciones',
@@ -325,46 +419,46 @@ const columnas = [
     label: 'Acciones',
     field: 'acciones',
     sortable: false,
-    style: 'width: 100px'
-  }
+    style: 'width: 100px',
+  },
 ]
 
 // 📊 COMPUTADAS PARA FILTROS DINÁMICOS
 const dispositivosUnicos = computed(() => {
-  const dispositivos = [...new Set(props.logs.map(log => log.dispositivo).filter(Boolean))]
-  return dispositivos.map(d => ({ label: d, value: d }))
+  const dispositivos = [...new Set(props.logs.map((log) => log.dispositivo).filter(Boolean))]
+  return dispositivos.map((d) => ({ label: d, value: d }))
 })
 
 const resultadosUnicos = computed(() => {
-  const resultados = [...new Set(props.logs.map(log => log.resultadoEvento).filter(Boolean))]
-  return resultados.map(r => ({ label: r, value: r }))
+  const resultados = [...new Set(props.logs.map((log) => log.resultadoEvento).filter(Boolean))]
+  return resultados.map((r) => ({ label: r, value: r }))
 })
 
 // 📊 FILAS FILTRADAS CON MÚLTIPLES CRITERIOS
 const filasFiltradas = computed(() => {
   let filtradas = [...props.logs]
-  
+
   // Filtro por dispositivo
   if (filtroDispositivo.value) {
-    filtradas = filtradas.filter(log => log.dispositivo === filtroDispositivo.value)
+    filtradas = filtradas.filter((log) => log.dispositivo === filtroDispositivo.value)
   }
-  
+
   // Filtro por resultado
   if (filtroResultado.value) {
-    filtradas = filtradas.filter(log => log.resultadoEvento === filtroResultado.value)
+    filtradas = filtradas.filter((log) => log.resultadoEvento === filtroResultado.value)
   }
-  
+
   return filtradas
 })
 
 // 📊 FUNCIONES PARA ESTILOS Y FORMATEO
 function getColorResultado(resultado) {
   const colores = {
-    'ERROR': 'negative',
-    'FALLIDO': 'red-8',
-    'TIMEOUT': 'orange-8',
-    'EXCEPCION': 'deep-orange-8',
-    'CANCELADO': 'amber-8'
+    ERROR: 'negative',
+    FALLIDO: 'red-8',
+    TIMEOUT: 'orange-8',
+    EXCEPCION: 'deep-orange-8',
+    CANCELADO: 'amber-8',
   }
   return colores[resultado?.toUpperCase()] || 'grey-6'
 }
@@ -376,9 +470,13 @@ function getIconoDispositivo(dispositivo) {
 }
 
 function getSelectedString() {
-  return filasSeleccionadas.value.length === 0 
+  return filasSeleccionadas.value.length === 0
     ? ''
-    : `${filasSeleccionadas.value.length} registro${filasSeleccionadas.value.length > 1 ? 's' : ''} seleccionado${filasSeleccionadas.value.length > 1 ? 's' : ''} de ${filasFiltradas.value.length}`
+    : `${filasSeleccionadas.value.length} registro${
+        filasSeleccionadas.value.length > 1 ? 's' : ''
+      } seleccionado${filasSeleccionadas.value.length > 1 ? 's' : ''} de ${
+        filasFiltradas.value.length
+      }`
 }
 
 // 📊 FUNCIONES DE INTERACCIÓN
@@ -387,15 +485,22 @@ function verDetalle(evento) {
   dialogDetalle.value = true
 }
 
-function reportarBug(evento) {
-  $q.notify({
-    type: 'info',
-    message: `Bug reportado para evento de ${evento.usuario}`,
-    caption: 'El reporte ha sido enviado al equipo de desarrollo',
-    icon: 'bug_report',
-    position: 'top'
-  })
-}
+// 📊 CAMPOS PARA EL MODAL MEJORADO
+const camposGenerales = [
+  { key: 'resultadoEvento', label: 'Estado del Evento' },
+  { key: 'usuario', label: 'Usuario' },
+  { key: 'fecha', label: 'Fecha' },
+  { key: 'tipoEvento', label: 'Tipo de Evento' },
+  { key: 'descripcion', label: 'Descripción' },
+]
+
+const camposTecnicos = [
+  { key: 'dispositivo', label: 'Dispositivo' },
+  { key: 'ip', label: 'Dirección IP' },
+  { key: 'codigoError', label: 'Código de Error' },
+  { key: 'version', label: 'Versión del Sistema' },
+  { key: 'navegador', label: 'Navegador' },
+]
 
 function eliminarSeleccionadas() {
   $q.dialog({
@@ -403,13 +508,13 @@ function eliminarSeleccionadas() {
     message: `¿Está seguro de que desea eliminar ${filasSeleccionadas.value.length} registro(s)?`,
     cancel: true,
     persistent: true,
-    color: 'negative'
+    color: 'negative',
   }).onOk(() => {
     filasSeleccionadas.value = []
     $q.notify({
       type: 'positive',
       message: 'Registros eliminados correctamente',
-      icon: 'check_circle'
+      icon: 'check_circle',
     })
   })
 }
@@ -421,7 +526,7 @@ function actualizarDatos() {
     $q.notify({
       type: 'positive',
       message: 'Datos actualizados',
-      icon: 'refresh'
+      icon: 'refresh',
     })
   }, 1000)
 }
@@ -430,124 +535,146 @@ function alternarColumnas() {
   $q.notify({
     type: 'info',
     message: 'Configuración de columnas próximamente',
-    icon: 'visibility'
+    icon: 'visibility',
   })
 }
 
 function exportarDatos() {
   const contenido = [
     // Encabezados
-    columnas.filter(col => col.name !== 'acciones').map(col => col.label).join(','),
+    columnas
+      .filter((col) => col.name !== 'acciones')
+      .map((col) => col.label)
+      .join(','),
     // Datos
-    ...filasFiltradas.value.map(fila => 
+    ...filasFiltradas.value.map((fila) =>
       columnas
-        .filter(col => col.name !== 'acciones')
-        .map(col => `"${fila[col.field] || ''}"`)
+        .filter((col) => col.name !== 'acciones')
+        .map((col) => `"${fila[col.field] || ''}"`)
         .join(',')
-    )
+    ),
   ].join('\n')
 
   const status = exportFile('eventos-fallidos.csv', contenido, 'text/csv')
-  
+
   if (status !== true) {
     $q.notify({
       message: 'El navegador denegó la descarga del archivo',
       color: 'negative',
-      icon: 'warning'
+      icon: 'warning',
     })
   } else {
     $q.notify({
       message: 'Archivo exportado correctamente',
       color: 'positive',
-      icon: 'file_download'
+      icon: 'file_download',
     })
   }
 }
 
 function onRequest(props) {
   cargando.value = true
-  
+
   setTimeout(() => {
     paginacion.value = props.pagination
     cargando.value = false
   }, 300)
 }
 
-function formatearClave(clave) {
-  return clave
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, str => str.toUpperCase())
-    .trim()
-}
-
 // Watchers
-watch(() => props.logs, () => {
-  paginacion.value.rowsNumber = filasFiltradas.value.length
-}, { immediate: true })
+watch(
+  () => props.logs,
+  () => {
+    paginacion.value.rowsNumber = filasFiltradas.value.length
+  },
+  { immediate: true }
+)
 </script>
 <style scoped>
 .table-container {
   width: 100%;
 }
 
-/* 🎨 ESTILOS PROFESIONALES PARA LA TABLA */
+/* 🎨 ESTILOS PROFESIONALES MEJORADOS PARA LA TABLA */
 .tabla-eventos-fallidos {
-  background-color: #1e1e2f;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 8px 32px rgba(75, 85, 99, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tabla-eventos-fallidos .q-table__top {
-  background-color: #263238;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
   color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .tabla-eventos-fallidos .q-table thead {
-  background-color: #37474f;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
 }
 
 .tabla-eventos-fallidos .q-table thead th {
   color: white;
-  font-weight: 600;
-  border-bottom: 2px solid #546e7a;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  padding: 16px 12px;
+  text-transform: uppercase;
 }
 
 .tabla-eventos-fallidos .q-table tbody tr {
-  background-color: #1e1e2f;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  transition: all 0.3s ease;
+}
+
+.tabla-eventos-fallidos .q-table tbody tr:nth-child(even) {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
 }
 
 .tabla-eventos-fallidos .q-table tbody tr:hover {
-  background-color: #2d3748;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .tabla-eventos-fallidos .q-table tbody td {
-  color: #e0e0e0;
-  border-bottom: 1px solid #3a3a52;
+  color: #f9fafb;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 14px 12px;
+  font-weight: 500;
 }
 
-/* Controles de tabla */
+/* Controles de tabla con diseño profesional */
 .table-controls {
-  background-color: #2d3748;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  border-radius: 12px;
   padding: 16px;
+  box-shadow: 0 4px 16px rgba(75, 85, 99, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .search-input .q-field__control {
-  background-color: #3a3a52 !important;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
   border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .search-input .q-field__native {
   color: white !important;
+  font-weight: 500;
 }
 
-/* Estadísticas de tabla */
+/* Estadísticas de tabla con diseño mejorado */
 .table-stats {
-  background-color: #2d3748;
-  border-radius: 8px;
-  padding: 12px;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   align-items: center;
+  box-shadow: 0 4px 16px rgba(75, 85, 99, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Efectos hover para botones */
@@ -561,15 +688,15 @@ watch(() => props.logs, () => {
   .table-controls .row {
     flex-direction: column;
   }
-  
+
   .table-controls .col-12 {
     margin-bottom: 8px;
   }
-  
+
   .tabla-eventos-fallidos {
     font-size: 0.85rem;
   }
-  
+
   .tabla-eventos-fallidos .q-table thead th,
   .tabla-eventos-fallidos .q-table tbody td {
     padding: 8px 4px;
@@ -612,5 +739,131 @@ watch(() => props.logs, () => {
 
 .table-container::-webkit-scrollbar-thumb:hover {
   background: #718096;
+}
+
+/* 🎨 ESTILOS PARA EL BOTÓN DE DETALLE MEJORADO */
+.detalle-btn {
+  transition: all 0.3s ease !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.detalle-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(75, 85, 99, 0.4) !important;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+}
+
+.detalle-btn:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  /* background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); */
+  transition: left 0.5s;
+}
+
+.detalle-btn:hover:before {
+  left: 100%;
+}
+
+/* 🎨 ESTILOS PARA EL MODAL MEJORADO */
+.modal-content {
+  animation: slideInUp 0.4s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-section {
+  transition: all 0.3s ease;
+}
+
+.info-section:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.hover-close-btn {
+  transition: all 0.3s ease;
+}
+
+.hover-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  transform: rotate(90deg);
+}
+
+/* 🎨 ESTILOS PARA EL BOTÓN DE DETALLE MEJORADO */
+.detalle-btn {
+  transition: all 0.3s ease !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.detalle-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(75, 85, 99, 0.4) !important;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+}
+
+.detalle-btn:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.detalle-btn:hover:before {
+  left: 100%;
+}
+
+/* 🎨 ESTILOS PARA EL MODAL MEJORADO */
+.modal-content {
+  animation: slideInUp 0.4s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-section {
+  transition: all 0.3s ease;
+}
+
+.info-section:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.hover-close-btn {
+  transition: all 0.3s ease;
+}
+
+.hover-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  transform: rotate(90deg);
 }
 </style>

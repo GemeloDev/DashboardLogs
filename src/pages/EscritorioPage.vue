@@ -8,10 +8,9 @@
             <div class="text-h3 escritorio-title q-pt-lg">
               <span class="escritorio-title-text">🖥️ Dashboard de Escritorio</span>
             </div>
-            <div class="text-h6 text-blue-3 escritorio-subtitle q-mb-md">
-              <span class="escritorio-subtitle-text"
-                >📊 Panel de Control Avanzado</span
-              >
+            <div class="text-h6 text-blue-3 ">
+                📊 Panel de Control Avanzado
+
             </div>
           </div>
         </div>
