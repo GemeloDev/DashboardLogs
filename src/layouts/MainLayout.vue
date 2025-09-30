@@ -21,7 +21,6 @@
             @click="toggleFiltros"
             class="q-mr-sm"
           >
-            <q-tooltip>Filtros Avanzados</q-tooltip>
           </q-btn>
 
           <!-- Botón de consola -->
@@ -87,13 +86,13 @@
             class="q-pa-md"
             style="background: rgba(30, 30, 47, 0.95); border-top: 1px solid #333"
           >
-            <div class="row items-center justify-between q-mb-sm">
+            <!-- <div class="row items-center justify-between q-mb-sm">
               <div class="text-subtitle1 text-white">
                 <q-icon name="filter_list" class="q-mr-sm" color="orange" />
                 Filtros Avanzados
               </div>
               <q-btn flat dense round icon="close" color="white" @click="showFilters = false" />
-            </div>
+            </div> -->
             <EscritorioFiltros @filtrar="onFiltrar" />
           </div>
         </div>
