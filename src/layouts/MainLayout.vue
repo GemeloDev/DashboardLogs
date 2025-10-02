@@ -168,7 +168,7 @@
       show-if-above
       bordered
       :width="220"
-      :breakpoint="500"
+      :breakpoint="1440"
       class="app-drawer mobile-drawer"
       style="
         background: linear-gradient(135deg, #1e1e2f 0%, #43cea2 100%);

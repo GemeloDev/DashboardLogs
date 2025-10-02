@@ -30,14 +30,14 @@
               color="primary"
               size="30px"
             />
-            <q-card-section style="height: 500px">
+            <q-card-section>
               <canvas ref="eventosPorMesChart" />
             </q-card-section>
           </q-card>
         </div>
         <!--Fin eventos por MES-->
         <!-- Eventos por SEMANA -->
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 flex justify-center items-center">
           <q-card
             flat
             bordered
@@ -52,7 +52,7 @@
               color="primary"
               size="30px"
             />
-            <q-card-section style="height: 500px">
+            <q-card-section>
               <canvas ref="chartSemana" />
             </q-card-section>
           </q-card>
@@ -68,7 +68,6 @@
             class="col-12 col-md-6 q-mx-sm text-white"
             style="background-color: #1e1e2f"
           >
-            <q-card-section class="text-subtitle1 text-center">Eventos por Día</q-card-section>
             <q-inner-loading
               :showing="loadingCharts && modoSeleccionado === 'mobile'"
               label="Cargando..."
@@ -76,7 +75,7 @@
               color="primary"
               size="30px"
             />
-            <q-card-section style="height: 500px">
+            <q-card-section>
               <canvas ref="chartDia" />
             </q-card-section>
           </q-card>
@@ -90,7 +89,6 @@
             class="col-12 col-md-6 q-mx-sm text-white"
             style="background-color: #1e1e2f"
           >
-            <q-card-section class="text-subtitle1 text-center">Eventos por Tipo</q-card-section>
             <q-inner-loading
               :showing="loadingCharts && modoSeleccionado === 'mobile'"
               label="Cargando..."
@@ -98,7 +96,7 @@
               color="primary"
               size="30px"
             />
-            <q-card-section style="height: 500px">
+            <q-card-section>
               <canvas ref="chartPorTipo" />
             </q-card-section>
           </q-card>

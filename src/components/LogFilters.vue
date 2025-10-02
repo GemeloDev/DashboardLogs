@@ -7,17 +7,17 @@
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     "
   >
-    <div class="column text-white colum-responsive">
+    <div class="column text-white">
       <!-- Header con icono y título -->
-      <div class="col row content-center q-mt-lg">
-        <div class="col-8 content-center q-ml-lg">
+      <div class="col row justify-between content-center pt-responsive">
+        <div class="col-sm-10 col-md-8 content-center q-ml-lg">
           <p class="text-h6 text-white">
-            <q-icon name="date_range" size="28px" color="blue-4" class="q-mr-sm" />
+            <q-icon name="date_range" size="20px" color="blue-4" class="q-mr-sm" />
             Filtrar por Período
           </p>
         </div>
         <!-- Botón para resetear al mes actual -->
-        <div class="col-sm-1 col-md q-ml-md text-right">
+        <div class="col-sm-1 col-md-1 q-ml-md text-right">
           <q-btn flat round icon="refresh" color="blue-4" size="sm" @click="resetearAMesActual">
             <q-tooltip class="bg-blue-9">Mes actual</q-tooltip>
           </q-btn>
@@ -66,78 +66,80 @@
       </div>
 
       <!-- Indicador del período seleccionado -->
-      <div class="col row q-gutter-md footer-logs">
-        <div class="col-sm-12 col-md-2">
-          <div class="text-blue-4 text-caption text-weight-medium">
-            Período: {{ formatearPeriodo() }}
+      <div class="col">
+        <div class="row q-gutter-md footer-logs justify-between">
+          <div class="col-sm-12 col-md-auto">
+            <div class="text-blue-4 text-caption text-weight-medium">
+              Período: {{ formatearPeriodo() }}
+            </div>
+            <div class="text-grey-5 text-caption">
+              {{ calcularDiasSeleccionados() }} días seleccionados
+            </div>
           </div>
-          <div class="text-grey-5 text-caption">
-            {{ calcularDiasSeleccionados() }} días seleccionados
+          <!-- Botón aplicar filtros -->
+          <div class="col-sm-12 col-md-auto text-right">
+            <q-btn
+              label="Aplicar"
+              icon="filter_list"
+              color="blue-6"
+              unelevated
+              rounded
+              :loading="cargando"
+              :disable="!fechasValidas"
+              @click="aplicarFiltros"
+            />
+            <!-- Botón de filtros rápidos -->
+            <q-btn-dropdown flat rounded icon="schedule" color="blue-4" dropdown-icon="expand_more">
+              <q-list dense class="q-pa-none">
+                <q-item clickable v-close-popup @click="seleccionarPeriodo('hoy')">
+                  <q-item-section avatar>
+                    <q-icon name="today" color="blue-4" size="sm" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white text-caption">Hoy</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="seleccionarPeriodo('ayer')">
+                  <q-item-section avatar>
+                    <q-icon name="yesterday" color="blue-4" size="sm" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white text-caption">Ayer</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos7')">
+                  <q-item-section avatar>
+                    <q-icon name="date_range" color="blue-4" size="sm" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white text-caption">Últimos 7 días</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos30')">
+                  <q-item-section avatar>
+                    <q-icon name="calendar_month" color="blue-4" size="sm" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white text-caption">Últimos 30 días</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-separator class="bg-grey-7" />
+
+                <q-item clickable v-close-popup @click="seleccionarPeriodo('mesActual')">
+                  <q-item-section avatar>
+                    <q-icon name="calendar_today" color="green-4" size="sm" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white text-caption">Mes actual</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
           </div>
-        </div>
-        <!-- Botón aplicar filtros -->
-        <div class="col-sm-12 col-md offset-md-7 text-right">
-          <q-btn
-            label="Aplicar"
-            icon="filter_list"
-            color="blue-6"
-            unelevated
-            rounded
-            :loading="cargando"
-            :disable="!fechasValidas"
-            @click="aplicarFiltros"
-          />
-          <!-- Botón de filtros rápidos -->
-          <q-btn-dropdown flat rounded icon="schedule" color="blue-4" dropdown-icon="expand_more">
-            <q-list dense class="q-pa-none">
-              <q-item clickable v-close-popup @click="seleccionarPeriodo('hoy')">
-                <q-item-section avatar>
-                  <q-icon name="today" color="blue-4" size="sm" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-white text-caption">Hoy</q-item-label>
-                </q-item-section>
-              </q-item>
-
-              <q-item clickable v-close-popup @click="seleccionarPeriodo('ayer')">
-                <q-item-section avatar>
-                  <q-icon name="yesterday" color="blue-4" size="sm" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-white text-caption">Ayer</q-item-label>
-                </q-item-section>
-              </q-item>
-
-              <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos7')">
-                <q-item-section avatar>
-                  <q-icon name="date_range" color="blue-4" size="sm" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-white text-caption">Últimos 7 días</q-item-label>
-                </q-item-section>
-              </q-item>
-
-              <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos30')">
-                <q-item-section avatar>
-                  <q-icon name="calendar_month" color="blue-4" size="sm" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-white text-caption">Últimos 30 días</q-item-label>
-                </q-item-section>
-              </q-item>
-
-              <q-separator class="bg-grey-7" />
-
-              <q-item clickable v-close-popup @click="seleccionarPeriodo('mesActual')">
-                <q-item-section avatar>
-                  <q-icon name="calendar_today" color="green-4" size="sm" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-white text-caption">Mes actual</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
         </div>
       </div>
     </div>
@@ -516,11 +518,12 @@ onMounted(() => {
   }
 }
 
-.colum-responsive {
-  height: 200px;
+.pt-responsive {
+  margin-top: 15px;
 
   @media (max-width: 479px) {
-    height: auto;
+    margin-top: 50px;
+    margin-bottom: 10px;
   }
 }
 

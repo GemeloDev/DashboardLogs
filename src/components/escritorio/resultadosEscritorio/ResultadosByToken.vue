@@ -1,17 +1,17 @@
 <template>
   <q-card class="modern-card text-white session-card">
-    <q-card-section class="q-pa-xl row">
+    <q-card-section class="q-pa-xl row card-body">
       <div class="col-sm-12 col-md-12 col-lg-12">
         <p class="text-h5 text-bold text-white">Listado de Datos</p>
       </div>
 
-      <div class="col-sm-6 col-md-6 col-lg-6 grid column">
+      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 grid column">
         <p class="text-h6 text-white no-margin q-pt-sm">👤 Usuarios encontrados: {{ duplicateCurps.length }}</p>
         <q-chip color="green" class="text-white shadow-8" v-for="person in duplicateCurps" :key="person">
           {{ person }}
         </q-chip>
       </div>
-      <div class="col-sm-6 col-md-6 col-lg-6 grid column">
+      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 grid column">
         <p class="text-h6 text-white no-margin q-pt-sm">🏢 Oficinas encontradas: {{ duplicateOffice.length }}</p>
         <q-chip color="blue" class="text-white shadow-8" v-for="office in duplicateOffice" :key="office">
           {{ office }}
@@ -21,7 +21,7 @@
   </q-card>
 
   <q-card class="modern-card text-white session-card q-mt-lg">
-    <q-card-section class="col">
+    <q-card-section class="col card-body">
       <div class="q-px-lg q-py-md">
         <q-timeline color="secondary" class="session-timeline q-px-xl">
           <q-timeline-entry heading>

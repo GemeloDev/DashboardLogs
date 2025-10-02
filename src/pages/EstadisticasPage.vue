@@ -673,8 +673,7 @@
                     Estados de Eventos
                   </div>
 
-                  <!-- Contenedor del grficUsuario:
-o con mejor control -->
+                  <!-- Contenedor del grficUsuario: o con mejor control -->
                   <div
                     class="chart-container flex-grow-1"
                     style="
@@ -976,7 +975,7 @@ o con mejor control -->
 
                     <!-- Layout responsivo para estadsticas -->
                     <div class="column q-gutter-md" v-if="resumenArea.totalEventos > 0">
-                      <!-- Usuarios nicos -->
+                      <!-- Usuarios únicos -->
                       <div class="activity-stat-item">
                         <div class="row items-center justify-between">
                           <div class="row items-center">
@@ -988,8 +987,8 @@ o con mejor control -->
                               class="q-mr-sm"
                             />
                             <div>
-                              <div class="text-body2 text-weight-medium">Usuarios nicos</div>
-                              <div class="text-caption text-grey-3">En el rea seleccionada</div>
+                              <div class="text-body2 text-weight-medium">Usuarios únicos</div>
+                              <div class="text-caption text-grey-3">En el área seleccionada</div>
                             </div>
                           </div>
                           <div class="text-h5 text-weight-bold text-orange-3">
@@ -1011,7 +1010,7 @@ o con mejor control -->
                             />
                             <div>
                               <div class="text-body2 text-weight-medium">Total de Eventos</div>
-                              <div class="text-caption text-grey-3">Registrados en el perodo</div>
+                              <div class="text-caption text-grey-3">Registrados en el período</div>
                             </div>
                           </div>
                           <div class="text-h5 text-weight-bold text-blue-3">
@@ -1046,7 +1045,7 @@ o con mejor control -->
                     <!-- Estado cuando no hay actividad -->
                     <div v-else-if="resumenArea.mensaje" class="text-center q-py-md">
                       <q-icon name="inbox" size="48px" color="grey-5" class="q-mb-sm" />
-                      <div class="text-body2 text-grey-4 q-mb-xs">Sin actividad en esta rea</div>
+                      <div class="text-body2 text-grey-4 q-mb-xs">Sin actividad en esta área</div>
                       <div class="text-caption text-grey-5">
                         {{ resumenArea.mensaje }}
                       </div>
@@ -1056,7 +1055,7 @@ o con mejor control -->
                     <div v-else class="text-center q-py-md">
                       <q-icon name="analytics" size="48px" color="grey-5" class="q-mb-sm" />
                       <div class="text-body2 text-grey-4">
-                        Selecciona un rea en el mapa para ver estadsticas de actividad
+                        Selecciona un área en el mapa para ver estadsticas de actividad
                       </div>
                     </div>
                   </q-card-section>
@@ -1971,30 +1970,38 @@ function crearGraficoTimelineInterno(ctx) {
   const eventosPorDia = {}
   const diasCompletos = []
 
-  // Generar los ltimos 30 das
-  for (let i = 29; i >= 0; i--) {
-    const dia = new Date()
-    dia.setDate(dia.getDate() - i)
-    dia.setHours(0, 0, 0, 0)
-    const diaKey = dia.toISOString().slice(0, 10) // Solo la fecha YYYY-MM-DD
+  // Generar las fechas de acuerdo a lo seleccionado en el calendario
+  let actual = new Date(filtroFechasStore.fechaInicio)
+  const fin = new Date(filtroFechasStore.fechaFin)
+
+  // Normalizamos ambas fechas al inicio del día
+  actual.setHours(0, 0, 0, 0)
+  fin.setHours(0, 0, 0, 0)
+
+  while (actual <= fin) {
+    const diaKey = actual.toISOString().slice(0, 10) // YYYY-MM-DD
     eventosPorDia[diaKey] = 0
     diasCompletos.push(diaKey)
+
+    // Avanzamos un día
+    actual.setDate(actual.getDate() + 1)
   }
 
-  // Contar eventos por da 
+  // Contar eventos por día
   if (eventos.value && eventos.value.length > 0) {
     eventos.value.forEach((evento) => {
       if (evento.fecha || evento.fechaHoraDia) {
         const fechaEvento = evento.fechaHoraDia || evento.fecha
         const diaEvento = new Date(fechaEvento).toISOString().slice(0, 10)
         if (Object.prototype.hasOwnProperty.call(eventosPorDia, diaEvento)) {
+          console.log('Evento Por Día: ', eventosPorDia[diaEvento])
           eventosPorDia[diaEvento]++
         }
       }
     })
   }
 
-  console.log(' Eventos por da calculados:', eventosPorDia)
+  console.log(' Eventos por día calculados:', eventosPorDia)
 
   // Destruir grfico anterior usando la nueva variable de instancia
   if (timelineChartInstance && typeof timelineChartInstance.destroy === 'function') {
