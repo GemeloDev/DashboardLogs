@@ -1096,7 +1096,7 @@ const realizarBusquedaRapida = async () => {
     } else if(busquedaRapida.value.startsWith('USR')) {
       // Es baseCode para sesión
       formulario.value.sessionToken = busquedaRapida.value
-      tabActiva.value = 'session'
+      tabActiva.value = 'baseCode'
       await consultarSesion()
     } else {
       // Es token de sesión

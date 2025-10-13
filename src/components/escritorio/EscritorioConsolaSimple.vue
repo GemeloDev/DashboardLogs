@@ -466,7 +466,7 @@
               <q-card
                 :class="[
                   'log-card',
-                  `log-card-${(log.type || log.Tipo || 'info').toLowerCase()}`,
+                  `log-card-log`,
                   'fit',
                   'cursor-pointer',
                 ]"

@@ -2543,6 +2543,7 @@ function renderCharts() {
             label: 'Segundos Totales',
             data: data,
             backgroundColor: '#26A69A',
+            borderRadius: 5,
           },
         ],
       },

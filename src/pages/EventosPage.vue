@@ -37,7 +37,7 @@
         </div>
         <!--Fin eventos por MES-->
         <!-- Eventos por SEMANA -->
-        <div class="col-12 col-md-6 flex justify-center items-center">
+        <div class="col-12 col-md-6">
           <q-card
             flat
             bordered
@@ -324,7 +324,7 @@ function convertirDuracionASegundos(duracionStr) {
 
 // Funcion para formatear el mes
 function formatearMes(mesISO) {
-  const fecha = new Date(mesISO + '-01')
+  const fecha = new Date(String(mesISO).slice(0, 4) + '-' + String(mesISO).slice(4, 2))
   return fecha.toLocaleString('es-MX', { month: 'short', year: 'numeric' }).replace('.', '')
 }
 
@@ -351,9 +351,10 @@ async function renderEventosPorMesChart() {
     }
 
     const payload = {
-      fechaInicio: filtroFechasStore.fechaInicio || '2025-01-01',
-      fechaFin: filtroFechasStore.fechaFin || '2025-12-31',
+      fechaInicio: filtroFechasStore.fechaInicio,
+      fechaFin: filtroFechasStore.fechaFin,
     }
+
     console.log('📅 Payload para eventos por mes:', payload)
     const data = await getEventosPorMes(payload)
     const labels = data.map((item) => formatearMes(item.mes))
@@ -446,8 +447,8 @@ async function renderEventosDia() {
     }
 
     const payload = {
-      fechaInicio: '2025-01-01',
-      fechaFin: '2025-06-30',
+      fechaInicio: filtroFechasStore.fechaInicio,
+      fechaFin: filtroFechasStore.fechaFin,
     }
     const datos = await getEventosPorDia(payload)
     const labels = datos.map((d) => d.fecha)
@@ -533,11 +534,11 @@ async function renderEventosSemana() {
     }
 
     const payload = {
-      fechaInicio: '2025-01-01',
-      fechaFin: '2025-06-30',
+      fechaInicio: filtroFechasStore.fechaInicio,
+      fechaFin: filtroFechasStore.fechaFin,
     }
     const datos = await getEventosPorSemana(payload)
-    const labels = datos.map((d) => d.semana_iso) // ajusta según tu JSON
+    const labels = datos.map((d) => formatearMes(d.semana_iso)) // ajusta según tu JSON
     const valores = datos.map((d) => d.total)
     console.log('Datos por semana:', datos)
     // ✅ CREAR NUEVA INSTANCIA Y ASIGNARLA
@@ -553,7 +554,7 @@ async function renderEventosSemana() {
             borderColor: 'rgba(231, 76, 60)', // rosa semitransparente
             backgroundColor: 'rgba(255, 99, 132, 1)',
             tension: 0.4, // línea más curva
-            borderWidth: 3,
+            borderWidth: 2,
             pointRadius: 5,
             pointHoverRadius: 6,
           },
@@ -561,11 +562,15 @@ async function renderEventosSemana() {
       },
       options: {
         responsive: true,
+        spanGaps: 1000 * 60 * 60 * 24 * 7,
         plugins: {
           tooltip: { enabled: true },
           legend: {
             labels: { color: '#ccc' },
           },
+        },
+        layout: {
+          padding: 5
         },
         scales: {
           x: {
@@ -608,9 +613,10 @@ async function renderEventosPorTipoChart() {
     }
 
     const payload = {
-      fechaInicio: '2025-01-01',
-      fechaFin: '2025-06-30',
+      fechaInicio: filtroFechasStore.fechaInicio,
+      fechaFin: filtroFechasStore.fechaFin,
     }
+
     const data = await getEventosPorTipo(payload)
     const labels = data.map((d) => d.tipoEvento)
     const valores = data.map((d) => d.total_eventos)
@@ -624,7 +630,7 @@ async function renderEventosPorTipoChart() {
             label: 'Eventos por tipo',
             data: valores,
             borderColor: '#FFA726',
-            backgroundColor: 'rgba(255, 167, 38, 0.2)',
+            backgroundColor: 'rgba(59, 130, 246, 0.4)',
             tension: 0.3,
             pointBackgroundColor: '#FFA726',
             fill: true,
@@ -634,16 +640,24 @@ async function renderEventosPorTipoChart() {
       options: {
         responsive: true,
         plugins: {
-          legend: { labels: { color: '#fff' } },
           tooltip: { enabled: true },
+          legend: {
+            labels: { color: '#ccc' },
+          },
           title: {
             display: true,
             text: 'Eventos por Tipo',
-            font: { size: 16 },
+            color: '#ccc',
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#ccc' },
+            grid: { color: '#444' },
           },
-          scales: {
-            x: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
-            y: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
+          y: {
+            ticks: { color: '#ccc' },
+            grid: { color: '#444' },
           },
         },
       },
@@ -713,8 +727,8 @@ async function cargarTiempoUsoPorDia(funcionalidad) {
   try {
     const payload = {
       funcionalidad,
-      fechaInicio: filtroFechasStore.fechaInicio || '2025-01-01',
-      fechaFin: filtroFechasStore.fechaFin || '2025-12-31',
+      fechaInicio: filtroFechasStore.fechaInicio,
+      fechaFin: filtroFechasStore.fechaFin,
     }
     console.log('📅 Payload para tiempo uso por día:', payload)
     const data = await getMayorTiempoUsoFuncionalidad(payload)
@@ -892,10 +906,6 @@ onBeforeUnmount(() => {
   /* Ajustes adicionales para móviles pequeños */
   .q-card-section {
     padding: 8px !important;
-  }
-
-  canvas {
-    height: 300px !important;
   }
 }
 </style>

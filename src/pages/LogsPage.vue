@@ -122,15 +122,16 @@
 
                 <div class="row justify-center q-gutter-sm q-mt-lg">
                   <q-card
-                    class="col-12 row justify-center text-white q-pa-md q-gutter-y-sm"
-                    style="background-color: #1e1e2f; border-radius: 1rem"
+                    class="col-12 row justify-center text-white q-pa-md q-gutter-y-sm cardMobile"
                   >
                     <div class="col-sm-12 col-md-3 col-lg-6 text-white">
                       <!-- Funcionalidades más usadas -->
                       <q-card class="no-shadow" style="background-color: #1e1e2f">
                         <q-card-section>
                           <div class="text-h6 text-center">Funcionalidades más usadas</div>
-                          <canvas ref="funcionalidadesChartRef"></canvas>
+                          <div class="canvaResponsive">
+                            <canvas ref="funcionalidadesChartRef"></canvas>
+                          </div>
                           <div
                             v-if="!funcionalidadesData || funcionalidadesData.length === 0"
                             class="no-data-overlay"
@@ -152,7 +153,9 @@
                       <q-card class="no-shadow" style="background-color: #1e1e2f">
                         <q-card-section>
                           <div class="text-h6 text-center">Tiempo de Respuesta Promedio</div>
-                          <canvas ref="chartTiempoRef"></canvas>
+                          <div class="canvaResponsive">
+                            <canvas ref="chartTiempoRef"></canvas>
+                          </div>
                           <div
                             v-if="!tiempoPromedioData || tiempoPromedioData.length === 0"
                             class="no-data-overlay"
@@ -174,7 +177,9 @@
                       <q-card class="no-shadow" style="background-color: #1e1e2f">
                         <q-card-section>
                           <div class="text-h6 text-center">Resultado del Evento</div>
-                          <canvas ref="ovalChartRef"></canvas>
+                          <div class="canvaResponsive">
+                            <canvas ref="ovalChartRef"></canvas>
+                          </div>
                           <div
                             v-if="!ovalAlineadoData || ovalAlineadoData.length === 0"
                             class="no-data-overlay"
@@ -595,7 +600,7 @@ async function renderChartTiempo() {
             color: '#ccc',
             maxRotation: 25,
             minRotation: 0,
-            font: { size: 12 },
+            font: { weight: 'bold' },
           },
           grid: { color: '#444' },
         },
@@ -607,7 +612,7 @@ async function renderChartTiempo() {
             display: true,
             text: 'Milisegundos',
             color: '#ccc',
-            font: { size: 12 },
+            font: { weight: 'bold' },
           },
         },
       },
@@ -674,6 +679,7 @@ function renderChartOval() {
           label: 'Oval Alineado',
           data: values,
           backgroundColor: values[0] === 0 ? ['#666'] : ['#4CAF50', '#FFC107', '#F44336'],
+          borderRadius: 5,
         },
       ],
     },
@@ -695,8 +701,8 @@ function renderChartOval() {
         },
       },
       scales: {
-        x: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
-        y: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
+        x: { ticks: { color: '#ccc', font: { weight: 'bold' } }, grid: { color: '#444' } },
+        y: { ticks: { color: '#ccc', font: { weight: 'bold' } }, grid: { color: '#444' } },
       },
     },
   })
@@ -762,6 +768,7 @@ function renderChartFuncionalidades(labels, data) {
           label: 'Duración (segundos)',
           data: finalData,
           backgroundColor: finalData[0] === 0 ? '#666' : '#42A5F5',
+          borderRadius: 5,
         },
       ],
     },
@@ -784,8 +791,8 @@ function renderChartFuncionalidades(labels, data) {
         },
       },
       scales: {
-        x: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
-        y: { ticks: { color: '#ccc' }, grid: { color: '#444' } },
+        x: { ticks: { color: '#ccc', font: { weight: 'bold' } }, grid: { color: '#444' } },
+        y: { ticks: { color: '#ccc', font: { weight: 'bold' } }, grid: { color: '#444' } },
       },
     },
   })
@@ -864,5 +871,20 @@ function renderChartFuncionalidades(labels, data) {
 .kpi-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.cardMobile {
+  background-color: #1e1e2f; border-radius: 1rem
+}
+
+@media (max-width: 768px) {
+  .canvaResponsive{
+    height: 200px !important;
+    width: max-content !important;
+  }
+
+  .cardMobile{
+    background-color: transparent !important;
+  }
 }
 </style>
