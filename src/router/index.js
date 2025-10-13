@@ -1,24 +1,11 @@
 import { defineRouter } from '#q-app/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
-
+import { getAuthService } from '../services/authService.js'
 
 function isAuthenticated() {
-  try {
-    const sessionData = localStorage.getItem('dashboardLogsSession') ||
-      sessionStorage.getItem('dashboardLogsSession')
-
-    if (!sessionData) return false
-
-    const session = JSON.parse(sessionData)
-    return session && session.isAuthenticated === true
-  } catch (error) {
-    console.error('Error verificando autenticación:', error)
-    // Limpiar sesión corrupta
-    localStorage.removeItem('dashboardLogsSession')
-    sessionStorage.removeItem('dashboardLogsSession')
-    return false
-  }
+  const authService = getAuthService()
+  return authService.checkSession()
 }
 
 export default defineRouter(function (/* { store, ssrContext } */) {

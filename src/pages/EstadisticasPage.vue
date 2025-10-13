@@ -611,6 +611,7 @@
                   </div>
                   <div class="col-12 col-md-6">
                     <q-item dark class="info-item">
+
                       <q-item-section avatar>
                         <q-icon name="place" color="white" />
                       </q-item-section>
@@ -1987,7 +1988,6 @@ function crearGraficoTimelineInterno(ctx) {
     actual.setDate(actual.getDate() + 1)
   }
 
-  // Contar eventos por día
   if (eventos.value && eventos.value.length > 0) {
     eventos.value.forEach((evento) => {
       if (evento.fecha || evento.fechaHoraDia) {

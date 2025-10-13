@@ -22,12 +22,7 @@
         <div class="brand-header">
           <div class="brand-logo-container">
             <div class="brand-logo-bg"></div>
-            <q-icon
-              name="analytics"
-              size="3.5rem"
-              color="white"
-              class="brand-logo-icon"
-            />
+            <q-icon name="analytics" size="3.5rem" color="white" class="brand-logo-icon" />
           </div>
           <div class="brand-text">
             <h1 class="brand-title">Dashboard Logs</h1>
@@ -51,14 +46,17 @@
                 {{ modoRegistro ? 'Crear Cuenta Nueva' : 'Iniciar Sesión' }}
               </h2>
               <p class="card-subtitle">
-                {{ modoRegistro ? 'Únete a nuestro sistema de monitoreo' : 'Accede a tu panel de control' }}
+                {{
+                  modoRegistro
+                    ? 'Únete a nuestro sistema de monitoreo'
+                    : 'Accede a tu panel de control'
+                }}
               </p>
             </div>
 
             <!-- Form section -->
             <q-card-section class="form-section">
               <q-form @submit="onSubmit" class="login-form">
-
                 <!-- Name field (registro only) -->
                 <div v-if="modoRegistro" class="input-group">
                   <label class="input-label">Nombre completo</label>
@@ -140,19 +138,27 @@
                   <div class="strength-header">Seguridad de la contraseña:</div>
                   <div class="strength-indicators">
                     <div class="strength-item" :class="{ active: indicadores.longitud }">
-                      <q-icon :name="indicadores.longitud ? 'check_circle' : 'radio_button_unchecked'" />
+                      <q-icon
+                        :name="indicadores.longitud ? 'check_circle' : 'radio_button_unchecked'"
+                      />
                       <span>8+ caracteres</span>
                     </div>
                     <div class="strength-item" :class="{ active: indicadores.mayuscula }">
-                      <q-icon :name="indicadores.mayuscula ? 'check_circle' : 'radio_button_unchecked'" />
+                      <q-icon
+                        :name="indicadores.mayuscula ? 'check_circle' : 'radio_button_unchecked'"
+                      />
                       <span>Mayúscula</span>
                     </div>
                     <div class="strength-item" :class="{ active: indicadores.numero }">
-                      <q-icon :name="indicadores.numero ? 'check_circle' : 'radio_button_unchecked'" />
+                      <q-icon
+                        :name="indicadores.numero ? 'check_circle' : 'radio_button_unchecked'"
+                      />
                       <span>Número</span>
                     </div>
                     <div class="strength-item" :class="{ active: indicadores.simbolos }">
-                      <q-icon :name="indicadores.simbolos ? 'check_circle' : 'radio_button_unchecked'" />
+                      <q-icon
+                        :name="indicadores.simbolos ? 'check_circle' : 'radio_button_unchecked'"
+                      />
                       <span>Símbolo</span>
                     </div>
                   </div>
@@ -289,9 +295,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { getAuthService } from '../services/authService.js'
 
 const router = useRouter()
 const $q = useQuasar()
+
+// Servicio de autenticación
+const authService = getAuthService()
 
 // === REACTIVE STATE ===
 const modoRegistro = ref(false)
@@ -308,7 +318,7 @@ const formData = ref({
   confirmarPassword: '',
   nombre: '',
   mantenerSesion: true,
-  aceptarTerminos: false
+  aceptarTerminos: false,
 })
 
 // Password strength indicators
@@ -316,7 +326,7 @@ const indicadores = ref({
   longitud: false,
   simbolos: false,
   mayuscula: false,
-  numero: false
+  numero: false,
 })
 
 // === COMPUTED PROPERTIES ===
@@ -373,7 +383,7 @@ const evaluarPassword = () => {
     longitud: password.length >= 8,
     simbolos: /[!@#$%^&*(),.?":{}|<>]/.test(password),
     mayuscula: /[A-Z]/.test(password),
-    numero: /\d/.test(password)
+    numero: /\d/.test(password),
   }
 }
 
@@ -389,7 +399,7 @@ const limpiarFormulario = () => {
     confirmarPassword: '',
     nombre: '',
     mantenerSesion: true,
-    aceptarTerminos: false
+    aceptarTerminos: false,
   }
   mensajeError.value = ''
   mensajeExito.value = ''
@@ -397,7 +407,7 @@ const limpiarFormulario = () => {
     longitud: false,
     simbolos: false,
     mayuscula: false,
-    numero: false
+    numero: false,
   }
 }
 
@@ -411,20 +421,20 @@ const onSubmit = async () => {
 
   try {
     // Sanitizar todos los inputs de texto
-    Object.keys(formData.value).forEach(campo => {
+    Object.keys(formData.value).forEach((campo) => {
       if (typeof formData.value[campo] === 'string') {
         sanitizarInput(campo)
       }
     })
 
     // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
     if (modoRegistro.value) {
       // Lógica de registro
       console.log('📝 Registro de usuario:', {
         nombre: formData.value.nombre,
-        email: formData.value.email
+        email: formData.value.email,
       })
 
       mensajeExito.value = 'Cuenta creada exitosamente'
@@ -441,41 +451,34 @@ const onSubmit = async () => {
         $q.notify({
           type: 'positive',
           message: 'Cuenta creada. Ahora puedes iniciar sesión.',
-          position: 'top'
+          position: 'top',
         })
       }, 2000)
-
     } else {
-      // Lógica de login
+      // Lógica de login usando el servicio de autenticación
       console.log('🚀 Iniciando sesión:', {
-        email: formData.value.email
+        email: formData.value.email,
       })
 
-      // Guardar sesión en localStorage o sessionStorage
-      const sessionData = {
-        isAuthenticated: true,
-        user: {
-          email: formData.value.email,
-          nombre: formData.value.email.split('@')[0] || 'Usuario'
-        },
-        mantenerSesion: formData.value.mantenerSesion,
-        timestamp: new Date().toISOString()
+      // Usar el servicio de autenticación para hacer login
+      const credentials = {
+        email: formData.value.email,
+        nombre: formData.value.email.split('@')[0] || 'Usuario',
       }
 
-      if (formData.value.mantenerSesion) {
-        localStorage.setItem('dashboardLogsSession', JSON.stringify(sessionData))
+      const loginResult = authService.login(credentials, formData.value.mantenerSesion)
+
+      if (loginResult.success) {
+        mensajeExito.value = 'Acceso concedido. Redirigiendo...'
+
+        // Redireccionar al dashboard
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 1500)
       } else {
-        sessionStorage.setItem('dashboardLogsSession', JSON.stringify(sessionData))
+        throw new Error(loginResult.error || 'Error en el login')
       }
-
-      mensajeExito.value = 'Acceso concedido. Redirigiendo...'
-
-      // Redireccionar al dashboard
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 1500)
     }
-
   } catch (err) {
     console.error('❌ Error en autenticación:', err)
     mensajeError.value = modoRegistro.value
@@ -490,8 +493,7 @@ const onSubmit = async () => {
 onMounted(() => {
   // Verificar si ya hay una sesión activa
   const savedSession =
-    localStorage.getItem('dashboardLogsSession') ||
-    sessionStorage.getItem('dashboardLogsSession')
+    localStorage.getItem('dashboardLogsSession') || sessionStorage.getItem('dashboardLogsSession')
 
   if (savedSession) {
     try {
@@ -633,7 +635,8 @@ $border-focus: #cbd5e1;
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg) scale(1);
   }
   25% {
@@ -648,7 +651,8 @@ $border-focus: #cbd5e1;
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.6;
   }
@@ -734,9 +738,7 @@ $border-focus: #cbd5e1;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(30px);
   border-radius: 28px;
-  box-shadow:
-    0 32px 64px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);

@@ -268,6 +268,7 @@ import GeminiConfigModal from '../components/GeminiConfigModal.vue'
 import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
+import { getAuthService } from '../services/authService.js'
 import { santoroContextService } from '../services/santoroContextService.js'
 
 const $q = useQuasar()
@@ -312,11 +313,14 @@ watch(
 provide('selectedFlow', currentFlow)
 provide('filtrosGlobales', filtros)
 
-// Información del usuario
-const userInfo = ref({
-  nombre: 'Usuario',
-  email: 'usuario@ejemplo.com',
-})
+// Servicio de autenticación
+const authService = getAuthService()
+
+// Información del usuario reactiva desde el servicio de autenticación
+const userInfo = computed(() => ({
+  nombre: authService.userName.value,
+  email: authService.userEmail.value,
+}))
 
 // Función para cambiar de flujo mediante rutas
 const cambiarFlujo = (nuevoFlujo) => {
@@ -409,7 +413,27 @@ function openConsole() {
 }
 
 function logout() {
-  router.push('/login')
+  // Usar el servicio de autenticación para hacer logout
+  const result = authService.logout()
+
+  if (result.success) {
+    $q.notify({
+      message: '👋 Sesión cerrada correctamente',
+      color: 'positive',
+      icon: 'logout',
+      position: 'top',
+    })
+
+    // Redirigir al login
+    router.push('/login')
+  } else {
+    $q.notify({
+      message: '❌ Error al cerrar sesión',
+      color: 'negative',
+      icon: 'error',
+      position: 'top',
+    })
+  }
 }
 
 // Eventos del asistente Santoro
