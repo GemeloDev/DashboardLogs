@@ -13,14 +13,14 @@
     <LogFilters @filter="actualizarDatos" />
 
     <div class="q-pa-md">
-      <div class="row q-col-gutter-md q-mb-md">
+      <div class="row justify-center items-stretch q-col-gutter-md q-mb-md">
         <!-- Eventos por MES -->
         <div class="col-12 col-md-6">
           <q-card
             flat
             bordered
-            class="col-12 col-md-6 q-mx-sm text-white"
-            style="background-color: #1e1e2f"
+            class="q-mx-sm text-white"
+            style="background-color: #1e1e2f;"
           >
             <q-card-section class="text-subtitle1 text-center">Eventos por Mes</q-card-section>
             <q-inner-loading
@@ -41,7 +41,7 @@
           <q-card
             flat
             bordered
-            class="col-12 col-md-6 q-mx-sm text-white"
+            class="q-mx-sm text-white"
             style="background-color: #1e1e2f"
           >
             <q-card-section class="text-subtitle1 text-center">Eventos por Semana</q-card-section>
@@ -65,7 +65,7 @@
           <q-card
             flat
             bordered
-            class="col-12 col-md-6 q-mx-sm text-white"
+            class="q-mx-sm text-white"
             style="background-color: #1e1e2f"
           >
             <q-inner-loading
@@ -86,7 +86,7 @@
           <q-card
             flat
             bordered
-            class="col-12 col-md-6 q-mx-sm text-white"
+            class="q-mx-sm text-white"
             style="background-color: #1e1e2f"
           >
             <q-inner-loading
@@ -107,7 +107,7 @@
           <q-card
             flat
             bordered
-            class="col-12 col-md-6 q-mx-sm text-white"
+            class="q-mx-sm text-white"
             style="background-color: #1e1e2f"
           >
             <q-card-section>
@@ -119,7 +119,7 @@
                 color="primary"
                 size="30px"
               />
-              <canvas ref="eventosTiempoChartRef" style="height: 400px; max-width: 100%"></canvas>
+              <canvas ref="eventosTiempoChartRef"></canvas>
             </q-card-section>
           </q-card>
         </div>
@@ -141,7 +141,7 @@
                 color="primary"
                 size="30px"
               />
-              <canvas ref="chartTiempoUsoRef" style="height: 400px; max-width: 100%"></canvas>
+              <canvas ref="chartTiempoUsoRef"></canvas>
             </q-card-section>
           </q-card>
         </div>
@@ -324,8 +324,8 @@ function convertirDuracionASegundos(duracionStr) {
 
 // Funcion para formatear el mes
 function formatearMes(mesISO) {
-  const fecha = new Date(String(mesISO).slice(0, 4) + '-' + String(mesISO).slice(4, 2))
-  return fecha.toLocaleString('es-MX', { month: 'short', year: 'numeric' }).replace('.', '')
+  const fecha = new Date(String(mesISO) + '-28')
+  return fecha.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).replace('.', '')
 }
 
 //📊 FUNCIÓN CORREGIDA: Obtener eventos por mes con destrucción robusta
@@ -510,7 +510,18 @@ async function renderEventosDia() {
   }
 }
 
-// Funcion para obtener eventos por semana
+// Funcion para obtener eventos por semana formato (yyyyss)
+const obtenerSemana = (semanaISO) => {
+  if (!/^\d{6}$/.test(String(semanaISO))) {
+    throw new Error('Formato inválido. Debe ser una cadena de 6 dígitos (AAAAWW).')
+  }
+
+  const año = String(semanaISO).slice(0, 4)
+  const semana = String(semanaISO).slice(4, 6)
+
+  return `Semana ${semana} ${año}`
+}
+
 // 📅 FUNCIÓN CORREGIDA: Renderizar eventos por semana con destrucción robusta
 async function renderEventosSemana() {
   console.log('📅 Iniciando renderEventosSemana...')
@@ -538,7 +549,7 @@ async function renderEventosSemana() {
       fechaFin: filtroFechasStore.fechaFin,
     }
     const datos = await getEventosPorSemana(payload)
-    const labels = datos.map((d) => formatearMes(d.semana_iso)) // ajusta según tu JSON
+    const labels = datos.map((d) => obtenerSemana(d.semana_iso)) // ajusta según tu JSON
     const valores = datos.map((d) => d.total)
     console.log('Datos por semana:', datos)
     // ✅ CREAR NUEVA INSTANCIA Y ASIGNARLA
@@ -850,46 +861,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.table-wrapper {
-  width: 100%;
-  height: 530px;
-}
-
 /* Estilos responsivos para móviles */
-@media (max-width: 768px) {
-  .q-pa-md {
-    padding: 8px !important;
-  }
-
-  .q-card {
-    margin-bottom: 16px !important;
-  }
-
-  .q-card-section {
-    padding: 12px !important;
-  }
-
-  /* Ajustes para gráficas en móvil */
-  canvas {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-
-  /* Mejorar indicadores de carga en móvil */
-  .q-inner-loading {
-    z-index: 10;
-  }
-
-  /* Ajustes para tarjetas de gráficas */
-  .col-12 {
-    padding: 4px !important;
-  }
-
-  .col-md-6 {
-    margin-bottom: 16px !important;
-  }
-}
-
 @media (max-width: 480px) {
   .q-pa-md {
     padding: 4px !important;

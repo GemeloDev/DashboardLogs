@@ -553,4 +553,30 @@ onMounted(() => {
 .fadeOut {
   animation-name: fadeOut;
 }
+
+/* Scrollbar vertical u horizontal completo */
+::-webkit-scrollbar {
+  width: 3px; /* ancho de la barra (barStyle width) */
+  height: 9px; /* alto si es horizontal */
+}
+
+/* Track: fondo de la barra */
+::-webkit-scrollbar-track {
+  background-color: #027be3; /* barStyle backgroundColor */
+  border-radius: 9px; /* barStyle borderRadius */
+  opacity: 0.2; /* barStyle opacity */
+}
+
+/* Thumb: la parte que se mueve */
+::-webkit-scrollbar-thumb {
+  background-color: #002c53; /* thumbStyle backgroundColor */
+  border-radius: 5px; /* thumbStyle borderRadius */
+  width: 5px; /* thumbStyle width (opcional, se suele controlar con scrollbar) */
+  opacity: 0.75; /* thumbStyle opacity */
+}
+
+/* Thumb al hacer hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #004883; /* color más oscuro para hover */
+}
 </style>

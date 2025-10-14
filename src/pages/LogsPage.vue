@@ -124,7 +124,7 @@
                   <q-card
                     class="col-12 row justify-center text-white q-pa-md q-gutter-y-sm cardMobile"
                   >
-                    <div class="col-sm-12 col-md-3 col-lg-6 text-white">
+                    <div class="col-sm-12 col-md-6 col-lg-6 text-white">
                       <!-- Funcionalidades más usadas -->
                       <q-card class="no-shadow" style="background-color: #1e1e2f">
                         <q-card-section>
@@ -148,7 +148,7 @@
                         </q-card-section>
                       </q-card>
                     </div>
-                    <div class="col-sm-12 col-md-3 col-lg-6 text-white">
+                    <div class="col-sm-12 col-md-6 col-lg-6 text-white">
                       <!-- Tiempo de Respuesta Promedio -->
                       <q-card class="no-shadow" style="background-color: #1e1e2f">
                         <q-card-section>
@@ -172,7 +172,7 @@
                         </q-card-section>
                       </q-card>
                     </div>
-                    <div class="col-sm-12 col-md-3 col-lg-6 q-mx-sm text-white">
+                    <div class="col-sm-12 col-md-6 col-lg-6 q-mx-sm text-white">
                       <!-- Resultado del Evento -->
                       <q-card class="no-shadow" style="background-color: #1e1e2f">
                         <q-card-section>

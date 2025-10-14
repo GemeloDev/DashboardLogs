@@ -524,7 +524,7 @@
                     <div class="session-records">
                       <div class="text-h6 text-blue-4 q-mb-md">
                         <q-icon name="list_alt" class="q-mr-sm" />
-                        📋 Registros Detallados de la Sesión
+                        Registros Detallados de la Sesión
                       </div>
 
                       <div class="row q-col-gutter-md">
@@ -1555,55 +1555,55 @@ const exportarDatos = async (formato) => {
 
 const verDetalleCompleto = (record) => {
   $q.dialog({
-    title: 'Detalle Completo del Registro',
+    title: '<h5 class="text-center text-bold">Detalle Completo del Registro</h5>',
     message: `
-      <div style="text-align: left; color: #333;">
+      <div style="text-align: left; color: #ffff;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
           <h4 style="margin: 0; font-size: 18px;">Informacion del Registro</h4>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
-            <h5 style="color: #007bff; margin-top: 0;">Detalles del Error</h5>
-            <p><strong>Mensaje:</strong> ${record.message || record.descripcion || 'N/A'}</p>
-            <p><strong>Fecha:</strong> ${formatearFecha(record.fecha || record.date)}</p>
-            <p><strong>Tipo:</strong> ${record.type || record.tipo || 'N/A'}</p>
-            <p><strong>Proceso:</strong> ${record.process || record.proceso || 'N/A'}</p>
+          <div style="background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
+            <h5 style="color: #007bff; margin-top: 20px; font-weight: bold;">Detalles del Error</h5>
+            <p><span style="font-weight: bold; color: #007bff">Mensaje:</span> ${record.message || record.descripcion || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #007bff">Fecha:</span> ${formatearFecha(record.fecha || record.date)}</p>
+            <p><span style="font-weight: bold; color: #007bff">Tipo:</span> ${record.type || record.tipo || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #007bff">Proceso:</span> ${record.process || record.proceso || 'N/A'}</p>
           </div>
 
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
-            <h5 style="color: #28a745; margin-top: 0;">Códigos de Identificación</h5>
-            <p><strong>Base Code:</strong> ${record.baseCode || 'N/A'}</p>
-            <p><strong>Session Token:</strong> ${record.sessionToken || 'N/A'}</p>
-            <p><strong>Error Code:</strong> ${record.errorCode || 'N/A'}</p>
-            <p><strong>Tracking Code:</strong> ${record.trackingCode || 'N/A'}</p>
+          <div style="background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #28a745; color: #ffff">
+            <h5 style="color: #28a745; margin-top: 20px; font-weight: bold;">Códigos de Identificación</h5>
+            <p"><span style="font-weight: bold; color: #28a745">Base Code:</span> ${record.baseCode || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #28a745">Session Token:</span> ${record.sessionToken || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #28a745">Error Code:</span> ${record.errorCode || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #28a745">Tracking Code:</span> ${record.trackingCode || 'N/A'}</p>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
-            <h5 style="color: #e67e22; margin-top: 0;">Información del Usuario</h5>
-            <p><strong>Nombre Completo:</strong> ${record.person?.nombreCompleto || 'N/A'}</p>
-            <p><strong>CURP:</strong> ${record.person?.curp || 'N/A'}</p>
-            <p><strong>Nombres:</strong> ${record.person?.nombres || 'N/A'}</p>
-            <p><strong>Apellidos:</strong> ${
+          <div style="background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%);; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <h5 style="color: #e67e22; margin-top: 20px; font-weight: bold;">Información del Usuario</h5>
+            <p><span style="font-weight: bold; color: #e67e22">Nombre Completo:</span> ${record.person?.nombreCompleto || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #e67e22">CURP:</span> ${record.person?.curp || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #e67e22">Nombres:</span> ${record.person?.nombres || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #e67e22">Apellidos:</span> ${
               (record.person?.primerApellido || '') +
                 ' ' +
                 (record.person?.segundoApellido || '') || 'N/A'
             }</p>
           </div>
 
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #6f42c1;">
-            <h5 style="color: #6f42c1; margin-top: 0;">Ubicación y Dispositivos</h5>
-            <p><strong>Oficina:</strong> ${record.oficina?.nombre || 'N/A'}</p>
-            <p><strong>ID Oficina:</strong> ${record.oficina?.id || 'N/A'}</p>
-            <p><strong>Dispositivo:</strong> ${record.device || record.dispositivo || 'N/A'}</p>
-            <p><strong>Scanner:</strong> ${record.scanDevice || record.scan_device || 'N/A'}</p>
+          <div style="background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #6f42c1;">
+            <h5 style="color: #6f42c1; margin-top: 20px; font-weight: bold;">Ubicación y Dispositivos</h5>
+            <p><span style="font-weight: bold; color: #6f42c1">Oficina:</span> ${record.oficina?.nombre || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #6f42c1">ID Oficina:</span> ${record.oficina?.id || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #6f42c1">Dispositivo:</span> ${record.device || record.dispositivo || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #6f42c1">Scanner:</span> ${record.scanDevice || record.scan_device || 'N/A'}</p>
           </div>
         </div>
 
         <div style="background: #343a40; color: white; padding: 15px; border-radius: 8px;">
-          <h5 style="color: #17a2b8; margin-top: 0;">Datos Técnicos Completos (JSON)</h5>
+          <h5 style="color: #17a2b8; margin-top: 20px; font-weight: bold;">Datos Técnicos Completos (JSON)</h5>
           <pre style="background: #2d3436; color: #00b894; padding: 10px; border-radius: 4px; font-size: 11px; max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${JSON.stringify(
             record,
             null,
@@ -1613,11 +1613,11 @@ const verDetalleCompleto = (record) => {
       </div>
     `,
     html: true,
-    style: 'max-width: 900px',
+    style: 'width: 700px; max-width: 80vw; color: #ffff; background-color: #0065b7; border-radius: 12px;',
     persistent: false,
     ok: {
       label: 'Cerrar',
-      color: 'primary',
+      color: 'success',
       flat: true,
     },
   })
@@ -1625,10 +1625,9 @@ const verDetalleCompleto = (record) => {
 
 const mostrarAyuda = () => {
   $q.dialog({
-    title: 'Centro de Ayuda - Sistema de Diagnóstico',
     message: `
       <div style="padding: 0; margin: 0;">
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 32px; border-radius: 20px; border: 1px solid rgba(34, 197, 94, 0.2);">
+        <div style="padding: 32px; border-radius: 20px;">
 
           <!-- Header Principal con Glassmorphism -->
           <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%); backdrop-filter: blur(10px); color: white; padding: 28px; border-radius: 16px; margin-bottom: 32px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; position: relative; overflow: hidden;">
@@ -1735,13 +1734,13 @@ const mostrarAyuda = () => {
       </div>
     `,
     html: true,
+    style: 'width: 700px; max-width: 80vw; color: #ffff; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); border-radius: 12px;',
     persistent: false,
     ok: {
       label: '✓ Perfecto, entendido',
       color: 'green-6',
       unelevated: true,
-      style:
-        'border-radius: 12px; padding: 12px 28px; font-weight: 600; letter-spacing: 0.5px; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);',
+      style: 'border-radius: 12px; padding: 12px 28px; font-weight: 600; letter-spacing: 0.5px; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);',
     },
     class: 'help-dialog-custom',
   })
