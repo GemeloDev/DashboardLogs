@@ -295,13 +295,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { getAuthService } from '../services/authService.js'
+import authService from '../services/authService.js'
 
 const router = useRouter()
 const $q = useQuasar()
-
-// Servicio de autenticación
-const authService = getAuthService()
 
 // === REACTIVE STATE ===
 const modoRegistro = ref(false)
@@ -427,63 +424,64 @@ const onSubmit = async () => {
       }
     })
 
-    // Simular delay de API
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
     if (modoRegistro.value) {
-      // Lógica de registro
-      console.log('📝 Registro de usuario:', {
-        nombre: formData.value.nombre,
+      // Lógica de registro usando la API real
+      const registroData = {
+        name: formData.value.nombre,
         email: formData.value.email,
-      })
-
-      mensajeExito.value = 'Cuenta creada exitosamente'
-
-      // Cambiar a modo login después del registro
-      setTimeout(() => {
-        modoRegistro.value = false
-        formData.value.password = ''
-        formData.value.confirmarPassword = ''
-        formData.value.nombre = ''
-        formData.value.aceptarTerminos = false
-        mensajeExito.value = ''
-
-        $q.notify({
-          type: 'positive',
-          message: 'Cuenta creada. Ahora puedes iniciar sesión.',
-          position: 'top',
-        })
-      }, 2000)
-    } else {
-      // Lógica de login usando el servicio de autenticación
-      console.log('🚀 Iniciando sesión:', {
-        email: formData.value.email,
-      })
-
-      // Usar el servicio de autenticación para hacer login
-      const credentials = {
-        email: formData.value.email,
-        nombre: formData.value.email.split('@')[0] || 'Usuario',
+        password: formData.value.password,
       }
 
-      const loginResult = authService.login(credentials, formData.value.mantenerSesion)
+      const registroResult = await authService.register(registroData)
+
+      if (registroResult.success) {
+        mensajeExito.value = registroResult.message || 'Cuenta creada exitosamente'
+
+        // Cambiar a modo login después del registro exitoso
+        setTimeout(() => {
+          modoRegistro.value = false
+          formData.value.password = ''
+          formData.value.confirmarPassword = ''
+          formData.value.nombre = ''
+          formData.value.aceptarTerminos = false
+          mensajeExito.value = ''
+
+          $q.notify({
+            type: 'positive',
+            message: 'Cuenta creada exitosamente. Ahora puedes iniciar sesión.',
+            position: 'top',
+          })
+        }, 2000)
+      } else {
+        // Error en el registro (email duplicado, etc.)
+        mensajeError.value = registroResult.message || 'Error al crear la cuenta'
+      }
+    } else {
+      // Lógica de login usando la API real
+      const credentials = {
+        email: formData.value.email,
+        password: formData.value.password,
+      }
+
+      const loginResult = await authService.login(credentials, formData.value.mantenerSesion)
 
       if (loginResult.success) {
-        mensajeExito.value = 'Acceso concedido. Redirigiendo...'
+        mensajeExito.value = loginResult.message || 'Acceso concedido. Redirigiendo...'
 
-        // Redireccionar al dashboard
+        // Redireccionar al dashboard después del login exitoso
         setTimeout(() => {
           router.push('/dashboard')
         }, 1500)
       } else {
-        throw new Error(loginResult.error || 'Error en el login')
+        // Error en el login (credenciales inválidas, etc.)
+        mensajeError.value = loginResult.message || 'Credenciales inválidas. Verifica tus datos.'
       }
     }
   } catch (err) {
     console.error('❌ Error en autenticación:', err)
     mensajeError.value = modoRegistro.value
-      ? 'Error al crear la cuenta. Intenta nuevamente.'
-      : 'Credenciales inválidas. Verifica tus datos.'
+      ? 'Error de conexión al crear la cuenta. Verifica tu conexión a internet.'
+      : 'Error de conexión al iniciar sesión. Verifica tu conexión a internet.'
   } finally {
     cargando.value = false
   }
