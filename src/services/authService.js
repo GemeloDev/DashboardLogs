@@ -1,236 +1,170 @@
-/**
+﻿/**
  * Servicio de Autenticación Centralizado
- * Maneja todas las operaciones relacionadas con autenticación y sesión de usuario
  */
-
 import { ref, computed } from 'vue'
+import { AUTH_ENDPOINTS, DEFAULT_CONFIG } from './apiEndpoints.js'
 
-// Estado reactivo global de la autenticación
 const currentUser = ref(null)
 const isAuthenticated = ref(false)
-
-// Claves para el almacenamiento
 const SESSION_KEY = 'dashboardLogsSession'
 
-/**
- * Servicio de autenticación con estado reactivo
- */
 export const useAuthService = () => {
+  const clearSession = () => {
+    localStorage.removeItem(SESSION_KEY)
+    sessionStorage.removeItem(SESSION_KEY)
+    currentUser.value = null
+    isAuthenticated.value = false
+  }
 
-    /**
-     * Inicializar la sesión desde el almacenamiento
-     */
-    const initializeAuth = () => {
-        try {
-            const sessionData = localStorage.getItem(SESSION_KEY) ||
-                sessionStorage.getItem(SESSION_KEY)
-
-            if (sessionData) {
-                const session = JSON.parse(sessionData)
-
-                if (session && session.isAuthenticated === true) {
-                    currentUser.value = session.user
-                    isAuthenticated.value = true
-
-                    console.log('🔐 Sesión restaurada:', {
-                        email: session.user?.email,
-                        nombre: session.user?.nombre
-                    })
-                }
-            }
-        } catch (error) {
-            console.error('❌ Error al inicializar autenticación:', error)
-            clearSession()
+  const initializeAuth = () => {
+    try {
+      const sessionData = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY)
+      if (sessionData) {
+        const session = JSON.parse(sessionData)
+        if (session && session.isAuthenticated === true) {
+          currentUser.value = session.user
+          isAuthenticated.value = true
+          console.log(' Sesión restaurada:', session.user)
         }
+      }
+    } catch (error) {
+      console.error(' Error al inicializar autenticación:', error)
+      clearSession()
     }
+  }
 
-    /**
-     * Realizar login y guardar sesión
-     */
-    const login = (credentials, mantenerSesion = true) => {
-        try {
-            const sessionData = {
-                isAuthenticated: true,
-                user: {
-                    email: credentials.email,
-                    nombre: credentials.nombre || credentials.email.split('@')[0] || 'Usuario'
-                },
-                mantenerSesion,
-                timestamp: new Date().toISOString()
-            }
+  const register = async (userData) => {
+    try {
+      console.log(' Iniciando registro:', { name: userData.name, email: userData.email })
+      const response = await fetch(AUTH_ENDPOINTS.REGISTER, {
+        method: 'POST',
+        headers: DEFAULT_CONFIG.headers,
+        body: JSON.stringify({
+          name: userData.name,
+          email: userData.email,
+          password: userData.password
+        })
+      })
+      const data = await response.json()
+      console.log(' Respuesta del registro:', data)
+      return {
+        success: data.status === true,
+        message: data.message || (data.status ? 'Usuario registrado correctamente' : 'Error en el registro'),
+        data: data.data
+      }
+    } catch (error) {
+      console.error(' Error en registro:', error)
+      return {
+        success: false,
+        message: 'Error de conexión. Verifica tu conexión a internet.',
+        data: null
+      }
+    }
+  }
 
-            // Guardar en el almacenamiento apropiado
-            const storage = mantenerSesion ? localStorage : sessionStorage
-            storage.setItem(SESSION_KEY, JSON.stringify(sessionData))
+  const login = async (credentials, mantenerSesion = true) => {
+    try {
+      console.log(' Iniciando login:', { email: credentials.email })
+      const response = await fetch(AUTH_ENDPOINTS.LOGIN, {
+        method: 'POST',
+        headers: DEFAULT_CONFIG.headers,
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password
+        })
+      })
+      const data = await response.json()
+      console.log(' Respuesta del login:', data)
 
-            // Actualizar estado reactivo
-            currentUser.value = sessionData.user
-            isAuthenticated.value = true
-
-            console.log('✅ Login exitoso:', {
-                email: sessionData.user.email,
-                nombre: sessionData.user.nombre,
-                mantenerSesion
-            })
-
-            return { success: true, user: sessionData.user }
-        } catch (error) {
-            console.error('❌ Error en login:', error)
-            return { success: false, error: error.message }
+      if (data.status === true && data.data) {
+        const userData = {
+          id: data.data.id,
+          name: data.data.name,
+          email: data.data.email,
+          loginTime: new Date().toISOString()
         }
-    }
-
-    /**
-     * Realizar logout y limpiar toda la sesión
-     */
-    const logout = () => {
-        try {
-            // Limpiar ambos tipos de almacenamiento
-            localStorage.removeItem(SESSION_KEY)
-            sessionStorage.removeItem(SESSION_KEY)
-
-            // Limpiar estado reactivo
-            currentUser.value = null
-            isAuthenticated.value = false
-
-            console.log('🚪 Logout exitoso - Sesión limpiada')
-
-            return { success: true }
-        } catch (error) {
-            console.error('❌ Error en logout:', error)
-            return { success: false, error: error.message }
+        currentUser.value = userData
+        isAuthenticated.value = true
+        const sessionData = {
+          user: userData,
+          isAuthenticated: true,
+          sessionType: mantenerSesion ? 'persistent' : 'temporary',
+          timestamp: Date.now()
         }
-    }
-
-    /**
-     * Limpiar sesión (usado internamente)
-     */
-    const clearSession = () => {
-        localStorage.removeItem(SESSION_KEY)
-        sessionStorage.removeItem(SESSION_KEY)
-        currentUser.value = null
-        isAuthenticated.value = false
-    }
-
-    /**
-     * Verificar si hay una sesión válida
-     */
-    const checkSession = () => {
-        try {
-            const sessionData = localStorage.getItem(SESSION_KEY) ||
-                sessionStorage.getItem(SESSION_KEY)
-
-            if (!sessionData) {
-                clearSession()
-                return false
-            }
-
-            const session = JSON.parse(sessionData)
-
-            if (session && session.isAuthenticated === true) {
-                // Verificar que no sea muy antigua (opcional)
-                const timestamp = new Date(session.timestamp)
-                const now = new Date()
-                const daysDiff = (now - timestamp) / (1000 * 60 * 60 * 24)
-
-                // Si la sesión tiene más de 30 días, considerarla expirada
-                if (daysDiff > 30) {
-                    console.log('⚠️ Sesión expirada por tiempo')
-                    clearSession()
-                    return false
-                }
-
-                return true
-            }
-
-            clearSession()
-            return false
-        } catch (error) {
-            console.error('❌ Error verificando sesión:', error)
-            clearSession()
-            return false
+        if (mantenerSesion) {
+          localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
+        } else {
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
         }
+        console.log(' Login exitoso:', userData)
+        return { success: true, message: data.message || 'Login exitoso', user: userData }
+      } else {
+        return { success: false, message: data.message || 'Credenciales inválidas', user: null }
+      }
+    } catch (error) {
+      console.error(' Error en login:', error)
+      return { success: false, message: 'Error de conexión. Verifica tu conexión a internet.', user: null }
     }
+  }
 
-    /**
-     * Obtener información del usuario actual
-     */
-    const getUserInfo = () => {
-        return currentUser.value
+  const logout = () => {
+    try {
+      localStorage.removeItem(SESSION_KEY)
+      sessionStorage.removeItem(SESSION_KEY)
+      currentUser.value = null
+      isAuthenticated.value = false
+      console.log(' Logout exitoso')
+      return { success: true }
+    } catch (error) {
+      console.error(' Error en logout:', error)
+      return { success: false, error: error.message }
     }
+  }
 
-    /**
-     * Actualizar información del usuario
-     */
-    const updateUserInfo = (newUserInfo) => {
-        if (!isAuthenticated.value) {
-            console.warn('⚠️ No se puede actualizar usuario - no autenticado')
-            return false
-        }
-
-        try {
-            const sessionData = localStorage.getItem(SESSION_KEY) ||
-                sessionStorage.getItem(SESSION_KEY)
-
-            if (sessionData) {
-                const session = JSON.parse(sessionData)
-                session.user = { ...session.user, ...newUserInfo }
-
-                const storage = session.mantenerSesion ? localStorage : sessionStorage
-                storage.setItem(SESSION_KEY, JSON.stringify(session))
-
-                currentUser.value = session.user
-
-                console.log('✅ Información de usuario actualizada:', session.user)
-                return true
-            }
-
-            return false
-        } catch (error) {
-            console.error('❌ Error actualizando usuario:', error)
-            return false
-        }
+  const checkSession = () => {
+    try {
+      const sessionData = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY)
+      if (!sessionData) {
+        clearSession()
+        return false
+      }
+      const session = JSON.parse(sessionData)
+      if (session && session.isAuthenticated === true) {
+        currentUser.value = session.user
+        isAuthenticated.value = true
+        return true
+      } else {
+        clearSession()
+        return false
+      }
+    } catch (error) {
+      console.error(' Error al verificar sesión:', error)
+      clearSession()
+      return false
     }
+  }
 
-    // Propiedades computadas
-    const userName = computed(() => currentUser.value?.nombre || 'Usuario')
-    const userEmail = computed(() => currentUser.value?.email || '')
+  const user = computed(() => currentUser.value)
+  const authenticated = computed(() => isAuthenticated.value)
+  initializeAuth()
 
-    return {
-        // Estado reactivo
-        currentUser: computed(() => currentUser.value),
-        isAuthenticated: computed(() => isAuthenticated.value),
-        userName,
-        userEmail,
-
-        // Métodos
-        initializeAuth,
-        login,
-        logout,
-        checkSession,
-        getUserInfo,
-        updateUserInfo,
-        clearSession
-    }
+  return { user, authenticated, currentUser, isAuthenticated, register, login, logout, initializeAuth, clearSession, checkSession }
 }
 
-// Instancia global del servicio (singleton)
-let authServiceInstance = null
+export const authService = (() => {
+  const service = useAuthService()
+  return {
+    get user() { return service.currentUser.value },
+    get isAuthenticated() { return service.isAuthenticated.value },
+    get userName() { return service.currentUser.value?.name || 'Usuario' },
+    get userEmail() { return service.currentUser.value?.email || 'Sin email' },
+    register: service.register,
+    login: service.login,
+    logout: service.logout,
+    initializeAuth: service.initializeAuth,
+    clearSession: service.clearSession,
+    checkSession: service.checkSession
+  }
+})()
 
-/**
- * Obtener la instancia singleton del servicio de autenticación
- */
-export const getAuthService = () => {
-    if (!authServiceInstance) {
-        authServiceInstance = useAuthService()
-        // Inicializar automáticamente
-        authServiceInstance.initializeAuth()
-    }
-    return authServiceInstance
-}
-
-// Exportar también como default
-export default {
-    useAuthService,
-    getAuthService
-}
+export default authService

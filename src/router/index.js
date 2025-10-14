@@ -1,10 +1,9 @@
 import { defineRouter } from '#q-app/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
-import { getAuthService } from '../services/authService.js'
+import authService from '../services/authService.js'
 
 function isAuthenticated() {
-  const authService = getAuthService()
   return authService.checkSession()
 }
 

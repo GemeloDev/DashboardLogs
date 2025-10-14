@@ -268,7 +268,7 @@ import GeminiConfigModal from '../components/GeminiConfigModal.vue'
 import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
-import { getAuthService } from '../services/authService.js'
+import authService from '../services/authService.js'
 import { santoroContextService } from '../services/santoroContextService.js'
 
 const $q = useQuasar()
@@ -313,13 +313,12 @@ watch(
 provide('selectedFlow', currentFlow)
 provide('filtrosGlobales', filtros)
 
-// Servicio de autenticación
-const authService = getAuthService()
+// Servicio de autenticación ya importado
 
 // Información del usuario reactiva desde el servicio de autenticación
 const userInfo = computed(() => ({
-  nombre: authService.userName.value,
-  email: authService.userEmail.value,
+  nombre: authService.user?.name || 'Usuario',
+  email: authService.user?.email || 'Sin email',
 }))
 
 // Función para cambiar de flujo mediante rutas
