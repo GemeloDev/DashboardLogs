@@ -13,7 +13,7 @@
     <LogFilters @filter="actualizarDatos" />
 
     <br />
-    <div class="text-h4 text-white text-center q-mb-md">Eventos Fallidos</div>
+    <div class="text-h4 text-white text-center q-mb-lg text-bold">Eventos Fallidos</div>
     <div class="row q-col-gutter-md">
       <div class="col-12 col-md-8">
         <q-card
@@ -51,7 +51,7 @@
                 style="background: rgba(255, 255, 255, 0.1); border-radius: 12px"
               >
                 <q-icon name="schedule" size="32px" color="blue-4" class="q-mb-sm" />
-                <div class="text-body1 text-weight-bold">
+                <div class="text-h5 text-weight-bold">
                   {{ logs[0]?.fecha ? formatearFecha(logs[0].fecha) : 'N/A' }}
                 </div>
                 <div class="text-caption text-grey-3">Último Evento</div>

@@ -31,7 +31,7 @@
               size="30px"
             />
             <q-card-section>
-              <canvas ref="eventosPorMesChart" />
+              <canvas ref="eventosPorMesChart" class="heightCharts" />
             </q-card-section>
           </q-card>
         </div>
@@ -148,26 +148,12 @@
         <!--Fin duración de uso por día-->
         <!-- Funcionalidades más Usadas-->
         <div class="col-12 col-md-6">
-          <div class="table-wrapper">
-            <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f">
-              <q-card-section>
-                <div class="text-h6 text-center q-mb-md">Funcionalidades más Usadas</div>
-                <EventosAbiertosTable :eventos="eventosAbiertos" />
-              </q-card-section>
-            </q-card>
-          </div>
+          <EventosAbiertosTable :eventos="eventosAbiertos" />
         </div>
         <!--Fin Funcionalidades más Usadas-->
         <!-- Funcionalidades Múltiples Usos -->
         <div class="col-12 col-md-6">
-          <div class="table-wrapper">
-            <q-card flat bordered class="q-pa-md text-white" style="background-color: #1e1e2f">
-              <q-card-section>
-                <div class="text-h6 text-center q-mb-md">Funcionalidades Múltiples Usos</div>
-                <FuncionalidadesMulTable :logs="funcionalidadesMultiplesUsos" />
-              </q-card-section>
-            </q-card>
-          </div>
+          <FuncionalidadesMulTable :logs="funcionalidadesMultiplesUsos" />
         </div>
         <!--Fin Funcionalidades Múltiples Usos-->
       </div>
@@ -879,5 +865,13 @@ onBeforeUnmount(() => {
   .q-card-section {
     padding: 8px !important;
   }
+
+  .heightCharts{
+    height: max-content !important;
+  }
+}
+
+.heightCharts{
+  height: 270px !important;
 }
 </style>

@@ -200,8 +200,7 @@
                 </div>
                 <br />
                 <!-- Tabla de logs de dispositivos de usuarios -->
-                <div class="col-12 col-lg-6 q-mx-sm text-white">
-                  <div class="text-h6 text-center">Dispositivos de Usuarios</div>
+                <div class="col-12 col-lg-6 q-mx-sm text-white card-responsive">
                   <div v-if="!logs || logs.length === 0" class="q-mt-lg">
                     <NoDataMessage
                       title="Sin registros de dispositivos"
@@ -885,6 +884,11 @@ function renderChartFuncionalidades(labels, data) {
 
   .cardMobile{
     background-color: transparent !important;
+  }
+
+  .card-responsive {
+    margin-inline: 0px !important;
+    width: 100% !important;
   }
 }
 </style>

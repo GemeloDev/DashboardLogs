@@ -44,7 +44,7 @@
           <q-select
             v-model="filtroResultado"
             :options="resultadosUnicos"
-            label="Filtrar por resultado"
+            label="Filtrar por evento"
             filled
             dense
             dark
@@ -71,7 +71,7 @@
     <q-table
       :rows="filasFiltradas"
       :columns="columnas"
-      row-key="id"
+      :row-key="filasFiltradas.id"
       :pagination="paginacion"
       @request="onRequest"
       :loading="cargando"
@@ -89,14 +89,14 @@
       <template v-slot:top>
         <div class="row full-width items-center">
           <div class="col">
-            <div class="text-h6 text-white">
+            <div class="text-h5 text-white text-bold q-my-lg q-mx-md">
               <q-icon name="error_outline" class="q-mr-sm" />
               Eventos Fallidos ({{ filasFiltradas.length }} registros)
             </div>
           </div>
           <div class="col-auto">
             <q-btn-group flat>
-              <q-btn icon="refresh" @click="actualizarDatos" color="primary" size="sm" dense />
+              <q-btn icon="refresh" @click="actualizarDatos" color="primary" size="md" dense />
               <q-btn icon="visibility" @click="alternarColumnas" color="primary" size="sm" dense />
             </q-btn-group>
           </div>
@@ -116,7 +116,7 @@
 
       <template v-slot:body-cell-usuario="props">
         <q-td :props="props">
-          <div class="row items-center">
+          <div class="row items-center justify-center">
             <q-avatar size="24px" color="primary" text-color="white" class="q-mr-sm">
               {{ props.value?.charAt(0)?.toUpperCase() || '?' }}
             </q-avatar>
@@ -130,11 +130,18 @@
           <q-chip
             :icon="getIconoDispositivo(props.value)"
             :label="props.value"
-            size="sm"
+            size="md"
             outline
-            color="blue-grey"
+            color="blue-4"
             text-color="white"
           />
+        </q-td>
+      </template>
+
+      <!-- Slots para células personalizadas -->
+      <template v-slot:body-cell-android="props">
+        <q-td :props="props">
+          <q-badge color="green" :label="`Android ${props.value}`" />
         </q-td>
       </template>
 
@@ -144,7 +151,6 @@
             icon="visibility"
             label="Detalle"
             size="sm"
-                
             text-color="primary"
             @click="verDetalle(props.row)"
             class="detalle-btn"
@@ -191,14 +197,14 @@
           <q-chip color="positive" text-color="white" icon="check_circle">
             Seleccionadas: {{ filasSeleccionadas.length }}
           </q-chip>
-          <q-btn
+          <!-- <q-btn
             icon="delete"
             label="Eliminar seleccionadas"
             color="negative"
             size="sm"
             @click="eliminarSeleccionadas"
             class="q-ml-sm"
-          />
+          /> -->
         </div>
       </div>
     </div>
@@ -379,7 +385,7 @@ const columnas = [
     align: 'left',
     field: 'resultadoEvento',
     sortable: true,
-    style: 'width: 120px',
+    style: 'width: 120px;',
   },
   {
     name: 'usuario',
@@ -387,7 +393,7 @@ const columnas = [
     label: 'Usuario',
     field: 'usuario',
     sortable: true,
-    style: 'min-width: 150px',
+    style: 'min-width: 150px;',
   },
   {
     name: 'dispositivo',
@@ -403,7 +409,7 @@ const columnas = [
     label: 'Tipo de Evento',
     field: 'tipoEvento',
     sortable: true,
-    style: 'min-width: 140px',
+    style: 'min-width: 140px;',
   },
   {
     name: 'android',
@@ -411,7 +417,7 @@ const columnas = [
     label: 'Versión Android',
     field: 'versionAndroidDispositivo',
     sortable: true,
-    style: 'width: 130px',
+    style: 'width: 160px; ',
   },
   {
     name: 'acciones',
@@ -430,13 +436,17 @@ const dispositivosUnicos = computed(() => {
 })
 
 const resultadosUnicos = computed(() => {
-  const resultados = [...new Set(props.logs.map((log) => log.resultadoEvento).filter(Boolean))]
+  const resultados = [...new Set(props.logs.map((log) => log.tipoEvento).filter(Boolean))]
   return resultados.map((r) => ({ label: r, value: r }))
 })
 
 // 📊 FILAS FILTRADAS CON MÚLTIPLES CRITERIOS
 const filasFiltradas = computed(() => {
   let filtradas = [...props.logs]
+
+  vaciarSeleccionadas();
+
+  filtradas = filtradas.map((item, index) => ({ ...item, id: index }))
 
   // Filtro por dispositivo
   if (filtroDispositivo.value) {
@@ -445,7 +455,7 @@ const filasFiltradas = computed(() => {
 
   // Filtro por resultado
   if (filtroResultado.value) {
-    filtradas = filtradas.filter((log) => log.resultadoEvento === filtroResultado.value)
+    filtradas = filtradas.filter((log) => log.tipoEvento === filtroResultado.value)
   }
 
   return filtradas
@@ -462,6 +472,11 @@ function getColorResultado(resultado) {
   }
   return colores[resultado?.toUpperCase()] || 'grey-6'
 }
+
+function vaciarSeleccionadas() {
+  filasSeleccionadas.value = []
+}
+
 
 function getIconoDispositivo(dispositivo) {
   if (dispositivo?.toLowerCase().includes('tablet')) return 'tablet'
@@ -502,22 +517,22 @@ const camposTecnicos = [
   { key: 'navegador', label: 'Navegador' },
 ]
 
-function eliminarSeleccionadas() {
-  $q.dialog({
-    title: 'Confirmar eliminación',
-    message: `¿Está seguro de que desea eliminar ${filasSeleccionadas.value.length} registro(s)?`,
-    cancel: true,
-    persistent: true,
-    color: 'negative',
-  }).onOk(() => {
-    filasSeleccionadas.value = []
-    $q.notify({
-      type: 'positive',
-      message: 'Registros eliminados correctamente',
-      icon: 'check_circle',
-    })
-  })
-}
+// function eliminarSeleccionadas() {
+//   $q.dialog({
+//     title: 'Confirmar eliminación',
+//     message: `¿Está seguro de que desea eliminar ${filasSeleccionadas.value.length} registro(s)?`,
+//     cancel: true,
+//     persistent: true,
+//     color: 'negative',
+//   }).onOk(() => {
+//     filasSeleccionadas.value = []
+//     $q.notify({
+//       type: 'positive',
+//       message: 'Registros eliminados correctamente',
+//       icon: 'check_circle',
+//     })
+//   })
+// }
 
 function actualizarDatos() {
   cargando.value = true
@@ -540,6 +555,42 @@ function alternarColumnas() {
 }
 
 function exportarDatos() {
+
+  if (filasSeleccionadas.value.length > 0) {
+    const contenido = [
+      // Encabezados
+      columnas
+        .filter((col) => col.name !== 'acciones')
+        .map((col) => col.label)
+        .join(','),
+      // Datos
+      ...filasSeleccionadas.value.map((fila) =>
+        columnas
+          .filter((col) => col.name !== 'acciones')
+          .map((col) => `"${fila[col.field] || ''}"`)
+          .join(',')
+      ),
+    ].join('\n')
+
+    const status = exportFile('eventos-fallidos.csv', contenido, 'text/csv')
+
+    if (status !== true) {
+      $q.notify({
+        message: 'El navegador denegó la descarga del archivo',
+        color: 'negative',
+        icon: 'warning',
+      })
+    } else {
+      $q.notify({
+        message: 'Archivo exportado correctamente',
+        color: 'positive',
+        icon: 'file_download',
+      })
+    }
+
+    return
+  }
+
   const contenido = [
     // Encabezados
     columnas
@@ -570,6 +621,8 @@ function exportarDatos() {
       icon: 'file_download',
     })
   }
+
+  return
 }
 
 function onRequest(props) {
@@ -597,11 +650,12 @@ watch(
 
 /* 🎨 ESTILOS PROFESIONALES MEJORADOS PARA LA TABLA */
 .tabla-eventos-fallidos {
-  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(75, 85, 99, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffff;
 }
 
 .tabla-eventos-fallidos .q-table__top {
@@ -641,7 +695,6 @@ watch(
 
 .tabla-eventos-fallidos .q-table tbody td {
   color: #f9fafb;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 14px 12px;
   font-weight: 500;
 }

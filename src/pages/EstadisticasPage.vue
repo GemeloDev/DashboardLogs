@@ -69,7 +69,7 @@
             color="primary"
             size="30px"
           />
-          <div class="chart-container">
+          <div style="height: 300px !important;">
             <canvas ref="deviceChart"></canvas>
           </div>
         </q-card>
@@ -755,7 +755,7 @@
                   style="
                     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
                     border-radius: 16px;
-                    min-height: 280px;
+                    max-height: 280px;
                     height: auto;
                     box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
                     position: relative;
@@ -775,7 +775,7 @@
                     }}
                   </div>
 
-                  <!-- Contenedor scrolleable con mejor diseo -->
+                  <!-- Contenedor scrolleable con mejor diseño -->
                   <div
                     class="custom-scroll flex-grow-1"
                     style="max-height: 220px; overflow-y: auto; padding-right: 4px"
@@ -955,7 +955,7 @@
             </div>
 
             <!-- Seccin de informacin adicional -->
-            <div class="row q-gutter-md q-mt-lg">
+            <div class="row flex justify-center q-gutter-md q-mt-lg">
               <!-- Informacin de coordenadas y radio -->
 
               <!-- Estadsticas de usuario adicionales -->
@@ -972,7 +972,7 @@
                   <q-card-section class="q-pa-none">
                     <div class="text-h6 q-mb-md text-center text-weight-bold">
                       <q-icon name="analytics" class="q-mr-sm" />
-                      Anlisis de Actividad
+                      Analísis de Actividad
                     </div>
 
                     <!-- Layout responsivo para estadsticas -->

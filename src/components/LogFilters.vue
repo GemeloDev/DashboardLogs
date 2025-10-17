@@ -198,6 +198,8 @@ const formatearPeriodo = () => {
     year: 'numeric',
   })
 
+  console.log(`Periodo: ${inicio} - ${fin}`)
+
   return `${inicio} - ${fin}`
 }
 
@@ -435,7 +437,8 @@ const seleccionarPeriodo = (periodo) => {
     }
 
     default:
-      return
+      break;
+
   }
 
   rangoFechas.value = { from: inicio, to: fin }
