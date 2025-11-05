@@ -1,10 +1,5 @@
-// Configuración centralizada de la URL base
-// En desarrollo usamos el proxy configurado en quasar.config.js (/api -> http://187.188.66.56:8024/api)
-// Use a relative base URL so the frontend can call `/api/...` (same origin).
-// En producción asegúrate de que el backend acepte las peticiones desde el origen
-// donde despliegues la aplicación. Si el backend está en otro origen, el servidor
-// debe devolver los headers de respuesta adecuados (por ejemplo Access-Control-Allow-Origin)
-export const API_BASE_URL = '/api'
+
+export const API_BASE_URL = process.env.API_BASE_URL || '/api'
 
 // Configuración global de axios: sólo headers de petición válidos.
 // Nota: NO debemos enviar Access-Control-Allow-* desde el cliente — esos son headers
