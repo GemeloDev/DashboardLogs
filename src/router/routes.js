@@ -6,6 +6,18 @@ const routes = [
     component: () => import('pages/LoginPageNew.vue'),
     meta: { hideLayout: true }
   },
+  {
+    path: '/verificarCuenta',
+    name: 'verificarCuenta',
+    component: () => import('pages/VerificarCuentaPage.vue'),
+    meta: { hideLayout: true }
+  },
+  {
+    path: '/olvide-password',
+    name: 'olvidePassword',
+    component: () => import('pages/PasswordOlvidadoPage.vue'),
+    meta: { hideLayout: true }
+  },
 
   // Rutas principales (con layout y protección)
   {

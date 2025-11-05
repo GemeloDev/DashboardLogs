@@ -178,7 +178,7 @@
                 <div class="text-caption text-grey-3 q-mb-lg">Formato: USR02808190918-SUC001</div>
 
                 <div class="row q-col-gutter-md">
-                  <div class="col-12 col-md-8">
+                  <div class="col-xs-12 col-sm-12 col-md-11">
                     <q-input
                       v-model="formulario.errorCode"
                       label="Código de Error"
@@ -192,15 +192,13 @@
                       </template>
                     </q-input>
                   </div>
-                  <div class="col-12 col-md-4">
+                  <div class="col-xs-12 col-sm-12 col-md">
                     <q-btn
-                      color="red-5"
+                      class="btn-error"
                       icon="search"
-                      label="Consultar"
                       @click="() => consultarCodigoError()"
                       :loading="cargandoError"
                       size="lg"
-                      class="full-width"
                     />
                   </div>
                 </div>
@@ -209,76 +207,99 @@
                 <div v-if="resultadoError" class="q-mt-lg">
                   <q-separator class="q-mb-md" color="grey-5" />
                   <div v-if="resultadoError.success && resultadoError.data.length > 0">
-                    <div class="text-h6 text-red-4 q-mb-md">
-                      <q-icon name="error" class="q-mr-sm" />
-                      Código de Error: {{ resultadoError.errorCode }}
-                      <q-chip color="red-6" text-color="white" size="sm" class="q-ml-sm">
-                        {{ resultadoError.data.length }} registro(s)
-                      </q-chip>
+                    <div class="">
+                      <p class="text-h6 text-red-4 q-mt-lg q-mb-xl">
+                        <q-icon name="error" class="q-mr-sm" />
+                        Código de Error: {{ resultadoError.errorCode }}
+                        <q-chip color="red-6" text-color="white" size="sm" class="q-ml-sm">
+                          {{ resultadoError.data.length }} registro(s)
+                        </q-chip>
+                      </p>
                     </div>
 
                     <!-- Resumen principal -->
+
                     <div class="row q-col-gutter-md q-mb-lg">
-                      <div class="col-12">
-                        <q-card class="bg-grey-6">
+                      <div class="col-12 col-lg-6">
+                        <q-card class="bg-gradient-red summary-card">
                           <q-card-section>
-                            <div class="text-subtitle2 q-mb-md">📊 Información Principal</div>
-                            <div class="row q-col-gutter-md">
-                              <div class="col-12 col-md-6">
-                                <q-list dark>
-                                  <q-item dense>
-                                    <q-item-section avatar>
-                                      <q-icon color="blue-5" name="person" />
-                                    </q-item-section>
-                                    <q-item-section>
-                                      <q-item-label>{{
-                                        resultadoError.summary?.user || 'No disponible'
-                                      }}</q-item-label>
-                                      <q-item-label caption>Usuario</q-item-label>
-                                    </q-item-section>
-                                  </q-item>
-                                  <q-item dense>
-                                    <q-item-section avatar>
-                                      <q-icon color="green-5" name="business" />
-                                    </q-item-section>
-                                    <q-item-section>
-                                      <q-item-label>{{
-                                        resultadoError.summary?.office || 'No disponible'
-                                      }}</q-item-label>
-                                      <q-item-label caption>Oficina</q-item-label>
-                                    </q-item-section>
-                                  </q-item>
-                                </q-list>
-                              </div>
-                              <div class="col-12 col-md-6">
-                                <q-list dark>
-                                  <q-item dense>
-                                    <q-item-section avatar>
-                                      <q-icon color="orange-5" name="tag" />
-                                    </q-item-section>
-                                    <q-item-section>
-                                      <q-item-label>{{
-                                        resultadoError.summary?.baseCode || 'No disponible'
-                                      }}</q-item-label>
-                                      <q-item-label caption>Código Base (Mostrar)</q-item-label>
-                                    </q-item-section>
-                                  </q-item>
-                                  <q-item dense>
-                                    <q-item-section avatar>
-                                      <q-icon color="purple-5" name="security" />
-                                    </q-item-section>
-                                    <q-item-section>
-                                      <q-item-label>{{
-                                        resultadoError.summary?.sessionToken || 'No disponible'
-                                      }}</q-item-label>
-                                      <q-item-label caption
-                                        >Token de Sesión (Para logs)</q-item-label
-                                      >
-                                    </q-item-section>
-                                  </q-item>
-                                </q-list>
-                              </div>
+                            <div class="text-subtitle2 q-mb-md text-white">
+                              📊 Información Principal
                             </div>
+                            <q-list dark class="transparent">
+                              <q-item dense class="summary-item">
+                                <q-item-section avatar>
+                                  <q-avatar color="blue-5" text-color="white" size="sm">
+                                    <q-icon name="person" />
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label class="text-weight-medium">{{
+                                    resultadoError.summary?.user || 'No disponible'
+                                  }}</q-item-label>
+                                  <q-item-label caption class="text-blue-2"
+                                    >Usuario</q-item-label
+                                  >
+                                </q-item-section>
+                              </q-item>
+                              <q-item dense class="summary-item">
+                                <q-item-section avatar>
+                                  <q-avatar color="green-5" text-color="white" size="sm">
+                                    <q-icon name="business" />
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label class="text-weight-medium">{{
+                                    resultadoError.summary?.office || 'No disponible'
+                                  }}</q-item-label>
+                                  <q-item-label caption class="text-blue-2"
+                                    >Oficina</q-item-label
+                                  >
+                                </q-item-section>
+                              </q-item>
+                            </q-list>
+                          </q-card-section>
+                        </q-card>
+                      </div>
+
+                      <div class="col-12 col-lg-6">
+                        <q-card class="bg-gradient-red summary-card">
+                          <q-card-section>
+                            <div class="text-subtitle2 q-mb-md text-white">
+                              📈 Estadísticas de Sesión
+                            </div>
+                            <q-list dark class="transparent">
+                              <q-item dense class="summary-item">
+                                <q-item-section avatar>
+                                  <q-avatar color="orange-5" text-color="white" size="sm">
+                                    <q-icon name="security" />
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label class="text-weight-medium">{{
+                                    resultadoError.summary?.baseCode || 'No disponible'
+                                  }}</q-item-label>
+                                  <q-item-label caption class="text-purple-2"
+                                    >Código Base (Mostrar)</q-item-label
+                                  >
+                                </q-item-section>
+                              </q-item>
+                              <q-item dense class="summary-item">
+                                <q-item-section avatar>
+                                  <q-avatar color="blue-5" text-color="white" size="sm">
+                                    <q-icon name="schedule" />
+                                  </q-avatar>
+                                </q-item-section>
+                                <q-item-section>
+                                  <q-item-label class="text-weight-medium">
+                                    {{ resultadoError.summary?.sessionToken || 'No disponible' }}
+                                  </q-item-label>
+                                  <q-item-label caption class="text-purple-2"
+                                    >Token de Sesión (para logs)</q-item-label
+                                  >
+                                </q-item-section>
+                              </q-item>
+                            </q-list>
                           </q-card-section>
                         </q-card>
                       </div>
@@ -287,7 +308,7 @@
                     <!-- Lista de registros -->
                     <div class="row q-col-gutter-md">
                       <div class="col-12">
-                        <q-card class="bg-grey-6">
+                        <q-card class="bg-gradient-pure-list">
                           <q-card-section>
                             <div class="text-subtitle2 q-mb-md">📋 Registros Relacionados</div>
                             <q-list dark separator>
@@ -298,7 +319,7 @@
                                 @click="verDetalleCompleto(record)"
                               >
                                 <q-item-section avatar>
-                                  <q-avatar color="red-6" text-color="white" size="sm">
+                                  <q-avatar color="white" text-color="black" size="sm">
                                     {{ index + 1 }}
                                   </q-avatar>
                                 </q-item-section>
@@ -307,8 +328,8 @@
                                     record.message || record.descripcion || 'Sin mensaje'
                                   }}</q-item-label>
                                   <q-item-label caption class="text-grey-3">
-                                    {{ formatearFecha(record.fecha) }} | Usuario:
-                                    {{ record.person?.nombreCompleto || 'N/A' }} | Oficina:
+                                    {{ formatearFecha(record.fecha) }} | <span class="text-bold">Usuario:</span>
+                                    {{ record.person?.nombreCompleto || 'N/A' }} | <span class="text-bold">Oficina:</span>
                                     {{ record.oficina?.nombre || 'N/A' }}
                                   </q-item-label>
                                 </q-item-section>
@@ -348,7 +369,7 @@
               <q-card-section>
                 <div class="text-h6 q-mb-sm">
                   <q-icon name="account_circle" color="blue-5" size="sm" class="q-mr-sm" />
-                  👤 Análisis de Sesión por Código Base
+                  Análisis de Sesión por Código Base
                 </div>
                 <div class="text-caption text-grey-4 q-mb-lg">
                   <q-icon name="info" size="xs" class="q-mr-xs" />
@@ -531,7 +552,7 @@
                         <div
                           v-for="(record, index) in resultadoSesion.data"
                           :key="record.id || index"
-                          class="col-12 col-md-6 col-lg-4"
+                          class="col-12 col-md-6 col-lg-4 flex items-stretch"
                         >
                           <q-card
                             class="session-record-card bg-grey-9 text-white"
@@ -539,7 +560,7 @@
                           >
                             <q-card-section>
                               <div class="row items-start q-mb-sm">
-                                <div class="col">
+                                <div class="col-12">
                                   <div class="record-type q-mb-xs">
                                     <q-chip
                                       :color="getRecordTypeColor(record.type || record.proceso)"
@@ -1555,15 +1576,15 @@ const exportarDatos = async (formato) => {
 
 const verDetalleCompleto = (record) => {
   $q.dialog({
-    title: '<h5 class="text-center text-bold">Detalle Completo del Registro</h5>',
+    title: '<p class="text-h4 text-center text-bold q-pt-lg">Detalle Completo del Registro</p>',
     message: `
-      <div style="text-align: left; color: #ffff;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+      <div class="row" style="text-align: left; color: #ffff; margin: 0;">
+        <div class="col-12" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
           <h4 style="margin: 0; font-size: 18px;">Informacion del Registro</h4>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-          <div style="background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
+        <div class="row flex justify-center q-gutter-sm">
+          <div class="col-sm-12 col-md col-lg-5" style="border-left: 3px solid #007bff; background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px;">
             <h5 style="color: #007bff; margin-top: 20px; font-weight: bold;">Detalles del Error</h5>
             <p><span style="font-weight: bold; color: #007bff">Mensaje:</span> ${record.message || record.descripcion || 'N/A'}</p>
             <p><span style="font-weight: bold; color: #007bff">Fecha:</span> ${formatearFecha(record.fecha || record.date)}</p>
@@ -1571,17 +1592,15 @@ const verDetalleCompleto = (record) => {
             <p><span style="font-weight: bold; color: #007bff">Proceso:</span> ${record.process || record.proceso || 'N/A'}</p>
           </div>
 
-          <div style="background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #28a745; color: #ffff">
+          <div class="col-sm-12 col-md col-lg-5" style="border-left: 3px solid #28a745; background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px;">
             <h5 style="color: #28a745; margin-top: 20px; font-weight: bold;">Códigos de Identificación</h5>
-            <p"><span style="font-weight: bold; color: #28a745">Base Code:</span> ${record.baseCode || 'N/A'}</p>
+            <p><span style="font-weight: bold; color: #28a745">Base Code:</span> ${record.baseCode || 'N/A'}</p>
             <p><span style="font-weight: bold; color: #28a745">Session Token:</span> ${record.sessionToken || 'N/A'}</p>
             <p><span style="font-weight: bold; color: #28a745">Error Code:</span> ${record.errorCode || 'N/A'}</p>
             <p><span style="font-weight: bold; color: #28a745">Tracking Code:</span> ${record.trackingCode || 'N/A'}</p>
           </div>
-        </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-          <div style="background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%);; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+          <div class="col-sm-12 col-md col-lg-5" style="border-left: 3px solid #e67e22; background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px;">
             <h5 style="color: #e67e22; margin-top: 20px; font-weight: bold;">Información del Usuario</h5>
             <p><span style="font-weight: bold; color: #e67e22">Nombre Completo:</span> ${record.person?.nombreCompleto || 'N/A'}</p>
             <p><span style="font-weight: bold; color: #e67e22">CURP:</span> ${record.person?.curp || 'N/A'}</p>
@@ -1592,17 +1611,15 @@ const verDetalleCompleto = (record) => {
                 (record.person?.segundoApellido || '') || 'N/A'
             }</p>
           </div>
-
-          <div style="background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px; border-left: 4px solid #6f42c1;">
+          <div class="col-sm-12 col-md col-lg-5" style="border-left: 3px solid #6f42c1; background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px;">
             <h5 style="color: #6f42c1; margin-top: 20px; font-weight: bold;">Ubicación y Dispositivos</h5>
             <p><span style="font-weight: bold; color: #6f42c1">Oficina:</span> ${record.oficina?.nombre || 'N/A'}</p>
             <p><span style="font-weight: bold; color: #6f42c1">ID Oficina:</span> ${record.oficina?.id || 'N/A'}</p>
             <p><span style="font-weight: bold; color: #6f42c1">Dispositivo:</span> ${record.device || record.dispositivo || 'N/A'}</p>
             <p><span style="font-weight: bold; color: #6f42c1">Scanner:</span> ${record.scanDevice || record.scan_device || 'N/A'}</p>
           </div>
-        </div>
 
-        <div style="background: #343a40; color: white; padding: 15px; border-radius: 8px;">
+          <div class="col-12" style="background: #343a40; color: white; padding: 15px; border-radius: 8px;">
           <h5 style="color: #17a2b8; margin-top: 20px; font-weight: bold;">Datos Técnicos Completos (JSON)</h5>
           <pre style="background: #2d3436; color: #00b894; padding: 10px; border-radius: 4px; font-size: 11px; max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${JSON.stringify(
             record,
@@ -1610,10 +1627,11 @@ const verDetalleCompleto = (record) => {
             2
           )}</pre>
         </div>
+        </div>
       </div>
     `,
     html: true,
-    style: 'width: 700px; max-width: 80vw; color: #ffff; background-color: #0065b7; border-radius: 12px;',
+    style: 'width: 800px; max-width: 80vw; color: #ffff; background: linear-gradient(to right, #c31432, #240b36); border-radius: 12px; padding: 0;',
     persistent: false,
     ok: {
       label: 'Cerrar',
@@ -1627,7 +1645,7 @@ const mostrarAyuda = () => {
   $q.dialog({
     message: `
       <div style="padding: 0; margin: 0;">
-        <div style="padding: 32px; border-radius: 20px;">
+        <div style="border-radius: 20px;">
 
           <!-- Header Principal con Glassmorphism -->
           <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%); backdrop-filter: blur(10px); color: white; padding: 28px; border-radius: 16px; margin-bottom: 32px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; position: relative; overflow: hidden;">
@@ -1643,11 +1661,11 @@ const mostrarAyuda = () => {
           </div>
 
           <!-- Grid de Funcionalidades -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 32px;">
+          <div style="display: grid; gap: 24px; margin-bottom: 32px;">
 
             <!-- Análisis de Errores -->
             <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(220, 38, 38, 0.2); position: relative; overflow: hidden;">
-              <div style="position: absolute; top: 0; right: 0; width: 60px; height: 60px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); border-radius: 50%;"></div>
+              <div style="position: absolute; top: 0; left: 0; right: 0; height: 60px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); border-radius: 50%;"></div>
               <div style="position: relative; z-index: 1;">
                 <div style="display: flex; align-items: center; margin-bottom: 16px;">
                   <div style="font-size: 2rem; margin-right: 12px;">🔴</div>
@@ -1692,7 +1710,7 @@ const mostrarAyuda = () => {
           </div>
 
           <!-- Funcionalidades Adicionales en Grid Horizontal -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 28px;">
+          <div style="display: grid; gap: 20px; margin-bottom: 28px;">
 
             <!-- Búsqueda Rápida -->
             <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);">
@@ -1724,8 +1742,8 @@ const mostrarAyuda = () => {
               <div style="font-size: 1.8rem; margin-right: 12px;">💡</div>
               <h4 style="margin: 0; color: #fbbf24; font-size: 1.2rem; font-weight: 600;">Características Nuevas</h4>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.6;">
-              <div>✨ <strong>Desglose completo:</strong> Todos los registros detallados</div>
+            <div style="display: grid; gap: 16px; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.6;">
+              <p>✨ <strong>Desglose completo:</strongBúsqueda Rápida de Diagnóstico> Todos los registros detallados</p>
               <div>📱 <strong>100% Responsivo:</strong> Móvil, tablet y desktop</div>
               <div>🎨 <strong>Diseño moderno:</strong> Efectos visuales mejorados</div>
             </div>
@@ -1734,7 +1752,7 @@ const mostrarAyuda = () => {
       </div>
     `,
     html: true,
-    style: 'width: 700px; max-width: 80vw; color: #ffff; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); border-radius: 12px;',
+    style: 'padding: 0; margin: 0; width: 700px; color: #ffff; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); border-radius: 12px;',
     persistent: false,
     ok: {
       label: '✓ Perfecto, entendido',
@@ -2836,6 +2854,11 @@ onMounted(() => {
 
 
 <style lang="scss" scoped>
+
+.bg-gradient-pure-list {
+  background: linear-gradient(to right, #333333, #dd1818);
+}
+
 .diagnostic-page {
   background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
   min-height: 100vh;
@@ -2909,6 +2932,16 @@ onMounted(() => {
   }
 }
 
+.bg-gradient-red-dark {
+  background: linear-gradient(to right, #c31432, #240b36);
+}
+
+.btn-error {
+  background: linear-gradient(to right, #f00000, #dc281e);
+  border-radius: 15px;
+  width: 100%;
+}
+
 .summary-card {
   border-radius: 16px;
   overflow: hidden;
@@ -2920,6 +2953,14 @@ onMounted(() => {
 
   &.bg-gradient-purple {
     background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  }
+
+  &.bg-gradient-red {
+    background: linear-gradient(to right, #f00000, #dc281e);
+  }
+
+  &.bg-gradient-red-dark {
+    background: linear-gradient(to right, #c31432, #240b36);
   }
 
   .summary-item {
@@ -2936,6 +2977,7 @@ onMounted(() => {
 
 .session-records {
   .session-record-card {
+    width: 100%;
     border-radius: 12px;
     border-left: 4px solid #3b82f6;
     transition: all 0.3s ease;
@@ -2992,7 +3034,6 @@ onMounted(() => {
         font-weight: 400;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
         flex: 1;
       }
     }
@@ -3179,6 +3220,10 @@ onMounted(() => {
   .diagnostic-action-btn {
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
+  }
+
+  .modern-input-group {
+    display: grid;
   }
 }
 

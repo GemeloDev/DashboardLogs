@@ -373,8 +373,8 @@
               <q-card-section>
                 <div class="row justify-center">
                   <div class="col-12 justify-center q-gutter-y-xs text-center">
-                    <div class="text-h6 q-pa-md">👤 Análisis de Sesión por Código Base</div>
-                    <div class="text-caption text-grey-4 q-mb-lg q-mx-md">
+                    <div class="text-h6 q-pa-md q-my-md">👤 Análisis de Sesión por Código Base</div>
+                    <div class="text-caption text-grey-4 q-my-lg q-mx-md">
                       Formato: USR02808191331 (usar baseCode)
                     </div>
                   </div>
@@ -550,7 +550,8 @@
                                   <div class="log-details">
                                     <!-- Mensaje principal del log -->
                                     <div class="text-body2 q-mb-sm log-message">
-                                      {{ log.message || 'Sin mensaje disponible' }}
+                                      <p class="ellipsis-3-lines">{{ log.message || 'Sin mensaje disponible' }}</p>
+
                                     </div>
 
                                     <!-- Estado del log -->
@@ -1376,6 +1377,7 @@ defineExpose({
       padding: 8px 12px;
       border-radius: 6px;
       border-left: 3px solid #42a5f5;
+      width: 500px;
     }
 
     .log-metadata {
@@ -1409,6 +1411,16 @@ defineExpose({
     .q-timeline-subtitle {
       opacity: 0.8;
       font-size: 0.75rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .session-timeline {
+    .log-details {
+      .log-message {
+        width: 200px;
+      }
     }
   }
 }

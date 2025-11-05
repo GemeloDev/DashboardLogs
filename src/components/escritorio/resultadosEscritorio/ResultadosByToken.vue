@@ -1,6 +1,6 @@
 <template>
   <q-card class="modern-card text-white session-card">
-    <q-card-section class="q-pa-xl row card-body">
+    <q-card-section class="row card-body">
       <div class="col-sm-12 col-md-12 col-lg-12">
         <p class="text-h5 text-bold text-white">Listado de Datos</p>
       </div>
@@ -22,7 +22,7 @@
 
   <q-card class="modern-card text-white session-card q-mt-lg">
     <q-card-section class="col card-body">
-      <div class="q-px-lg q-py-md">
+      <div class="q-pr-lg q-py-md">
         <q-timeline color="secondary" class="session-timeline q-px-xl">
           <q-timeline-entry heading>
             <strong class="text-h5 text-bold">Detalle de la Consulta</strong>
@@ -35,7 +35,7 @@
             :color="getEventColor(log.type)"
             :icon="getEventIcon(log.type)"
           >
-            <div class="row q-gutter-md">
+            <div class="row flex justify-center q-gutter-md">
               <div class="col-12">
                 <q-card class="kpi-card gradient-cyan">
                   <q-card-section class="q-pa-lg">
@@ -51,43 +51,47 @@
                   </q-card-section>
                 </q-card>
               </div>
-              <div v-if="log.person" class="col content-center text-body2 log-message">
-                👤 Nombre:
-                {{
-                  log.person.nombres +
-                  ' ' +
-                  log.person.primerApellido +
-                  ' ' +
-                  log.person.segundoApellido
-                }}
+              <div v-if="log.person" class="col-xs-12 col-sm-12 col-md-5 content-center text-body2">
+                <div class="log-message">
+                  👤 Nombre:
+                  {{
+                    log.person.nombres +
+                    ' ' +
+                    log.person.primerApellido +
+                    ' ' +
+                    log.person.segundoApellido
+                  }}
+                </div>
               </div>
-              <div v-if="log.oficina" class="col text-body2 log-ofice">
-                <p class="text-weight-thin">
-                  <span class="text-bold">🏢 Oficina:</span> {{ log.oficina.nombre }}
-                  <br />
-                  <span class="text-bold">🚩 Dirección:</span>
-                  {{ log.oficina.direccion }}
-                </p>
+              <div v-if="log.oficina" class="col-xs-12 col-sm-12 col-md-5 text-body2">
+                <div class="log-ofice">
+                  <p class="text-weight-thin">
+                    <span class="text-bold">🏢 Oficina:</span> {{ log.oficina.nombre }}
+                    <br />
+                    <span class="text-bold">🚩 Dirección:</span>
+                    {{ log.oficina.direccion }}
+                  </p>
+                </div>
               </div>
               <!-- Detalles técnicos del log -->
               <div class="col-12">
-                <div class="row text-center">
-                  <div class="col bordered">
+                <div class="row flex justify-around text-center">
+                  <div class="col-xs-12 col-sm-12 col-md-auto bordered">
                     <q-icon color="blue-5" name="tag" size="xs" class="q-mr-xs" />
                     <span class="text-blue-5">ID: </span>
                     <p>{{ log.id }}</p>
                   </div>
-                  <div v-if="log.errorCode" class="col bordered">
+                  <div v-if="log.errorCode" class="col-xs-12 col-sm-12 col-md-auto bordered">
                     <q-icon color="red" name="error_outline" size="xs" class="q-mr-xs" />
                     <span class="text-red-4 text-bold">Código de error: </span>
                     <p>{{ log.errorCode }}</p>
                   </div>
-                  <div v-if="log.sessionToken" class="col bordered">
+                  <div v-if="log.sessionToken" class="col-xs-12 col-sm-12 col-md-auto bordered">
                     <q-icon name="security" size="xs" class="q-mr-xs" />
                     <span class="text-purple-4 text-bold">Token de sesión: </span>
                     <p>{{ log.sessionToken }}</p>
                   </div>
-                  <div v-if="log.baseCode" class="col bordered">
+                  <div v-if="log.baseCode" class="col-xs-12 col-sm-12 col-md-auto bordered">
                     <q-icon name="qr_code" size="xs" class="q-mr-xs" />
                     <span class="text-orange-4 text-bold">Código base: </span>
                     <p>{{ log.baseCode }}</p>
@@ -355,8 +359,8 @@ console.log(duplicateOffice, duplicateCurps)
     }
   }
 
-  .card-body {
-    padding: 2rem;
-  }
+  // .card-body {
+  //   padding: 2rem;
+  // }
 }
 </style>

@@ -23,7 +23,7 @@
     "chartjs-plugin-datalabels": "^2.2.0",
     "esri-leaflet": "^3.0.17",
     "file-saver": "^2.0.5",
-    "jspdf": "^3.0.2",
+    "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",

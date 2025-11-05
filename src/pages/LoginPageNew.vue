@@ -114,7 +114,7 @@
                       (val) => !!val || 'La contraseña es requerida',
                       (val) => val.length >= 8 || 'Mínimo 8 caracteres',
                     ]"
-                    @input="evaluarPassword"
+                    @update:model-value="evaluarPassword"
                   >
                     <template v-slot:prepend>
                       <q-icon name="lock" class="input-icon" />
@@ -268,15 +268,12 @@
 
               <!-- Forgot password (login only) -->
               <div v-if="!modoRegistro" class="forgot-password">
-                <q-btn
-                  label="¿Olvidaste tu contraseña?"
-                  flat
-                  dense
-                  size="sm"
+                <a
+                  href="/login?#/olvide-password"
                   class="forgot-btn"
-                  disable
-                />
-                <q-tooltip>Próximamente disponible</q-tooltip>
+                >
+                  ¿Olvidaste tu contraseña?
+                </a>
               </div>
             </div>
           </q-card>
@@ -337,7 +334,11 @@ const formularioValido = computed(() => {
       formData.value.password === formData.value.confirmarPassword &&
       formData.value.aceptarTerminos &&
       validarEmailOTelefono(formData.value.email) &&
-      formData.value.password.length >= 8
+      formData.value.password.length >= 8 &&
+      indicadores.value.longitud &&
+      indicadores.value.simbolos &&
+      indicadores.value.mayuscula &&
+      indicadores.value.numero
     )
   } else {
     return (
@@ -374,11 +375,11 @@ const sanitizarInput = (campo) => {
 }
 
 const evaluarPassword = () => {
-  const password = formData.value.password
+  const { password } = formData.value
 
   indicadores.value = {
     longitud: password.length >= 8,
-    simbolos: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    simbolos: /[!-_@#$%^&*(),.?":{}|<>]/.test(password),
     mayuscula: /[A-Z]/.test(password),
     numero: /\d/.test(password),
   }
@@ -386,6 +387,7 @@ const evaluarPassword = () => {
 
 const cambiarModo = () => {
   modoRegistro.value = !modoRegistro.value
+  console.log(modoRegistro.value)
   limpiarFormulario()
 }
 
