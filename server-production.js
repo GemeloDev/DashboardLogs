@@ -23,7 +23,7 @@ app.options('*', cors(corsOptions))
 
 // Proxy para API en producción con configuración mejorada para query strings
 app.use('/api', createProxyMiddleware({
-  target: 'http://187.188.66.56:8024',
+  target: 'http://187.188.66.56:8040',
   changeOrigin: true,
   secure: false,
   // Preservar query strings

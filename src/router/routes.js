@@ -18,6 +18,12 @@ const routes = [
     component: () => import('pages/PasswordOlvidadoPage.vue'),
     meta: { hideLayout: true }
   },
+  {
+    path: '/accept-invite',
+    name: 'acceptInvite',
+    component: () => import('pages/AcceptInvitation.vue'),
+    meta: { hideLayout: true }
+  },
 
   // Rutas principales (con layout y protección)
   {

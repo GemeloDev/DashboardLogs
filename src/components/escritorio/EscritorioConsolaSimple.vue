@@ -464,196 +464,197 @@
               class="col-xs-12 col-sm-12 col-auto width-responsive"
             >
               <q-card
-                :class="[
-                  'log-card',
-                  `log-card-log`,
-                  'fit',
-                  'cursor-pointer',
-                ]"
+                :class="['log-card', `log-card-log`, 'fit', 'cursor-pointer']"
                 @click="mostrarDetalleLog(log)"
                 bordered
                 flat
               >
                 <!-- Header de la card mejorado -->
-              <q-card-section class="log-card-header">
-                <div class="row items-center justify-between">
-                  <div class="col-auto">
-                    <q-chip
-                      :color="getColorTipo(log.type || log.Tipo || log.EventType)"
-                      text-color="white"
-                      size="md"
-                      :icon="getIconoTipo(log.type || log.Tipo || log.EventType)"
-                      class="text-weight-bold"
-                    >
-                      {{ log.type || log.Type || log.EventType || 'INFO' }}
-                    </q-chip>
-                  </div>
-                  <div class="col-auto">
-                    <q-badge
-                      :color="getColorProceso(log.process || log.Proceso)"
-                      :label="log.process || log.Proceso || 'SYSTEM'"
-                      class="text-weight-bold"
-                    />
-                  </div>
-                </div>
-
-                <!-- Timestamp mejorado -->
-                <div class="row items-center justify-between q-mt-sm">
-                  <div class="col">
-                    <div class="timestamp-section">
-                      <q-icon name="schedule" color="blue-4" size="16px" class="q-mr-xs" />
-                      <span class="text-caption text-blue-4 text-weight-medium">
-                        {{ formatearFechaCompleta(log.date || log.Fecha || log.timestamp) }}
-                      </span>
+                <q-card-section class="log-card-header">
+                  <div class="row items-center justify-between">
+                    <div class="col-auto">
+                      <q-chip
+                        :color="getColorTipo(log.type || log.Tipo || log.EventType)"
+                        text-color="white"
+                        size="md"
+                        :icon="getIconoTipo(log.type || log.Tipo || log.EventType)"
+                        class="text-weight-bold"
+                      >
+                        {{ log.type || log.Type || log.EventType || 'INFO' }}
+                      </q-chip>
                     </div>
-                  </div>
-                  <div class="col-auto">
-                    <!-- ID del log -->
-                    <q-chip
-                      dense
-                      color="grey-7"
-                      text-color="white"
-                      size="sm"
-                      icon="tag"
-                      class="log-id-chip"
-                    >
-                      #{{ log.id || index + 1 }}
-                    </q-chip>
-                  </div>
-                </div>
-              </q-card-section>
-              <!-- Contenido principal de la card -->
-              <q-card-section class="log-card-content">
-                <!-- Información del usuario mejorada -->
-                <div v-if="!errorCodeExist(log.errorCode)">
-                <!-- <div v-if="log.errorCode"> -->
-                  <div v-if="obtenerNombreUsuario(log)" class="log-user-section enhanced-section">
-                    <div class="section-header">
-                      <q-icon name="person" color="green-4" size="20px" class="q-mr-sm" />
-                      <div class="text-weight-bold text-green-4 section-title">
-                        Usuario del Sistema
-                      </div>
-                    </div>
-                    <div class="section-content">
-                      <div class="detail-item">
-                        <span class="detail-label">Nombre:</span>
-                        <span class="detail-value">{{ obtenerNombreUsuario(log) }}</span>
-                      </div>
-                      <div v-if="obtenerCurpUsuario(log)" class="detail-item">
-                        <span class="detail-label">Username:</span>
-                        <span class="detail-value">{{ obtenerCurpUsuario(log) }}</span>
-                      </div>
-                      <!-- Información adicional del usuario si está disponible -->
-                      <div v-if="log.userRole || log.UserRole" class="detail-item">
-                        <span class="detail-label">Rol:</span>
-                        <q-chip dense color="green-6" text-color="white" size="sm">
-                          {{ log.userRole || log.UserRole }}
-                        </q-chip>
-                      </div>
+                    <div class="col-auto">
+                      <q-badge
+                        :color="getColorProceso(log.process || log.Proceso)"
+                        :label="log.process || log.Proceso || 'SYSTEM'"
+                        class="text-weight-bold"
+                      />
                     </div>
                   </div>
 
-                  <!-- Información de la oficina mejorada -->
-                  <div
-                    v-if="obtenerNombreUsuario(log)"
-                    class="log-office-section enhanced-section q-mt-sm"
-                  >
-                    <div class="section-header">
-                      <q-icon name="business" color="orange-4" size="20px" class="q-mr-sm" />
-                      <div class="text-weight-bold text-orange-4 section-title">
-                        Ubicación & Oficina
-                      </div>
-                    </div>
-                    <div class="section-content">
-                      <div class="detail-item">
-                        <span class="detail-label">Oficina:</span>
-                        <span class="detail-value">
-                          {{ obtenerNombreOficina(log).nombre || obtenerNombreOficina(log) }}
+                  <!-- Timestamp mejorado -->
+                  <div class="row items-center justify-between q-mt-sm">
+                    <div class="col">
+                      <div class="timestamp-section">
+                        <q-icon name="schedule" color="blue-4" size="16px" class="q-mr-xs" />
+                        <span class="text-caption text-blue-4 text-weight-medium">
+                          {{ formatearFechaCompleta(log.date || log.Fecha || log.timestamp) }}
                         </span>
                       </div>
-                      <div v-if="obtenerDireccionOficina(log)" class="detail-item">
-                        <span class="detail-label">Dirección:</span>
-                        <span class="detail-value">{{ obtenerDireccionOficina(log) }}</span>
+                    </div>
+                    <div class="col-auto">
+                      <!-- ID del log -->
+                      <q-chip
+                        dense
+                        color="grey-7"
+                        text-color="white"
+                        size="sm"
+                        icon="tag"
+                        class="log-id-chip"
+                      >
+                        #{{ log.id || index + 1 }}
+                      </q-chip>
+                    </div>
+                  </div>
+                </q-card-section>
+                <!-- Contenido principal de la card -->
+                <q-card-section class="log-card-content">
+                  <!-- Información del usuario mejorada -->
+                  <div v-if="!errorCodeExist(log.errorCode)">
+                    <!-- <div v-if="log.errorCode"> -->
+                    <div v-if="obtenerNombreUsuario(log)" class="log-user-section enhanced-section">
+                      <div class="section-header">
+                        <q-icon name="person" color="green-4" size="20px" class="q-mr-sm" />
+                        <div class="text-weight-bold text-green-4 section-title">
+                          Usuario del Sistema
+                        </div>
                       </div>
-                      <!-- Información adicional de ubicación -->
-                      <div v-if="log.officeName || log.OfficeName" class="detail-item">
-                        <span class="detail-label">Código:</span>
-                        <q-chip dense color="orange-6" text-color="white" size="sm">
-                          {{ log.officeName || log.OfficeName }}
-                        </q-chip>
+                      <div class="section-content">
+                        <div class="detail-item">
+                          <span class="detail-label">Nombre:</span>
+                          <span class="detail-value">{{ obtenerNombreUsuario(log) }}</span>
+                        </div>
+                        <div v-if="obtenerCurpUsuario(log)" class="detail-item">
+                          <span class="detail-label">Username:</span>
+                          <span class="detail-value">{{ obtenerCurpUsuario(log) }}</span>
+                        </div>
+                        <!-- Información adicional del usuario si está disponible -->
+                        <div v-if="log.userRole || log.UserRole" class="detail-item">
+                          <span class="detail-label">Rol:</span>
+                          <q-chip dense color="green-6" text-color="white" size="sm">
+                            {{ log.userRole || log.UserRole }}
+                          </q-chip>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Información de la oficina mejorada -->
+                    <div
+                      v-if="obtenerNombreUsuario(log)"
+                      class="log-office-section enhanced-section q-mt-sm"
+                    >
+                      <div class="section-header">
+                        <q-icon name="business" color="orange-4" size="20px" class="q-mr-sm" />
+                        <div class="text-weight-bold text-orange-4 section-title">
+                          Ubicación & Oficina
+                        </div>
+                      </div>
+                      <div class="section-content">
+                        <div class="detail-item">
+                          <span class="detail-label">Oficina:</span>
+                          <span class="detail-value">
+                            {{ obtenerNombreOficina(log).nombre || obtenerNombreOficina(log) }}
+                          </span>
+                        </div>
+                        <div v-if="obtenerDireccionOficina(log)" class="detail-item">
+                          <span class="detail-label">Dirección:</span>
+                          <span class="detail-value">{{ obtenerDireccionOficina(log) }}</span>
+                        </div>
+                        <!-- Información adicional de ubicación -->
+                        <div v-if="log.officeName || log.OfficeName" class="detail-item">
+                          <span class="detail-label">Código:</span>
+                          <q-chip dense color="orange-6" text-color="white" size="sm">
+                            {{ log.officeName || log.OfficeName }}
+                          </q-chip>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <!-- Información del dispositivo mejorada -->
-                <div
-                  v-if="
-                    obtenerInfoDispositivo(log).hasDevice || obtenerInfoDispositivo(log).hasScanner
-                  "
-                  class="log-device-section enhanced-section q-mt-sm"
-                >
-                  <div class="section-header">
-                    <q-icon name="devices" color="purple-4" size="20px" class="q-mr-sm" />
-                    <div class="text-weight-bold text-purple-4 section-title">
-                      Hardware & Dispositivos
+                  <!-- Información del dispositivo mejorada -->
+                  <div
+                    v-if="
+                      obtenerInfoDispositivo(log).hasDevice ||
+                      obtenerInfoDispositivo(log).hasScanner
+                    "
+                    class="log-device-section enhanced-section q-mt-sm"
+                  >
+                    <div class="section-header">
+                      <q-icon name="devices" color="purple-4" size="20px" class="q-mr-sm" />
+                      <div class="text-weight-bold text-purple-4 section-title">
+                        Hardware & Dispositivos
+                      </div>
+                    </div>
+                    <div class="section-content">
+                      <div v-if="obtenerInfoDispositivo(log).hasDevice" class="detail-item">
+                        <q-icon name="computer" color="purple-3" size="16px" class="q-mr-xs" />
+                        <span class="detail-label">Dispositivo:</span>
+                        <span class="detail-value">{{ obtenerInfoDispositivo(log).device }}</span>
+                      </div>
+                      <div v-if="obtenerInfoDispositivo(log).hasScanner" class="detail-item">
+                        <q-icon
+                          name="qr_code_scanner"
+                          color="purple-3"
+                          size="16px"
+                          class="q-mr-xs"
+                        />
+                        <span class="detail-label">Escáner:</span>
+                        <span class="detail-value">{{ obtenerInfoDispositivo(log).scanner }}</span>
+                      </div>
+                      <!-- IP Address si está disponible -->
+                      <div v-if="log.ipAddress || log.IpAddress" class="detail-item">
+                        <q-icon name="router" color="purple-3" size="16px" class="q-mr-xs" />
+                        <span class="detail-label">IP:</span>
+                        <span class="detail-value">{{ log.ipAddress || log.IpAddress }}</span>
+                      </div>
                     </div>
                   </div>
-                  <div class="section-content">
-                    <div v-if="obtenerInfoDispositivo(log).hasDevice" class="detail-item">
-                      <q-icon name="computer" color="purple-3" size="16px" class="q-mr-xs" />
-                      <span class="detail-label">Dispositivo:</span>
-                      <span class="detail-value">{{ obtenerInfoDispositivo(log).device }}</span>
-                    </div>
-                    <div v-if="obtenerInfoDispositivo(log).hasScanner" class="detail-item">
-                      <q-icon name="qr_code_scanner" color="purple-3" size="16px" class="q-mr-xs" />
-                      <span class="detail-label">Escáner:</span>
-                      <span class="detail-value">{{ obtenerInfoDispositivo(log).scanner }}</span>
-                    </div>
-                    <!-- IP Address si está disponible -->
-                    <div v-if="log.ipAddress || log.IpAddress" class="detail-item">
-                      <q-icon name="router" color="purple-3" size="16px" class="q-mr-xs" />
-                      <span class="detail-label">IP:</span>
-                      <span class="detail-value">{{ log.ipAddress || log.IpAddress }}</span>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Información del código de error -->
-                <div v-if="log.errorCode || log.ErrorCode" class="log-error-section q-mt-sm">
-                  <div class="row items-center q-mb-xs">
-                    <q-icon name="error_outline" color="red-4" size="18px" class="q-mr-sm" />
-                    <div class="text-weight-medium text-red-4">Código de Error</div>
+                  <!-- Información del código de error -->
+                  <div v-if="log.errorCode || log.ErrorCode" class="log-error-section q-mt-sm">
+                    <div class="row items-center q-mb-xs">
+                      <q-icon name="error_outline" color="red-4" size="18px" class="q-mr-sm" />
+                      <div class="text-weight-medium text-red-4">Código de Error</div>
+                    </div>
+                    <div class="error-content q-ml-md text-caption">
+                      {{ log.errorCode || log.ErrorCode }}
+                    </div>
                   </div>
-                  <div class="error-content q-ml-md text-caption">
-                    {{ log.errorCode || log.ErrorCode }}
-                  </div>
-                </div>
 
-                <!-- Información del token de sesión -->
-                <div
-                  v-if="log.sessionToken || log.SessionToken"
-                  class="log-session-section q-mt-sm"
-                >
-                  <div class="row items-center q-mb-xs">
-                    <q-icon name="vpn_key" color="cyan-4" size="18px" class="q-mr-sm" />
-                    <div class="text-weight-medium text-cyan-4">Token de Sesión</div>
+                  <!-- Información del token de sesión -->
+                  <div
+                    v-if="log.sessionToken || log.SessionToken"
+                    class="log-session-section q-mt-sm"
+                  >
+                    <div class="row items-center q-mb-xs">
+                      <q-icon name="vpn_key" color="cyan-4" size="18px" class="q-mr-sm" />
+                      <div class="text-weight-medium text-cyan-4">Token de Sesión</div>
+                    </div>
+                    <div class="session-content q-ml-md text-caption">
+                      {{ log.sessionToken || log.SessionToken }}
+                    </div>
                   </div>
-                  <div class="session-content q-ml-md text-caption">
-                    {{ log.sessionToken || log.SessionToken }}
-                  </div>
-                </div>
 
-                <!-- Mensaje del log -->
-                <div v-if="obtenerMensajeCompleto(log)" class="log-message-section q-mt-sm">
-                  <div class="row items-center q-mb-xs">
-                    <q-icon name="message" color="amber-4" size="18px" class="q-mr-sm" />
-                    <div class="text-weight-medium text-amber-4">Mensaje</div>
+                  <!-- Mensaje del log -->
+                  <div v-if="obtenerMensajeCompleto(log)" class="log-message-section q-mt-sm">
+                    <div class="row items-center q-mb-xs">
+                      <q-icon name="message" color="amber-4" size="18px" class="q-mr-sm" />
+                      <div class="text-weight-medium text-amber-4">Mensaje</div>
+                    </div>
+                    <div class="message-content q-ml-md text-caption">
+                      {{ obtenerMensajeCompleto(log) }}
+                    </div>
                   </div>
-                  <div class="message-content q-ml-md text-caption">
-                    {{ obtenerMensajeCompleto(log) }}
-                  </div>
-                </div>
-              </q-card-section>
+                </q-card-section>
               </q-card>
             </div>
           </div>
@@ -2272,12 +2273,12 @@ const cargarLogsConFiltrosAPI = async () => {
 }
 
 const errorCodeExist = (errorCode) => {
-  if(errorCode !== null && typeof errorCode !== 'undefined') {
+  if (errorCode !== null && typeof errorCode !== 'undefined') {
     // console.log(errorCode)
-    return errorCode.includes('NS');
+    return errorCode.includes('NS')
   }
 
-  return false;
+  return false
 }
 
 const cerrarConsola = () => {
@@ -2390,7 +2391,7 @@ const cargarLogsDesdeAPI = async (rangoExtendido = false) => {
 
     console.log('🚀 URL completa:', `${API_BASE_URL}/logs/filter?${params}`)
 
-    // Llamar al mismo endpoint que usan las gráficas (puerto 8024)
+    // Llamar al mismo endpoint que usan las gráficas (puerto 8040)
     const response = await Promise.race([
       axios.get(`${API_BASE_URL}/logs/filter?${params}`),
       new Promise((_, reject) =>
@@ -3589,12 +3590,12 @@ defineExpose({
   }
 } // Estilos para las cards de logs - OPTIMIZADO PARA ALTURA COMPACTA
 
-.width-responsive{
+.width-responsive {
   width: 323px;
 
   @media (max-width: 600px) {
-      width: 100%;
-    }
+    width: 100%;
+  }
 }
 
 .log-card {

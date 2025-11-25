@@ -41,7 +41,7 @@ export default defineConfig((/* ctx */) => {
       // Configuración para producción
       env: {
         API_BASE_URL: process.env.NODE_ENV === 'production'
-          ? 'http://187.188.66.56:8024/api'
+          ? 'http://187.188.66.56:8040/api'
           : '/api'
       },
       // vueRouterBase,
@@ -82,7 +82,7 @@ export default defineConfig((/* ctx */) => {
       open: true, // opens browser window automatically
       proxy: {
         '/api': {
-          target: 'http://187.188.66.56:8024',
+          target: 'http://187.188.66.56:8040',
           changeOrigin: true,
           secure: false,
           logLevel: 'debug',

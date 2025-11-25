@@ -4,7 +4,7 @@ import { buildApiConfig } from './apiConfig.js'
 
 // Configuración específica para diagnósticos
 const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'http://187.188.66.56:8024/api'
+  ? 'http://187.188.66.56:8040/api'
   : '/api'
 
 export class DiagnosticService {

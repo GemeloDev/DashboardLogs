@@ -4,7 +4,7 @@
  */
 
 // Base URL del servidor
-const BASE_URL = 'http://187.188.66.56:8024'
+const BASE_URL = 'http://187.188.66.56:8040'
 
 // Endpoints de autenticación
 export const AUTH_ENDPOINTS = {
@@ -37,7 +37,8 @@ export const API_ENDPOINTS = {
 export const DEFAULT_CONFIG = {
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    'X-Tenant': localStorage.getItem('tenantId')
   },
   timeout: 30000 // 30 segundos
 }

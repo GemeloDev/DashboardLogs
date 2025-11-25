@@ -76,11 +76,11 @@ export const useAuthService = () => {
       const data = await response.json()
       console.log(' Respuesta del login:', data)
 
-      if (data.status === true && data.data) {
+      if (data.ok && data.data) {
         const userData = {
-          id: data.data.id,
-          name: data.data.name,
-          email: data.data.email,
+          id: data.data.user.id,
+          name: data.data.user.name,
+          email: data.data.user.email,
           loginTime: new Date().toISOString()
         }
         currentUser.value = userData
