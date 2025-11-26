@@ -32,7 +32,7 @@ export class ChartDataService {
 
       // Intentar obtener datos con timeout
       const response = await Promise.race([
-        axios.get(`${API_BASE_URL}/logs#?${params}`),
+        axios.get(`${API_BASE_URL}/logs?${params}`),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout de exportaciones')), 15000)
         )
@@ -44,7 +44,6 @@ export class ChartDataService {
         dataType: typeof response.data,
         muestra: Array.isArray(response.data) ? response.data.slice(0, 2) : response.data
       })
-
 
 
       return this.processExportacionesData(response.data)
@@ -1077,7 +1076,12 @@ export class ChartDataService {
       })
 
       console.log('🔍 Solicitando errores con filtros:', Object.fromEntries(params))
-      const response = await axios.get(`${API_BASE_URL}/logs#?${params}`)
+      const token = JSON.parse(localStorage.getItem('dashboardLogsSession')).token
+      const response = await axios.get(`/api/logs?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
 
       console.log('📊 Respuesta errores:', {
         status: response.status,

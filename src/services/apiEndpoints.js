@@ -38,7 +38,7 @@ export const DEFAULT_CONFIG = {
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'X-Tenant': localStorage.getItem('tenantId')
+    'X-Tenant': localStorage.getItem('tenantId'),
   },
   timeout: 30000 // 30 segundos
 }
