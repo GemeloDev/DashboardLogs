@@ -37,11 +37,7 @@
               <q-icon name="search" />
             </template>
             <template v-slot:append v-if="searchTerm">
-              <q-icon
-                name="close"
-                @click="clearSearch"
-                class="cursor-pointer"
-              />
+              <q-icon name="close" @click="clearSearch" class="cursor-pointer" />
             </template>
           </q-input>
 
