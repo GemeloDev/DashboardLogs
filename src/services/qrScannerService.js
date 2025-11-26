@@ -128,10 +128,85 @@ export const startQRScanner = async (videoElement, onScan, onError) => {
     // Cargar jsQR
     await loadJsQR()
 
-    // Solicitar acceso a la cámara
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' } // Cámara trasera en móviles
-    })
+    // Verificar que getUserMedia esté disponible
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Tu navegador no soporta acceso a cámara. Intenta actualizar tu navegador.')
+    }
+
+    // Verificar contexto seguro (HTTPS) - CRÍTICO PARA MÓVILES
+    const isSecureContext = window.isSecureContext || window.location.protocol === 'https:'
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+
+    console.log('🔒 Contexto seguro (HTTPS):', isSecureContext)
+    console.log('📱 Dispositivo:', { isMobile, isIOS })
+
+    // ADVERTENCIA: Navegadores móviles requieren HTTPS para cámara
+    if (isMobile && !isSecureContext) {
+      const httpsWarning = new Error(
+        'Los navegadores móviles requieren HTTPS para acceder a la cámara. ' +
+        'Por favor accede desde una conexión segura (https://) o usa la opción de subir imagen.'
+      )
+      httpsWarning.name = 'NotSecureContextError'
+      throw httpsWarning
+    }
+
+    // Configuraciones de cámara optimizadas para móviles
+    const cameraConfigs = [
+      // Config 1: Cámara trasera con resolución moderada (mejor para móviles)
+      {
+        video: {
+          facingMode: { exact: 'environment' },
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 }
+        }
+      },
+      // Config 2: Cámara trasera sin exact (más compatible)
+      {
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      },
+      // Config 3: Cualquier cámara con resolución media
+      {
+        video: {
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 }
+        }
+      },
+      // Config 4: Solo video básico (máxima compatibilidad)
+      { video: true }
+    ]
+
+    let stream = null
+    let lastError = null
+
+    // Intentar con cada configuración
+    for (let i = 0; i < cameraConfigs.length; i++) {
+      const config = cameraConfigs[i]
+      try {
+        console.log(`🎥 Intento ${i + 1}/${cameraConfigs.length}:`, config)
+        stream = await navigator.mediaDevices.getUserMedia(config)
+        console.log('✅ Cámara iniciada exitosamente')
+        break
+      } catch (err) {
+        console.warn(`⚠️ Intento ${i + 1} falló:`, err.name, err.message)
+        lastError = err
+
+        // Si es NotAllowedError (permiso denegado), no seguir intentando
+        if (err.name === 'NotAllowedError') {
+          throw err
+        }
+
+        continue
+      }
+    }
+
+    if (!stream) {
+      throw lastError || new Error('No se pudo acceder a ninguna cámara')
+    }
 
     videoElement.srcObject = stream
     videoElement.setAttribute('playsinline', true)
@@ -192,10 +267,34 @@ export const startQRScanner = async (videoElement, onScan, onError) => {
  */
 export const hasCameraAccess = async () => {
   try {
-    const devices = await navigator.mediaDevices.enumerateDevices()
-    return devices.some(device => device.kind === 'videoinput')
+    // Verificar si getUserMedia está disponible
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error('❌ getUserMedia no soportado')
+      return false
+    }
+
+    // Intentar solicitar permiso de cámara
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      // Detener inmediatamente el stream de prueba
+      stream.getTracks().forEach(track => track.stop())
+      console.log('✅ Permiso de cámara concedido')
+      return true
+    } catch (permissionError) {
+      console.warn('⚠️ Permiso de cámara denegado o no disponible:', permissionError)
+
+      // Verificar dispositivos disponibles como fallback
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const hasCamera = devices.some(device => device.kind === 'videoinput')
+
+      if (hasCamera) {
+        console.log('📹 Cámara detectada pero permiso no concedido')
+      }
+
+      return hasCamera
+    }
   } catch (error) {
-    console.error('Error al verificar cámara:', error)
+    console.error('❌ Error al verificar cámara:', error)
     return false
   }
 }

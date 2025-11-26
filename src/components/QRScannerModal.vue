@@ -33,12 +33,40 @@
       <q-tab-panels v-model="activeTab" animated class="scanner-panels">
         <!-- Camera Tab -->
         <q-tab-panel name="camera" class="camera-panel">
+          <!-- Advertencia de HTTPS en móviles -->
+          <q-banner v-if="isMobile && !isSecureContext" class="bg-warning text-white" rounded dense>
+            <template v-slot:avatar>
+              <q-icon name="warning" color="white" />
+            </template>
+            <strong>⚠️ Conexión no segura</strong><br />
+            Los navegadores móviles requieren HTTPS para acceder a la cámara. Te recomendamos usar
+            la opción de <strong>subir imagen</strong> o acceder desde una conexión segura.
+          </q-banner>
+
           <div class="camera-container">
-            <video ref="videoElement" class="camera-video" autoplay playsinline></video>
+            <video
+              ref="videoElement"
+              class="camera-video"
+              autoplay
+              playsinline
+              muted
+              webkit-playsinline
+            ></video>
 
             <div v-if="!cameraActive" class="camera-placeholder">
               <q-icon name="videocam_off" size="64px" color="grey-5" />
               <p>Cámara no iniciada</p>
+              <div class="help-section">
+                <p class="hint-text">📱 <strong>¿Primera vez?</strong></p>
+                <p class="hint-text">1. Presiona "Iniciar Cámara"</p>
+                <p class="hint-text">2. Tu navegador pedirá permiso</p>
+                <p class="hint-text">3. Selecciona "Permitir"</p>
+                <q-separator spaced />
+                <p class="hint-text-small">
+                  Si no funciona, verifica en la configuración de tu navegador que el sitio tenga
+                  permiso para usar la cámara.
+                </p>
+              </div>
             </div>
 
             <!-- Overlay de escaneo -->
@@ -65,6 +93,7 @@
               size="lg"
               unelevated
               :loading="initializingCamera"
+              class="start-camera-btn"
             />
             <q-btn
               v-else
@@ -74,6 +103,18 @@
               label="Detener Cámara"
               size="lg"
               flat
+            />
+
+            <!-- Botón alternativo si hay problemas -->
+            <q-btn
+              v-if="!cameraActive && !initializingCamera"
+              @click="activeTab = 'upload'"
+              flat
+              color="secondary"
+              icon="upload_file"
+              label="O sube una imagen"
+              size="md"
+              class="alt-btn"
             />
           </div>
         </q-tab-panel>
@@ -142,13 +183,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import {
   startQRScanner,
   readQRFromFile as readQRService,
   isValidImageFile,
-  hasCameraAccess,
 } from '../services/qrScannerService.js'
 
 const props = defineProps({
@@ -156,6 +196,15 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+})
+
+// Detectar si es móvil y si está en contexto seguro (HTTPS)
+const isMobile = computed(() => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+})
+
+const isSecureContext = computed(() => {
+  return window.isSecureContext || window.location.protocol === 'https:'
 })
 
 const emit = defineEmits(['update:modelValue', 'qr-scanned'])
@@ -194,15 +243,9 @@ watch(isOpen, (val) => {
 const startCamera = async () => {
   try {
     initializingCamera.value = true
-
-    // Verificar acceso a cámara
-    const hasCamera = await hasCameraAccess()
-    if (!hasCamera) {
-      throw new Error('No se encontró cámara disponible')
-    }
-
     scanning.value = true
 
+    // Intentar iniciar cámara directamente
     scannerControls = await startQRScanner(
       videoElement.value,
       (qrData) => {
@@ -211,30 +254,53 @@ const startCamera = async () => {
       },
       (error) => {
         console.error('❌ Error en escáner:', error)
+
+        let errorMessage = 'No se pudo acceder a la cámara'
+
+        if (error.name === 'NotSecureContextError') {
+          errorMessage =
+            '🔒 Se requiere HTTPS para usar la cámara en móviles. Por favor usa la opción de subir imagen o accede desde https://'
+        } else if (error.name === 'NotAllowedError') {
+          errorMessage =
+            '❌ Permiso de cámara denegado. Por favor permite el acceso en la configuración de tu navegador.'
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = '❌ No se encontró cámara en tu dispositivo'
+        } else if (error.name === 'NotReadableError') {
+          errorMessage = '❌ La cámara está siendo usada por otra aplicación'
+        } else if (error.name === 'OverconstrainedError') {
+          errorMessage = '❌ No se pudo iniciar la cámara con la configuración solicitada'
+        } else if (error.message) {
+          errorMessage = error.message
+        }
+
         $q.notify({
           type: 'negative',
-          message: `Error: ${error.message}`,
+          message: errorMessage,
           position: 'top',
+          timeout: 5000,
+          actions: [
+            {
+              label: 'Cerrar',
+              color: 'white',
+            },
+          ],
         })
         scanning.value = false
+        throw error
       }
     )
 
     cameraActive.value = true
     $q.notify({
       type: 'positive',
-      message: '📷 Cámara iniciada',
+      message: '📷 Cámara iniciada correctamente',
       position: 'top',
       timeout: 2000,
     })
   } catch (error) {
     console.error('❌ Error al iniciar cámara:', error)
-    $q.notify({
-      type: 'negative',
-      message: error.message || 'No se pudo acceder a la cámara',
-      position: 'top',
-    })
     scanning.value = false
+    cameraActive.value = false
   } finally {
     initializingCamera.value = false
   }
@@ -432,10 +498,40 @@ $bg-light: #f8fafc;
   justify-content: center;
   background: #000;
   color: white;
+  padding: 20px;
+  text-align: center;
 
   p {
     margin-top: 16px;
     color: #999;
+  }
+
+  .help-section {
+    margin-top: 24px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    max-width: 320px;
+  }
+
+  .hint-text {
+    font-size: 13px;
+    color: #bbb;
+    margin: 8px 0;
+    line-height: 1.5;
+    text-align: left;
+
+    strong {
+      color: #fff;
+    }
+  }
+
+  .hint-text-small {
+    font-size: 11px;
+    color: #888;
+    margin-top: 12px;
+    line-height: 1.4;
+    text-align: left;
   }
 }
 
@@ -500,7 +596,17 @@ $bg-light: #f8fafc;
 
 .camera-controls {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+
+  .start-camera-btn {
+    min-width: 200px;
+  }
+
+  .alt-btn {
+    font-size: 13px;
+  }
 }
 
 .upload-container {
@@ -572,5 +678,10 @@ $bg-light: #f8fafc;
   border-top: 1px solid $border-color;
   font-size: 14px;
   color: $text-secondary;
+}
+
+// Banner de advertencia HTTPS
+.camera-panel .q-banner {
+  margin-bottom: 16px;
 }
 </style>
