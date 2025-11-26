@@ -3,6 +3,7 @@
  */
 import { ref, computed } from 'vue'
 import { AUTH_ENDPOINTS, DEFAULT_CONFIG } from './apiEndpoints.js'
+import { storeJWTInCookie, deleteJWTFromCookie } from './cookieService.js'
 
 const currentUser = ref(null)
 const isAuthenticated = ref(false)
@@ -12,6 +13,7 @@ export const useAuthService = () => {
   const clearSession = () => {
     localStorage.removeItem(SESSION_KEY)
     sessionStorage.removeItem(SESSION_KEY)
+    deleteJWTFromCookie()
     currentUser.value = null
     isAuthenticated.value = false
   }
@@ -116,6 +118,12 @@ export const useAuthService = () => {
           isAdmin: userData.roles.includes('ADMIN')
         })
 
+        // Guardar JWT en cookie para interceptores de axios
+        if (data.data.token) {
+          storeJWTInCookie(data.data.token)
+          console.log('🍪 JWT guardado en cookie')
+        }
+
         currentUser.value = userData
         isAuthenticated.value = true
         const sessionData = {
@@ -145,9 +153,10 @@ export const useAuthService = () => {
     try {
       localStorage.removeItem(SESSION_KEY)
       sessionStorage.removeItem(SESSION_KEY)
+      deleteJWTFromCookie()
       currentUser.value = null
       isAuthenticated.value = false
-      console.log(' Logout exitoso')
+      console.log('🚪 Logout exitoso')
       return { success: true }
     } catch (error) {
       console.error(' Error en logout:', error)
