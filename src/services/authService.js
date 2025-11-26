@@ -24,11 +24,15 @@ export const useAuthService = () => {
         if (session && session.isAuthenticated === true) {
           currentUser.value = session.user
           isAuthenticated.value = true
-          console.log(' Sesión restaurada:', session.user)
+          console.log('🔄 Sesión restaurada:', {
+            name: session.user.name,
+            roles: session.user.roles || [],
+            isAdmin: (session.user.roles || []).includes('ADMIN')
+          })
         }
       }
     } catch (error) {
-      console.error(' Error al inicializar autenticación:', error)
+      console.error('❌ Error al inicializar autenticación:', error)
       clearSession()
     }
   }
@@ -64,25 +68,54 @@ export const useAuthService = () => {
 
   const login = async (credentials, mantenerSesion = true) => {
     try {
-      console.log(' Iniciando login:', { email: credentials.email })
+      // Obtener tenantId del QR escaneado
+      const qrTenantId = localStorage.getItem('qr_tenant_id')
+
+      console.log(' Iniciando login:', {
+        email: credentials.email,
+        tenantId: qrTenantId || 'No disponible'
+      })
+
+      // Crear headers con X-Tenant
+      const headers = {
+        ...DEFAULT_CONFIG.headers
+      }
+
+      if (qrTenantId) {
+        headers['X-Tenant'] = qrTenantId
+        console.log('🏢 Enviando Tenant ID en header:', qrTenantId)
+      } else {
+        console.warn('⚠️ No se encontró Tenant ID del QR')
+      }
+
       const response = await fetch(AUTH_ENDPOINTS.LOGIN, {
         method: 'POST',
-        headers: DEFAULT_CONFIG.headers,
+        headers: headers,
         body: JSON.stringify({
           email: credentials.email,
           password: credentials.password
         })
       })
       const data = await response.json()
-      console.log(' Respuesta del login:', data)
+      console.log('📥 Respuesta del login:', data)
 
       if (data.ok && data.data) {
         const userData = {
           id: data.data.user.id,
           name: data.data.user.name,
           email: data.data.user.email,
+          roles: data.data.roles || [],
+          tenantId: data.data.tenantId || qrTenantId || null,
           loginTime: new Date().toISOString()
         }
+
+        console.log('👤 Usuario con roles:', {
+          name: userData.name,
+          roles: userData.roles,
+          tenantId: userData.tenantId,
+          isAdmin: userData.roles.includes('ADMIN')
+        })
+
         currentUser.value = userData
         isAuthenticated.value = true
         const sessionData = {
@@ -96,7 +129,7 @@ export const useAuthService = () => {
         } else {
           sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
         }
-        console.log(' Login exitoso:', userData)
+        console.log('✅ Login exitoso con roles guardados:', userData)
         return { success: true, message: data.message || 'Login exitoso', user: userData }
       } else {
         return { success: false, message: data.message || 'Credenciales inválidas', user: null }

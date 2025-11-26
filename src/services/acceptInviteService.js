@@ -1,14 +1,28 @@
 /**
- * Configuración de endpoints de API
- * Centraliza todas las URLs de los servicios backend
+ * Servicio de Aceptación de Invitaciones
+ * Maneja la aceptación de invitaciones de usuario
  */
 
 import axios from "axios"
-
-// Base URL del servidor
-const BASE_URL = 'http://187.188.66.56:8040'
+import { SERVER_CONFIG } from 'src/config/serverConfig'
 
 export const acceptInvite = async (payload) => {
-  const { data } = await axios.post(`${BASE_URL}/api/auth/accept-invite`, payload)
-  return data
+  try {
+    console.log('📤 Enviando petición de aceptación:', {
+      url: `${SERVER_CONFIG.BASE_URL}/api/auth/accept-invite`,
+      token: payload.token?.substring(0, 20) + '...',
+      name: payload.name
+    })
+
+    const { data } = await axios.post(
+      `${SERVER_CONFIG.BASE_URL}/api/auth/accept-invite`,
+      payload
+    )
+
+    console.log('✅ Respuesta de aceptación:', data)
+    return data
+  } catch (error) {
+    console.error('❌ Error al aceptar invitación:', error.response?.data || error)
+    throw error
+  }
 }

@@ -32,7 +32,7 @@ export class ChartDataService {
 
       // Intentar obtener datos con timeout
       const response = await Promise.race([
-        axios.get(`${API_BASE_URL}/logs/filter?${params}`),
+        axios.get(`${API_BASE_URL}/logs#?${params}`),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout de exportaciones')), 15000)
         )
@@ -298,7 +298,7 @@ export class ChartDataService {
 
       // Intentar obtener datos con timeout
       const response = await Promise.race([
-        axios.get(`${API_BASE_URL}/logs/filter?${params}`),
+        axios.get(`${API_BASE_URL}/logs#?${params}`),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout de tiempos')), 15000)
         )
@@ -529,7 +529,7 @@ export class ChartDataService {
 
       // Intentar obtener datos con timeout
       const response = await Promise.race([
-        axios.get(`${API_BASE_URL}/logs/filter?${params}`),
+        axios.get(`${API_BASE_URL}/logs#?${params}`),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout de escaneos')), 15000)
         )
@@ -735,13 +735,13 @@ export class ChartDataService {
       // Intentar obtener datos con timeout y manejo de errores
       const results = await Promise.allSettled([
         Promise.race([
-          axios.get(`${API_BASE_URL}/logs/filter?${paramsSuccess}`),
+          axios.get(`${API_BASE_URL}/logs#?${paramsSuccess}`),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Timeout success login')), 15000)
           )
         ]),
         Promise.race([
-          axios.get(`${API_BASE_URL}/logs/filter?${paramsError}`),
+          axios.get(`${API_BASE_URL}/logs#?${paramsError}`),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Timeout error login')), 15000)
           )
@@ -921,7 +921,7 @@ export class ChartDataService {
         process: 'REGISTER'
       })
 
-      const response = await axios.get(`${API_BASE_URL}/logs/filter?${params}`)
+      const response = await axios.get(`${API_BASE_URL}/logs#?${params}`)
 
       console.log('Registro response.data:', response.data)
 
@@ -1077,7 +1077,7 @@ export class ChartDataService {
       })
 
       console.log('🔍 Solicitando errores con filtros:', Object.fromEntries(params))
-      const response = await axios.get(`${API_BASE_URL}/logs/filter?${params}`)
+      const response = await axios.get(`${API_BASE_URL}/logs#?${params}`)
 
       console.log('📊 Respuesta errores:', {
         status: response.status,

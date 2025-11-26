@@ -237,6 +237,66 @@
                   </template>
                 </q-btn>
 
+                <!-- QR Scanner Section (solo en modo login) -->
+                <div v-if="!modoRegistro" class="qr-scanner-section">
+                  <div class="divider-container">
+                    <div class="divider-line"></div>
+                    <span class="divider-text">O</span>
+                    <div class="divider-line"></div>
+                  </div>
+
+                  <!-- Estado: QR NO escaneado -->
+                  <div v-if="!tenantIdEscaneado" class="qr-pending-state">
+                    <q-banner class="qr-info-banner" rounded>
+                      <template v-slot:avatar>
+                        <q-icon name="info" color="info" />
+                      </template>
+                      <div class="banner-content">
+                        <strong>Escanea tu código QR para continuar</strong>
+                        <p>
+                          Necesitas escanear el código QR de tu organización antes de iniciar sesión
+                        </p>
+                      </div>
+                    </q-banner>
+
+                    <q-btn
+                      @click="mostrarModalQR = true"
+                      unelevated
+                      color="primary"
+                      icon="qr_code_scanner"
+                      label="Escanear Código QR"
+                      size="lg"
+                      class="qr-btn-primary"
+                    />
+                  </div>
+
+                  <!-- Estado: QR YA escaneado -->
+                  <div v-else class="qr-scanned-state">
+                    <q-banner class="qr-success-banner" rounded>
+                      <template v-slot:avatar>
+                        <q-icon name="check_circle" color="positive" />
+                      </template>
+                      <div class="banner-content">
+                        <strong>✓ Código QR validado</strong>
+                        <!-- <p class="tenant-info">
+                          Tenant ID: <code>{{ tenantIdEscaneado }}</code>
+                        </p> -->
+                      </div>
+                      <template v-slot:action>
+                        <q-btn
+                          @click="mostrarModalQR = true"
+                          flat
+                          dense
+                          icon="refresh"
+                          label="Re-escanear"
+                          color="primary"
+                          size="sm"
+                        />
+                      </template>
+                    </q-banner>
+                  </div>
+                </div>
+
                 <!-- Status messages -->
                 <div v-if="mensajeError" class="status-message error-message">
                   <q-icon name="error_outline" />
@@ -268,10 +328,7 @@
 
               <!-- Forgot password (login only) -->
               <div v-if="!modoRegistro" class="forgot-password">
-                <a
-                  href="/login?#/olvide-password"
-                  class="forgot-btn"
-                >
+                <a href="/login?#/olvide-password" class="forgot-btn">
                   ¿Olvidaste tu contraseña?
                 </a>
               </div>
@@ -285,6 +342,9 @@
         </div>
       </div>
     </div>
+
+    <!-- QR Scanner Modal -->
+    <QRScannerModal v-model="mostrarModalQR" @qr-scanned="handleQRScanned" />
   </div>
 </template>
 
@@ -293,6 +353,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import authService from '../services/authService.js'
+import QRScannerModal from '../components/QRScannerModal.vue'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -304,6 +365,8 @@ const mostrarPassword = ref(false)
 const mostrarConfirmarPassword = ref(false)
 const mensajeError = ref('')
 const mensajeExito = ref('')
+const mostrarModalQR = ref(false)
+const tenantIdEscaneado = ref(null)
 
 // Form data
 const formData = ref({
@@ -489,6 +552,42 @@ const onSubmit = async () => {
   }
 }
 
+// === QR SCANNER HANDLER ===
+const handleQRScanned = (encryptedData) => {
+  try {
+    // Desencriptar el tenantId desde Base64
+    const tenantId = atob(encryptedData)
+    console.log('🎯 Tenant ID del QR (desencriptado):', tenantId)
+
+    // Guardar el tenant ID en localStorage para este login
+    localStorage.setItem('qr_tenant_id', tenantId)
+
+    // Actualizar estado visual
+    tenantIdEscaneado.value = tenantId
+
+    $q.notify({
+      type: 'positive',
+      message: '✅ Código QR validado correctamente',
+      position: 'top',
+      timeout: 3000,
+      icon: 'check_circle',
+    })
+
+    // Focus en el input de email
+    setTimeout(() => {
+      document.querySelector('input[type="text"]')?.focus()
+    }, 500)
+  } catch (error) {
+    console.error('❌ Error al desencriptar QR:', error)
+    $q.notify({
+      type: 'negative',
+      message: '❌ Código QR inválido o corrupto',
+      position: 'top',
+      timeout: 3000,
+    })
+  }
+}
+
 // === LIFECYCLE ===
 onMounted(() => {
   // Verificar si ya hay una sesión activa
@@ -507,6 +606,13 @@ onMounted(() => {
       localStorage.removeItem('dashboardLogsSession')
       sessionStorage.removeItem('dashboardLogsSession')
     }
+  }
+
+  // Verificar si ya hay un tenant ID escaneado previamente
+  const savedTenantId = localStorage.getItem('qr_tenant_id')
+  if (savedTenantId) {
+    tenantIdEscaneado.value = savedTenantId
+    console.log('🏢 Tenant ID encontrado en localStorage:', savedTenantId)
   }
 })
 </script>
@@ -928,6 +1034,115 @@ $border-focus: #cbd5e1;
 
     &:active:not(.disabled) {
       transform: translateY(-1px);
+    }
+  }
+
+  // === QR SCANNER SECTION ===
+  .qr-scanner-section {
+    margin-top: 1.5rem;
+  }
+
+  .divider-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, $border, transparent);
+    }
+
+    .divider-text {
+      font-size: 0.875rem;
+      color: $text-secondary;
+      font-weight: 500;
+    }
+  }
+
+  // === QR PENDING STATE ===
+  .qr-pending-state {
+    .qr-info-banner {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      margin-bottom: 1rem;
+      padding: 1rem 1.25rem;
+
+      .banner-content {
+        strong {
+          color: #1e40af;
+          font-size: 0.95rem;
+          display: block;
+          margin-bottom: 0.35rem;
+        }
+
+        p {
+          color: #3b82f6;
+          font-size: 0.875rem;
+          margin: 0;
+          line-height: 1.4;
+        }
+      }
+    }
+
+    .qr-btn-primary {
+      width: 100%;
+      height: 52px;
+      background: linear-gradient(135deg, $primary, $primary-dark);
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-transform: none;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba($primary, 0.3);
+      }
+    }
+  }
+
+  // === QR SCANNED STATE ===
+  .qr-scanned-state {
+    .qr-success-banner {
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border: 1px solid #86efac;
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+
+      .banner-content {
+        strong {
+          color: #15803d;
+          font-size: 0.95rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .tenant-info {
+          color: #16a34a;
+          font-size: 0.875rem;
+          margin: 0;
+          line-height: 1.4;
+
+          code {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+          }
+        }
+      }
+
+      :deep(.q-banner__actions) {
+        align-self: center;
+      }
     }
   }
 

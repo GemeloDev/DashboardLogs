@@ -21,8 +21,19 @@
         <!-- Login form card -->
         <div class="login-form-container">
           <q-card class="login-card" flat>
-            <!-- Card header -->
-            <div class="card-header-section">
+            <!-- Error de token inválido -->
+            <div v-if="tokenInvalido" class="card-header-section">
+              <div class="header-icon-container error">
+                <q-icon name="error_outline" size="1.8rem" class="header-icon" />
+              </div>
+              <h2 class="card-title">Invitación Inválida</h2>
+              <p class="card-subtitle">
+                El token de invitación es inválido o ha caducado. Serás redirigido al login...
+              </p>
+            </div>
+
+            <!-- Card header normal -->
+            <div v-else class="card-header-section">
               <div class="header-icon-container">
                 <q-icon name="check" size="1.8rem" class="header-icon" />
               </div>
@@ -37,8 +48,8 @@
                 <span>{{ mensajeExito }}</span>
               </div>
             </div>
-            <!-- Form section -->
-            <q-card-section class="form-section">
+            <!-- Form section (solo si token es válido) -->
+            <q-card-section v-if="!tokenInvalido" class="form-section">
               <q-form @submit="submit">
                 <!-- Name field (registro only) -->
                 <div class="input-group">
@@ -188,14 +199,19 @@
 <script setup>
 import { acceptInvite } from 'src/services/acceptInviteService'
 import authService from 'src/services/authService'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
+import { generateAndDownloadTenantQR } from 'src/services/qrService'
+import { storeJWTInCookie } from 'src/services/cookieService'
 
 const route = useRoute()
 const router = useRouter()
+const $q = useQuasar()
 
 const cargando = ref(false)
 const token = ref(route.query.token)
+const tokenInvalido = ref(false)
 const mostrarPassword = ref(false)
 const mostrarConfirmarPassword = ref(false)
 const mensajeExito = ref('')
@@ -205,6 +221,40 @@ const acceptInvitation = ref({
   password: '',
   confirmarPassword: '',
   token: token.value,
+})
+
+// Validar token al montar
+onMounted(() => {
+  if (!token.value) {
+    tokenInvalido.value = true
+    $q.notify({
+      type: 'negative',
+      message: '❌ Token de invitación inválido o caducado',
+      position: 'top',
+      timeout: 5000,
+    })
+
+    setTimeout(() => {
+      router.push('/login')
+    }, 3000)
+  }
+})
+
+// Validar token al montar
+onMounted(() => {
+  if (!token.value) {
+    tokenInvalido.value = true
+    $q.notify({
+      type: 'negative',
+      message: '❌ Token de invitación inválido o caducado',
+      position: 'top',
+      timeout: 5000,
+    })
+
+    setTimeout(() => {
+      router.push('/login')
+    }, 3000)
+  }
 })
 
 // Password strength indicators
@@ -237,59 +287,110 @@ const formularioValidado = computed(() => {
   )
 })
 
-const generarTxt = (clave) => {
-  const contenido = clave
-  const blob = new Blob([contenido], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'clave.txt'
-  link.click()
-
-  URL.revokeObjectURL(url)
-}
-
 const submit = async () => {
-  cargando.value = !cargando.value
+  if (!formularioValidado.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'Por favor completa todos los requisitos de seguridad',
+      position: 'top',
+    })
+    return
+  }
+
+  cargando.value = true
 
   try {
-
-    const response = await acceptInvite(acceptInvitation.value)
-
-    localStorage.setItem('tenantId', response.data.tenantId)
-
-    const loginCredentials = {
-      email: response.data.user.email,
+    // Preparar payload con token de la URL
+    const payload = {
+      token: token.value,
+      name: acceptInvitation.value.name,
       password: acceptInvitation.value.password,
-      tenantId: response.data.tenantId
     }
 
-    const loginResult = await authService.login(loginCredentials)
+    console.log('📤 Enviando invitación:', { token: payload.token, name: payload.name })
 
-    if(loginResult.ok) {
-      mensajeExito.value = `${response.message}, ingresando...`
+    // Aceptar invitación
+    const response = await acceptInvite(payload)
 
-      setTimeout(() => {
-        router.push('/dahsboard')
-      }, 1500)
-    } else {
-      mensajeExito.value = `${response.message}, por favor inicie sesión...`
+    console.log('✅ Respuesta de aceptación:', response)
 
-      setTimeout(() => {
-        router.push('/login')
-      }, 1500)
+    // Verificar respuesta exitosa
+    if (!response.ok || !response.data) {
+      throw new Error(response.message || 'Error al aceptar invitación')
     }
 
+    const { tenantId, token: jwtToken, user, roles } = response.data
 
-    generarTxt(response.data.tenantId)
+    // Guardar JWT en cookie
+    storeJWTInCookie(jwtToken)
+
+    // Guardar datos del usuario en localStorage para la sesión
+    const sessionData = {
+      user: {
+        ...user,
+        tenantId,
+        roles: roles || [],
+      },
+      isAuthenticated: true,
+    }
+    localStorage.setItem('dashboardLogsSession', JSON.stringify(sessionData))
+
+    // Reinicializar authService para cargar la nueva sesión
+    authService.initializeAuth()
+
+    // Mostrar mensaje de éxito
+    mensajeExito.value = `${response.message} ✅`
+
+    $q.notify({
+      type: 'positive',
+      message: '✅ Usuario activado exitosamente',
+      position: 'top',
+      timeout: 3000,
+    })
+
+    // Generar y descargar QR con tenantId
+    try {
+      await generateAndDownloadTenantQR(tenantId)
+      console.log('✅ QR generado y descargado')
+    } catch (qrError) {
+      console.warn('⚠️ Error al generar QR:', qrError)
+      // No bloquear el flujo si falla el QR
+    }
+
+    // Redirigir al escritorio
+    setTimeout(() => {
+      router.push('/escritorio')
+    }, 2000)
   } catch (error) {
+    console.error('❌ Error al aceptar invitación:', error)
+
+    // Limpiar formulario
     acceptInvitation.value.name = ''
     acceptInvitation.value.password = ''
     acceptInvitation.value.confirmarPassword = ''
-    console.log(error)
-    mensajeExito.value = 'Algo salió mal, vuelve a intentarlo.'
-    cargando.value = !cargando.value
+
+    // Mostrar error específico
+    const errorMessage =
+      error.response?.data?.message || error.message || 'Invitación inválida o caducada'
+
+    mensajeExito.value = ''
+
+    $q.notify({
+      type: 'negative',
+      message: `❌ ${errorMessage}`,
+      position: 'top',
+      timeout: 5000,
+    })
+
+    // Si el token es inválido, redirigir al login
+    if (error.response?.status === 401 || error.response?.status === 404) {
+      tokenInvalido.value = true
+      setTimeout(() => {
+        router.push('/login')
+      }, 3000)
+    }
+  } finally {
+    cargando.value = false
   }
 }
 </script>

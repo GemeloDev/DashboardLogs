@@ -21,6 +21,7 @@
             @click="toggleFiltros"
             class="q-mr-sm"
           >
+            <q-tooltip>Filtros Avanzados</q-tooltip>
           </q-btn>
 
           <!-- Botón de consola -->
@@ -34,6 +35,20 @@
             class="q-mr-sm"
           >
             <q-tooltip>Consola de Logs</q-tooltip>
+          </q-btn>
+
+          <!-- Botón de gestión de empleados (solo admin) -->
+          <q-btn
+            v-if="isAdmin"
+            flat
+            dense
+            round
+            icon="group"
+            color="cyan"
+            @click="router.push('/gestion-empleados')"
+            class="q-mr-sm"
+          >
+            <q-tooltip>Gestionar Empleados</q-tooltip>
           </q-btn>
 
           <q-chip
@@ -319,7 +334,13 @@ provide('filtrosGlobales', filtros)
 const userInfo = computed(() => ({
   nombre: authService.user?.name || 'Usuario',
   email: authService.user?.email || 'Sin email',
+  roles: authService.user?.roles || [],
 }))
+
+// Verificar si el usuario es admin
+const isAdmin = computed(() => {
+  return userInfo.value.roles.includes('ADMIN')
+})
 
 // Función para cambiar de flujo mediante rutas
 const cambiarFlujo = (nuevoFlujo) => {

@@ -673,7 +673,7 @@ export class SantoroActionController {
       console.log('📅 Rango temporal procesado:', rangoTemporal)
 
       // Construir URL de API con filtros temporales
-      const apiUrl = `api/logs/filter?fromDate=${rangoTemporal.fromDate}&toDate=${rangoTemporal.toDate}`
+      const apiUrl = `api/logs#?fromDate=${rangoTemporal.fromDate}&toDate=${rangoTemporal.toDate}`
 
       // Emitir evento para abrir consola con datos pre-filtrados
       window.dispatchEvent(new CustomEvent('santoro-abrir-consola-filtrada', {

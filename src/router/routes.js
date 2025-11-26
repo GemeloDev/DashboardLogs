@@ -47,7 +47,7 @@ const routes = [
         meta: { flow: 'mobile' }
       },
 
-          // Rutas accesibles desde ambos flujos (no fuerzan cambio de flujo)
+      // Rutas accesibles desde ambos flujos (no fuerzan cambio de flujo)
       {
         path: 'estadisticas',
         component: () => import('pages/EstadisticasPage.vue')
@@ -68,6 +68,14 @@ const routes = [
       // Rutas generales/admin
       { path: 'santoro-demo', component: () => import('pages/SantoroDemoPage.vue') },
       { path: 'santoro-config', component: () => import('pages/SantoroConfigPage.vue') },
+
+      // Gestión de Empleados (solo admin)
+      {
+        path: 'gestion-empleados',
+        name: 'gestionEmpleados',
+        component: () => import('pages/GestionEmpleadosPage.vue'),
+        meta: { requiresAdmin: true }
+      },
     ],
   },
 

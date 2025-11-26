@@ -33,6 +33,18 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       return
     }
 
+    // Si la ruta requiere ser admin
+    if (to.meta.requiresAdmin && authenticated) {
+      const user = authService.user
+      const isAdmin = user?.roles?.includes('ADMIN')
+
+      if (!isAdmin) {
+        console.log('🚫 Acceso denegado - Se requiere rol de administrador')
+        next('/escritorio')
+        return
+      }
+    }
+
     // Si está autenticado y trata de acceder al login, redirigir al dashboard
     if (to.path === '/login' && authenticated) {
       console.log('✅ Usuario autenticado - Redirigiendo a dashboard')

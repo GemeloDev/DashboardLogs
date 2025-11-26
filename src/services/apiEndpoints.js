@@ -19,7 +19,7 @@ export const AUTH_ENDPOINTS = {
 export const API_ENDPOINTS = {
   // Logs
   LOGS: `${BASE_URL}/api/logs`,
-  LOGS_FILTERS: `${BASE_URL}/api/logs/filters`,
+  LOGS_FILTERS: `${BASE_URL}/api/logs#s`,
   LOGS_EXPORT: `${BASE_URL}/api/logs/export`,
 
   // Estadísticas

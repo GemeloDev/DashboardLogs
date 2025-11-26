@@ -3,7 +3,7 @@ import { API_BASE_URL } from './apiConfig'
 // DTOs y endpoints
 export const endpoints = {
   // Logs
-  logsFilter: `${API_BASE_URL}/logs/filter`,
+  logsFilter: `${API_BASE_URL}/logs#`,
   logsSummary: `${API_BASE_URL}/logs/summary`,
   logsCalendar: `${API_BASE_URL}/logs/calendar`,
 

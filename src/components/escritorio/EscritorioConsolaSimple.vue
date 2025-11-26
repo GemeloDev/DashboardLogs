@@ -1653,7 +1653,7 @@ const obtenerDireccionOficina = (log) => {
 }
 
 const obtenerNombreUsuario = (log) => {
-  // Construir nombre completo de la persona de la API /logs/filter
+  // Construir nombre completo de la persona de la API /logs#
   if (log.person) {
     const nombres = log.person.nombres || ''
     const apellido1 = log.person.primerApellido || ''
@@ -2220,7 +2220,7 @@ const cargarLogsConFiltrosAPI = async () => {
     console.log('📋 [SIDEBAR] Parámetros construidos:', Object.fromEntries(params))
 
     // 🌐 Hacer petición a la API
-    const url = `${API_BASE_URL}/logs/filter?${params.toString()}`
+    const url = `${API_BASE_URL}/logs#?${params.toString()}`
     console.log('🔗 [SIDEBAR] URL de petición:', url)
 
     const response = await axios.get(url)
@@ -2349,7 +2349,7 @@ const cargarLogsDesdeAPI = async (rangoExtendido = false) => {
       payload.usuario = filtroUsuario.value.trim()
     }
 
-    console.log('📡 Enviando parámetros validados a API /logs/filter:', payload)
+    console.log('📡 Enviando parámetros validados a API /logs#:', payload)
 
     // 🔧 CONSTRUIR PARÁMETROS CON FORMATO CORRECTO (YYYY-MM-DD)
     const params = new URLSearchParams({
@@ -2389,11 +2389,11 @@ const cargarLogsDesdeAPI = async (rangoExtendido = false) => {
       }
     }
 
-    console.log('🚀 URL completa:', `${API_BASE_URL}/logs/filter?${params}`)
+    console.log('🚀 URL completa:', `${API_BASE_URL}/logs#?${params}`)
 
     // Llamar al mismo endpoint que usan las gráficas (puerto 8040)
     const response = await Promise.race([
-      axios.get(`${API_BASE_URL}/logs/filter?${params}`),
+      axios.get(`${API_BASE_URL}/logs#?${params}`),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Timeout después de 30 segundos')), 30000)
       ),
