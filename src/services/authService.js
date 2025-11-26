@@ -87,6 +87,7 @@ export const useAuthService = () => {
         isAuthenticated.value = true
         const sessionData = {
           user: userData,
+          token: data.data.token,
           isAuthenticated: true,
           sessionType: mantenerSesion ? 'persistent' : 'temporary',
           timestamp: Date.now()
