@@ -24,6 +24,20 @@
             <q-tooltip>Filtros Avanzados</q-tooltip>
           </q-btn>
 
+          <!-- Botón de filtros avanzados -->
+          <q-btn
+            v-if="currentFlow !== 'escritorio'"
+            flat
+            dense
+            round
+            icon="security"
+            color="green"
+            @click="toogleStartSession"
+            class="q-mr-sm"
+          >
+            <q-tooltip>Sesiones</q-tooltip>
+          </q-btn>
+
           <!-- Botón de consola -->
           <q-btn
             flat
@@ -58,6 +72,7 @@
             color="white"
             text-color="white"
             size="sm"
+            class="q-mt-sm"
           />
 
           <!-- Menú de usuario -->
@@ -111,6 +126,10 @@
             <EscritorioFiltros @filtrar="onFiltrar" />
           </div>
         </div>
+      </q-slide-transition>
+      <!-- Panel de filtros expandible -->
+      <q-slide-transition>
+        <QRScannerModal v-model="showSessionQR" @qr-scanned="handleQRScanned" />
       </q-slide-transition>
     </q-header>
 
@@ -285,6 +304,7 @@ import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaS
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 import authService from '../services/authService.js'
 import { santoroContextService } from '../services/santoroContextService.js'
+import QRScannerModal from 'src/components/QRScannerModal.vue'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -294,6 +314,7 @@ const filtros = ref({})
 const modalVisible = ref(false)
 const detalleModal = ref(null)
 const showFilters = ref(false)
+const showSessionQR = ref(false)
 const consolaRef = ref(null)
 const geminiConfigRef = ref(null)
 
@@ -393,6 +414,10 @@ function toggleLeftDrawer() {
 
 function toggleFiltros() {
   showFilters.value = !showFilters.value
+}
+
+function toogleStartSession() {
+  showSessionQR.value = !showSessionQR.value
 }
 
 function onFiltrar(val) {

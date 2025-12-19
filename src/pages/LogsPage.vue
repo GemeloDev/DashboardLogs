@@ -120,84 +120,50 @@
                   <!-- Fin Porcentaje Offline -->
                 </div>
 
-                <div class="row justify-center q-gutter-sm q-mt-lg">
-                  <q-card
-                    class="col-12 row justify-center text-white q-pa-md q-gutter-y-sm cardMobile"
-                  >
-                    <div class="col-sm-12 col-md-6 col-lg-6 text-white">
-                      <!-- Funcionalidades más usadas -->
-                      <q-card class="no-shadow" style="background-color: #1e1e2f">
-                        <q-card-section>
-                          <div class="text-h6 text-center">Funcionalidades más usadas</div>
-                          <div class="canvaResponsive">
-                            <canvas ref="funcionalidadesChartRef"></canvas>
-                          </div>
-                          <div
-                            v-if="!funcionalidadesData || funcionalidadesData.length === 0"
-                            class="no-data-overlay"
-                          >
-                            <NoDataMessage
-                              title="Sin datos de funcionalidades"
-                              subtitle="No se encontraron registros de uso de funcionalidades"
-                              description="Los datos aparecerán aquí cuando se utilicen las diferentes funcionalidades del sistema"
-                              icon="apps"
-                              icon-color="blue"
-                              :animated="true"
-                            />
-                          </div>
-                        </q-card-section>
-                      </q-card>
+                <q-card
+                  class="row justify-center text-white q-pa-md q-gutter-y-sm cardMobile q-gutter-sm q-mt-lg"
+                >
+                  <!-- Funcionalidades más usadas -->
+                  <div class="col-md-6 q-mx-sm text-white card-responsive">
+                    <div v-if="!logs || logs.length === 0" class="q-mt-lg">
+                      <NoDataMessage
+                        title="Sin datos de funcionalidades"
+                        subtitle="No se encontraron registros de uso de funcionalidades"
+                        description="Los datos aparecerán aquí cuando se utilicen las diferentes funcionalidades del sistema"
+                        icon="apps"
+                        icon-color="blue"
+                        :animated="true"
+                      />
                     </div>
-                    <div class="col-sm-12 col-md-6 col-lg-6 text-white">
-                      <!-- Tiempo de Respuesta Promedio -->
-                      <q-card class="no-shadow" style="background-color: #1e1e2f">
-                        <q-card-section>
-                          <div class="text-h6 text-center">Tiempo de Respuesta Promedio</div>
-                          <div class="canvaResponsive">
-                            <canvas ref="chartTiempoRef"></canvas>
-                          </div>
-                          <div
-                            v-if="!tiempoPromedioData || tiempoPromedioData.length === 0"
-                            class="no-data-overlay"
-                          >
-                            <NoDataMessage
-                              title="Sin datos de rendimiento"
-                              subtitle="No se encontraron mediciones de tiempo de respuesta"
-                              description="Los datos de rendimiento aparecerán aquí cuando se realicen operaciones en el sistema"
-                              icon="speed"
-                              icon-color="green"
-                              :animated="true"
-                            />
-                          </div>
-                        </q-card-section>
-                      </q-card>
+                    <canvas v-else ref="funcionalidadesChartRef"></canvas>
+                  </div>
+                  <div class="col-md-6 q-mx-sm text-white card-responsive">
+                    <div v-if="!logs || logs.length === 0" class="q-mt-lg">
+                      <NoDataMessage
+                        title="Sin datos de rendimiento"
+                        subtitle="No se encontraron mediciones de tiempo de respuesta"
+                        description="Los datos de rendimiento aparecerán aquí cuando se realicen operaciones en el sistema"
+                        icon="speed"
+                        icon-color="green"
+                        :animated="true"
+                      />
                     </div>
-                    <div class="col-sm-12 col-md-6 col-lg-6 q-mx-sm text-white">
-                      <!-- Resultado del Evento -->
-                      <q-card class="no-shadow" style="background-color: #1e1e2f">
-                        <q-card-section>
-                          <div class="text-h6 text-center">Resultado del Evento</div>
-                          <div class="canvaResponsive">
-                            <canvas ref="ovalChartRef"></canvas>
-                          </div>
-                          <div
-                            v-if="!ovalAlineadoData || ovalAlineadoData.length === 0"
-                            class="no-data-overlay"
-                          >
-                            <NoDataMessage
-                              title="Sin datos de eventos"
-                              subtitle="No se encontraron resultados de eventos"
-                              description="Los resultados de eventos aparecerán aquí cuando se procesen operaciones"
-                              icon="event"
-                              icon-color="purple"
-                              :animated="true"
-                            />
-                          </div>
-                        </q-card-section>
-                      </q-card>
+                    <canvas v-else ref="chartTiempoRef"></canvas>
+                  </div>
+                  <div class="col-md-6 q-mx-sm text-white card-responsive">
+                    <div v-if="!logs || logs.length === 0" class="q-mt-lg">
+                      <NoDataMessage
+                        title="Sin datos de eventos"
+                        subtitle="No se encontraron resultados de eventos"
+                        description="Los resultados de eventos aparecerán aquí cuando se procesen operaciones"
+                        icon="event"
+                        icon-color="purple"
+                        :animated="true"
+                      />
                     </div>
-                  </q-card>
-                </div>
+                    <canvas v-else ref="ovalChartRef"></canvas>
+                  </div>
+                </q-card>
                 <br />
                 <!-- Tabla de logs de dispositivos de usuarios -->
                 <div class="col-12 col-lg-6 q-mx-sm text-white card-responsive">
@@ -873,22 +839,31 @@ function renderChartFuncionalidades(labels, data) {
 }
 
 .cardMobile {
-  background-color: #1e1e2f; border-radius: 1rem
+  background-color: #1e1e2f;
+  border-radius: 1rem;
 }
 
 @media (max-width: 768px) {
-  .canvaResponsive{
+  .canvaResponsive {
     height: 200px !important;
     width: max-content !important;
+    display: none;
   }
 
-  .cardMobile{
+  .cardMobile {
     background-color: transparent !important;
   }
 
   .card-responsive {
     margin-inline: 0px !important;
     width: 100% !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .row .col-md-6 {
+    height: auto;
+    width: auto;
   }
 }
 </style>

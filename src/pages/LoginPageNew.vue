@@ -57,6 +57,17 @@
             <!-- Form section -->
             <q-card-section class="form-section">
               <q-form @submit="onSubmit" class="login-form">
+                <!-- Status messages -->
+                <div v-if="mensajeError" class="status-message error-message">
+                  <q-icon name="error_outline" />
+                  <span>{{ mensajeError }}</span>
+                </div>
+
+                <div v-if="mensajeExito" class="status-message success-message">
+                  <q-icon name="check_circle_outline" />
+                  <span>{{ mensajeExito }}</span>
+                </div>
+
                 <!-- Name field (registro only) -->
                 <div v-if="modoRegistro" class="input-group">
                   <label class="input-label">Nombre completo</label>
@@ -254,20 +265,20 @@
                       <div class="banner-content">
                         <strong>Escanea tu código QR para continuar</strong>
                         <p>
-                          Necesitas escanear el código QR de tu organización antes de iniciar sesión
+                          Necesitas escanear el código QR de tu organización antes de iniciar
+                          sesión.
+                        </p>
+                        <p>
+                          - Dispositivo con sesión iniciada y acceso al dashboard <br />
+                          - Apartado <span class="text-bold">Sesiones</span>
+                          <q-icon name="account_circle" color="green" /> <br />
+                          - Acceda a la camara y escanea el código QR
                         </p>
                       </div>
                     </q-banner>
-
-                    <q-btn
-                      @click="mostrarModalQR = true"
-                      unelevated
-                      color="primary"
-                      icon="qr_code_scanner"
-                      label="Escanear Código QR"
-                      size="lg"
-                      class="qr-btn-primary"
-                    />
+                    <div class="flex justify-center">
+                      <div id="qrcode-container" class="q-pa-md q-mb-md bg-white shadow-3"></div>
+                    </div>
                   </div>
 
                   <!-- Estado: QR YA escaneado -->
@@ -284,7 +295,7 @@
                       </div>
                       <template v-slot:action>
                         <q-btn
-                          @click="mostrarModalQR = true"
+                          @click="regenerateQr()"
                           flat
                           dense
                           icon="refresh"
@@ -295,17 +306,6 @@
                       </template>
                     </q-banner>
                   </div>
-                </div>
-
-                <!-- Status messages -->
-                <div v-if="mensajeError" class="status-message error-message">
-                  <q-icon name="error_outline" />
-                  <span>{{ mensajeError }}</span>
-                </div>
-
-                <div v-if="mensajeExito" class="status-message success-message">
-                  <q-icon name="check_circle_outline" />
-                  <span>{{ mensajeExito }}</span>
                 </div>
               </q-form>
             </q-card-section>
@@ -342,19 +342,18 @@
         </div>
       </div>
     </div>
-
-    <!-- QR Scanner Modal -->
-    <QRScannerModal v-model="mostrarModalQR" @qr-scanned="handleQRScanned" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import authService from '../services/authService.js'
-import QRScannerModal from '../components/QRScannerModal.vue'
-
+import { generateNewContent, loadQRCodeLibrary } from 'src/services/qrService.js'
+import /** storeJWTInCookie */ 'src/services/cookieService.js'
+import { disconnectSocket, initializeSocket } from 'src/services/socketService.js'
+// import { SOCKET } from 'src/services/apiEndpoints.js'
 const router = useRouter()
 const $q = useQuasar()
 
@@ -365,8 +364,15 @@ const mostrarPassword = ref(false)
 const mostrarConfirmarPassword = ref(false)
 const mensajeError = ref('')
 const mensajeExito = ref('')
-const mostrarModalQR = ref(false)
 const tenantIdEscaneado = ref(null)
+const isLoggedIn = ref(false)
+let socketInstance = ref(null)
+
+// Estado reactivo del QR
+const qrContent = ref('')
+const timeRemaining = ref(60)
+let intervalId = null // Temporizador para la regeneración del QR
+let countdownId = null // Temporizador para la cuenta regresiva
 
 // Form data
 const formData = ref({
@@ -451,6 +457,15 @@ const evaluarPassword = () => {
 const cambiarModo = () => {
   modoRegistro.value = !modoRegistro.value
   console.log(modoRegistro.value)
+  if (!modoRegistro.value) {
+    socketInstance.value = initializeSocket()
+    regenerateQr()
+    intervalId = setInterval(regenerateQr, 120000) // 2 minutos
+    startCountdown()
+  } else {
+    clearTimers()
+    disconnectSocket()
+  }
   limpiarFormulario()
 }
 
@@ -552,44 +567,121 @@ const onSubmit = async () => {
   }
 }
 
-// === QR SCANNER HANDLER ===
-const handleQRScanned = (encryptedData) => {
-  try {
-    // Desencriptar el tenantId desde Base64
-    const tenantId = atob(encryptedData)
-    console.log('🎯 Tenant ID del QR (desencriptado):', tenantId)
+// Función ESSENCIAL para limpiar los temporizadores
+const clearTimers = () => {
+  if (intervalId) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
+  if (countdownId) {
+    clearInterval(countdownId)
+    countdownId = null
+  }
+  console.log('Temporizadores de regeneración y cuenta regresiva detenidos.')
+}
 
-    // Guardar el tenant ID en localStorage para este login
-    localStorage.setItem('qr_tenant_id', tenantId)
+// Función ESSENCIAL para manejar el éxito del login (Disparada por el backend)
+const handleLoginSuccess = (data) => {
 
-    // Actualizar estado visual
-    tenantIdEscaneado.value = tenantId
+  if (data.payload && data.payload.status === 'APROVED') {
+    const buildSession = authService.buildSession(data)
 
-    $q.notify({
-      type: 'positive',
-      message: '✅ Código QR validado correctamente',
-      position: 'top',
-      timeout: 3000,
-      icon: 'check_circle',
-    })
+    if (!buildSession.success) {
+      $q.notify({
+        type: 'negative',
+        message: buildSession.message,
+        position: 'top',
+        timeout: 2000,
+      })
 
-    // Focus en el input de email
+      return
+    }
+
+    // 1. Detener la regeneración del QR
+    clearTimers()
+
+    // 2. Ocultar el código QR
+    const container = document.getElementById('qrcode-container')
+    if (container) {
+      container.innerHTML = '' // Limpia el QR del DOM
+    }
+
+    // 3. Actualizar el estado para cambiar la vista (de QR a "¡Sesión Iniciada!")
+    isLoggedIn.value = true
+    console.log('✅ Login exitoso. Vista actualizada.')
+
+    // 4. Actualizar vista
+    tenantIdEscaneado.value = true
+    mensajeExito.value = data.payload.message || 'Acceso concedido. Redirigiendo...'
+
     setTimeout(() => {
-      document.querySelector('input[type="text"]')?.focus()
-    }, 500)
-  } catch (error) {
-    console.error('❌ Error al desencriptar QR:', error)
-    $q.notify({
-      type: 'negative',
-      message: '❌ Código QR inválido o corrupto',
-      position: 'top',
-      timeout: 3000,
-    })
+      router.push('/dashboard')
+    }, 3000)
   }
 }
 
+/**
+ * 2. Dibuja el QR utilizando la librería window.QRCode.
+ * @param {string} content El contenido a codificar.
+ */
+const drawQrCode = async (content) => {
+  await loadQRCodeLibrary()
+
+  const container = document.getElementById('qrcode-container')
+
+  // 1. Limpiar el contenedor antes de generar uno nuevo.
+  // Esto es crucial porque qrcode.js añade nuevos elementos DIV/IMG.
+  if (container) {
+    container.innerHTML = ''
+  }
+
+  // 2. Verificar que la librería esté cargada antes de usarla.
+  if (window.QRCode && container) {
+    new window.QRCode(container, {
+      text: content,
+      width: 250,
+      height: 250,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: window.QRCode.CorrectLevel.H,
+    })
+  } else {
+    console.error('La librería qrcode.js no está disponible o el contenedor no existe.')
+  }
+}
+
+/**
+ * 3. Función principal para regenerar el contenido y el QR.
+ */
+const regenerateQr = async () => {
+  const newContent = await generateNewContent()
+  qrContent.value = newContent.url
+  drawQrCode(qrContent.value)
+  timeRemaining.value = newContent.expireTime // Reinicia la cuenta regresiva
+  console.log('QR Regenerado con el contenido:', newContent)
+
+  socketInstance.value = initializeSocket(
+    `qr-login/${newContent.url.split('/qr-login/')[1]}`,
+    handleLoginSuccess
+  )
+}
+
+/**
+ * 4. Inicia el temporizador de cuenta regresiva.
+ */
+const startCountdown = () => {
+  countdownId = setInterval(() => {
+    timeRemaining.value--
+    // Si la cuenta regresiva llega a cero, se regenerará en el siguiente tick del intervalId
+    if (timeRemaining.value < 0) {
+      // Reiniciar visualmente, aunque el otro interval es el que gatilla la regeneración
+      timeRemaining.value = 59
+    }
+  }, 1000) // Cada 1 segundo
+}
+
 // === LIFECYCLE ===
-onMounted(() => {
+onMounted(async () => {
   // Verificar si ya hay una sesión activa
   const savedSession =
     localStorage.getItem('dashboardLogsSession') || sessionStorage.getItem('dashboardLogsSession')
@@ -614,6 +706,19 @@ onMounted(() => {
     tenantIdEscaneado.value = savedTenantId
     console.log('🏢 Tenant ID encontrado en localStorage:', savedTenantId)
   }
+
+  // Solo inicia el proceso si NO estamos ya logueados (útil si se navega de vuelta)
+  if (!isLoggedIn.value) {
+    regenerateQr()
+    intervalId = setInterval(regenerateQr, 120000) // 2 minutos
+    startCountdown()
+  }
+})
+
+onUnmounted(() => {
+  // Siempre limpia los temporizadores al salir del componente
+  clearTimers()
+  disconnectSocket()
 })
 </script>
 
@@ -890,7 +995,7 @@ $border-focus: #cbd5e1;
 
 // === FORM SECTION ===
 .form-section {
-  padding: 0 2.5rem 1.5rem;
+  padding: 0 2.5rem;
 }
 
 .login-form {
@@ -1153,7 +1258,7 @@ $border-focus: #cbd5e1;
     gap: 0.75rem;
     padding: 1rem 1.25rem;
     border-radius: 12px;
-    margin-top: 1.25rem;
+    margin-inline: 1.25rem;
     font-size: 0.95rem;
     font-weight: 500;
 
@@ -1166,12 +1271,14 @@ $border-focus: #cbd5e1;
     background: linear-gradient(135deg, #fef2f2, #fee2e2);
     color: $error;
     border: 1px solid #fecaca;
+    margin: 0 0 1rem;
   }
 
   .success-message {
     background: linear-gradient(135deg, #f0fdf4, #dcfce7);
     color: $success;
     border: 1px solid #bbf7d0;
+    margin-bottom: 1.25rem;
   }
 }
 

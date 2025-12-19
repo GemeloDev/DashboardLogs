@@ -1,9 +1,12 @@
 ﻿/**
  * Servicio de Autenticación Centralizado
  */
+
+import axios from 'axios'
 import { ref, computed } from 'vue'
 import { AUTH_ENDPOINTS, DEFAULT_CONFIG } from './apiEndpoints.js'
 import { storeJWTInCookie, deleteJWTFromCookie } from './cookieService.js'
+import { axiosInstance } from './axiosConfig.js'
 
 const currentUser = ref(null)
 const isAuthenticated = ref(false)
@@ -70,24 +73,10 @@ export const useAuthService = () => {
 
   const login = async (credentials, mantenerSesion = true) => {
     try {
-      // Obtener tenantId del QR escaneado
-      const qrTenantId = localStorage.getItem('qr_tenant_id')
-
-      console.log(' Iniciando login:', {
-        email: credentials.email,
-        tenantId: qrTenantId || 'No disponible'
-      })
 
       // Crear headers con X-Tenant
       const headers = {
         ...DEFAULT_CONFIG.headers
-      }
-
-      if (qrTenantId) {
-        headers['X-Tenant'] = qrTenantId
-        console.log('🏢 Enviando Tenant ID en header:', qrTenantId)
-      } else {
-        console.warn('⚠️ No se encontró Tenant ID del QR')
       }
 
       const response = await fetch(AUTH_ENDPOINTS.LOGIN, {
@@ -107,7 +96,7 @@ export const useAuthService = () => {
           name: data.data.user.name,
           email: data.data.user.email,
           roles: data.data.roles || [],
-          tenantId: data.data.tenantId || qrTenantId || null,
+          tenantId: data.data.tenantId || null,
           loginTime: new Date().toISOString()
         }
 
@@ -128,7 +117,10 @@ export const useAuthService = () => {
         isAuthenticated.value = true
         const sessionData = {
           user: userData,
-          token: data.data.token,
+          token: {
+            accessToken: data.data.accessToken,
+            refreshToken: data.data.refreshToken
+          },
           isAuthenticated: true,
           sessionType: mantenerSesion ? 'persistent' : 'temporary',
           timestamp: Date.now()
@@ -147,6 +139,72 @@ export const useAuthService = () => {
       console.error(' Error en login:', error)
       return { success: false, message: 'Error de conexión. Verifica tu conexión a internet.', user: null }
     }
+  }
+
+  const loginByQR = async (credentials, /* mantenerSesion = true */) => {
+    try {
+
+      const tokens = JSON.parse(localStorage.getItem('dashboardLogsSession'))
+      const { token } = tokens
+      console.log('AccessToken del usuario:', token.accessToken)
+      console.log('Token del QR:', credentials.qrToken)
+
+      // // Crear headers con X-Tenant
+      // const headers = {
+      //   ...DEFAULT_CONFIG.headers,
+      //   'Authorization': `Bearer ${token.accessToken}`
+      // }
+
+      const response = await axiosInstance.post(AUTH_ENDPOINTS.LOGIN_QR, {
+        qrToken: credentials.qrToken
+      })
+
+      // const response = await fetch(AUTH_ENDPOINTS.LOGIN_QR, {
+      //   method: 'POST',
+      //   headers: headers,
+      //   body: JSON.stringify({
+      //     qrToken: credentials.qrToken
+      //   })
+      // })
+      const data = response
+      console.log('📥 Respuesta del login:', data)
+      return data
+    } catch (error) {
+      console.error(' Error en login:', error)
+      return { success: false, message: 'Error de conexión. Verifica tu conexión a internet.', user: null }
+    }
+  }
+
+  const buildSession = (data) => {
+    const userData = {
+      id: data.data.uid,
+      name: data.data.name,
+      email: data.data.email,
+      roles: data.data.roles || [],
+      tenantId: data.data.tenantId || null,
+      loginTime: new Date().toISOString()
+    }
+
+    // Guardar JWT en cookie para interceptores de axios
+    if (data.payload.accessToken) {
+      storeJWTInCookie(data.payload.accessToken)
+      console.log('🍪 JWT guardado en cookie')
+    }
+
+    const sessionData = {
+      user: userData,
+      token: {
+        accessToken: data.payload.accessToken,
+        refreshToken: data.payload.refreshToken
+      },
+      isAuthenticated: true,
+      sessionType: 'persistent',
+      timestamp: Date.now()
+    }
+
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
+    console.log('✅ Login exitoso con roles guardados:', userData)
+    return { success: true, message: data.payload.message || 'Login exitoso', user: userData }
   }
 
   const logout = () => {
@@ -187,11 +245,24 @@ export const useAuthService = () => {
     }
   }
 
+  const refreshAuthToken = (accessToken) => {
+    try {
+      const responseRefresh = axios.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {
+        refreshToken: accessToken
+      });
+
+      console.log('🔄 Refrescando token:', responseRefresh)
+    } catch (error) {
+      console.log('🧱 Algo salió mal al momento de refrescar el token', error)
+      clearSession()
+    }
+  }
+
   const user = computed(() => currentUser.value)
   const authenticated = computed(() => isAuthenticated.value)
   initializeAuth()
 
-  return { user, authenticated, currentUser, isAuthenticated, register, login, logout, initializeAuth, clearSession, checkSession }
+  return { user, authenticated, currentUser, isAuthenticated, register, login, loginByQR, logout, buildSession, initializeAuth, clearSession, checkSession, refreshAuthToken }
 }
 
 export const authService = (() => {
@@ -203,10 +274,13 @@ export const authService = (() => {
     get userEmail() { return service.currentUser.value?.email || 'Sin email' },
     register: service.register,
     login: service.login,
+    loginByQR: service.loginByQR,
     logout: service.logout,
     initializeAuth: service.initializeAuth,
+    buildSession: service.buildSession,
     clearSession: service.clearSession,
-    checkSession: service.checkSession
+    checkSession: service.checkSession,
+    refreshAuthToken: service.refreshAuthToken
   }
 })()
 

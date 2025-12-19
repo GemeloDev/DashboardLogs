@@ -3,10 +3,13 @@
  * Maneja la generación y descarga de códigos QR con tenantId
  */
 
+import axios from "axios"
+import { API_ENDPOINTS, AUTH_ENDPOINTS } from "./apiEndpoints"
+
 // Cargar librería QRCode dinámicamente
 let QRCodeLib = null
 
-const loadQRCodeLibrary = () => {
+export const loadQRCodeLibrary = () => {
     return new Promise((resolve, reject) => {
         if (QRCodeLib) {
             resolve(QRCodeLib)
@@ -148,4 +151,20 @@ export const generateMultipleQRs = async (tenantIds) => {
         // Pequeña pausa entre descargas
         await new Promise(resolve => setTimeout(resolve, 500))
     }
+}
+
+export const generateNewContent = async () => {
+  try{
+    const response = await axios.get(API_ENDPOINTS.QR)
+    return {
+      url: `${AUTH_ENDPOINTS.LOGIN_QR}/${response.data.data.qrToken}`,
+      expireTime: response.data.data.expiresInSeconds ?? ''
+    }
+  }catch( error ){
+    console.log('🧱 Algo ocurrió durante la petición del QR', error)
+    return {
+      url: `${AUTH_ENDPOINTS.LOGIN_QR}/token`,
+      expireTime: 120
+    }
+  }
 }

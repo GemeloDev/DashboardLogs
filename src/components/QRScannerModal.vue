@@ -23,155 +23,81 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <!-- Tabs -->
-      <q-tabs v-model="activeTab" class="scanner-tabs" align="justify">
-        <q-tab name="camera" icon="videocam" label="Cámara" />
-        <q-tab name="upload" icon="upload_file" label="Subir Imagen" />
-      </q-tabs>
+      <!-- Camera Tab -->
+      <div name="camera" class="camera-panel">
+        <!-- Advertencia de HTTPS en móviles -->
+        <q-banner v-if="isMobile && !isSecureContext" class="bg-warning text-white" rounded dense>
+          <template v-slot:avatar>
+            <q-icon name="warning" color="white" />
+          </template>
+          <strong>⚠️ Conexión no segura</strong><br />
+          Los navegadores móviles requieren HTTPS para acceder a la cámara. Te recomendamos usar la
+          opción de <strong>subir imagen</strong> o acceder desde una conexión segura.
+        </q-banner>
 
-      <!-- Tab Panels -->
-      <q-tab-panels v-model="activeTab" animated class="scanner-panels">
-        <!-- Camera Tab -->
-        <q-tab-panel name="camera" class="camera-panel">
-          <!-- Advertencia de HTTPS en móviles -->
-          <q-banner v-if="isMobile && !isSecureContext" class="bg-warning text-white" rounded dense>
-            <template v-slot:avatar>
-              <q-icon name="warning" color="white" />
-            </template>
-            <strong>⚠️ Conexión no segura</strong><br />
-            Los navegadores móviles requieren HTTPS para acceder a la cámara. Te recomendamos usar
-            la opción de <strong>subir imagen</strong> o acceder desde una conexión segura.
-          </q-banner>
+        <div class="camera-container">
+          <video
+            ref="videoElement"
+            class="camera-video"
+            autoplay
+            playsinline
+            muted
+            webkit-playsinline
+          ></video>
 
-          <div class="camera-container">
-            <video
-              ref="videoElement"
-              class="camera-video"
-              autoplay
-              playsinline
-              muted
-              webkit-playsinline
-            ></video>
-
-            <div v-if="!cameraActive" class="camera-placeholder">
-              <q-icon name="videocam_off" size="64px" color="grey-5" />
-              <p>Cámara no iniciada</p>
-              <div class="help-section">
-                <p class="hint-text">📱 <strong>¿Primera vez?</strong></p>
-                <p class="hint-text">1. Presiona "Iniciar Cámara"</p>
-                <p class="hint-text">2. Tu navegador pedirá permiso</p>
-                <p class="hint-text">3. Selecciona "Permitir"</p>
-                <q-separator spaced />
-                <p class="hint-text-small">
-                  Si no funciona, verifica en la configuración de tu navegador que el sitio tenga
-                  permiso para usar la cámara.
-                </p>
-              </div>
-            </div>
-
-            <!-- Overlay de escaneo -->
-            <div v-if="cameraActive" class="scan-overlay">
-              <div class="scan-frame"></div>
-              <p class="scan-instruction">Coloca el código QR dentro del marco</p>
-            </div>
-
-            <!-- Loading -->
-            <div v-if="scanning" class="scan-loading">
-              <q-spinner-dots size="50px" color="primary" />
-              <p>Escaneando...</p>
+          <div v-if="!cameraActive" class="camera-placeholder">
+            <q-icon name="videocam_off" size="64px" color="grey-5" />
+            <p>Cámara no iniciada</p>
+            <div class="help-section">
+              <p class="hint-text">📱 <strong>¿Primera vez?</strong></p>
+              <p class="hint-text">1. Presiona "Iniciar Cámara"</p>
+              <p class="hint-text">2. Tu navegador pedirá permiso</p>
+              <p class="hint-text">3. Selecciona "Permitir"</p>
+              <q-separator spaced />
+              <p class="hint-text-small">
+                Si no funciona, verifica en la configuración de tu navegador que el sitio tenga
+                permiso para usar la cámara.
+              </p>
             </div>
           </div>
 
-          <!-- Controles de cámara -->
-          <div class="camera-controls">
-            <q-btn
-              v-if="!cameraActive"
-              @click="startCamera"
-              color="primary"
-              icon="videocam"
-              label="Iniciar Cámara"
-              size="lg"
-              unelevated
-              :loading="initializingCamera"
-              class="start-camera-btn"
-            />
-            <q-btn
-              v-else
-              @click="stopCamera"
-              color="negative"
-              icon="videocam_off"
-              label="Detener Cámara"
-              size="lg"
-              flat
-            />
-
-            <!-- Botón alternativo si hay problemas -->
-            <q-btn
-              v-if="!cameraActive && !initializingCamera"
-              @click="activeTab = 'upload'"
-              flat
-              color="secondary"
-              icon="upload_file"
-              label="O sube una imagen"
-              size="md"
-              class="alt-btn"
-            />
+          <!-- Overlay de escaneo -->
+          <div v-if="cameraActive" class="scan-overlay">
+            <div class="scan-frame"></div>
+            <p class="scan-instruction">Coloca el código QR dentro del marco</p>
           </div>
-        </q-tab-panel>
 
-        <!-- Upload Tab -->
-        <q-tab-panel name="upload" class="upload-panel">
-          <div class="upload-container">
-            <q-file
-              v-model="selectedFile"
-              accept="image/png, image/jpeg, image/jpg, image/webp"
-              label="Seleccionar imagen con QR"
-              filled
-              counter
-              max-file-size="5242880"
-              @update:model-value="onFileSelected"
-              class="file-input"
-            >
-              <template v-slot:prepend>
-                <q-icon name="attach_file" />
-              </template>
-
-              <template v-slot:hint> Solo imágenes PNG, JPG, JPEG, WEBP (máx 5MB) </template>
-            </q-file>
-
-            <!-- Preview de imagen -->
-            <div v-if="imagePreview" class="image-preview">
-              <img :src="imagePreview" alt="QR Preview" />
-            </div>
-
-            <!-- Drag & Drop Zone -->
-            <div
-              v-if="!selectedFile"
-              @drop.prevent="onFileDrop"
-              @dragover.prevent="dragging = true"
-              @dragleave="dragging = false"
-              :class="['drop-zone', { dragging }]"
-            >
-              <q-icon name="cloud_upload" size="64px" color="primary" />
-              <p class="drop-text">Arrastra y suelta tu imagen aquí</p>
-              <p class="drop-hint">o haz clic arriba para seleccionar</p>
-            </div>
-
-            <!-- Botón de lectura -->
-            <q-btn
-              v-if="selectedFile"
-              @click="readQRFromFile"
-              color="primary"
-              icon="qr_code"
-              label="Leer Código QR"
-              size="lg"
-              unelevated
-              :loading="readingFile"
-              class="read-btn"
-            />
+          <!-- Loading -->
+          <div v-if="scanning" class="scan-loading">
+            <q-spinner-dots size="50px" color="primary" />
+            <p>Escaneando...</p>
           </div>
-        </q-tab-panel>
-      </q-tab-panels>
+        </div>
+
+        <!-- Controles de cámara -->
+        <div class="camera-controls">
+          <q-btn
+            v-if="!cameraActive"
+            @click="startCamera"
+            color="primary"
+            icon="videocam"
+            label="Iniciar Cámara"
+            size="lg"
+            unelevated
+            :loading="initializingCamera"
+            class="start-camera-btn"
+          />
+          <q-btn
+            v-else
+            @click="stopCamera"
+            color="negative"
+            icon="videocam_off"
+            label="Detener Cámara"
+            size="lg"
+            flat
+          />
+        </div>
+      </div>
 
       <!-- Footer con info -->
       <q-card-section class="modal-footer">
@@ -185,11 +111,9 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
-import {
-  startQRScanner,
-  readQRFromFile as readQRService,
-  isValidImageFile,
-} from '../services/qrScannerService.js'
+import { startQRScanner } from '../services/qrScannerService.js'
+import { disconnectSocket, initializeSocket } from 'src/services/socketService.js'
+import authService from 'src/services/authService.js'
 
 const props = defineProps({
   modelValue: {
@@ -212,21 +136,20 @@ const emit = defineEmits(['update:modelValue', 'qr-scanned'])
 const $q = useQuasar()
 
 const isOpen = ref(props.modelValue)
-const activeTab = ref('camera')
 const cameraActive = ref(false)
 const initializingCamera = ref(false)
 const scanning = ref(false)
 const videoElement = ref(null)
 const selectedFile = ref(null)
 const imagePreview = ref(null)
-const readingFile = ref(false)
-const dragging = ref(false)
 let scannerControls = null
+let socketInstance = ref(null)
 
 watch(
   () => props.modelValue,
   (val) => {
     isOpen.value = val
+    socketInstance.value = initializeSocket();
   }
 )
 
@@ -319,81 +242,25 @@ const stopCamera = () => {
 }
 
 /**
- * Maneja la selección de archivo
- */
-const onFileSelected = (file) => {
-  if (!file) {
-    imagePreview.value = null
-    return
-  }
-
-  if (!isValidImageFile(file)) {
-    $q.notify({
-      type: 'warning',
-      message: 'Solo se permiten archivos de imagen',
-      position: 'top',
-    })
-    selectedFile.value = null
-    return
-  }
-
-  // Crear preview
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    imagePreview.value = e.target.result
-  }
-  reader.readAsDataURL(file)
-}
-
-/**
- * Maneja drop de archivos
- */
-const onFileDrop = (event) => {
-  dragging.value = false
-  const files = event.dataTransfer.files
-  if (files.length > 0) {
-    selectedFile.value = files[0]
-    onFileSelected(files[0])
-  }
-}
-
-/**
- * Lee QR desde archivo
- */
-const readQRFromFile = async () => {
-  if (!selectedFile.value) return
-
-  try {
-    readingFile.value = true
-    const qrData = await readQRService(selectedFile.value)
-    onQRScanned(qrData)
-  } catch (error) {
-    console.error('❌ Error al leer QR:', error)
-    $q.notify({
-      type: 'negative',
-      message: error.message || 'No se pudo leer el código QR',
-      position: 'top',
-    })
-  } finally {
-    readingFile.value = false
-  }
-}
-
-/**
  * Callback cuando se escanea un QR
  */
-const onQRScanned = (qrData) => {
+const onQRScanned = async (qrData) => {
   console.log('🎯 QR detectado:', qrData)
+  if(qrData === '') throw new Error('QR vacío')
 
-  $q.notify({
-    type: 'positive',
-    message: '✅ Código QR leído correctamente',
-    position: 'top',
-    timeout: 2000,
-    icon: 'check_circle',
-  })
+  const token = qrData.split('/qr-login/')[1]
 
-  emit('qr-scanned', qrData)
+  // console.log('ℹ️ Estatus del socket: ', socketInstance.value)
+  console.log('ℹ️ Token QR: ', token)
+
+  const payload = {
+    qrToken: token
+  }
+
+  const loginByQR = await authService.loginByQR(payload);
+
+  console.log('Respuesta de loginByQR',loginByQR)
+
   isOpen.value = false
 }
 
@@ -404,6 +271,10 @@ const onClose = () => {
   stopCamera()
   selectedFile.value = null
   imagePreview.value = null
+
+  // Cerrar el socket
+  disconnectSocket();
+  socketInstance.value = null
 }
 </script>
 
@@ -451,17 +322,12 @@ $bg-light: #f8fafc;
   }
 }
 
-.scanner-tabs {
-  border-bottom: 1px solid $border-color;
-}
-
 .scanner-panels {
   flex: 1;
   overflow: auto;
 }
 
-.camera-panel,
-.upload-panel {
+.camera-panel {
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -586,7 +452,7 @@ $bg-light: #f8fafc;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(100, 100, 100, 0.041);
   color: white;
 
   p {
@@ -607,66 +473,6 @@ $bg-light: #f8fafc;
   .alt-btn {
     font-size: 13px;
   }
-}
-
-.upload-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 600px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.file-input {
-  font-size: 16px;
-}
-
-.image-preview {
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto;
-  border: 2px solid $border-color;
-  border-radius: 12px;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-}
-
-.drop-zone {
-  border: 3px dashed $border-color;
-  border-radius: 12px;
-  padding: 60px 40px;
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-
-  &:hover,
-  &.dragging {
-    border-color: $primary;
-    background: rgba($primary, 0.05);
-  }
-
-  .drop-text {
-    margin: 16px 0 8px 0;
-    font-size: 16px;
-    font-weight: 500;
-    color: $text-primary;
-  }
-
-  .drop-hint {
-    margin: 0;
-    font-size: 14px;
-    color: $text-secondary;
-  }
-}
-
-.read-btn {
-  margin-top: 20px;
 }
 
 .modal-footer {

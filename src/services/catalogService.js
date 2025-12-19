@@ -1,11 +1,12 @@
 import axios from 'axios'
 import { endpoints } from './endpoints'
+import { axiosInstance } from './axiosConfig'
 
 // Servicio para cargar catálogos - REFACTORIZADO
 export class CatalogService {
   static async cargarOficinas() {
     try {
-      const response = await axios.get(endpoints.catalogOficinas)
+      const response = await axiosInstance.get(endpoints.catalogOficinas)
       return response.data.map(oficina => ({
         value: oficina.id,
         label: oficina.nombre

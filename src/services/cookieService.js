@@ -3,6 +3,8 @@
  * Maneja el almacenamiento seguro de JWT en cookies
  */
 
+import { jwtDecode } from 'jwt-decode'
+
 const JWT_COOKIE_NAME = 'jwt_token'
 
 /**
@@ -48,6 +50,24 @@ export const getJWTFromCookie = () => {
         console.error('❌ Error al obtener JWT de cookie:', error)
         return null
     }
+}
+
+/**
+ * Obtiene los datos del JWT
+ * @returns { dataUser|null } Obtiene los datos del usuario a partir del JWT
+ */
+export const getJWTData = (token) => {
+  if (!token ) return null;
+
+  try {
+    const decoded = jwtDecode(token);
+    console.log('Datos decodificados:', decoded)
+
+    return decoded;
+  } catch (error) {
+    console.error('Error al decodificar el JWT:', error)
+    return null;
+  }
 }
 
 /**
