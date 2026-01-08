@@ -2,16 +2,17 @@
  * Configuración de endpoints de API
  * Centraliza todas las URLs de los servicios backend
  */
+import { API_BASE_URL } from "./apiConfig"
 
 // Base URL del servidor
-const BASE_URL = 'http://187.188.66.56:8040'
+const BASE_URL = API_BASE_URL
 // const SOCKET_IP = '192.168.100.30'
 
 // Endpoints de autenticación
 export const AUTH_ENDPOINTS = {
   REGISTER: `${BASE_URL}/api/auth/register`,
-  LOGIN: `${BASE_URL}/api/auth/login`,
-  LOGOUT: `${BASE_URL}/api/auth/logout`,
+  LOGIN: `${BASE_URL}/auth/login`,
+  LOGOUT: `${BASE_URL}/auth/logout`,
   VERIFY_TOKEN: `${BASE_URL}/api/auth/verify`,
   REFRESH_TOKEN: `${BASE_URL}/api/auth/refresh`,
   LOGIN_QR: `/api/auth/qr-login`
@@ -19,17 +20,16 @@ export const AUTH_ENDPOINTS = {
 
 // Endpoints principales (para uso futuro)
 export const API_ENDPOINTS = {
-  // Logs
-  LOGS: `${BASE_URL}/api/logs`,
-  LOGS_FILTERS: `${BASE_URL}/api/logs#s`,
-  LOGS_EXPORT: `${BASE_URL}/api/logs/export`,
+  //  Dashboard
+  EVENTS: '/api/dashboard/passports/events',
+  SUMMARY: '/api/dashboard/passports/summary',
 
   // Estadísticas
   STATS: `${BASE_URL}/api/stats`,
   CHARTS: `${BASE_URL}/api/charts`,
 
   // Diagnósticos
-  DIAGNOSTICS: `${BASE_URL}/api/diagnostics`,
+  PERSON_ID: `${BASE_URL}/dashboard/passports/timeline`,
 
   // Configuración
   CONFIG: `${BASE_URL}/api/config`,

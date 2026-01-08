@@ -1,5 +1,7 @@
 import axios from 'axios'
 import { API_BASE_URL } from './apiConfig'
+import { axiosInstance } from './axiosConfig'
+import { endpoints } from './endpoints'
 
 // Servicio para gráficas mejoradas según especificaciones técnicas
 export class ChartDataService {
@@ -13,214 +15,66 @@ export class ChartDataService {
     })
 
     // Filtros avanzados opcionales
-    if (filtros.oficina) params.append('oficinaId', filtros.oficina)
-    if (filtros.tipo) params.append('type', filtros.tipo)
-    if (filtros.proceso) params.append('process', filtros.proceso)
-    if (filtros.dispositivo) params.append('device', filtros.dispositivo)
-    if (filtros.escaner) params.append('scanDevice', filtros.escaner)
-    if (filtros.usuario) params.append('personId', filtros.usuario)
+    if (filtros.oficina) params.append('officeId', filtros.oficina.value)
+    if (filtros.usuario) params.append('userId', filtros.usuario)
+    if (filtros.proceso) params.append('operationType', filtros.proceso.value)
+    if (filtros.estatus) params.append('dbStatus', filtros.estatus.value)
+    if (filtros.dispositivo) params.append('channel', filtros.dispositivo.value)
 
+    console.log('🧱 Filtros cons truidos: ', params)
     return params
   }
 
-  // 1. Gráfica de Exportaciones con manejo robusto de errores
-  static async getExportacionesData(filtros) {
+  static async getAll(filtros) {
     try {
-      const params = this.buildFilterParams(filtros, { type: 'EXPORT' })
+      const params = this.buildFilterParams(filtros)
+      console.log('🔍 Solicitando todos los datos: /api/dashboard/passports/events', Object.fromEntries(params))
 
-      console.log('🔍 Solicitando exportaciones con filtros:', Object.fromEntries(params))
+      const { data } = await axiosInstance.get(`${endpoints.logs}`)
+      console.log('✅ Datos consultados: ', data)
 
-      // Intentar obtener datos con timeout
-      const response = await Promise.race([
-        axios.get(`${API_BASE_URL}/logs?${params}`),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout de exportaciones')), 15000)
-        )
-      ])
+      return data
+    } catch(error) {
+      console.log('❌ Error al cargar los datos desde la API: ', error)
+    }
+  }
 
-      console.log('📊 Respuesta exportaciones:', {
-        status: response.status,
-        dataLength: Array.isArray(response.data) ? response.data.length : 'No es array',
-        dataType: typeof response.data,
-        muestra: Array.isArray(response.data) ? response.data.slice(0, 2) : response.data
-      })
+  static async getPassportsSummary(filtros) {
+    try {
+      const params = this.buildFilterParams(filtros)
+      console.log(`🔍 Solicitando resumen con filtros: /api/dashboard/passports/summary`, Object.fromEntries(params));
 
-
-      return this.processExportacionesData(response.data)
+      // AQUÍ REALIZAS LA PETICIÓN (Ajusta 'api' a tu instancia de axios)
+      const { data } = await axiosInstance.get(`${endpoints.catalogSummary}`, { params })
+      return data // Retornamos todo el objeto data para acceder a .totales en el componente
     } catch (error) {
-      console.error('❌ Error al obtener datos de exportaciones:', error)
-
-      // Retornar estado vacío en caso de error
-      return this.getEmptyChartData()
+      console.error('❌ Error al obtener resumen pasaportes: ', error.message)
+      return null
     }
   }
 
-  // Función helper para datos de muestra de exportaciones (temporal para PRO FEATURE ONLY)
-  static getSampleExportacionesData() {
-    const hoy = new Date()
-    const categorias = []
-    for (let i = 6; i >= 0; i--) {
-      const fecha = new Date(hoy)
-      fecha.setDate(fecha.getDate() - i)
-      categorias.push(fecha.toISOString().split('T')[0])
-    }
-
-    return {
-      series: [
-        {
-          name: 'JSON',
-          data: [5, 8, 3, 12, 7, 15, 9],
-          backgroundColor: '#4CAF50',
-          borderColor: '#388E3C'
-        },
-        {
-          name: 'TXT',
-          data: [3, 5, 2, 8, 4, 10, 6],
-          backgroundColor: '#2196F3',
-          borderColor: '#1976D2'
-        },
-        {
-          name: 'Excel',
-          data: [2, 3, 1, 5, 4, 7, 3],
-          backgroundColor: '#FF9800',
-          borderColor: '#F57C00'
-        }
-      ],
-      categorias,
-      detalles: [],
-      isEmpty: false,
-      esDatosDeMuestra: true
+  static async getPassportsByOffice() {
+    try {
+      // AQUÍ REALIZAS LA PETICIÓN (Ajusta 'api' a tu instancia de axios)
+      const { data } = await axiosInstance.get(`${endpoints.catalogOficinas}`)
+      console.log(`🔍 Solicitando resumen con filtros: /api/dashboard/passports/by-office`, data);
+      return data.data
+    } catch (error) {
+      console.error('❌ Error al obtener resumen pasaportes: ', error.message)
+      return null
     }
   }
 
-  // Procesar datos de exportaciones
-  static processExportacionesData(rawData) {
-    console.log('🔄 Procesando datos de exportaciones. Cantidad de items:', rawData.length)
-    console.log('📋 Primeros 3 items:', rawData.slice(0, 3))
+  static async getPassportsByStatus(){
+    try {
+      //  PETICIÓN
+      const { data } = await axiosInstance.get(`${endpoints.catalogEstatus}`)
+      console.log('ℹ️ Solicitando información de pasaportes por PROCESO: ', data)
 
-    if (!Array.isArray(rawData) || rawData.length === 0) {
-      console.log('❌ No hay datos válidos para exportaciones')
-      return this.getEmptyChartData()
-    }
-
-    // Agrupar por fecha y extraer formato del mensaje
-    const agrupados = {}
-    const detalles = []
-
-    rawData.forEach(item => {
-      // Manejar tanto formato real (minúsculas) como formato de muestra (mayúsculas)
-      const dateField = item.date || item.Date
-      const messageField = item.message || item.Message
-      const oficinaField = item.oficina?.nombre
-      const personField = item.person || item.Person
-
-      // Validar que el item tenga la estructura esperada
-      if (!dateField) {
-        console.warn('Item sin fecha válida:', item)
-        return
-      }
-
-      const fecha = new Date(dateField)
-      if (isNaN(fecha.getTime())) {
-        console.warn('Fecha inválida:', dateField)
-        return
-      }
-
-      const fechaStr = fecha.toISOString().split('T')[0]
-
-      // Extraer formato del mensaje (JSON, TXT, Excel)
-      let formato = 'json' // Cambiar default de 'otros' a 'json'
-      if (messageField) {
-        const formatoMatch = messageField.match(/Formato:\s*(\w+)/i)
-        if (formatoMatch) {
-          formato = formatoMatch[1].toLowerCase()
-        } else {
-          // Si no hay formato explícito, usar heurística basada en el mensaje
-          const msg = messageField.toLowerCase()
-          if (msg.includes('excel') || msg.includes('xlsx')) {
-            formato = 'excel'
-          } else if (msg.includes('txt') || msg.includes('text')) {
-            formato = 'txt'
-          } else if (msg.includes('json')) {
-            formato = 'json'
-          } else {
-            formato = 'json' // Default a json en lugar de otros
-          }
-        }
-      }
-
-      if (!agrupados[fechaStr]) {
-        agrupados[fechaStr] = { json: 0, txt: 0, excel: 0 } // Quitar 'otros'
-      }
-
-      // Solo incrementar si el formato es válido
-      if (formato in agrupados[fechaStr]) {
-        agrupados[fechaStr][formato] += 1
-      } else {
-        agrupados[fechaStr].json += 1 // Default a json
-      }
-
-      console.log(oficinaField);
-      // Guardar detalles COMPLETOS preservando todos los datos originales de la API
-      detalles.push({
-        // Datos procesados para visualización
-        fecha: fechaStr,
-        formato: formato in agrupados[fechaStr] ? formato : 'json',
-        oficina: oficinaField || 'No especificada',
-        usuario: personField?.nombres + ' ' + personField?.primerApellido + ' ' + personField?.segundoApellido || 'No especificado',
-        hora: fecha.toLocaleTimeString(),
-        fechaCompleta: fecha.toLocaleString(),
-
-        // IMPORTANTE: Preservar TODOS los datos originales de la API
-        ...item, // Incluir el item completo original
-
-        // Campos específicos para asegurar compatibilidad
-        device: item.device || item.Device || item.Dispositivo,
-        scanner: item.scanDevice || item.Scanner || item.scanner,
-        person: item.person || item.Person,
-        message: item.message || item.Message,
-        type: item.type || item.Type,
-        process: item.process || item.Process,
-        trackingCode: item.trackingCode || item.TrackingCode,
-        id: item.id || item.ID
-      })
-    })
-
-    console.log('Datos agrupados exportaciones:', agrupados)
-    console.log('Datos detalles exportaciones:', detalles)
-
-    // Convertir a formato de Chart.js
-    const categorias = Object.keys(agrupados).sort()
-    const series = [
-      {
-        name: 'JSON',
-        data: categorias.map(fecha => agrupados[fecha].json),
-        backgroundColor: '#4CAF50',
-        borderColor: '#388E3C'
-      },
-      {
-        name: 'TXT',
-        data: categorias.map(fecha => agrupados[fecha].txt),
-        backgroundColor: '#2196F3',
-        borderColor: '#1976D2'
-      },
-      {
-        name: 'Excel',
-        data: categorias.map(fecha => agrupados[fecha].excel),
-        backgroundColor: '#FF9800',
-        borderColor: '#F57C00'
-      }
-    ]
-
-    console.log('📊 Datos finales procesados - Series:', series.length, 'Categorías:', categorias.length, 'Detalles:', detalles.length)
-    console.log('📈 Series data:', series.map(s => ({ name: s.name, data: s.data })))
-
-    return {
-      series,
-      categorias,
-      detalles,
-      isEmpty: false,
-      esDatosDeMuestra: false
+      return data.data
+    } catch (error) {
+      console.error('❌ Error al obtener datos de pasaportes por PROCESO', error.message)
+      return null
     }
   }
 
@@ -517,47 +371,6 @@ export class ChartDataService {
     ]
 
     return { series, categorias, detalles, promedios }
-  }
-
-  // 3. Gráfica de Escaneos con manejo robusto de errores
-  static async getEscaneosData(filtros) {
-    try {
-      const params = this.buildFilterParams(filtros)
-
-      console.log('🔍 Solicitando escaneos con filtros:', Object.fromEntries(params))
-
-      // Intentar obtener datos con timeout
-      const response = await Promise.race([
-        axios.get(`${API_BASE_URL}/logs#?${params}`),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout de escaneos')), 15000)
-        )
-      ])
-
-      console.log('📊 Respuesta escaneos:', {
-        status: response.status,
-        dataType: typeof response.data,
-        hasData: Array.isArray(response.data),
-        dataLength: response.data?.length
-      })
-
-      // Verificar si la respuesta es válida y tiene datos
-      if (!Array.isArray(response.data)) {
-        console.log('⚠️ API sin datos de escaneos válidos - retornando estado vacío')
-        return this.getEmptyChartData()
-      }
-
-      if (response.data.length === 0) {
-        console.log('⚠️ API sin datos de escaneos (array vacío) - retornando estado vacío')
-        return this.getEmptyChartData()
-      }
-
-      console.log('✅ Procesando', response.data.length, 'logs de escaneos de la API')
-      return this.processEscaneosData({ matchedLogs: response.data })
-    } catch (error) {
-      console.error('❌ Error obteniendo datos de escaneos:', error)
-      return this.getEmptyChartData()
-    }
   }
 
   // Procesar datos de escaneos - nueva estructura
@@ -911,30 +724,6 @@ export class ChartDataService {
     ]
 
     return { series, categorias, detalles }
-  }
-
-  // 5. Gráfica de Registro
-  static async getRegistroData(filtros) {
-    try {
-      const params = this.buildFilterParams(filtros, {
-        process: 'REGISTER'
-      })
-
-      const response = await axios.get(`${API_BASE_URL}/logs#?${params}`)
-
-      console.log('Registro response.data:', response.data)
-
-      // Verificar si la respuesta es válida
-      if (response.data === 'PRO FEATURE ONLY') {
-        console.log('API devolvió PRO FEATURE ONLY para registro, retornando estructura vacía')
-        return this.getEmptyChartData()
-      }
-
-      return this.processRegistroData(response.data)
-    } catch (error) {
-      console.error('Error obteniendo datos de registro:', error)
-      return this.getEmptyChartData()
-    }
   }
 
   // Procesar datos de registro

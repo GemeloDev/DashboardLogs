@@ -1,163 +1,96 @@
-import axios from 'axios'
 import { endpoints } from './endpoints'
 import { axiosInstance } from './axiosConfig'
 
-// Servicio para cargar catálogos - REFACTORIZADO
 export class CatalogService {
-  static async cargarOficinas() {
+
+  // --- 1. MÉTODO PRINCIPAL DE CARGA (Una sola consulta) ---
+
+  /**
+   * Realiza la petición a la API una sola vez y distribuye la data
+   * para generar todos los catálogos derivados.
+   */
+  static async fetchCatalogs() {
     try {
-      const response = await axiosInstance.get(endpoints.catalogOficinas)
-      return response.data.map(oficina => ({
-        value: oficina.id,
-        label: oficina.nombre
-      }))
-    } catch (error) {
-      console.error('Error cargando oficinas:', error)
-      return [
-        { value: 1, label: 'Oficina Central' },
-        { value: 2, label: 'Oficina Norte' },
-        { value: 3, label: 'Oficina Sur' },
-      ]
-    }
-  }
-
-  static async cargarDispositivos() {
-    try {
-      const response = await axios.get(endpoints.catalogDevices)
-      return response.data.map(device => ({
-        value: device,
-        label: device
-      }))
-    } catch (error) {
-      console.error('Error cargando dispositivos:', error)
-      return [
-        { value: 'PC-01', label: 'PC Oficina 01' },
-        { value: 'PC-02', label: 'PC Oficina 02' },
-        { value: 'TABLET-01', label: 'Tablet Móvil 01' },
-      ]
-    }
-  }
-
-  static async cargarEscaneres() {
-    try {
-      const response = await axios.get(endpoints.catalogScanDevices)
-      return response.data.map(scanner => ({
-        value: scanner,
-        label: scanner
-      }))
-    } catch (error) {
-      console.error('Error cargando escáneres:', error)
-      return [
-        { value: 'Elyctis123', label: 'Escáner Elyctis 123' },
-        { value: 'Scanner456', label: 'Escáner Principal 456' },
-        { value: 'Mobile789', label: 'Escáner Móvil 789' },
-      ]
-    }
-  }
-
-  static async cargarPersonas() {
-    try {
-      const response = await axios.get(endpoints.catalogPersons)
-      return response.data.map(persona => {
-        // Construir nombre completo manejando apellidos vacíos
-        const nombreCompleto = [
-          persona.nombres,
-          persona.primerApellido,
-          persona.segundoApellido
-        ].filter(Boolean).join(' ')
-
-        return {
-          value: persona.id,
-          label: `${nombreCompleto} (${persona.curp})`
-        }
-      })
-    } catch (error) {
-      console.error('Error cargando personas:', error)
-      return [
-        { value: 123, label: 'Juan Pérez (AAAA000000HDFRRR09)' },
-        { value: 456, label: 'María García (BBBB111111MDFRRR08)' },
-        { value: 789, label: 'Carlos López (CCCC222222HDFRRR07)' },
-      ]
-    }
-  }
-
-  // Opciones estáticas
-  static getTiposProceso() {
-    return [
-      { value: 'QR', label: 'QR' },
-      { value: 'MRZ', label: 'MRZ' },
-      { value: 'LOGIN', label: 'LOGIN' },
-      { value: 'REGISTER', label: 'REGISTER' },
-      { value: 'EXPORT', label: 'EXPORT' }
-    ]
-  }
-
-  static getTiposLog() {
-    return [
-      { value: 'ERROR', label: 'ERROR' },
-      { value: 'SUCCESS', label: 'SUCCESS' },
-      { value: 'INFO', label: 'INFO' },
-      { value: 'EXPORT', label: 'EXPORT' }
-    ]
-  }
-
-  static getTiposExportacion() {
-    return [
-      { value: 'QR', label: 'QR' },
-      { value: 'MRZ', label: 'MRZ' },
-      { value: 'INE', label: 'INE' },
-      { value: 'PASSPORT', label: 'PASSPORT' }
-    ]
-  }
-
-  static getTiposDatos() {
-    return [
-      { value: 'Histórico', label: 'Histórico' },
-      { value: 'Últimos escaneados', label: 'Últimos escaneados' }
-    ]
-  }
-
-  static getFormatos() {
-    return [
-      { value: 'JSON', label: 'JSON' },
-      { value: 'Excel', label: 'Excel' },
-      { value: 'TXT', label: 'TXT' }
-    ]
-  }
-
-  static async cargarCalendario() {
-    try {
-      const response = await axios.get(endpoints.logsCalendar)
-      return response.data
-    } catch (error) {
-      console.error('Error cargando calendario:', error)
-      return {
-        "2024-06": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        "2024-07": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-        "2024-08": [1, 2, 3, 4, 5, 6]
-      }
-    }
-  }
-
-  // Método para cargar todos los catálogos de una vez
-  static async cargarTodos() {
-    try {
-      const [oficinas, dispositivos, escaneres, personas] = await Promise.all([
-        this.cargarOficinas(),
-        this.cargarDispositivos(),
-        this.cargarEscaneres(),
-        this.cargarPersonas(),
+      // Ejecutamos las peticiones principales en paralelo
+      // 1. Logs (de donde sacaremos oficinas, estatus, dispositivos, etc.)
+      // 2. Personas (endpoint separado según tu código original)
+      const [logsResponse, personsResponse] = await Promise.all([
+        axiosInstance.get(endpoints.catalogEvents),
+        axiosInstance.get(endpoints.catalogPersons).catch(() => ({ data: { data: { data: [] } } })) // Fallback si falla personas
       ])
 
+      const items = logsResponse.data.data.items || []
+      const personasRaw = personsResponse.data.data.data || []
+
+      console.log(`ℹ️ Datos cargados: ${items.length} eventos y ${personasRaw.length} personas.`)
+
+      // Retornamos un objeto consolidado procesando la data en memoria
       return {
-        oficinas,
-        dispositivos,
-        escaneres,
-        personas,
+        oficinas: this._extractOficinas(items),
+        dispositivos: this._extractCampoSimple(items, 'channel'),
+        estatus: this._extractCampoSimple(items, 'status'),
+        tiposProcesos: this._extractCampoSimple(items, 'operationType'),
+        personas: this._formatPersonas(personasRaw)
       }
+
     } catch (error) {
-      console.error('Error cargando catálogos:', error)
-      throw error
+      console.error('❌ Error crítico cargando catálogos:', error.message)
+      return {
+        oficinas: [],
+        dispositivos: [],
+        estatus: [],
+        tiposProcesos: [],
+        personas: []
+      }
     }
+  }
+
+  // --- 2. MÉTODOS EXTRACTORES (Lógica pura, sin llamadas API) ---
+
+  /**
+   * Extrae oficinas únicas basándose en el ID para evitar duplicados.
+   */
+  static _extractOficinas(items) {
+    const oficinasMap = new Map()
+
+    items.forEach(item => {
+      if (item.office && item.office.officeId) {
+        oficinasMap.set(item.office.officeId, {
+          value: item.office.officeId,
+          label: item.office.officeName || 'Sin Nombre'
+        })
+      }
+    })
+
+    return Array.from(oficinasMap.values())
+  }
+
+  /**
+   * Método genérico para extraer valores únicos de campos simples (strings).
+   * Sirve para: channel, status, operationType, etc.
+   */
+  static _extractCampoSimple(items, fieldName) {
+    // 1. Mapear al valor
+    // 2. Crear Set para únicos
+    // 3. Filtrar nulos/vacíos
+    const uniqueValues = [...new Set(items.map(item => item[fieldName]))].filter(Boolean)
+
+    return uniqueValues.map(val => ({
+      value: val,
+      label: val
+    }))
+  }
+
+  /**
+   * Formatea la respuesta del endpoint de personas.
+   */
+  static _formatPersonas(personasData) {
+    return personasData.map(persona => {
+      const nombreCompleto = [persona.name].filter(Boolean).join(' ')
+      return {
+        value: persona.id,
+        label: persona.email ? `${nombreCompleto} (${persona.email})` : nombreCompleto
+      }
+    })
   }
 }

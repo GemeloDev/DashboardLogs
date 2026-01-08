@@ -13,8 +13,8 @@
         <div class="row">
           <div class="col">
             <div class="text-h5">
-              <q-icon name="terminal" class="q-mr-sm" color="primary" />
-              Consola de Logs del Sistema
+              <q-icon name="history_edu" class="q-mr-sm" color="primary" />
+              Bitácora de Eventos de Pasaportes
               <q-chip
                 v-if="logs.length"
                 color="primary"
@@ -23,7 +23,7 @@
                 class="q-ml-md"
                 icon="format_list_numbered"
               >
-                {{ logsFiltrados.length }} / {{ logs.length }} registros
+                {{ logsFiltrados.length }} / {{ logs.length }} eventos
               </q-chip>
             </div>
             <div class="text-subtitle2 text-grey-4 q-mt-sm" v-if="filtroActual">
@@ -31,23 +31,6 @@
             </div>
           </div>
           <div class="col-auto">
-            <!-- 🔬 Centro de Diagnóstico Técnico Mejorado -->
-            <q-btn
-              icon="medical_services"
-              flat
-              round
-              color="cyan-4"
-              @click="abrirDiagnosticoManual"
-              class="q-mr-sm diagnostic-btn"
-              style="animation: pulse-glow 2s infinite"
-            >
-              <q-tooltip class="bg-cyan-8 text-white">
-                <div class="text-center">
-                  <div class="text-subtitle2">🔬 Centro de Diagnóstico Técnico</div>
-                  <div class="text-caption">Análisis avanzado de errores y sesiones</div>
-                </div>
-              </q-tooltip>
-            </q-btn>
             <q-btn icon="minimize" flat round color="grey-4" @click="cerrarConsola" class="q-mr-sm">
               <q-tooltip>Minimizar consola</q-tooltip>
             </q-btn>
@@ -100,10 +83,10 @@
                   <q-card-section class="console-controls bg-grey-8">
                     <div class="row q-col-gutter-md">
                       <!-- Primera fila: Búsqueda -->
-                      <div class="col-12 col-md-8">
+                      <div class="col-12 col-md-10">
                         <q-input
                           v-model="busqueda"
-                          label="Buscar en mensaje..."
+                          label="Buscar (Nombre, Pasaporte, ID...)"
                           filled
                           dark
                           color="primary"
@@ -115,7 +98,7 @@
                           </template>
                         </q-input>
                       </div>
-                      <div class="col-12 col-md-4">
+                      <div class="col-12 col-md-2">
                         <q-btn-dropdown
                           color="positive"
                           icon="download"
@@ -156,10 +139,10 @@
                           </q-list>
                         </q-btn-dropdown>
                         <q-btn
-                          color="warning"
+                          color="negative"
                           icon="clear_all"
                           label="Limpiar"
-                          @click="limpiarConsola"
+                          @click="limpiarTodosFiltros"
                           flat
                         />
                       </div>
@@ -167,232 +150,93 @@
                       <!-- Segunda fila: Filtros avanzados - Optimizado para responsive -->
                       <div class="col-12 col-sm-6 col-md-3 col-lg-3">
                         <q-select
-                          v-model="filtroOficina"
-                          :options="opcionesOficinas"
-                          option-label="label"
-                          option-value="value"
                           emit-value
                           map-options
-                          label="Oficina"
                           filled
                           dark
-                          color="primary"
                           clearable
                           use-input
-                          @filter="filtrarOficinas"
                           dense
+                          v-model="filtroOficina"
+                          :options="opcionesOficinas"
+                          @filter="filtrarOficinas"
+                          option-label="label"
+                          option-value="value"
+                          label="Oficina"
+                          color="primary"
                         >
                           <template v-slot:prepend>
                             <q-icon name="business" color="orange" />
                           </template>
                         </q-select>
                       </div>
-
                       <div class="col-12 col-sm-6 col-md-3 col-lg-3">
                         <q-select
-                          v-model="filtroUsuario"
-                          :options="opcionesUsuarios"
-                          option-label="label"
-                          option-value="value"
                           emit-value
                           map-options
-                          label="Usuario"
                           filled
                           dark
-                          color="primary"
                           clearable
                           use-input
-                          @filter="filtrarUsuarios"
                           dense
+                          v-model="filtroDispositivo"
+                          :options="opcionesCanales"
+                          @filter="filtrarDispositivos"
+                          option-label="label"
+                          option-value="value"
+                          label="Canal"
+                          color="primary"
                         >
                           <template v-slot:prepend>
-                            <q-icon name="person" color="green" />
+                            <q-icon name="devices" color="cyan" />
                           </template>
                         </q-select>
                       </div>
-
                       <div class="col-12 col-sm-6 col-md-3 col-lg-3">
                         <q-select
+                          emit-value
+                          map-options
+                          filled
+                          dark
+                          clearable
+                          use-input
+                          dense
                           v-model="filtroTipoLog"
-                          :options="opcionesTiposLog"
+                          :options="opcionesEstatus"
                           option-label="label"
                           option-value="value"
-                          emit-value
-                          map-options
                           label="Tipo"
-                          filled
-                          dark
                           color="primary"
-                          clearable
-                          dense
                         >
                           <template v-slot:prepend>
-                            <q-icon name="article" color="blue" />
+                            <q-icon name="rule" color="blue" />
                           </template>
                         </q-select>
                       </div>
 
                       <div class="col-12 col-sm-6 col-md-3 col-lg-3">
                         <q-select
-                          v-model="filtroProceso"
-                          :options="opcionesProcesos"
-                          option-label="label"
-                          option-value="value"
                           emit-value
                           map-options
-                          label="Proceso"
                           filled
                           dark
-                          color="primary"
                           clearable
+                          use-input
                           dense
+                          v-model="filtroProceso"
+                          :options="opcionesOperacion"
+                          option-label="label"
+                          option-value="value"
+                          label="Proceso"
+                          color="primary"
                         >
                           <template v-slot:prepend>
                             <q-icon name="settings" color="purple" />
                           </template>
                         </q-select>
                       </div>
-
-                      <!-- Tercera fila: Filtros adicionales - Optimizado -->
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                        <q-select
-                          v-model="filtroDispositivo"
-                          :options="opcionesDispositivos"
-                          option-label="label"
-                          option-value="value"
-                          emit-value
-                          map-options
-                          label="Dispositivo"
-                          filled
-                          dark
-                          color="primary"
-                          clearable
-                          use-input
-                          @filter="filtrarDispositivos"
-                          dense
-                        >
-                          <template v-slot:prepend>
-                            <q-icon name="smartphone" color="cyan" />
-                          </template>
-                        </q-select>
-                      </div>
-
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                        <q-select
-                          v-model="filtroEscaner"
-                          :options="opcionesEscaners"
-                          option-label="label"
-                          option-value="value"
-                          emit-value
-                          map-options
-                          label="Escáner"
-                          filled
-                          dark
-                          color="primary"
-                          clearable
-                          use-input
-                          @filter="filtrarEscaners"
-                          dense
-                        >
-                          <template v-slot:prepend>
-                            <q-icon name="qr_code_scanner" color="pink" />
-                          </template>
-                        </q-select>
-                      </div>
-
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                        <q-input
-                          v-model="textoRangoFechas"
-                          label="Fechas"
-                          filled
-                          dark
-                          color="primary"
-                          clearable
-                          readonly
-                          dense
-                        >
-                          <template v-slot:prepend>
-                            <q-icon name="date_range" color="amber" />
-                          </template>
-                          <template v-slot:append>
-                            <q-icon name="calendar_month" class="cursor-pointer">
-                              <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                                <q-date v-model="rangoFechas" range mask="YYYY-MM-DD" dark>
-                                  <div class="row items-center justify-end q-pa-sm">
-                                    <q-btn
-                                      label="Limpiar"
-                                      color="negative"
-                                      flat
-                                      size="sm"
-                                      @click="rangoFechas = null"
-                                      class="q-mr-sm"
-                                    />
-                                    <q-btn
-                                      v-close-popup
-                                      label="Aplicar"
-                                      color="primary"
-                                      flat
-                                      size="sm"
-                                    />
-                                  </div>
-                                </q-date>
-                              </q-popup-proxy>
-                            </q-icon>
-                          </template>
-                        </q-input>
-                      </div>
-
-                      <!-- Filtros avanzados de código de error y sesión -->
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                        <q-input
-                          v-model="filtroErrorCode"
-                          label="Código Error"
-                          filled
-                          dark
-                          color="primary"
-                          clearable
-                          dense
-                          debounce="300"
-                        >
-                          <template v-slot:prepend>
-                            <q-icon name="error_outline" color="red-4" />
-                          </template>
-                          <template v-slot:hint> Ej: USR02808141525-INF017 </template>
-                        </q-input>
-                      </div>
-
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                        <q-input
-                          v-model="filtroSessionToken"
-                          label="Token Sesión"
-                          filled
-                          dark
-                          color="primary"
-                          clearable
-                          dense
-                          debounce="300"
-                        >
-                          <template v-slot:prepend>
-                            <q-icon name="vpn_key" color="green-4" />
-                          </template>
-                          <template v-slot:hint> Ej: HNh0vhSPeQ9e </template>
-                        </q-input>
-                      </div>
-
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                        <q-btn
-                          color="negative"
-                          icon="filter_alt_off"
-                          label="Limpiar"
-                          @click="limpiarTodosFiltros"
-                          outline
-                          class="full-width"
-                          dense
-                        />
-                      </div>
                     </div>
 
-                    <!-- Indicadores de filtros activos -->
                     <div v-if="filtrosActivos.length" class="row q-mt-md">
                       <div class="col-12">
                         <div class="text-caption text-grey-4 q-mb-xs">Filtros activos:</div>
@@ -436,223 +280,85 @@
           <div class="q-mt-lg text-h6">Cargando logs...</div>
         </div>
 
-        <!-- Loader de filtros elegante -->
-        <div v-else-if="loadingFiltros" class="filter-loader-overlay">
-          <div class="filter-loader-content">
-            <q-spinner-dots color="primary" size="40px" />
-            <div class="q-mt-sm text-subtitle2 text-primary">Aplicando filtros...</div>
-          </div>
-        </div>
-
-        <div v-else-if="!logs.length" class="text-center q-pa-xl">
+        <!-- <div v-else-if="!logs.length" class="text-center q-pa-xl">
           <q-icon name="inbox" size="120px" color="grey-6" />
           <div class="q-mt-lg text-h5 text-grey-4">No hay logs disponibles</div>
-        </div>
+        </div> -->
 
         <div v-else>
-          <!-- Loader de paginación -->
-          <div v-if="loadingPaginacion" class="pagination-loader">
-            <q-linear-progress color="primary" indeterminate class="q-mb-md" />
-            <div class="text-center text-caption text-primary">Cargando página...</div>
-          </div>
-
-          <!-- Grid responsivo de cards -->
           <div class="row justify-center items-stretch q-gutter-sm">
             <div
-              v-for="(log, index) in logsPaginados"
-              :key="`${log.id || index}-${paginaActual}`"
+              v-for="(log, index) in logsFiltrados"
+              :key="log.id || index"
               class="col-xs-12 col-sm-12 col-auto width-responsive"
             >
               <q-card
-                :class="['log-card', `log-card-log`, 'fit', 'cursor-pointer']"
+                class="log-card fit cursor-pointer"
+                :class="getClassByStatus(log.status)"
                 @click="mostrarDetalleLog(log)"
-                bordered
-                flat
+                bordered flat
               >
-                <!-- Header de la card mejorado -->
                 <q-card-section class="log-card-header">
                   <div class="row items-center justify-between">
                     <div class="col-auto">
                       <q-chip
-                        :color="getColorTipo(log.type || log.Tipo || log.EventType)"
+                        :color="getColorStatus(log.status)"
                         text-color="white"
                         size="md"
-                        :icon="getIconoTipo(log.type || log.Tipo || log.EventType)"
+                        :icon="getIconoTipo(log.status)"
                         class="text-weight-bold"
                       >
-                        {{ log.type || log.Type || log.EventType || 'INFO' }}
+                        {{log.status}}
                       </q-chip>
                     </div>
                     <div class="col-auto">
-                      <q-badge
-                        :color="getColorProceso(log.process || log.Proceso)"
-                        :label="log.process || log.Proceso || 'SYSTEM'"
-                        class="text-weight-bold"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Timestamp mejorado -->
-                  <div class="row items-center justify-between q-mt-sm">
-                    <div class="col">
-                      <div class="timestamp-section">
-                        <q-icon name="schedule" color="blue-4" size="16px" class="q-mr-xs" />
-                        <span class="text-caption text-blue-4 text-weight-medium">
-                          {{ formatearFechaCompleta(log.date || log.Fecha || log.timestamp) }}
-                        </span>
-                      </div>
-                    </div>
-                    <div class="col-auto">
-                      <!-- ID del log -->
-                      <q-chip
-                        dense
-                        color="grey-7"
-                        text-color="white"
-                        size="sm"
-                        icon="tag"
-                        class="log-id-chip"
-                      >
-                        #{{ log.id || index + 1 }}
-                      </q-chip>
+                      <span class="text-caption text-blue-4 text-weight-medium"> {{ formatearFechaCorta(log.eventTime) }} </span>
                     </div>
                   </div>
                 </q-card-section>
-                <!-- Contenido principal de la card -->
+
+                <div class="text-subtitle2 text-white ellipsis q-pa-sm q-mt-sm">
+                  <q-icon name="settings_applications" color="primary" size="xs" />
+                  {{ log.operationType }}
+                </div>
+                <div class="q-mt-sm text-caption text-grey-3 ellipsis-2-lines" style="min-height: 32px;">
+                   <span v-if="log.reason" class="text-red-3 text-weight-bold">
+                     <q-icon name="warning" /> {{ log.reason.description }}
+                   </span>
+                   <span v-else>
+                     {{ log.message }}
+                   </span>
+                </div>
+
                 <q-card-section class="log-card-content">
-                  <!-- Información del usuario mejorada -->
-                  <div v-if="!errorCodeExist(log.errorCode)">
-                    <!-- <div v-if="log.errorCode"> -->
-                    <div v-if="obtenerNombreUsuario(log)" class="log-user-section enhanced-section">
-                      <div class="section-header">
-                        <q-icon name="person" color="green-4" size="20px" class="q-mr-sm" />
-                        <div class="text-weight-bold text-green-4 section-title">
-                          Usuario del Sistema
-                        </div>
-                      </div>
-                      <div class="section-content">
-                        <div class="detail-item">
-                          <span class="detail-label">Nombre:</span>
-                          <span class="detail-value">{{ obtenerNombreUsuario(log) }}</span>
-                        </div>
-                        <div v-if="obtenerCurpUsuario(log)" class="detail-item">
-                          <span class="detail-label">Username:</span>
-                          <span class="detail-value">{{ obtenerCurpUsuario(log) }}</span>
-                        </div>
-                        <!-- Información adicional del usuario si está disponible -->
-                        <div v-if="log.userRole || log.UserRole" class="detail-item">
-                          <span class="detail-label">Rol:</span>
-                          <q-chip dense color="green-6" text-color="white" size="sm">
-                            {{ log.userRole || log.UserRole }}
-                          </q-chip>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Información de la oficina mejorada -->
-                    <div
-                      v-if="obtenerNombreUsuario(log)"
-                      class="log-office-section enhanced-section q-mt-sm"
-                    >
-                      <div class="section-header">
-                        <q-icon name="business" color="orange-4" size="20px" class="q-mr-sm" />
-                        <div class="text-weight-bold text-orange-4 section-title">
-                          Ubicación & Oficina
-                        </div>
-                      </div>
-                      <div class="section-content">
-                        <div class="detail-item">
-                          <span class="detail-label">Oficina:</span>
-                          <span class="detail-value">
-                            {{ obtenerNombreOficina(log).nombre || obtenerNombreOficina(log) }}
-                          </span>
-                        </div>
-                        <div v-if="obtenerDireccionOficina(log)" class="detail-item">
-                          <span class="detail-label">Dirección:</span>
-                          <span class="detail-value">{{ obtenerDireccionOficina(log) }}</span>
-                        </div>
-                        <!-- Información adicional de ubicación -->
-                        <div v-if="log.officeName || log.OfficeName" class="detail-item">
-                          <span class="detail-label">Código:</span>
-                          <q-chip dense color="orange-6" text-color="white" size="sm">
-                            {{ log.officeName || log.OfficeName }}
-                          </q-chip>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <!-- Información del dispositivo mejorada -->
-                  <div
-                    v-if="
-                      obtenerInfoDispositivo(log).hasDevice ||
-                      obtenerInfoDispositivo(log).hasScanner
-                    "
-                    class="log-device-section enhanced-section q-mt-sm"
-                  >
+                  <div class="log-device-section enhanced-section q-mt-sm">
                     <div class="section-header">
-                      <q-icon name="devices" color="purple-4" size="20px" class="q-mr-sm" />
-                      <div class="text-weight-bold text-purple-4 section-title">
-                        Hardware & Dispositivos
+                      <q-icon name="person" color="cyan-4" size="20px" class="q-mr-sm" />
+                      <div class="text-weight-bold text-cyan-4 section-title">
+                        Sujeto e información del trámite
                       </div>
                     </div>
+
                     <div class="section-content">
-                      <div v-if="obtenerInfoDispositivo(log).hasDevice" class="detail-item">
-                        <q-icon name="computer" color="purple-3" size="16px" class="q-mr-xs" />
-                        <span class="detail-label">Dispositivo:</span>
-                        <span class="detail-value">{{ obtenerInfoDispositivo(log).device }}</span>
+                      <div class="q-pb-sm">
+                        <q-icon name="badge" size="xs" />
+                        {{ log.passport.passportNumber }}
                       </div>
-                      <div v-if="obtenerInfoDispositivo(log).hasScanner" class="detail-item">
-                        <q-icon
-                          name="qr_code_scanner"
-                          color="purple-3"
-                          size="16px"
-                          class="q-mr-xs"
-                        />
-                        <span class="detail-label">Escáner:</span>
-                        <span class="detail-value">{{ obtenerInfoDispositivo(log).scanner }}</span>
+                      <div class="detail-item q-pb-sm">
+                        {{ log.passport.fullName }} | {{ log.passport.personId }}
                       </div>
-                      <!-- IP Address si está disponible -->
-                      <div v-if="log.ipAddress || log.IpAddress" class="detail-item">
-                        <q-icon name="router" color="purple-3" size="16px" class="q-mr-xs" />
-                        <span class="detail-label">IP:</span>
-                        <span class="detail-value">{{ log.ipAddress || log.IpAddress }}</span>
+                      <div class="detail-item">
+                        <q-icon name="flag" color="cyan-3" size="16px" class="q-mr-xs" />
+                        <span class="detail-label">Nacionalidad:</span>
+                        <span class="detail-value">{{ log.passport.nationality }}</span>
                       </div>
                     </div>
                   </div>
-
-                  <!-- Información del código de error -->
-                  <div v-if="log.errorCode || log.ErrorCode" class="log-error-section q-mt-sm">
-                    <div class="row items-center q-mb-xs">
-                      <q-icon name="error_outline" color="red-4" size="18px" class="q-mr-sm" />
-                      <div class="text-weight-medium text-red-4">Código de Error</div>
+                  <div class="row q-mt-sm items-center justify-between">
+                    <div class="text-caption text-grey-5 ellipsis" style="max-width: 70%">
+                      <q-icon name="place" size="xs" /> {{ log.office?.officeName }}
                     </div>
-                    <div class="error-content q-ml-md text-caption">
-                      {{ log.errorCode || log.ErrorCode }}
-                    </div>
-                  </div>
-
-                  <!-- Información del token de sesión -->
-                  <div
-                    v-if="log.sessionToken || log.SessionToken"
-                    class="log-session-section q-mt-sm"
-                  >
-                    <div class="row items-center q-mb-xs">
-                      <q-icon name="vpn_key" color="cyan-4" size="18px" class="q-mr-sm" />
-                      <div class="text-weight-medium text-cyan-4">Token de Sesión</div>
-                    </div>
-                    <div class="session-content q-ml-md text-caption">
-                      {{ log.sessionToken || log.SessionToken }}
-                    </div>
-                  </div>
-
-                  <!-- Mensaje del log -->
-                  <div v-if="obtenerMensajeCompleto(log)" class="log-message-section q-mt-sm">
-                    <div class="row items-center q-mb-xs">
-                      <q-icon name="message" color="amber-4" size="18px" class="q-mr-sm" />
-                      <div class="text-weight-medium text-amber-4">Mensaje</div>
-                    </div>
-                    <div class="message-content q-ml-md text-caption">
-                      {{ obtenerMensajeCompleto(log) }}
-                    </div>
+                    <q-badge outline color="grey-5" :label="log.channel" />
                   </div>
                 </q-card-section>
               </q-card>
@@ -667,9 +373,7 @@
                   Mostrando {{ (paginaActual - 1) * registrosPorPagina + 1 }} -
                   {{ Math.min(paginaActual * registrosPorPagina, logsFiltrados.length) }}
                   de {{ logsFiltrados.length }} registros
-                  <span v-if="logs.length !== logsFiltrados.length" class="q-ml-sm">
-                    ({{ logs.length }} total)
-                  </span>
+                  <span class="q-ml-sm"> ({{ logs.length }} total) </span>
                 </div>
               </div>
               <div class="col-12 col-sm-6 col-md-4 text-center">
@@ -719,9 +423,7 @@
           <div class="col">
             <span class="text-caption text-grey-4">
               Total: {{ logsFiltrados.length }} registros
-              <span v-if="logs.length !== logsFiltrados.length" class="q-ml-sm">
-                ({{ logs.length }} sin filtrar)
-              </span>
+              <span class="q-ml-sm"> ({{ logs.length }} sin filtrar) </span>
             </span>
           </div>
           <div class="col-auto">
@@ -737,334 +439,150 @@
         </div>
       </q-card-section>
     </q-card>
-
-    <!-- Modal de detalle -->
-    <q-dialog v-model="modalDetalle">
-      <q-card style="min-width: 700px; max-width: 900px" class="bg-dark text-white">
-        <q-card-section class="bg-grey-9">
-          <div class="text-h6 flex items-center">
-            <q-icon name="info" class="q-mr-sm" />
-            Detalle del Log
-          </div>
-        </q-card-section>
-
-        <q-card-section v-if="logSeleccionado" class="q-pa-lg">
-          <div class="row q-col-gutter-md">
-            <!-- Información básica -->
-            <div class="col-12 col-md-6">
-              <q-list dark separator>
-                <q-item>
-                  <q-item-section avatar>
-                    <q-icon color="indigo" name="schedule" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Fecha y Hora Completa</q-item-label>
-                    <q-item-label caption>{{
-                      formatearFechaCompleta(
-                        logSeleccionado.Date ||
-                          logSeleccionado.Fecha ||
-                          logSeleccionado.FechaCreacion
-                      )
-                    }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-
-                <q-item>
-                  <q-item-section avatar>
-                    <q-icon :color="getColorTipo(logSeleccionado.type)" name="label" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Tipo</q-item-label>
-                    <q-item-label caption>{{
-                      logSeleccionado.type ||
-                      logSeleccionado.Tipo ||
-                      logSeleccionado.EventType ||
-                      'INFO'
-                    }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-
-                <q-item v-if="logSeleccionado.process || logSeleccionado.Proceso">
-                  <q-item-section avatar>
-                    <q-icon
-                      :color="getColorProceso(logSeleccionado.process || logSeleccionado.Proceso)"
-                      name="settings"
-                    />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Proceso</q-item-label>
-                    <q-item-label caption>{{
-                      logSeleccionado.process || logSeleccionado.Proceso
-                    }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-
-                <!-- Información del dispositivo y escáner -->
-                <q-item v-if="obtenerInfoDispositivo(logSeleccionado).hasDevice">
-                  <q-item-section avatar>
-                    <q-icon color="purple" name="devices" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Dispositivo</q-item-label>
-                    <q-item-label caption>{{
-                      obtenerInfoDispositivo(logSeleccionado).device
-                    }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-
-                <q-item v-if="obtenerInfoDispositivo(logSeleccionado).hasScanner">
-                  <q-item-section avatar>
-                    <q-icon color="cyan" name="qr_code_scanner" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Escáner</q-item-label>
-                    <q-item-label caption>{{
-                      obtenerInfoDispositivo(logSeleccionado).scanner
-                    }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </div>
-
-            <!-- Información del usuario y oficina -->
-            <div class="col-12 col-md-6">
-              <q-list dark separator>
-                <q-item v-if="obtenerNombreUsuario(log)">
-                  <q-item-section avatar>
-                    <q-icon color="green" name="person" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Usuario</q-item-label>
-                    <q-item-label caption>{{ obtenerNombreUsuario(logSeleccionado) }}</q-item-label>
-                    <q-item-label caption v-if="logSeleccionado.person?.curp" class="text-grey-5">
-                      Username: {{ logSeleccionado.person.curp }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-
-                <q-item v-if="obtenerNombreOficina(logSeleccionado)">
-                  <q-item-section avatar>
-                    <q-icon color="orange" name="business" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Oficina</q-item-label>
-                    <q-item-label caption>{{ obtenerNombreOficina(logSeleccionado) }}</q-item-label>
-                    <q-item-label
-                      caption
-                      v-if="obtenerDireccionOficina(logSeleccionado)"
-                      class="text-grey-5"
-                    >
-                      {{ obtenerDireccionOficina(logSeleccionado) }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-
-                <q-item v-if="logSeleccionado.device">
-                  <q-item-section avatar>
-                    <q-icon color="purple" name="computer" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Device</q-item-label>
-                    <q-item-label caption>{{ logSeleccionado.device }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-
-                <q-item v-if="logSeleccionado.scanDevice">
-                  <q-item-section avatar>
-                    <q-icon color="blue" name="scanner" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Scan Device</q-item-label>
-                    <q-item-label caption>{{ logSeleccionado.scanDevice }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </div>
-          </div>
-
-          <!-- Mensaje completo -->
-          <div class="q-mt-lg">
-            <div class="text-subtitle2 q-mb-sm flex items-center">
-              <q-icon name="message" class="q-mr-sm" color="amber" />
-              Mensaje completo
-            </div>
-            <q-card dark class="bg-grey-8">
-              <q-card-section>
-                <pre class="log-message-detail">{{ obtenerMensajeCompleto(logSeleccionado) }}</pre>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <!-- Información técnica adicional si está disponible -->
-          <div
-            v-if="
-              logSeleccionado.TrackingCode ||
-              logSeleccionado.ID ||
-              logSeleccionado.Estado ||
-              logSeleccionado.Status ||
-              logSeleccionado.errorCode ||
-              logSeleccionado.ErrorCode ||
-              logSeleccionado.sessionToken ||
-              logSeleccionado.SessionToken
-            "
-            class="q-mt-lg"
-          >
-            <div class="text-subtitle2 q-mb-sm flex items-center">
-              <q-icon name="info" class="q-mr-sm" color="blue" />
-              Información técnica
-            </div>
-            <q-card dark class="bg-grey-8">
-              <q-card-section>
-                <div class="row q-col-gutter-md">
-                  <div v-if="logSeleccionado.TrackingCode" class="col-12 col-md-6">
-                    <div class="detail-tech-item">
-                      <q-icon name="code" size="16px" color="blue-4" class="q-mr-xs" />
-                      <strong>Tracking Code:</strong>
-                      <span class="tech-value">{{ logSeleccionado.TrackingCode }}</span>
-                    </div>
-                  </div>
-                  <div v-if="logSeleccionado.ID" class="col-12 col-md-6">
-                    <div class="detail-tech-item">
-                      <q-icon name="fingerprint" size="16px" color="purple-4" class="q-mr-xs" />
-                      <strong>ID:</strong>
-                      <span class="tech-value">{{ logSeleccionado.ID }}</span>
-                    </div>
-                  </div>
-                  <div
-                    v-if="logSeleccionado.Estado || logSeleccionado.Status"
-                    class="col-12 col-md-6"
-                  >
-                    <div class="detail-tech-item">
-                      <q-icon name="flag" size="16px" color="green-4" class="q-mr-xs" />
-                      <strong>Estado:</strong>
-                      <span class="tech-value">{{
-                        logSeleccionado.Estado || logSeleccionado.Status
-                      }}</span>
-                    </div>
-                  </div>
-                  <!-- Nuevo: Código de Error -->
-                  <div
-                    v-if="logSeleccionado.errorCode || logSeleccionado.ErrorCode"
-                    class="col-12 col-md-6"
-                  >
-                    <div class="detail-tech-item error-code-item">
-                      <q-icon name="error_outline" size="16px" color="red-4" class="q-mr-xs" />
-                      <strong>Código de Error:</strong>
-                      <span class="tech-value error-code">{{
-                        logSeleccionado.errorCode || logSeleccionado.ErrorCode
-                      }}</span>
-                      <q-btn
-                        @click="
-                          abrirDiagnosticoError(
-                            logSeleccionado.errorCode || logSeleccionado.ErrorCode
-                          )
-                        "
-                        round
-                        dense
-                        flat
-                        icon="bug_report"
-                        color="red-5"
-                        size="sm"
-                        class="q-ml-sm"
-                      >
-                        <q-tooltip>Diagnosticar código de error</q-tooltip>
-                      </q-btn>
-                    </div>
-                  </div>
-                  <!-- Nuevo: Token de Sesión -->
-                  <div
-                    v-if="logSeleccionado.sessionToken || logSeleccionado.SessionToken"
-                    class="col-12"
-                  >
-                    <div class="detail-tech-item session-token-item">
-                      <q-icon name="vpn_key" size="16px" color="cyan-4" class="q-mr-xs" />
-                      <strong>Token de Sesión:</strong>
-                      <div class="tech-value session-token q-mt-xs">
-                        {{ logSeleccionado.sessionToken || logSeleccionado.SessionToken }}
-                        <q-btn
-                          @click="
-                            abrirDiagnosticoSesion(
-                              logSeleccionado.sessionToken || logSeleccionado.SessionToken
-                            )
-                          "
-                          round
-                          dense
-                          flat
-                          icon="account_circle"
-                          color="blue-5"
-                          size="sm"
-                          class="q-ml-sm"
-                        >
-                          <q-tooltip>Diagnosticar sesión</q-tooltip>
-                        </q-btn>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <!-- Sección de Debugging: Mostrar TODOS los campos del log -->
-          <div class="q-mt-lg">
-            <q-expansion-item
-              icon="bug_report"
-              label="🔍 Vista técnica - Todos los campos disponibles"
-              class="debug-section"
-            >
-              <q-card dark class="bg-grey-8">
-                <q-card-section>
-                  <div class="text-caption text-grey-4 q-mb-md">
-                    Esta sección muestra TODOS los campos que vienen del API para este log
-                    específico. Útil para identificar dónde están los códigos de error y tokens de
-                    sesión.
-                  </div>
-                  <div class="debug-fields">
-                    <div
-                      v-for="[key, value] in Object.entries(logSeleccionado)"
-                      :key="key"
-                      class="debug-field-item"
-                      :class="{
-                        'highlight-error':
-                          key.toLowerCase().includes('error') || key.toLowerCase().includes('code'),
-                        'highlight-token':
-                          key.toLowerCase().includes('token') ||
-                          key.toLowerCase().includes('session'),
-                      }"
-                    >
-                      <div class="field-key">{{ key }}:</div>
-                      <div class="field-value">
-                        <span v-if="typeof value === 'object' && value !== null">
-                          {{ JSON.stringify(value, null, 2) }}
-                        </span>
-                        <span v-else>{{ value }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </q-card-section>
-              </q-card>
-            </q-expansion-item>
-          </div>
-        </q-card-section>
-
-        <q-card-actions align="right" class="bg-grey-9">
-          <q-btn flat label="Cerrar" color="primary" @click="modalDetalle = false" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </q-dialog>
 
-  <!-- 🔍 Componente de Diagnóstico Técnico -->
-  <EscritorioDiagnostico ref="diagnosticoRef" @cerrar="cerrarDiagnostico" />
+  <!-- Modal de detalle -->
+  <q-dialog v-model="modalDetalle">
+      <q-card style="min-width: 600px; max-width: 800px" class="bg-dark text-white">
+        <q-toolbar class="bg-grey-9">
+          <q-toolbar-title><q-icon name="info" class="q-mr-sm" />Detalle del Evento</q-toolbar-title>
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-toolbar>
+
+        <q-card-section v-if="logSeleccionado" class="q-pa-md">
+          <div class="row q-col-gutter-md">
+
+            <div class="col-12 col-md-6">
+              <q-list dark separator dense>
+                <q-item-label header class="text-primary">Información del Trámite</q-item-label>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="fingerprint" color="grey" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>ID Evento</q-item-label>
+                    <q-item-label>{{ logSeleccionado.id }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="event" color="blue" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Fecha y Hora</q-item-label>
+                    <q-item-label>{{ formatearFechaCompleta(logSeleccionado.eventTime) }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="engineering" color="orange" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Operación</q-item-label>
+                    <q-item-label>{{ logSeleccionado.operationType }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="fact_check" :color="getColorStatus(logSeleccionado.status)" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Estatus</q-item-label>
+                    <q-item-label class="text-weight-bold" :class="`text-${getColorStatus(logSeleccionado.status)}`">
+                      {{ logSeleccionado.status }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <q-list dark separator dense>
+                <q-item-label header class="text-secondary">Sujeto y Ubicación</q-item-label>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="person" color="white" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Ciudadano</q-item-label>
+                    <q-item-label class="text-h6">{{ logSeleccionado.passport?.fullName }}</q-item-label>
+                    <q-item-label caption>ID: {{ logSeleccionado.passport?.personId }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="badge" color="white" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Pasaporte</q-item-label>
+                    <q-item-label>{{ logSeleccionado.passport?.passportNumber }} ({{ logSeleccionado.passport?.nationality }})</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar><q-icon name="store" color="white" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption>Oficina</q-item-label>
+                    <q-item-label>{{ logSeleccionado.office?.officeName }}</q-item-label>
+                    <q-item-label caption>{{ logSeleccionado.office?.province }}, {{ logSeleccionado.office?.city }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+
+            <div class="col-12">
+              <q-separator dark class="q-my-md" />
+              <div class="text-subtitle2 q-mb-sm text-grey-4">Detalles Técnicos</div>
+
+              <div class="row q-col-gutter-sm">
+                <div class="col-12" v-if="logSeleccionado.reason">
+                  <q-banner rounded class="bg-red-9 text-white">
+                    <template v-slot:avatar><q-icon name="error" color="white" /></template>
+                    <div class="text-weight-bold">{{ logSeleccionado.reason.code }}</div>
+                    {{ logSeleccionado.reason.description }}
+                  </q-banner>
+                </div>
+
+                <div class="col-12" v-else>
+                  <q-banner rounded class="bg-grey-8">
+                    {{ logSeleccionado.message }}
+                  </q-banner>
+                </div>
+
+                <div class="col-6 col-sm-4">
+                  <q-item dense>
+                    <q-item-section>
+                      <q-item-label caption>Operador (User)</q-item-label>
+                      <q-item-label>{{ logSeleccionado.user?.fullName }} ({{ logSeleccionado.user?.username }})</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </div>
+
+                <div class="col-6 col-sm-4">
+                  <q-item dense>
+                    <q-item-section>
+                      <q-item-label caption>Canal / Source</q-item-label>
+                      <q-item-label>{{ logSeleccionado.channel }} / {{ logSeleccionado.meta?.sourceApp }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </div>
+
+                <div class="col-6 col-sm-4">
+                  <q-item dense>
+                    <q-item-section>
+                      <q-item-label caption>IP Address</q-item-label>
+                      <q-item-label>{{ logSeleccionado.meta?.ip }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useQuasar } from 'quasar'
-import axios from 'axios'
-import { API_BASE_URL } from '../../services/apiConfig.js'
+import { useQuasar, date } from 'quasar'
 import { CatalogService } from '../../services/catalogService.js'
-import EscritorioDiagnostico from './EscritorioDiagnostico.vue'
+import { ChartDataService } from 'src/services/chartDataService.js'
 
 // 📝 Props
 defineProps({
@@ -1079,30 +597,47 @@ const $q = useQuasar()
 // Estado
 const mostrarConsola = ref(false)
 const loading = ref(false)
-const logs = ref([])
-const busqueda = ref('')
+const filtrosToggle = ref(false)
 const modalDetalle = ref(false)
 const logSeleccionado = ref(null)
+const logs = ref([])
+
+// FILTROS
+const busqueda = ref('')
+const filtroTipoLog = ref(null) // Renombrado de filtroTipo
+const filtroProceso = ref(null) // Nuevo filtro de proceso
+const filtroDispositivo = ref(null) // Nuevo filtro de dispositivo
+const filtroOficina = ref(null)
+
+// --- OPCIONES PARA SELECTS (Basadas en tu JSON) ---
+const opcionesEstatus = [
+  { label: 'Emitido', value: 'EMITIDO' },
+  { label: 'Rechazado', value: 'RECHAZADO' },
+  { label: 'En Trámite', value: 'ENTRAMITE' },
+  { label: 'Cancelado', value: 'CANCELADO' }
+]
+
+const opcionesOperacion = [
+  { label: 'Renovación', value: 'RENOVACION' },
+  { label: 'Emisión', value: 'EMISION' },
+  { label: 'Emergencia', value: 'EMERGENCIA' }
+]
+
+const opcionesCanales = [
+  { label: 'Web', value: 'WEB' },
+  { label: 'Oficina', value: 'OFICINA' },
+  { label: 'Kiosko', value: 'KIOSKO' }
+]
+
+// Las oficinas se pueden llenar dinámicamente si prefieres
+const opcionesOficinas = ref([])
+
 const filtroActual = ref('')
 const datosDesdeGrafica = ref(false)
 
 // 🚀 [NUEVO] Variables para control de origen y filtros
 const origenConsola = ref('') // 'sidebar' | 'graficas' | 'kpis'
 const filtroTimeout = ref(null) // Para debounce de filtros
-
-// 🔍 Referencia al componente de diagnóstico
-const diagnosticoRef = ref(null)
-
-// Filtros avanzados
-const filtroOficina = ref(null)
-const filtroUsuario = ref(null)
-const filtroTipoLog = ref(null) // Renombrado de filtroTipo
-const filtroProceso = ref(null) // Nuevo filtro de proceso
-const filtroDispositivo = ref(null) // Nuevo filtro de dispositivo
-const filtroEscaner = ref(null) // Nuevo filtro de escáner
-const filtroErrorCode = ref('') // Nuevo filtro de código de error (string vacío)
-const filtroSessionToken = ref('') // Nuevo filtro de token de sesión (string vacío)
-const rangoFechas = ref(null)
 
 // Variables de paginación
 const paginaActual = ref(1)
@@ -1113,138 +648,26 @@ const loadingFiltros = ref(false)
 const loadingPaginacion = ref(false)
 
 // 📅 VALIDAR Y FORMATEAR FECHA A ISO (YYYY-MM-DD)
-const validarYFormatearFecha = (fecha) => {
-  if (!fecha) return null
-
-  try {
-    // Si ya está en formato ISO correcto, devolver tal como está
-    if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return fecha
-    }
-
-    // Si está en formato YYYY/MM/DD, convertir a YYYY-MM-DD
-    if (typeof fecha === 'string' && fecha.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
-      return fecha.replace(/\//g, '-')
-    }
-
-    // Si es un objeto Date, convertir a formato ISO
-    if (fecha instanceof Date) {
-      return fecha.toISOString().split('T')[0]
-    }
-
-    // Intentar parsear como fecha y convertir
-    const fechaObj = new Date(fecha)
-    if (!isNaN(fechaObj.getTime())) {
-      return fechaObj.toISOString().split('T')[0]
-    }
-
-    console.warn(`⚠️ Formato de fecha no válido: ${fecha}`)
-    return null
-  } catch (error) {
-    console.error(`❌ Error al formatear fecha ${fecha}:`, error)
-    return null
-  }
+const formatearFechaCorta = (isoDate) => {
+    if (!isoDate) return ''
+    return date.formatDate(isoDate, 'DD/MM/YYYY HH:mm')
 }
 
-const opcionesOficinas = ref([])
+const formatearFechaCompleta = (isoDate) => {
+    if (!isoDate) return ''
+    return date.formatDate(isoDate, 'DD MMMM YYYY, HH:mm:ss a')
+}
+
 const opcionesUsuarios = ref([])
-const opcionesTiposLog = ref([
-  { label: 'Todos los tipos', value: null },
-  { label: 'INFO', value: 'INFO' },
-  { label: 'ERROR', value: 'ERROR' },
-  { label: 'SUCCESS', value: 'SUCCESS' },
-  { label: 'WARNING', value: 'WARNING' },
-  { label: 'START', value: 'START' },
-  { label: 'END', value: 'END' },
-  { label: 'EXPORT', value: 'EXPORT' },
-  { label: 'DETAIL', value: 'DETAIL' },
-  { label: 'CONECTADO', value: 'CONECTADO' },
-  { label: 'DESCONECTADO', value: 'DESCONECTADO' },
-])
-
-// Nuevas opciones para procesos
-const opcionesProcesos = ref([
-  { label: 'Todos los procesos', value: null },
-  { label: 'INE', value: 'INE' },
-  { label: 'REGISTER', value: 'REGISTER' },
-  { label: 'PASSPORT', value: 'PASSPORT' },
-  { label: 'LOGIN', value: 'LOGIN' },
-  { label: 'SESSION', value: 'SESSION' },
-])
-
-// 🆕 [NUEVO] Mapeo de tipos para la API
-const mapeoTipos = {
-  SUCCESS: 'SUC',
-  ERROR: 'ERR',
-  INFO: 'INF',
-  START: 'STR',
-  END: 'END',
-  FIN: 'FIN',
-  EXPORT: 'EXP',
-}
 
 // Opciones dinámicas para dispositivos y escáneres
 const opcionesDispositivos = ref([])
 const opcionesEscaners = ref([])
 
-// 🆕 Opciones computadas para errorCode y sessionToken
-const opcionesErrorCodes = computed(() => {
-  if (!logs.value.length) return []
-
-  const errorCodes = [
-    ...new Set(
-      logs.value
-        .map((log) => log.errorCode || log.ErrorCode || log.codigo_error)
-        .filter((code) => code && code.trim() !== '')
-    ),
-  ].sort()
-
-  return errorCodes.map((code) => ({
-    label: code,
-    value: code,
-  }))
-})
-
-const opcionesSessionTokens = computed(() => {
-  if (!logs.value.length) return []
-
-  const tokens = [
-    ...new Set(
-      logs.value
-        .map((log) => log.sessionToken || log.SessionToken || log.token_sesion)
-        .filter((token) => token && token.trim() !== '')
-    ),
-  ].sort()
-
-  return tokens.map((token) => ({
-    label: token.length > 20 ? `${token.substring(0, 20)}...` : token,
-    value: token,
-  }))
-})
-
 // 🗂️ MAPEO DE OFICINAS Y PERSONAS: Para convertir nombres a IDs
 const mapaOficinas = ref(new Map()) // nombre -> id
-const mapaPersonas = ref(new Map()) // nombre -> id
 const oficinasFull = ref([])
-const usuariosFull = ref([])
 const dispositivosFull = ref([])
-const escanersFull = ref([])
-const filtrosToggle = ref(false)
-
-// Computed para el texto del rango de fechas
-const textoRangoFechas = computed(() => {
-  if (!rangoFechas.value) return ''
-
-  if (typeof rangoFechas.value === 'string') {
-    return rangoFechas.value
-  }
-
-  if (rangoFechas.value.from && rangoFechas.value.to) {
-    return `${rangoFechas.value.from} - ${rangoFechas.value.to}`
-  }
-
-  return rangoFechas.value.from || rangoFechas.value.to || ''
-})
 
 // 🧪 FUNCIÓN DE DEBUG TEMPORAL PARA DIAGNOSTICAR FILTROS
 const debugearEstadoFiltros = (contexto = 'DEBUG') => {
@@ -1256,24 +679,17 @@ const debugearEstadoFiltros = (contexto = 'DEBUG') => {
     filtros: {
       busqueda: busqueda.value,
       oficina: filtroOficina.value,
-      usuario: filtroUsuario.value,
       tipoLog: filtroTipoLog.value,
       proceso: filtroProceso.value,
       dispositivo: filtroDispositivo.value,
-      escaner: filtroEscaner.value,
-      errorCode: filtroErrorCode.value,
-      sessionToken: filtroSessionToken.value,
-      fechas: rangoFechas.value,
     },
     opciones_disponibles: {
       oficinas: opcionesOficinas.value.length,
       usuarios: opcionesUsuarios.value.length,
-      tiposLog: opcionesTiposLog.value.length,
-      procesos: opcionesProcesos.value.length,
+      tiposLog: opcionesEstatus.value.length,
+      procesos: opcionesOperacion.value.length,
       dispositivos: opcionesDispositivos.value.length,
       escaners: opcionesEscaners.value.length,
-      errorCodes: opcionesErrorCodes.value.length,
-      sessionTokens: opcionesSessionTokens.value.length,
     },
     datos_origen: {
       datosDesdeGrafica: datosDesdeGrafica.value,
@@ -1286,209 +702,28 @@ const debugearEstadoFiltros = (contexto = 'DEBUG') => {
 }
 
 // Computed para logs filtrados - CORREGIDO Y DEBUGGEADO
+// --- COMPUTED: FILTRADO ---
 const logsFiltrados = computed(() => {
-  let resultado = logs.value
+  return logs.value.filter(log => {
+    // 1. Busqueda Texto (Nombre, Pasaporte, ID)
+    if (busqueda.value) {
+      const term = busqueda.value.toLowerCase()
+      const match =
+        log.passport?.fullName?.toLowerCase().includes(term) ||
+        log.passport?.passportNumber?.toLowerCase().includes(term) ||
+        log.passport?.personId?.toLowerCase().includes(term) ||
+        log.office?.officeName?.toLowerCase().includes(term)
+      if (!match) return false
+    }
 
-  // ✅ VERIFICACIÓN SEGURA: Si no hay logs, devolver array vacío
-  if (!resultado || resultado.length === 0) {
-    console.log('🚨 [logsFiltrados] No hay logs para filtrar')
-    return []
-  }
+    // 2. Filtros Específicos
+    if (filtroTipoLog.value && log.status !== filtroTipoLog.value) return false
+    if (filtroProceso.value && log.operationType !== filtroProceso.value) return false
+    if (filtroDispositivo.value && log.channel !== filtroDispositivo.value) return false
+    if (filtroOficina.value && log.office?.officeName !== filtroOficina.value) return false
 
-  // ✅ VERIFICACIÓN DE FILTROS ACTIVOS (TODOS LOS FILTROS)
-  const hayBusqueda = busqueda.value && busqueda.value.trim() !== ''
-  const hayFiltroOficina = filtroOficina.value && filtroOficina.value.trim() !== ''
-  const hayFiltroUsuario = filtroUsuario.value && filtroUsuario.value.trim() !== ''
-  const hayFiltroTipo = filtroTipoLog.value && filtroTipoLog.value.trim() !== ''
-  const hayFiltroFechas = rangoFechas.value && (rangoFechas.value.from || rangoFechas.value.to)
-
-  // 🆕 NUEVOS FILTROS AGREGADOS A LA VERIFICACIÓN
-  const hayFiltroProceso = filtroProceso.value && filtroProceso.value.trim() !== ''
-  const hayFiltroDispositivo = filtroDispositivo.value && filtroDispositivo.value.trim() !== ''
-  const hayFiltroEscaner = filtroEscaner.value && filtroEscaner.value.trim() !== ''
-  const hayFiltroErrorCode = filtroErrorCode.value && filtroErrorCode.value.trim() !== ''
-  const hayFiltroSessionToken = filtroSessionToken.value && filtroSessionToken.value.trim() !== ''
-
-  // 🔍 LOGS DE DEBUG PARA IDENTIFICAR ESTADO DE FILTROS
-  console.log('🔍 [logsFiltrados] Estado de filtros:', {
-    logs: resultado.length,
-    busqueda: hayBusqueda ? busqueda.value : 'N/A',
-    oficina: hayFiltroOficina ? filtroOficina.value : 'N/A',
-    usuario: hayFiltroUsuario ? filtroUsuario.value : 'N/A',
-    tipo: hayFiltroTipo ? filtroTipoLog.value : 'N/A',
-    fechas: hayFiltroFechas ? rangoFechas.value : 'N/A',
-    proceso: hayFiltroProceso ? filtroProceso.value : 'N/A',
-    dispositivo: hayFiltroDispositivo ? filtroDispositivo.value : 'N/A',
-    escaner: hayFiltroEscaner ? filtroEscaner.value : 'N/A',
-    errorCode: hayFiltroErrorCode ? filtroErrorCode.value : 'N/A',
-    sessionToken: hayFiltroSessionToken ? filtroSessionToken.value : 'N/A',
+    return true
   })
-
-  // ✅ SOLUCIÓN: Si no hay ningún filtro aplicado, mostrar TODOS los logs
-  if (
-    !hayBusqueda &&
-    !hayFiltroOficina &&
-    !hayFiltroUsuario &&
-    !hayFiltroTipo &&
-    !hayFiltroFechas &&
-    !hayFiltroProceso &&
-    !hayFiltroDispositivo &&
-    !hayFiltroEscaner &&
-    !hayFiltroErrorCode &&
-    !hayFiltroSessionToken
-  ) {
-    console.log(
-      '✅ [logsFiltrados] Sin filtros activos, mostrando todos los logs:',
-      resultado.length
-    )
-    return resultado // Mostrar todos sin limitación
-  }
-
-  // Filtro por búsqueda de texto mejorado
-  if (busqueda.value) {
-    const needle = busqueda.value.toLowerCase()
-    resultado = resultado.filter((log) =>
-      // (obtenerNombreOficina(log).toLowerCase().includes(needle) || '') ||
-      // (obtenerNombreUsuario(log).toLowerCase().includes(needle) || '') ||
-      // (log.type || log.Tipo || log.EventType || '').toLowerCase().includes(needle) ||
-      // (log.process || log.Proceso || '').toLowerCase().includes(needle) ||
-      // (log.device || '').toLowerCase().includes(needle) ||
-      (log.message || log.Mensaje || '').toLowerCase().includes(needle)
-    )
-  }
-
-  // Filtro por oficina mejorado
-  if (filtroOficina.value) {
-    resultado = resultado.filter((log) => {
-      const oficina = obtenerNombreOficina(log)
-      return oficina && oficina.toLowerCase().includes(filtroOficina.value.toLowerCase())
-    })
-  }
-
-  // Filtro por usuario mejorado
-  if (filtroUsuario.value) {
-    resultado = resultado.filter((log) => {
-      const usuario = obtenerNombreUsuario(log)
-      return usuario && usuario.toLowerCase().includes(filtroUsuario.value.toLowerCase())
-    })
-  }
-
-  // Filtro por tipo mejorado
-  if (filtroTipoLog.value) {
-    resultado = resultado.filter((log) => {
-      const tipo = log.type || log.Tipo || log.EventType || ''
-      return tipo.toLowerCase() === filtroTipoLog.value.toLowerCase()
-    })
-  }
-
-  // ✅ FILTRO POR FECHAS SIMPLIFICADO
-  if (hayFiltroFechas) {
-    resultado = resultado.filter((log) => {
-      const fecha = log.Date || log.Fecha || log.FechaCreacion
-      if (!fecha) return true // Incluir logs sin fecha para evitar perder datos
-
-      try {
-        const logDate = new Date(fecha).toISOString().split('T')[0]
-
-        if (typeof rangoFechas.value === 'string') {
-          return logDate === rangoFechas.value
-        }
-
-        if (rangoFechas.value.from && rangoFechas.value.to) {
-          return logDate >= rangoFechas.value.from && logDate <= rangoFechas.value.to
-        }
-
-        if (rangoFechas.value.from) {
-          return logDate >= rangoFechas.value.from
-        }
-
-        if (rangoFechas.value.to) {
-          return logDate <= rangoFechas.value.to
-        }
-
-        return true
-      } catch {
-        return true // Incluir en caso de error
-      }
-    })
-  }
-
-  // Filtro por proceso
-  if (filtroProceso.value) {
-    const antesFiltro = resultado.length
-    resultado = resultado.filter((log) => {
-      const proceso = log.process || log.TipoProceso || log.procesType || ''
-      return proceso.toLowerCase().includes(filtroProceso.value.toLowerCase())
-    })
-    console.log(
-      `🔍 [Filtro Proceso] "${filtroProceso.value}": ${antesFiltro} → ${resultado.length}`
-    )
-  }
-
-  // Filtro por dispositivo
-  if (filtroDispositivo.value) {
-    const antesFiltro = resultado.length
-    resultado = resultado.filter((log) => {
-      const dispositivo =
-        log.device ||
-        log.Dispositivo ||
-        log.NombreDispositivo ||
-        log.deviceName ||
-        log.nombreDispositivo ||
-        ''
-      return dispositivo.toLowerCase().includes(filtroDispositivo.value.toLowerCase())
-    })
-    console.log(
-      `🔍 [Filtro Dispositivo] "${filtroDispositivo.value}": ${antesFiltro} → ${resultado.length}`
-    )
-  }
-
-  // Filtro por escáner
-  if (filtroEscaner.value) {
-    const antesFiltro = resultado.length
-    resultado = resultado.filter((log) => {
-      const escaner =
-        log.scanDevice ||
-        log.Escaner ||
-        log.Scanner ||
-        log.NombreEscaner ||
-        log.scannerName ||
-        log.nombreEscaner ||
-        ''
-      return escaner.toLowerCase().includes(filtroEscaner.value.toLowerCase())
-    })
-    console.log(
-      `🔍 [Filtro 5
-      ] "${filtroEscaner.value}": ${antesFiltro} → ${resultado.length}`
-    )
-  }
-
-  // Filtro por código de error
-  if (filtroErrorCode.value) {
-    const antesFiltro = resultado.length
-    resultado = resultado.filter((log) => {
-      const errorCode = log.errorCode || log.ErrorCode || log.codigo_error || ''
-      return errorCode.toLowerCase().includes(filtroErrorCode.value.toLowerCase())
-    })
-    console.log(
-      `🔍 [Filtro ErrorCode] "${filtroErrorCode.value}": ${antesFiltro} → ${resultado.length}`
-    )
-  }
-
-  // Filtro por token de sesión
-  if (filtroSessionToken.value) {
-    const antesFiltro = resultado.length
-    resultado = resultado.filter((log) => {
-      const sessionToken = log.sessionToken || log.SessionToken || log.token_sesion || ''
-      return sessionToken.toLowerCase().includes(filtroSessionToken.value.toLowerCase())
-    })
-    console.log(
-      `🔍 [Filtro SessionToken] "${filtroSessionToken.value}": ${antesFiltro} → ${resultado.length}`
-    )
-  }
-
-  console.log(`✅ [logsFiltrados] Resultado final: ${resultado.length} logs filtrados`)
-  return resultado
 })
 
 // Computed para filtros activos
@@ -1505,32 +740,12 @@ const filtrosActivos = computed(() => {
     })
   }
 
-  if (filtroUsuario.value) {
-    const usuario = opcionesUsuarios.value.find((u) => u.value === filtroUsuario.value)
-    filtros.push({
-      key: 'usuario',
-      label: `Usuario: ${usuario?.label || filtroUsuario.value}`,
-      color: 'green',
-      icon: 'person',
-    })
-  }
-
   if (filtroTipoLog.value) {
-    const tipo = opcionesTiposLog.value.find((t) => t.value === filtroTipoLog.value)
     filtros.push({
-      key: 'tipo',
-      label: `Tipo: ${tipo?.label || filtroTipoLog.value}`,
-      color: 'blue',
-      icon: 'category',
-    })
-  }
-
-  if (rangoFechas.value) {
-    filtros.push({
-      key: 'fecha',
-      label: `Fechas: ${textoRangoFechas.value}`,
-      color: 'purple',
-      icon: 'date_range',
+      key: 'proceso',
+      label: `Proceso: ${filtroTipoLog.value}`,
+      color: 'orange',
+      icon: 'settings',
     })
   }
 
@@ -1552,33 +767,6 @@ const filtrosActivos = computed(() => {
     })
   }
 
-  if (filtroEscaner.value) {
-    filtros.push({
-      key: 'escaner',
-      label: `Escáner: ${filtroEscaner.value}`,
-      color: 'cyan',
-      icon: 'scanner',
-    })
-  }
-
-  if (filtroErrorCode.value) {
-    filtros.push({
-      key: 'errorCode',
-      label: `Error: ${filtroErrorCode.value}`,
-      color: 'red-6',
-      icon: 'error_outline',
-    })
-  }
-
-  if (filtroSessionToken.value) {
-    filtros.push({
-      key: 'sessionToken',
-      label: `Sesión: ${filtroSessionToken.value}`,
-      color: 'green-6',
-      icon: 'vpn_key',
-    })
-  }
-
   return filtros
 })
 
@@ -1596,232 +784,37 @@ const totalPaginas = computed(() => {
   return Math.ceil(logsFiltrados.value.length / registrosPorPagina.value)
 })
 
-const logsPaginados = computed(() => {
-  const inicio = (paginaActual.value - 1) * registrosPorPagina.value
-  const fin = inicio + registrosPorPagina.value
-  return logsFiltrados.value.slice(inicio, fin)
-})
-
-// Funciones auxiliares para obtener información de logs
-const obtenerNombreOficina = (log) => {
-  // Si hay oficina como objeto, extraer el nombre
-  if (log.oficina && typeof log.oficina === 'object') {
-    return (
-      log.oficina.nombre ||
-      log.oficina.Nombre ||
-      log.oficina.descripcion ||
-      log.oficina.Descripcion ||
-      'Oficina sin nombre'
-    )
-  }
-
-  // Si es string directo
-  if (typeof log.oficina === 'string' && log.oficina.trim() !== '') {
-    return log.oficina
-  }
-
-  // Respaldos para otras estructuras
-  if (log.Oficina && typeof log.Oficina === 'object') {
-    return (
-      log.Oficina.nombre ||
-      log.Oficina.Nombre ||
-      log.Oficina.descripcion ||
-      log.Oficina.Descripcion ||
-      'Oficina sin nombre'
-    )
-  }
-
-  if (typeof log.Oficina === 'string' && log.Oficina.trim() !== '') {
-    return log.Oficina
-  }
-
-  return 'No especificada'
-}
-
-const obtenerDireccionOficina = (log) => {
-  // Si hay oficina como objeto, extraer la dirección
-  if (log.oficina && typeof log.oficina === 'object') {
-    return log.oficina.direccion || log.oficina.Direccion || log.oficina.address || null
-  }
-
-  // Respaldos para otras estructuras
-  if (log.Oficina && typeof log.Oficina === 'object') {
-    return log.Oficina.direccion || log.Oficina.Direccion || log.Oficina.address || null
-  }
-
-  return null
-}
-
-const obtenerNombreUsuario = (log) => {
-  // Construir nombre completo de la persona de la API /logs#
-  if (log.person) {
-    const nombres = log.person.nombres || ''
-    const apellido1 = log.person.primerApellido || ''
-    const apellido2 = log.person.segundoApellido || ''
-
-    // Si tiene nombres, formar nombre completo
-    if (nombres.trim()) {
-      return `${nombres} ${apellido1} ${apellido2}`.trim()
-    }
-
-    // Si no tiene nombres pero tiene CURP, usar CURP
-    if (log.person.curp) {
-      return log.person.curp
-    }
-  }
-
-  // Respaldos para estructuras anteriores
-  return (
-    log.PersonaCompleta?.NombreCompleto ||
-    log.Usuario?.Nombre ||
-    log.Usuario?.NombreCompleto ||
-    log.Usuario ||
-    'No especificado' // ← Valor por defecto
-  )
-}
-
-// Función mejorada para obtener información completa del dispositivo y escáner
-const obtenerInfoDispositivo = (log) => {
-  // 🔧 PRIORIDAD: Datos de API directa (estructura moderna)
-  let device = log.device
-  let scanner = log.scanDevice
-
-  // 🔧 FALLBACK ADICIONAL: SOLO campos reales
-  if (!device && log.TrackingCode && log.TrackingCode.trim() !== '') {
-    device = log.TrackingCode
-  }
-
-  if (!scanner) {
-    if (log.scanDevice && log.scanDevice.trim() !== '') {
-      scanner = log.scanDevice
-    }
-  }
-
-  // 🔧 VALIDACIÓN: Determinar si hay datos reales
-  const hasDevice = device && device !== 'No especificado' && device.trim() !== ''
-  const hasScanner = scanner && scanner !== null && scanner.trim() !== ''
-
-  return {
-    device: hasDevice ? device : null,
-    scanner: hasScanner ? scanner : null,
-    hasDevice,
-    hasScanner,
-  }
-}
-
-// Función para formatear fecha completa con más detalle
-const formatearFechaCompleta = (fecha) => {
-  if (!fecha) return 'Sin fecha'
-
-  try {
-    let date
-
-    // 🔧 CASO 1: Formato "31/07/2025, 15:55" (datos de gráficas)
-    if (typeof fecha === 'string' && fecha.includes('/') && fecha.includes(',')) {
-      const [fechaParte, horaParte] = fecha.split(', ')
-      const [dia, mes, año] = fechaParte.split('/')
-
-      if (dia && mes && año && horaParte) {
-        const fechaISO = `${año}-${mes.padStart(2, '0')}-${dia.padStart(
-          2,
-          '0'
-        )}T${horaParte.trim()}:00`
-        date = new Date(fechaISO)
-      } else {
-        throw new Error('Formato de fecha incompleto')
-      }
-    }
-    // 🔧 CASO 2: Formato "7/31/2025, 3:44:45 PM" (datos de gráficas con AM/PM)
-    else if (
-      typeof fecha === 'string' &&
-      fecha.includes('/') &&
-      (fecha.includes('AM') || fecha.includes('PM'))
-    ) {
-      date = new Date(fecha)
-    }
-    // 🔧 CASO 3: Formato ISO "2025-07-22T08:00:01" (datos de API directa)
-    else if (typeof fecha === 'string' && fecha.includes('T')) {
-      date = new Date(fecha)
-    }
-    // 🔧 CASO 4: Otros formatos
-    else {
-      date = new Date(fecha)
-    }
-
-    // Verificar si la fecha es válida
-    if (isNaN(date.getTime())) {
-      console.log(`👌 Fecha formateada: "${fecha}". Mostrando en formato original.`)
-      return fecha // Devolver el texto original si no se puede parsear
-    }
-
-    return date.toLocaleString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
-  } catch (error) {
-    console.warn(`⚠️ Error al formatear fecha "${fecha}":`, error.message)
-    return fecha // Devolver el texto original en caso de error
-  }
-}
-
-// Función para obtener mensaje completo del log
-const obtenerMensajeCompleto = (log) => {
-  // 🔧 PRIORIDAD: Buscar en múltiples campos con orden de preferencia
-  const mensaje =
-    log.message || // API directa moderna
-    log.Message || // Datos de gráficas
-    log.Mensaje || // Campos alternativos
-    log.description ||
-    log.Description ||
-    log.Descripcion ||
-    log.process || // Fallback al proceso si no hay mensaje
-    log.Proceso ||
-    log.type || // Último recurso: el tipo
-    log.Tipo ||
-    log.EventType
-
-  if (!mensaje || mensaje.trim() === '') {
-    return 'Sin mensaje disponible'
-  }
-
-  return mensaje.trim()
-}
-
 // Función para obtener el icono según el tipo de log
-const getIconoTipo = (tipo) => {
-  const tipoLower = (tipo || '').toLowerCase()
+const getIconoTipo = (estatus) => {
+  // Normalizamos a minúsculas y quitamos espacios extra si los hubiera
+  const tipoLower = (estatus || '').toLowerCase().trim()
+
   switch (tipoLower) {
+    // ✅ Casos de Éxito
+    case 'emitido':
     case 'success':
       return 'check_circle'
-    case 'error':
-      return 'error'
-    case 'warning':
-      return 'warning'
-    case 'info':
-      return 'info'
-    case 'debug':
-      return 'bug_report'
-    case 'conectado':
-    case 'connected':
-    case 'online':
-      return 'wifi'
-    case 'desconectado':
-    case 'disconnected':
-    case 'offline':
-      return 'wifi_off'
-    default:
-      return 'circle'
-  }
-}
 
-// Función para obtener CURP del usuario
-const obtenerCurpUsuario = (log) => {
-  return log.person?.curp || log.Usuario?.curp || log.user?.curp || ''
+    // ❌ Casos de Error o Rechazo
+    case 'rechazado':
+    case 'error':
+      return 'cancel' // O 'error'
+
+    // ⏳ Casos de Proceso
+    case 'entramite':
+    case 'en tramite':
+    case 'info':
+      return 'pending_actions' // Más representativo que 'info' para trámites
+
+    // 🚫 Casos de Cancelación
+    case 'cancelado':
+    case 'warning':
+      return 'block' // O 'remove_circle'
+
+    // ⚪ Default
+    default:
+      return 'help_outline' // O 'circle'
+  }
 }
 
 // Funciones de paginación
@@ -1834,18 +827,13 @@ watch(
   [
     busqueda,
     filtroOficina,
-    filtroUsuario,
     filtroTipoLog,
     filtroProceso,
     filtroDispositivo,
-    filtroEscaner,
-    filtroErrorCode,
-    filtroSessionToken,
-    rangoFechas,
   ],
   () => {
     paginaActual.value = 1
-  }
+  },
 )
 
 // Watch para mostrar loader cuando hay muchos logs y se aplican filtros
@@ -1855,14 +843,9 @@ watch(
   [
     busqueda,
     filtroOficina,
-    filtroUsuario,
     filtroTipoLog,
     filtroProceso,
     filtroDispositivo,
-    filtroEscaner,
-    filtroErrorCode,
-    filtroSessionToken,
-    rangoFechas,
   ],
   () => {
     // 🔄 Si el origen es sidebar, usar debounce para API
@@ -1898,7 +881,7 @@ watch(
       }, 300)
     }
   },
-  { immediate: false }
+  { immediate: false },
 )
 
 // Watch para loader de paginación
@@ -1912,8 +895,11 @@ watch(paginaActual, () => {
 })
 
 // Funciones principales mejoradas
-const abrirConsola = (logsData = null, filtroTexto = '', filtrosGrafica = null) => {
+const abrirConsola = async (logsData = null, filtroTexto = '', filtrosGrafica = null) => {
   mostrarConsola.value = true
+
+  // 🏢 Cargar oficinas del catálogo para el mapeo ID-nombre
+  await cargarCatalogoFiltros()
 
   setTimeout(() => {
     filtrosToggle.value = true
@@ -1938,10 +924,8 @@ const abrirConsola = (logsData = null, filtroTexto = '', filtrosGrafica = null) 
     console.log(
       '📊 Consola abierta desde gráfica con',
       datosNormalizados.length,
-      'logs normalizados'
+      'logs normalizados',
     )
-    // Actualizar opciones de filtros cuando se cargan nuevos datos
-    obtenerOpcionesUnicas()
   } else {
     datosDesdeGrafica.value = false
     console.log('🔄 Consola abierta - cargando datos desde API')
@@ -1954,7 +938,7 @@ const normalizarDatosLogs = (logsOriginales) => {
   console.log(
     '🔄 NORMALIZANDO DATOS DE GRÁFICAS (SOLO DATOS REALES):',
     logsOriginales.length,
-    'registros'
+    'registros',
   )
 
   // 📊 DEBUG: Mostrar estructura de los primeros 3 logs para análisis
@@ -2066,28 +1050,13 @@ const aplicarFiltrosDesdeGraficas = (filtrosGrafica) => {
 
   // Resetear filtros primero
   filtroOficina.value = null
-  filtroUsuario.value = null
   filtroTipoLog.value = null
   filtroProceso.value = null
   filtroDispositivo.value = null
-  filtroEscaner.value = null
-  rangoFechas.value = null
   busqueda.value = ''
-
-  // Aplicar filtros desde las gráficas
-  if (filtrosGrafica.fechaInicio && filtrosGrafica.fechaFin) {
-    rangoFechas.value = {
-      from: filtrosGrafica.fechaInicio,
-      to: filtrosGrafica.fechaFin,
-    }
-  }
 
   if (filtrosGrafica.oficina) {
     filtroOficina.value = filtrosGrafica.oficina
-  }
-
-  if (filtrosGrafica.usuario) {
-    filtroUsuario.value = filtrosGrafica.usuario
   }
 
   // 🎯 FILTROS ESPECÍFICOS MEJORADOS
@@ -2124,18 +1093,11 @@ const aplicarFiltrosDesdeGraficas = (filtrosGrafica) => {
     filtroDispositivo.value = filtrosGrafica.dispositivo
   }
 
-  if (filtrosGrafica.escaner) {
-    filtroEscaner.value = filtrosGrafica.escaner
-  }
-
   console.log('✅ Filtros aplicados desde gráficas:', {
-    rangoFechas: rangoFechas.value,
     filtroOficina: filtroOficina.value,
-    filtroUsuario: filtroUsuario.value,
     filtroTipoLog: filtroTipoLog.value,
     filtroProceso: filtroProceso.value,
     filtroDispositivo: filtroDispositivo.value,
-    filtroEscaner: filtroEscaner.value,
   })
 }
 
@@ -2149,42 +1111,12 @@ const cargarLogsConFiltrosAPI = async () => {
     // 🔧 Construir parámetros de la petición
     const params = new URLSearchParams()
 
-    // 📅 Fechas (siempre incluir rango básico)
-    if (rangoFechas.value?.from && rangoFechas.value?.to) {
-      params.append('fromDate', rangoFechas.value.from)
-      params.append('toDate', rangoFechas.value.to)
-    } else {
-      // Rango por defecto si no hay fechas
-      const fechaFin = new Date().toISOString().split('T')[0]
-      const fechaInicio = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0]
-      params.append('fromDate', fechaInicio)
-      params.append('toDate', fechaFin)
-    }
-
     // 🏢 Oficina (enviar ID)
     if (filtroOficina.value) {
       const oficinaSeleccionada = oficinasFull.value.find((o) => o.label === filtroOficina.value)
       if (oficinaSeleccionada && oficinaSeleccionada.id) {
         params.append('oficinaId', oficinaSeleccionada.id)
       }
-    }
-
-    // 👤 Usuario (enviar ID)
-    if (filtroUsuario.value) {
-      const usuarioSeleccionado = usuariosFull.value.find((u) => u.label === filtroUsuario.value)
-      if (usuarioSeleccionado && usuarioSeleccionado.id) {
-        params.append('personId', usuarioSeleccionado.id)
-      }
-    }
-
-    // 🏷️ Tipo (mapear a códigos de API)
-    if (filtroTipoLog.value && filtroTipoLog.value.length > 0) {
-      filtroTipoLog.value.forEach((tipo) => {
-        const tipoMapeado = mapeoTipos[tipo] || tipo
-        params.append('type', tipoMapeado)
-      })
     }
 
     // ⚙️ Proceso (string directo)
@@ -2197,21 +1129,6 @@ const cargarLogsConFiltrosAPI = async () => {
       params.append('device', filtroDispositivo.value)
     }
 
-    // 🔍 Escáner (string directo)
-    if (filtroEscaner.value) {
-      params.append('scanDevice', filtroEscaner.value)
-    }
-
-    // 🚨 Código de error (si existe y no está vacío)
-    if (filtroErrorCode.value && filtroErrorCode.value.trim() !== '') {
-      params.append('errorCode', filtroErrorCode.value.trim())
-    }
-
-    // 🎫 Token de sesión (si existe y no está vacío)
-    if (filtroSessionToken.value && filtroSessionToken.value.trim() !== '') {
-      params.append('sessionToken', filtroSessionToken.value.trim())
-    }
-
     // 🔍 Búsqueda de texto (si existe)
     if (busqueda.value && busqueda.value.trim() !== '') {
       params.append('search', busqueda.value.trim())
@@ -2220,18 +1137,16 @@ const cargarLogsConFiltrosAPI = async () => {
     console.log('📋 [SIDEBAR] Parámetros construidos:', Object.fromEntries(params))
 
     // 🌐 Hacer petición a la API
-    const url = `${API_BASE_URL}/logs#?${params.toString()}`
-    console.log('🔗 [SIDEBAR] URL de petición:', url)
+    // const url = `${API_BASE_URL}/logs#?${params.toString()}`
+    // console.log('🔗 [SIDEBAR] URL de petición:', url)
 
-    const response = await axios.get(url)
+    // const response = await axios.get(url)
+    const response = []
     console.log('📦 [SIDEBAR] Respuesta recibida:', response.data?.length || 0, 'logs')
 
     // 🔄 Procesar respuesta
     if (response.data && Array.isArray(response.data)) {
       logs.value = response.data
-
-      // 📊 Extraer opciones de filtros dinámicamente de los nuevos datos
-      obtenerOpcionesUnicas()
 
       // 📝 Actualizar estado
       // filtroActual.value = `Filtros aplicados (${logs.value.length} resultados)`
@@ -2272,15 +1187,6 @@ const cargarLogsConFiltrosAPI = async () => {
   }
 }
 
-const errorCodeExist = (errorCode) => {
-  if (errorCode !== null && typeof errorCode !== 'undefined') {
-    // console.log(errorCode)
-    return errorCode.includes('NS')
-  }
-
-  return false
-}
-
 const cerrarConsola = () => {
   mostrarConsola.value = false
   busqueda.value = ''
@@ -2290,266 +1196,121 @@ const cerrarConsola = () => {
   limpiarTodosFiltros()
 }
 
-// Función robusta para cargar logs desde API con manejo de errores mejorado
-const cargarLogsDesdeAPI = async (rangoExtendido = false) => {
+// Función robusta para cargar logs de Pasaportes desde API
+const cargarLogsDesdeAPI = async () => {
   loading.value = true
   try {
-    console.log('🌐 Cargando logs desde API...')
+    console.log('🌐 Iniciando carga de eventos de pasaportes...')
 
-    // Crear payload con filtros activos y validaciones
-    const payload = {}
+    // 1. Definición de Fechas (Por defecto mes actual si no hay filtro)
+    let fechaInicio, fechaFin
 
-    // Agregar filtros de fecha con validación y formato correcto
-    if (rangoFechas.value) {
-      if (typeof rangoFechas.value === 'string') {
-        // Validar y convertir formato de fecha
-        const fechaFormateada = validarYFormatearFecha(rangoFechas.value)
-        if (fechaFormateada) {
-          payload.fechaInicio = fechaFormateada
-          payload.fechaFin = fechaFormateada
-        }
-      } else if (rangoFechas.value.from && rangoFechas.value.to) {
-        // 🔧 FORMATO CORRECTO: Asegurar formato ISO YYYY-MM-DD
-        payload.fechaInicio = validarYFormatearFecha(rangoFechas.value.from)
-        payload.fechaFin = validarYFormatearFecha(rangoFechas.value.to)
-      }
+    // if (rangoFechas.value) {
+    //   if (typeof rangoFechas.value === 'string') {
+    //     fechaInicio = fechaFin = rangoFechas.value
+    //   } else {
+    //     fechaInicio = rangoFechas.value.from
+    //     fechaFin = rangoFechas.value.to
+    //   }
+    // } else {
+    //   // Si no hay fecha, últimos 30 días
+    //   const hoy = new Date()
+    //   const hace30dias = new Date()
+    //   hace30dias.setDate(hoy.getDate() - 30)
+
+    //   fechaInicio = hace30dias.toISOString().split('T')[0]
+    //   fechaFin = hoy.toISOString().split('T')[0]
+    // }
+
+    // 2. Construcción de Parámetros URL
+    // Mapeamos las variables reactivas del frontend a los params del Backend
+    const params = new URLSearchParams()
+
+    // --- Filtro: Estatus (filtroTipoLog) ---
+    // Mapea a 'status' o 'dbStatus' según tu backend
+    if (filtroTipoLog.value) {
+      params.append('status', filtroTipoLog.value)
     }
 
-    // Si no hay fechas válidas, usar rango según el contexto
-    if (!payload.fechaInicio || !payload.fechaFin) {
-      const hoy = new Date()
-      const fechaInicio = new Date()
-
-      if (rangoExtendido) {
-        // Para consola directa, usar último mes para obtener más datos
-        fechaInicio.setDate(hoy.getDate() - 30)
-        console.log('📅 Usando rango extendido: últimos 30 días')
-      } else {
-        // Para otros casos, usar últimos 7 días
-        fechaInicio.setDate(hoy.getDate() - 7)
-        console.log('📅 Usando rango estándar: últimos 7 días')
-      }
-
-      payload.fechaInicio = fechaInicio.toISOString().split('T')[0]
-      payload.fechaFin = hoy.toISOString().split('T')[0]
+    // --- Filtro: Operación/Proceso (filtroProceso) ---
+    // Mapea a 'operationType' (RENOVACION, EMISION, etc.)
+    if (filtroProceso.value) {
+      params.append('operationType', filtroProceso.value)
     }
 
-    console.log('📅 Rango de fechas final:', `${payload.fechaInicio} al ${payload.fechaFin}`)
-
-    // Agregar otros filtros con validación
-    if (filtroTipoLog.value && filtroTipoLog.value.trim() !== '') {
-      payload.tipo = filtroTipoLog.value.trim()
+    // --- Filtro: Canal/Dispositivo (filtroDispositivo) ---
+    // Mapea a 'channel' (WEB, KIOSKO, OFICINA)
+    if (filtroDispositivo.value) {
+      params.append('channel', filtroDispositivo.value)
     }
 
-    if (filtroOficina.value && filtroOficina.value.trim() !== '') {
-      payload.oficina = filtroOficina.value.trim()
+    // --- Filtro: Oficina (filtroOficina) ---
+    // Mapea a 'officeId'. Si el value es el nombre, buscamos el ID.
+    if (filtroOficina.value) {
+      // Asumimos que el select devuelve el nombre o el objeto
+      const nombreOficina = typeof filtroOficina.value === 'object'
+        ? filtroOficina.value.label
+        : filtroOficina.value
+
+      // Intentamos obtener ID si tenemos un mapa, sino mandamos el valor directo
+      const oficinaId = obtenerIdOficina(nombreOficina) || nombreOficina
+      params.append('officeId', oficinaId)
     }
 
-    if (filtroUsuario.value && filtroUsuario.value.trim() !== '') {
-      payload.usuario = filtroUsuario.value.trim()
+    // --- Búsqueda General ---
+    if (busqueda.value) {
+      params.append('search', busqueda.value)
     }
 
-    console.log('📡 Enviando parámetros validados a API /logs#:', payload)
+    console.log('📡 Params enviados:', params.toString())
 
-    // 🔧 CONSTRUIR PARÁMETROS CON FORMATO CORRECTO (YYYY-MM-DD)
-    const params = new URLSearchParams({
-      fromDate: payload.fechaInicio || '2025-01-01',
-      toDate: payload.fechaFin || '2025-12-31',
-    })
+    // 3. Llamada al Servicio
+    // Asumimos que ChartDataService tiene un método para esto o usamos getAll genérico
+    const response = await ChartDataService.getAll(params)
 
-    console.log('🗓️ FECHAS FINALES PARA API:')
-    console.log('├── fromDate:', params.get('fromDate'))
-    console.log('└── toDate:', params.get('toDate'))
+    // 4. Procesamiento de Respuesta
+    if (response.code === 'ok' && response.data && Array.isArray(response.data.items)) {
+      logs.value = response.data.items
 
-    // Agregar filtros adicionales si están presentes
-    if (payload.tipo && payload.tipo.trim() !== '') {
-      params.append('type', payload.tipo.trim())
-    }
-    if (payload.proceso && payload.proceso.trim() !== '') {
-      params.append('process', payload.proceso.trim())
-    }
-    if (payload.oficina && payload.oficina.trim() !== '') {
-      // 🔧 CORREGIR: Convertir nombre de oficina a ID
-      const oficinaId = obtenerIdOficina(payload.oficina.trim())
-      if (oficinaId) {
-        params.append('oficinaId', oficinaId.toString())
-        console.log(`🏢 Oficina: "${payload.oficina}" → ID: ${oficinaId}`)
-      } else {
-        console.warn(`⚠️ No se encontró ID para oficina: "${payload.oficina}"`)
-      }
-    }
-    if (payload.usuario && payload.usuario.trim() !== '') {
-      // 🔧 CORREGIR: Convertir nombre de persona a ID
-      const personaId = obtenerIdPersona(payload.usuario.trim())
-      if (personaId) {
-        params.append('personId', personaId.toString())
-        console.log(`👤 Usuario: "${payload.usuario}" → ID: ${personaId}`)
-      } else {
-        console.warn(`⚠️ No se encontró ID para persona: "${payload.usuario}"`)
-      }
-    }
+      // Actualizamos texto informativo del filtro
+      filtroActual.value = `Mostrando ${logs.value.length} eventos del ${fechaInicio} al ${fechaFin}`
 
-    console.log('🚀 URL completa:', `${API_BASE_URL}/logs#?${params}`)
+      console.log(`✅ ${logs.value.length} logs cargados correctamente.`)
 
-    // Llamar al mismo endpoint que usan las gráficas (puerto 8040)
-    const response = await Promise.race([
-      axios.get(`${API_BASE_URL}/logs#?${params}`),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout después de 30 segundos')), 30000)
-      ),
-    ])
-
-    console.log('📊 Respuesta API:', {
-      status: response.status,
-      dataLength: Array.isArray(response.data) ? response.data.length : 'No es array',
-      dataType: typeof response.data,
-      muestra: Array.isArray(response.data) ? response.data.slice(0, 2) : response.data,
-    })
-
-    // 📋 LOG DETALLADO: Mostrar estructura completa de los primeros registros
-    if (Array.isArray(response.data) && response.data.length > 0) {
-      console.log('📋 ESTRUCTURA DETALLADA DE LOS DATOS RECIBIDOS:')
-      console.log('├── Total de registros:', response.data.length)
-      console.log('├── Primer registro completo:', JSON.stringify(response.data[0], null, 2))
-
-      if (response.data.length > 1) {
-        console.log('├── Segundo registro completo:', JSON.stringify(response.data[1], null, 2))
+      // Debug: Verificación rápida de datos críticos
+      if (logs.value.length > 0) {
+        const muestra = logs.value[0]
+        console.log('🔍 Estructura recibida (ejemplo):', {
+          id: muestra.id,
+          op: muestra.operationType,
+          status: muestra.status,
+          pasaporte: muestra.passport?.passportNumber
+        })
       }
 
-      // Analizar campos disponibles
-      const camposDisponibles = Object.keys(response.data[0])
-      console.log('├── Campos disponibles:', camposDisponibles)
-
-      // Verificar estructura de person y oficina
-      if (response.data[0].person) {
-        console.log('├── Estructura person:', Object.keys(response.data[0].person))
-      }
-      if (response.data[0].oficina) {
-        console.log('├── Estructura oficina:', Object.keys(response.data[0].oficina))
+      // Notificación si no hay resultados
+      if (logs.value.length === 0) {
+        $q.notify({
+          type: 'warning',
+          message: 'No se encontraron registros con los filtros seleccionados.',
+          position: 'top'
+        })
       }
 
-      console.log('└── Dispositivos encontrados:')
-      response.data.slice(0, 5).forEach((log, index) => {
-        console.log(
-          `    ${index + 1}. Device: "${log.device || 'N/A'}" | scanDevice: "${
-            log.scanDevice || 'N/A'
-          }"`
-        )
-      })
-    }
-
-    if (
-      response.data &&
-      response.data !== 'PRO FEATURE ONLY' &&
-      Array.isArray(response.data) &&
-      response.data.length > 0
-    ) {
-      logs.value = response.data
-      console.log('✅ Logs cargados desde API:', logs.value.length, 'registros')
-
-      // 🔍 DEBUG: Analizar campos errorCode y sessionToken
-      console.log('🔍 ANÁLISIS DE ERROR CODES Y SESSION TOKENS:')
-
-      // Buscar logs que tengan errorCode o ErrorCode
-      const logsConErrorCode = response.data.filter((log) => log.errorCode || log.ErrorCode)
-      console.log('├── Logs con errorCode/ErrorCode:', logsConErrorCode.length)
-      if (logsConErrorCode.length > 0) {
-        console.log(
-          '├── Ejemplos de errorCode:',
-          logsConErrorCode.slice(0, 3).map((log) => ({
-            errorCode: log.errorCode,
-            ErrorCode: log.ErrorCode,
-            allFields: Object.keys(log),
-          }))
-        )
-      }
-
-      // Buscar logs que tengan sessionToken o SessionToken
-      const logsConSessionToken = response.data.filter(
-        (log) => log.sessionToken || log.SessionToken
-      )
-      console.log('├── Logs con sessionToken/SessionToken:', logsConSessionToken.length)
-      if (logsConSessionToken.length > 0) {
-        console.log(
-          '├── Ejemplos de sessionToken:',
-          logsConSessionToken.slice(0, 3).map((log) => ({
-            sessionToken: log.sessionToken,
-            SessionToken: log.SessionToken,
-            allFields: Object.keys(log),
-          }))
-        )
-      }
-
-      // Buscar campos que contengan "error", "code", "token", "session"
-      const allFields = [...new Set(response.data.flatMap((log) => Object.keys(log)))]
-      const errorFields = allFields.filter(
-        (field) => field.toLowerCase().includes('error') || field.toLowerCase().includes('code')
-      )
-      const tokenFields = allFields.filter(
-        (field) => field.toLowerCase().includes('token') || field.toLowerCase().includes('session')
-      )
-
-      console.log('├── Campos relacionados con error/code:', errorFields)
-      console.log('└── Campos relacionados con token/session:', tokenFields)
-
-      // 🔍 DEBUG: Analizar fechas en los logs cargados
-      console.log('📅 ANÁLISIS DE FECHAS EN LOGS CARGADOS:')
-      const fechasEncontradas = logs.value.slice(0, 10).map((log) => ({
-        Date: log.Date,
-        Fecha: log.Fecha,
-        FechaCreacion: log.FechaCreacion,
-        fechaFinal: log.Date || log.Fecha || log.FechaCreacion,
-      }))
-      console.log('├── Muestra de fechas (primeros 10):', fechasEncontradas)
-
-      const fechasUnicas = [
-        ...new Set(
-          logs.value.map((log) => {
-            const fecha = log.Date || log.Fecha || log.FechaCreacion
-            return fecha ? new Date(fecha).toISOString().split('T')[0] : 'SIN_FECHA'
-          })
-        ),
-      ].slice(0, 10)
-      console.log('├── Fechas únicas encontradas (muestra):', fechasUnicas)
-      console.log(
-        '└── Total logs con fecha válida:',
-        logs.value.filter((log) => log.Date || log.Fecha || log.FechaCreacion).length
-      )
-
-      filtroActual.value = `Datos cargados desde API (${logs.value.length} registros) del ${payload.fechaInicio} al ${payload.fechaFin}`
-
-      // Actualizar opciones de filtros
-      obtenerOpcionesUnicas()
-
-      // $q.notify({
-      //   type: 'positive',
-      //   message: `${logs.value.length} logs cargados desde la API`,
-      //   position: 'top',
-      // })
     } else {
-      // Sin datos válidos de la API - mostrar mensaje sin datos
-      console.log('⚠️ API sin datos válidos, mostrando mensaje de no hay datos')
-      logs.value = []
-      filtroActual.value = `Sin datos disponibles del ${payload.fechaInicio} al ${payload.fechaFin}`
-
-      $q.notify({
-        type: 'info',
-        message: 'No hay datos disponibles para los filtros seleccionados',
-        position: 'top',
-      })
+      throw new Error(response.message || 'Respuesta inválida del servidor')
     }
-  } catch (error) {
-    console.error('❌ Error al cargar logs desde API:', error)
 
-    // NO cargar datos de muestra, mostrar mensaje de error
+  } catch (error) {
+    console.error('❌ Error cargando logs:', error)
     logs.value = []
-    filtroActual.value = 'Error al cargar datos'
+    filtroActual.value = 'Error de conexión'
 
     $q.notify({
       type: 'negative',
-      message: 'Error al cargar datos desde la API. No hay datos disponibles.',
-      position: 'top',
-      timeout: 4000,
+      message: 'Error al obtener los eventos de pasaportes',
+      caption: error.message,
+      position: 'top'
     })
   } finally {
     loading.value = false
@@ -2561,11 +1322,9 @@ window.debugConsola = () => {
   console.log('🔍 ESTADO DE LA CONSOLA:')
   console.log('├── Logs cargados:', logs.value.length)
   console.log('├── Filtro actual:', filtroActual.value)
-  console.log('├── Rango fechas:', rangoFechas.value)
   console.log('├── Filtros aplicados:', {
     tipo: filtroTipoLog.value,
-    oficina: filtroOficina.value,
-    usuario: filtroUsuario.value,
+    oficina: filtroOficina.value
   })
   console.log('├── Loading:', loading.value)
   console.log('├── Consola visible:', mostrarConsola.value)
@@ -2582,55 +1341,23 @@ window.debugConsolaDirecta = () => {
 }
 
 // 🏢 CARGAR OFICINAS DEL CATÁLOGO
-const cargarOficinasDelCatalogo = async () => {
+const cargarCatalogoFiltros = async () => {
   try {
     console.log('🏢 Cargando oficinas del catálogo...')
-    const oficinasFromAPI = await CatalogService.cargarOficinas()
 
-    // Actualizar el mapa para conversión nombre -> ID
-    mapaOficinas.value.clear()
-    oficinasFromAPI.forEach((oficina) => {
-      mapaOficinas.value.set(oficina.label, oficina.value)
-    })
+    const catalogo = await CatalogService.fetchCatalogs();
 
-    console.log('🗂️ Mapa de oficinas creado:', Object.fromEntries(mapaOficinas.value))
+    catalogo.oficinas ? opcionesOficinas.value = catalogo.oficinas : opcionesOficinas.value = ['Sin oficinas disponibles']
+    catalogo.dispositivos ? opcionesCanales.value = catalogo.dispositivos : opcionesCanales.value
+    catalogo.estatus ? opcionesEstatus.value = catalogo.estatus : opcionesEstatus.value
+    catalogo.tiposProcesos ? opcionesOperacion.value = catalogo.tiposProcesos : opcionesOperacion.value
 
     // Actualizar opciones para los selectores
-    oficinasFull.value = oficinasFromAPI
-    opcionesOficinas.value = [...oficinasFull.value]
+    oficinasFull.value = catalogo.oficinas
 
-    return oficinasFromAPI.length > 0
+    return catalogo.oficinas > 0
   } catch (error) {
     console.error('❌ Error cargando oficinas del catálogo:', error)
-    return false
-  }
-}
-
-// CARGAR PERSONAS DEL CATÁLOGO
-const cargarPersonasDelCatalogo = async () => {
-  try {
-    console.log('👥 Cargando personas del catálogo...')
-    const personasFromAPI = await CatalogService.cargarPersonas()
-
-    // Actualizar el mapa para conversión nombre -> ID
-    mapaPersonas.value.clear()
-    personasFromAPI.forEach((persona) => {
-      // Extraer solo el nombre sin CURP para el mapeo
-      const nombreSinCurp = persona.label.split(' (')[0]
-      mapaPersonas.value.set(nombreSinCurp, persona.value)
-      // También mapear con el label completo por si acaso
-      mapaPersonas.value.set(persona.label, persona.value)
-    })
-
-    console.log('🗂️ Mapa de personas creado:', Object.fromEntries(mapaPersonas.value))
-
-    // Actualizar opciones para los selectores
-    usuariosFull.value = personasFromAPI
-    opcionesUsuarios.value = [...usuariosFull.value]
-
-    return personasFromAPI.length > 0
-  } catch (error) {
-    console.error('❌ Error cargando personas del catálogo:', error)
     return false
   }
 }
@@ -2644,154 +1371,6 @@ const obtenerIdOficina = (nombreOficina) => {
   return id
 }
 
-// Funciones de filtrado mejoradas
-const obtenerOpcionesUnicas = () => {
-  console.log('🔍 OBTENIENDO OPCIONES ÚNICAS DE', logs.value.length, 'LOGS')
-  console.log('📊 Muestra de datos para análisis:', logs.value.slice(0, 2))
-
-  // Obtener oficinas únicas con múltiples campos
-  const oficinasUnicas = [
-    ...new Set(
-      logs.value
-        .filter((log) => {
-          const oficina = obtenerNombreOficina(log)
-          return oficina && oficina.toString().trim() !== '' && oficina !== 'No especificada'
-        })
-        .map((log) => obtenerNombreOficina(log))
-    ),
-  ].sort()
-
-  console.log('🏢 Oficinas encontradas:', oficinasUnicas.length, '→', oficinasUnicas)
-
-  // Agregar opciones predeterminadas si no hay datos de la API
-  // if (oficinasUnicas.length === 0) {
-  //   console.log('⚠️ No se encontraron oficinas en los datos, agregando opciones predeterminadas')
-  //   oficinasUnicas.push(
-  //     'Oficina Aguascalientes',
-  //     'Oficina Baja California',
-  //     'Oficina CDMX',
-  //     'Oficina Guadalajara',
-  //     'Oficina Monterrey'
-  //   )
-  // }
-
-  // oficinasFull.value = oficinasUnicas.map((oficina) => ({
-  //   label: oficina,
-  //   value: oficina,
-  // }))
-  oficinasFull.value = oficinasUnicas.map((oficina) => ({
-    label:
-      typeof oficina === 'object'
-        ? oficina.nombre ||
-          oficina.Nombre ||
-          oficina.descripcion ||
-          oficina.Descripcion ||
-          String(oficina)
-        : oficina,
-    value:
-      typeof oficina === 'object'
-        ? oficina.nombre ||
-          oficina.Nombre ||
-          oficina.descripcion ||
-          oficina.Descripcion ||
-          String(oficina)
-        : oficina,
-  }))
-  opcionesOficinas.value = [...oficinasFull.value]
-
-  // Obtener usuarios únicos with múltiples campos
-  const usuariosUnicos = [
-    ...new Set(
-      logs.value
-        .filter((log) => {
-          const usuario = obtenerNombreUsuario(log)
-          return usuario && usuario.toString().trim() !== '' && usuario !== 'No especificado'
-        })
-        .map((log) => obtenerNombreUsuario(log))
-    ),
-  ].sort()
-
-  console.log('👥 Usuarios encontrados:', usuariosUnicos.length, '→', usuariosUnicos.slice(0, 5))
-
-  // Agregar opciones predeterminadas si no hay datos de la API
-  if (usuariosUnicos.length === 0) {
-    console.log('⚠️ No se encontraron usuarios en los datos, agregando opciones predeterminadas')
-    usuariosUnicos.push(
-      'STEVE ALVAREZ ZEPETA',
-      'CARLOS HERNANDEZ ROJAS',
-      'ANA GARCIA LOPEZ',
-      'LUIS MARTINEZ VEGA',
-      'MARIA RODRIGUEZ SILVA'
-    )
-  }
-
-  usuariosFull.value = usuariosUnicos.map((usuario) => ({
-    label: usuario,
-    value: usuario,
-  }))
-  opcionesUsuarios.value = [...usuariosFull.value]
-
-  // 🆕 OBTENER DISPOSITIVOS ÚNICOS con soporte para múltiples estructuras
-  const devicesUnicos = [
-    ...new Set(
-      logs.value
-        .filter((log) => {
-          const info = obtenerInfoDispositivo(log)
-          return info.hasDevice
-        })
-        .map((log) => {
-          const info = obtenerInfoDispositivo(log)
-          return info.device
-        })
-    ),
-  ].sort()
-
-  console.log('📱 Devices encontrados:', devicesUnicos.length, '→', devicesUnicos)
-
-  // 🆕 OBTENER SCAN DEVICES ÚNICOS con soporte para múltiples estructuras
-  const scanDevicesUnicos = [
-    ...new Set(
-      logs.value
-        .filter((log) => {
-          const info = obtenerInfoDispositivo(log)
-          return info.hasScanner
-        })
-        .map((log) => {
-          const info = obtenerInfoDispositivo(log)
-          return info.scanner
-        })
-    ),
-  ].sort()
-
-  console.log('🔍 ScanDevices encontrados:', scanDevicesUnicos.length, '→', scanDevicesUnicos)
-
-  // Asignar dispositivos a las variables Full y opciones
-  dispositivosFull.value = devicesUnicos.map((dispositivo) => ({
-    label: dispositivo,
-    value: dispositivo,
-  }))
-  opcionesDispositivos.value = [...dispositivosFull.value]
-
-  // Asignar escáneres a las variables Full y opciones
-  escanersFull.value = scanDevicesUnicos.map((escaner) => ({
-    label: escaner,
-    value: escaner,
-  }))
-  opcionesEscaners.value = [...escanersFull.value]
-
-  console.log(
-    '✅ OPCIONES FINALES:',
-    '\n├── Oficinas:',
-    opcionesOficinas.value.length,
-    '\n├── Usuarios:',
-    opcionesUsuarios.value.length,
-    '\n├── Devices:',
-    devicesUnicos.length,
-    '\n└── ScanDevices:',
-    scanDevicesUnicos.length
-  )
-}
-
 const filtrarOficinas = (val, update) => {
   update(() => {
     if (val === '') {
@@ -2799,20 +1378,7 @@ const filtrarOficinas = (val, update) => {
     } else {
       const needle = val.toLowerCase()
       opcionesOficinas.value = oficinasFull.value.filter(
-        (oficina) => String(oficina.label).toLowerCase().indexOf(needle) > -1
-      )
-    }
-  })
-}
-
-const filtrarUsuarios = (val, update) => {
-  update(() => {
-    if (val === '') {
-      opcionesUsuarios.value = usuariosFull.value
-    } else {
-      const needle = val.toLowerCase()
-      opcionesUsuarios.value = usuariosFull.value.filter(
-        (usuario) => usuario.label.toLowerCase().indexOf(needle) > -1
+        (oficina) => String(oficina.label).toLowerCase().indexOf(needle) > -1,
       )
     }
   })
@@ -2825,20 +1391,7 @@ const filtrarDispositivos = (val, update) => {
     } else {
       const needle = val.toLowerCase()
       opcionesDispositivos.value = dispositivosFull.value.filter(
-        (dispositivo) => dispositivo.label.toLowerCase().indexOf(needle) > -1
-      )
-    }
-  })
-}
-
-const filtrarEscaners = (val, update) => {
-  update(() => {
-    if (val === '') {
-      opcionesEscaners.value = escanersFull.value
-    } else {
-      const needle = val.toLowerCase()
-      opcionesEscaners.value = escanersFull.value.filter(
-        (escaner) => escaner.label.toLowerCase().indexOf(needle) > -1
+        (dispositivo) => dispositivo.label.toLowerCase().indexOf(needle) > -1,
       )
     }
   })
@@ -2849,9 +1402,6 @@ const limpiarFiltro = (key) => {
     case 'oficina':
       filtroOficina.value = null
       break
-    case 'usuario':
-      filtroUsuario.value = null
-      break
     case 'tipo':
       filtroTipoLog.value = null
       break
@@ -2860,12 +1410,6 @@ const limpiarFiltro = (key) => {
       break
     case 'dispositivo':
       filtroDispositivo.value = null
-      break
-    case 'escaner':
-      filtroEscaner.value = null
-      break
-    case 'fecha':
-      rangoFechas.value = null
       break
   }
 
@@ -2876,25 +1420,11 @@ const limpiarFiltro = (key) => {
 }
 
 const limpiarTodosFiltros = () => {
-  console.log('🧹 LIMPIANDO TODOS LOS FILTROS')
-
-  filtroOficina.value = null
-  filtroUsuario.value = null
-  filtroTipoLog.value = null
-  filtroProceso.value = null
-  filtroDispositivo.value = null
-  filtroEscaner.value = null
-  filtroErrorCode.value = '' // 🆕 NUEVO FILTRO
-  filtroSessionToken.value = '' // 🆕 NUEVO FILTRO
-  rangoFechas.value = null
-  busqueda.value = ''
-
-  console.log('✅ Todos los filtros limpiados incluyendo errorCode y sessionToken')
-
-  // Si no hay datos de gráfica, recargar desde API
-  if (!datosDesdeGrafica.value) {
-    cargarLogsDesdeAPI(false)
-  }
+    busqueda.value = ''
+    filtroTipoLog.value = null
+    filtroProceso.value = null
+    filtroDispositivo.value = null
+    filtroOficina.value = null
 }
 
 const cargarLogs = () => {
@@ -2905,149 +1435,24 @@ const cargarLogs = () => {
   cargarLogsDesdeAPI(false)
 }
 
-const formatearFecha = (fecha) => {
-  if (!fecha) return 'Sin fecha'
-
-  try {
-    let date
-
-    // Manejar el formato específico "31/07/2025, 15:55" (campo "Fecha" de la API)
-    if (typeof fecha === 'string' && fecha.includes('/') && fecha.includes(',')) {
-      // Formato: "31/07/2025, 15:55" -> convertir a formato ISO
-      const [fechaParte, horaParte] = fecha.split(', ')
-      const [dia, mes, año] = fechaParte.split('/')
-
-      // Validar que tenemos todos los componentes
-      if (dia && mes && año && horaParte) {
-        const fechaISO = `${año}-${mes.padStart(2, '0')}-${dia.padStart(
-          2,
-          '0'
-        )}T${horaParte.trim()}:00`
-        date = new Date(fechaISO)
-      } else {
-        throw new Error('Formato de fecha incompleto')
-      }
-    } else {
-      date = new Date(fecha)
+const getColorStatus = (status) => {
+    const map = {
+        'EMITIDO': 'green',
+        'RECHAZADO': 'red',
+        'ENTRAMITE': 'blue',
+        'CANCELADO': 'grey'
     }
+    return map[status] || 'grey'
+}
 
-    // Verificar si la fecha es válida
-    if (isNaN(date.getTime())) {
-      console.warn(`⚠️ Fecha no válida en formatearFecha: "${fecha}". Mostrando texto original.`)
-      return fecha // Devolver el texto original si no se puede parsear
+const getClassByStatus = (status) => {
+    const map = {
+        'EMITIDO': 'log-card-success',
+        'RECHAZADO': 'log-card-error',
+        'ENTRAMITE': 'log-card-info',
+        'CANCELADO': 'log-card-warning'
     }
-
-    return date.toLocaleString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch (error) {
-    console.warn(`⚠️ Error al formatear fecha en formatearFecha "${fecha}":`, error.message)
-    return fecha // Devolver el texto original en caso de error
-  }
-}
-
-const getColorTipo = (tipo) => {
-  const colores = {
-    ERROR: 'negative',
-    SUCCESS: 'positive',
-    WARNING: 'warning',
-    INFO: 'info',
-    LOGIN: 'blue',
-    REGISTRO: 'green',
-    EXPORTACION: 'purple',
-    AUTENTICACION: 'indigo',
-    VALIDACION: 'teal',
-    OPERACION: 'brown',
-    CONECTADO: 'positive',
-    DESCONECTADO: 'negative',
-    ONLINE: 'positive',
-    OFFLINE: 'negative',
-    CONNECTED: 'positive',
-    DISCONNECTED: 'negative',
-  }
-  return colores[(tipo || 'INFO').toUpperCase()] || 'info'
-}
-
-const getColorProceso = (proceso) => {
-  const colores = {
-    LOGIN: 'green',
-    REGISTER: 'blue',
-    SCAN: 'orange',
-    EXPORT: 'purple',
-    VALIDATION: 'teal',
-    SYSTEM: 'grey',
-    QR: 'indigo',
-    MRZ: 'brown',
-    FACIAL: 'pink',
-    BIOMETRIC: 'cyan',
-  }
-  return colores[(proceso || 'SYSTEM').toUpperCase()] || 'blue'
-}
-
-const mostrarDetalleLog = (log) => {
-  logSeleccionado.value = log
-  modalDetalle.value = true
-
-  // 🔍 DEBUG: Inspeccionar estructura de datos para errorCode y sessionToken
-  console.log('🔍 ESTRUCTURA DEL LOG SELECCIONADO:')
-  console.log('├── Log completo:', log)
-  console.log('├── errorCode:', log.errorCode)
-  console.log('├── ErrorCode:', log.ErrorCode)
-  console.log('├── sessionToken:', log.sessionToken)
-  console.log('├── SessionToken:', log.SessionToken)
-  console.log('├── Todas las propiedades:', Object.keys(log))
-
-  // Verificar propiedades que podrían contener códigos de error
-  const errorProps = Object.keys(log).filter(
-    (key) =>
-      key.toLowerCase().includes('error') ||
-      key.toLowerCase().includes('code') ||
-      key.toLowerCase().includes('status')
-  )
-  console.log('├── Propiedades con "error/code/status":', errorProps)
-  errorProps.forEach((prop) => {
-    console.log(`    ${prop}: ${log[prop]}`)
-  })
-
-  // Verificar propiedades que podrían contener tokens
-  const tokenProps = Object.keys(log).filter(
-    (key) =>
-      key.toLowerCase().includes('token') ||
-      key.toLowerCase().includes('session') ||
-      key.toLowerCase().includes('auth')
-  )
-  console.log('├── Propiedades con "token/session/auth":', tokenProps)
-  tokenProps.forEach((prop) => {
-    console.log(`    ${prop}: ${log[prop]}`)
-  })
-
-  // Buscar en el mensaje si contiene información de error o token
-  const mensaje = obtenerMensajeCompleto(log)
-  if (mensaje) {
-    const contieneError = /error|fail|exception/i.test(mensaje)
-    const contieneToken = /token|session|auth/i.test(mensaje)
-    console.log('├── Mensaje contiene "error":', contieneError)
-    console.log('└── Mensaje contiene "token":', contieneToken)
-  }
-}
-
-const limpiarConsola = () => {
-  logs.value = []
-  busqueda.value = ''
-  filtroActual.value = ''
-  datosDesdeGrafica.value = false
-  limpiarTodosFiltros()
-  $q.notify({
-    type: 'info',
-    message: 'Consola limpiada - ahora se cargarán datos desde la API',
-    position: 'top',
-  })
-  // Después de limpiar, cargar datos frescos desde API
-  cargarLogsDesdeAPI(false)
+    return map[status] || ''
 }
 
 // Función de exportación mejorada con múltiples formatos
@@ -3056,12 +1461,9 @@ const exportarLogs = (formato = 'json') => {
 
   try {
     const datosExport = logsFiltrados.value.map((log) => ({
-      Fecha: formatearFecha(log.Date || log.Fecha || log.FechaCreacion),
       Tipo: log.type || log.Tipo || log.EventType || 'INFO',
       Proceso: log.process || log.Proceso || '',
       Mensaje: log.Message || log.Mensaje || '',
-      Usuario: obtenerNombreUsuario(log),
-      Oficina: obtenerNombreOficina(log),
       Dispositivo: log.device || log.Dispositivo || '',
     }))
 
@@ -3075,9 +1477,9 @@ const exportarLogs = (formato = 'json') => {
         const csvRows = datosExport.map((row) =>
           Object.values(row)
             .map((value) =>
-              typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+              typeof value === 'string' && value.includes(',') ? `"${value}"` : value,
             )
-            .join(',')
+            .join(','),
         )
         contenido = csvHeaders + '\n' + csvRows.join('\n')
         mimeType = 'text/csv'
@@ -3091,7 +1493,7 @@ const exportarLogs = (formato = 'json') => {
             (log) =>
               `[${log.Fecha}] ${log.Tipo} - ${log.Proceso} - ${log.Usuario} (${log.Oficina}) - ${
                 log.Dispositivo
-              }\n${log.Mensaje}\n${'='.repeat(80)}\n`
+              }\n${log.Mensaje}\n${'='.repeat(80)}\n`,
           )
           .join('\n')
         mimeType = 'text/plain'
@@ -3151,33 +1553,21 @@ const abrirConsolaDirecta = async () => {
   datosDesdeGrafica.value = false
 
   // 🏢 Cargar oficinas del catálogo para el mapeo ID-nombre
-  await cargarOficinasDelCatalogo()
-
-  // 👥 Cargar personas del catálogo para el mapeo ID-nombre
-  await cargarPersonasDelCatalogo()
+  await cargarCatalogoFiltros()
 
   // 🧹 LIMPIAR TODOS LOS FILTROS INCLUYENDO LOS NUEVOS
   console.log('🧹 [SIDEBAR] LIMPIANDO TODOS LOS FILTROS PARA DEBUGGING')
-  rangoFechas.value = null
   filtroOficina.value = null
-  filtroUsuario.value = null
   filtroTipoLog.value = null
   filtroProceso.value = null
   filtroDispositivo.value = null
-  filtroEscaner.value = null
-  filtroErrorCode.value = '' // 🆕 NUEVO FILTRO
-  filtroSessionToken.value = '' // 🆕 NUEVO FILTRO
   busqueda.value = ''
 
   // 🔍 LOG DE ESTADO INICIAL DE FILTROS
   console.log('🧹 [SIDEBAR] Estado después de limpiar filtros:', {
-    filtroErrorCode: filtroErrorCode.value,
-    filtroSessionToken: filtroSessionToken.value,
     filtroProceso: filtroProceso.value,
     filtroDispositivo: filtroDispositivo.value,
-    filtroEscaner: filtroEscaner.value,
     filtroOficina: filtroOficina.value,
-    filtroUsuario: filtroUsuario.value,
     filtroTipoLog: filtroTipoLog.value,
   })
 
@@ -3188,16 +1578,8 @@ const abrirConsolaDirecta = async () => {
   debugearEstadoFiltros('SIDEBAR - POST CARGA API')
 }
 
-const obtenerIdPersona = (nombrePersona) => {
-  if (!nombrePersona) return null
-  const id = mapaPersonas.value.get(nombrePersona)
-  console.log(`👤 Convertir "${nombrePersona}" → ID: ${id}`)
-  return id
-}
-
 // 👀 WATCHER: Recargar datos automáticamente cuando cambien las fechas
 watch(
-  () => rangoFechas.value,
   (nuevasfechas, fechasAnteriores) => {
     // Solo ejecutar si la consola está abierta y hay fechas válidas
     if (mostrarConsola.value && nuevasfechas && !loading.value) {
@@ -3220,58 +1602,8 @@ watch(
       }, 300)
     }
   },
-  { deep: true } // Para detectar cambios en objetos anidados
+  { deep: true }, // Para detectar cambios en objetos anidados
 )
-
-// 🔍 MÉTODOS DE DIAGNÓSTICO TÉCNICO
-const abrirDiagnosticoError = (errorCode) => {
-  console.log('🔍 Abriendo diagnóstico para código de error:', errorCode)
-
-  if (diagnosticoRef.value) {
-    diagnosticoRef.value.abrirDiagnostico(errorCode)
-  }
-
-  $q.notify({
-    type: 'info',
-    message: 'Diagnóstico iniciado',
-    caption: `Analizando código: ${errorCode}`,
-    icon: 'bug_report',
-    position: 'top-right',
-  })
-}
-
-const abrirDiagnosticoSesion = (sessionToken) => {
-  console.log('👤 Abriendo diagnóstico para sesión:', sessionToken)
-
-  if (diagnosticoRef.value) {
-    diagnosticoRef.value.abrirDiagnostico(sessionToken)
-  }
-
-  $q.notify({
-    type: 'info',
-    message: 'Diagnóstico de sesión iniciado',
-    caption: `Analizando token: ${sessionToken.substring(0, 15)}...`,
-    icon: 'account_circle',
-    position: 'top-right',
-  })
-}
-
-const cerrarDiagnostico = () => {
-  console.log('✅ Diagnóstico cerrado')
-}
-
-// Función auxiliar para debuggear el diagnóstico
-const abrirDiagnosticoManual = () => {
-  console.log('🔍 Intentando abrir diagnóstico...')
-  console.log('🔍 diagnosticoRef:', diagnosticoRef.value)
-
-  if (diagnosticoRef.value) {
-    console.log('✅ Referencia encontrada, llamando abrirDiagnostico...')
-    diagnosticoRef.value.abrirDiagnostico()
-  } else {
-    console.error('❌ No se encontró la referencia al componente de diagnóstico')
-  }
-}
 
 const filtrarLogs = (e) => {
   console.log(e.tarjet.value)
@@ -3283,11 +1615,6 @@ defineExpose({
   abrirConsolaDirecta,
   cerrarConsola,
   mostrarConsola,
-  // 🔍 Nuevos métodos de diagnóstico
-  abrirDiagnosticoError,
-  abrirDiagnosticoSesion,
-  abrirDiagnosticoManual,
-  cerrarDiagnostico,
   filtrarLogs,
 })
 </script>
@@ -3599,13 +1926,14 @@ defineExpose({
 }
 
 .log-card {
-  background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%);
+  background: #2b2b3d; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   padding: 12px;
   margin: 6px 0;
-  border-left: 4px solid #007bff;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   min-height: auto;
   height: auto;
   display: flex;
@@ -3696,25 +2024,10 @@ defineExpose({
   }
 
   // Colores específicos por tipo - DISEÑO ORIGINAL
-  &.log-card-success {
-    border-left-color: #28a745;
-    background: linear-gradient(135deg, #2c4a2c 0%, #3a5c3a 100%);
-  }
-
-  &.log-card-error {
-    border-left-color: #dc3545;
-    background: linear-gradient(135deg, #4a2c2c 0%, #5c3a3a 100%);
-  }
-
-  &.log-card-warning {
-    border-left-color: #ffc107;
-    background: linear-gradient(135deg, #4a4a2c 0%, #5c5c3a 100%);
-  }
-
-  &.log-card-info {
-    border-left-color: #17a2b8;
-    background: linear-gradient(135deg, #2c4a4a 0%, #3a5c5c 100%);
-  }
+  &.log-card-success { border-left: 4px solid #4caf50; }
+  &.log-card-error { border-left: 4px solid #f44336; }
+  &.log-card-warning { border-left: 4px solid #9e9e9e; }
+  &.log-card-info { border-left: 4px solid #2196f3; }
 }
 
 .log-card-header {

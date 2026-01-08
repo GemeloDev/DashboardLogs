@@ -90,23 +90,22 @@ axiosInstance.interceptors.response.use(
       status: response.status,
       data: response.data
     })
+
     return response
   },
   async (error) => {
     const originalRequest = error.config
-
-    console.error('❌ Error en respuesta:', {
-      url: error.config?.url,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message
-    })
-
     //  Manejo específico de errores
     if (error.response?.status === 403) {
       console.warn('🚫 Acceso denegado - Permisos insuficientes')
     }
 
     if (error.response?.status === 401 && originalRequest.url !== '/auth/refresh-token') {
+      console.warn('⚠️ AccessToken Invalido:', {
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message
+      })
       console.log('Refrescando token...')
       if (isRefreshing) {
         // Si ya refrescó, se manda como petición fallida a la cola
@@ -129,17 +128,17 @@ axiosInstance.interceptors.response.use(
 
       try {
         //  1. Llamar al endpoint de refresco
-        const refreshToken = authStore.getRefreshToken(); //  Obtiene el token de refresco
+        const refreshToken = authStore.getRefreshToken; //  Obtiene el token de refresco
 
         if (!refreshToken) {
           authStore.logout()
           return Promise.reject(error)
         }
 
-        const response = await axiosInstance.post('/api/auth/refresh', { refreshToken })
+        const response = await axios.post('/api/auth/refresh', { refreshToken })
 
-        const newAccessToken = response.data.accessToken
-        const newRefreshToken = response.data.refreshToken
+        const newAccessToken = response.data.data.accessToken
+        const newRefreshToken = response.data.data.refreshToken
 
         //  2. Actualizar tokens en el store
         authStore.setTokens(newAccessToken, newRefreshToken)

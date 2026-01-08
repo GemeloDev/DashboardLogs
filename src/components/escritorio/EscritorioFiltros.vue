@@ -9,12 +9,12 @@
         <!-- <q-btn flat color="negative" icon="close" label="Cerrar" v-close-popup /> -->
       </div>
 
-      <div v-if="resumenFiltros.length" class="q-mt-sm text-caption text-grey-4">
+      <div v-if="resumenFiltros.length" class="q-my-md text-caption text-grey-4">
         <q-icon name="info" size="18px" class="q-mr-xs" color="info" />
         <span>Filtros activos: {{ resumenFiltros.join(', ') }}</span>
       </div>
 
-      <div class="row q-col-gutter-md">
+      <div class="row flex justify-center q-col-gutter-md">
         <!-- Rango de Fechas - OBLIGATORIO -->
         <div class="col-12">
           <q-input
@@ -101,6 +101,59 @@
           </q-select>
         </div>
 
+        <!-- Tipo de Operación -->
+        <div class="col-12 col-md-6">
+          <q-select
+            v-model="filtro.proceso"
+            :options="procesosFilter.filteredOptions.value"
+            option-value="value"
+            option-label="label"
+            label="Proceso"
+            filled
+            dark
+            color="primary"
+            clearable
+            use-input
+            input-debounce="300"
+            @filter="procesosFilter.filterOptions"
+            class="custom-select"
+            :loading="loadingCatalogos"
+          >
+            <template v-slot:prepend>
+              <q-icon name="settings" color="primary" />
+            </template>
+          </q-select>
+        </div>
+
+        <!-- Estatus -->
+        <div class="col-12 col-md-6">
+          <q-select
+            v-model="filtro.estatus"
+            :options="estatusFilter.filteredOptions.value"
+            option-value="value"
+            option-label="label"
+            label="Estatus"
+            filled
+            dark
+            color="primary"
+            clearable
+            use-input
+            input-debounce="300"
+            @filter="estatusFilter.filterOptions"
+            class="custom-select"
+            :loading="loadingCatalogos"
+          >
+            <template v-slot:prepend>
+              <q-icon name="qr_code_scanner" color="primary" />
+            </template>
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey"> No hay estatus disponibles </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+        </div>
+
         <!-- Dispositivo -->
         <div class="col-12 col-md-6">
           <q-select
@@ -108,7 +161,7 @@
             :options="dispositivosFilter.filteredOptions.value"
             option-value="value"
             option-label="label"
-            label="Dispositivo"
+            label="Medio"
             filled
             dark
             color="primary"
@@ -129,75 +182,6 @@
             </template>
           </q-select>
         </div>
-
-        <!-- Escáner -->
-        <div class="col-12 col-md-6">
-          <q-select
-            v-model="filtro.escaner"
-            :options="escanersFilter.filteredOptions.value"
-            option-value="value"
-            option-label="label"
-            label="Escáner"
-            filled
-            dark
-            color="primary"
-            clearable
-            use-input
-            input-debounce="300"
-            @filter="escanersFilter.filterOptions"
-            class="custom-select"
-            :loading="loadingCatalogos"
-          >
-            <template v-slot:prepend>
-              <q-icon name="qr_code_scanner" color="primary" />
-            </template>
-            <template v-slot:no-option>
-              <q-item>
-                <q-item-section class="text-grey"> No hay escáneres disponibles </q-item-section>
-              </q-item>
-            </template>
-          </q-select>
-        </div>
-
-        <!-- Tipo de Proceso -->
-        <!-- <div class="col-12 col-md-6">
-          <q-select
-            v-model="filtro.proceso"
-            :options="procesosOptions"
-            option-value="value"
-            option-label="label"
-            label="Tipo de Proceso"
-            filled
-            dark
-            color="primary"
-            clearable
-            class="custom-select"
-          >
-            <template v-slot:prepend>
-              <q-icon name="settings" color="primary" />
-            </template>
-          </q-select>
-        </div> -->
-
-        <!-- Tipo de Log -->
-        <!-- <div class="col-12 col-md-6">
-          <q-select
-            v-model="filtro.tipoLog"
-            :options="tiposLogOptions"
-            option-value="value"
-            option-label="label"
-            label="Tipo de Log"
-            filled
-            dark
-            color="primary"
-            clearable
-            class="custom-select"
-          >
-            <template v-slot:prepend>
-              <q-icon name="bug_report" color="primary" />
-            </template>
-          </q-select>
-        </div> -->
       </div>
 
       <div class="q-mt-xl text-center">
@@ -241,15 +225,15 @@ const loadingCatalogos = ref(false)
 const oficinasOptions = ref([])
 const usuariosOptions = ref([])
 const dispositivosOptions = ref([])
-const escanersOptions = ref([])
+const estatusOptions = ref([])
 const procesosOptions = ref([])
-const tiposLogOptions = ref([])
 
 // Hooks para filtrado de selects
 const usuariosFilter = useFilterableSelect(usuariosOptions)
 const oficinasFilter = useFilterableSelect(oficinasOptions)
 const dispositivosFilter = useFilterableSelect(dispositivosOptions)
-const escanersFilter = useFilterableSelect(escanersOptions)
+const estatusFilter = useFilterableSelect(estatusOptions)
+const procesosFilter = useFilterableSelect(procesosOptions)
 
 // Filtros principales
 const filtro = ref({
@@ -257,16 +241,16 @@ const filtro = ref({
   oficina: null,
   usuario: null,
   dispositivo: null,
-  escaner: null,
+  estatus: null,
   proceso: null,
-  tipoLog: null,
 })
 
 // Watchers para inicializar filtros cuando se cargan las opciones
 watch(usuariosOptions, () => usuariosFilter.initializeOptions(), { immediate: true })
 watch(oficinasOptions, () => oficinasFilter.initializeOptions(), { immediate: true })
 watch(dispositivosOptions, () => dispositivosFilter.initializeOptions(), { immediate: true })
-watch(escanersOptions, () => escanersFilter.initializeOptions(), { immediate: true })
+watch(estatusOptions, () => estatusFilter.initializeOptions(), { immediate: true })
+watch(procesosOptions, () => procesosFilter.initializeOptions(), { immediate: true })
 
 // Computed para el texto del rango de fechas
 const rangoFechasTexto = computed(() => {
@@ -285,9 +269,8 @@ const resumenFiltros = computed(() => {
   if (filtro.value.oficina) activos.push('Oficina')
   if (filtro.value.usuario) activos.push('Usuario')
   if (filtro.value.dispositivo) activos.push('Dispositivo')
-  if (filtro.value.escaner) activos.push('Escáner')
+  if (filtro.value.estatus) activos.push('Estatus')
   if (filtro.value.proceso) activos.push('Proceso')
-  if (filtro.value.tipoLog) activos.push('Tipo Log')
   return activos
 })
 
@@ -316,7 +299,7 @@ const aplicarFiltros = () => {
   loadingFiltros.value = true
 
   const filtrosParaEmitir = construirFiltros()
-  emit('filtrar', filtrosParaEmitir)
+  console.log('🧱 Filtros para emitir: ', filtrosParaEmitir)
 
   $q.notify({
     type: 'positive',
@@ -325,7 +308,6 @@ const aplicarFiltros = () => {
   })
 
   loadingFiltros.value = false
-
 }
 
 // Construir objeto de filtros normalizado
@@ -384,9 +366,8 @@ const construirFiltros = () => {
     oficina: extraerValor(filtro.value.oficina),
     usuario: extraerValor(filtro.value.usuario),
     dispositivo: extraerValor(filtro.value.dispositivo),
-    escaner: extraerValor(filtro.value.escaner),
+    estatus: extraerValor(filtro.value.estatus),
     proceso: extraerValor(filtro.value.proceso),
-    tipoLog: extraerValor(filtro.value.tipoLog),
   }
 }
 
@@ -397,10 +378,11 @@ const limpiarFiltros = () => {
     oficina: null,
     usuario: null,
     dispositivo: null,
-    escaner: null,
+    estatus: null,
     proceso: null,
-    tipoLog: null,
   }
+
+  emit('filtrar', filtro.value)
 
   $q.notify({
     type: 'info',
@@ -433,22 +415,14 @@ const getFechaRangoDefault = () => {
 onMounted(async () => {
   loadingCatalogos.value = true
   try {
-    // Cargar opciones de catálogos estáticos
-    procesosOptions.value = CatalogService.getTiposProceso()
-    tiposLogOptions.value = CatalogService.getTiposLog()
+    // Una sola promesa, un solo tiempo de espera
+    const catalogos = await CatalogService.fetchCatalogs();
 
-    // Cargar opciones dinámicas
-    const [oficinas, usuarios, dispositivos, escaners] = await Promise.all([
-      CatalogService.cargarOficinas(),
-      CatalogService.cargarPersonas(),
-      CatalogService.cargarDispositivos(),
-      CatalogService.cargarEscaneres(),
-    ])
-
-    oficinasOptions.value = oficinas
-    usuariosOptions.value = usuarios
-    dispositivosOptions.value = dispositivos
-    escanersOptions.value = escaners
+    oficinasOptions.value = catalogos.oficinas
+    usuariosOptions.value = catalogos.personas
+    dispositivosOptions.value = catalogos.dispositivos
+    estatusOptions.value = catalogos.estatus
+    procesosOptions.value = catalogos.tiposProcesos
 
     // Establecer fecha por defecto
     filtro.value.rangoFechas = getFechaRangoDefault()

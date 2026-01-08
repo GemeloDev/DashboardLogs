@@ -2,6 +2,7 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file
 
 import { defineConfig } from '#q-app/wrappers'
+import fs from 'fs'
 
 export default defineConfig((/* ctx */) => {
   return {
@@ -95,8 +96,21 @@ export default defineConfig((/* ctx */) => {
           onError: (err, req) => {
             console.error('❌ Proxy error:', err.message, req.url)
           }
+        },
+        // 🚨 NUEVA REGLA PARA SOCKET.IO
+        '/ws': {
+          target: 'http://187.188.66.56:8040', // Apunta al servidor
+          ws: true, // 🚨 Habilitar soporte para WebSockets
+          changeOrigin: true,
+          secure: false // Ignora problemas de SSL en el backend si los hubiera
         }
-      }
+      },
+      // https: {
+      //   key: fs.readFileSync('certs/server.key'),
+      //   cert: fs.readFileSync('certs/server.crt')
+      // },
+      // host: true,
+      // port: 9000,
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework

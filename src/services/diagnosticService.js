@@ -1,156 +1,24 @@
 // Servicio para diagnósticos de códigos de error, sesiones y soporte
-import axios from 'axios'
-import { buildApiConfig } from './apiConfig.js'
-
-// Configuración específica para diagnósticos
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'http://187.188.66.56:8040/api'
-  : '/api'
+import { API_ENDPOINTS } from './apiEndpoints.js'
+import { axiosInstance } from './axiosConfig.js'
 
 export class DiagnosticService {
 
-  // 🔍 Obtener detalles de código de error
-  static async getErrorCodeDetails(errorCode) {
+  static async getSessionId(tokenSesion) {
     try {
-      console.log(`🔍 Consultando código de error: ${errorCode}`)
-      console.log(`🌐 URL: ${API_BASE_URL}/error-codes/${errorCode}`)
+      console.log(`🔍 Consultando sesión por id: ${tokenSesion}`)
+      console.log(`🌐 URL: ${API_ENDPOINTS.PERSON_ID}`)
 
-      const response = await axios.get(`${API_BASE_URL}/error-codes/${errorCode}`, buildApiConfig())
-
-      console.log('✅ Detalles del código de error obtenidos:', response.data)
-      console.log('📊 Status:', response.status)
-
-      // La API devuelve un array de objetos con información detallada
-      const data = Array.isArray(response.data) ? response.data : [response.data]
-
-      return {
-        success: true,
-        data: data,
-        errorCode,
-        summary: {
-          totalRecords: data.length,
-          firstRecord: data[0],
-          baseCode: data[0]?.baseCode,
-          sessionToken: data[0]?.sessionToken,
-          user: data[0]?.person?.nombreCompleto,
-          office: data[0]?.oficina?.nombre
+      const response = await axiosInstance.get(`${API_ENDPOINTS.PERSON_ID}`, {
+        params: {
+          personId: tokenSesion
         }
-      }
-    } catch (error) {
-      console.error('❌ Error al obtener detalles del código:', error)
-      console.error('📋 Error details:', {
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        url: error.config?.url,
-        method: error.config?.method
       })
-
-      // Si es un error de red o servidor, usar datos de muestra
-      if (error.code === 'NETWORK_ERROR' || error.response?.status >= 500 || !error.response) {
-        console.log('🔄 Usando datos de muestra por error de conectividad')
-        return this.getSampleErrorData(errorCode)
-      }
-
-      return {
-        success: false,
-        error: error.message,
-        errorCode,
-        data: null
-      }
-    }
-  }
-
-  // 🔍 Obtener detalles de sesión (usando baseCode en lugar de sessionToken)
-  static async getSessionDetails(baseCode) {
-    try {
-      console.log(`🔍 Consultando sesión por baseCode: ${baseCode}`)
-      console.log(`🌐 URL: ${API_BASE_URL}/sessions/${baseCode}`)
-
-      const response = await axios.get(`${API_BASE_URL}/sessions/${baseCode}`, buildApiConfig())
 
       console.log('✅ Detalles de sesión obtenidos:', response.data)
       console.log('📊 Status:', response.status)
 
-      // La API devuelve un array de objetos relacionados con la sesión
-      const data = Array.isArray(response.data) ? response.data : [response.data]
-
-      return {
-        success: true,
-        data: data,
-        baseCode,
-        summary: {
-          totalEvents: data.length,
-          baseCode: data[0]?.baseCode,
-          sessionToken: data[0]?.sessionToken,
-          user: data[0]?.person?.nombreCompleto,
-          office: data[0]?.oficina?.nombre,
-          processes: [...new Set(data.map(item => item.process))],
-          errorTypes: [...new Set(data.map(item => item.type))],
-          dateRange: {
-            start: data[0]?.date,
-            end: data[data.length - 1]?.date
-          }
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error al obtener detalles de sesión:', error)
-      console.error('📋 Session error details:', {
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        url: error.config?.url,
-        method: error.config?.method
-      })
-
-      // Si es un error de red o servidor, usar datos de muestra
-      if (error.code === 'NETWORK_ERROR' || error.response?.status >= 500 || !error.response) {
-        console.log('🔄 Usando datos de muestra por error de conectividad')
-        return this.getSampleSessionData(baseCode)
-      }
-
-      return {
-        success: false,
-        error: error.message,
-        baseCode,
-        data: null
-      }
-    }
-  }
-
-  static async getTokenSesionData(tokenSesion) {
-    try {
-      console.log(`🔍 Consultando sesión por baseCode: ${tokenSesion}`)
-      console.log(`🌐 URL: ${API_BASE_URL}/tokenSession/${tokenSesion}`)
-
-      const response = await axios.get(`${API_BASE_URL}/tokenSession/${tokenSesion}`, buildApiConfig())
-
-      console.log('✅ Detalles de sesión obtenidos:', response.data)
-      console.log('📊 Status:', response.status)
-
-      const data = Array.isArray(response.data) ? response.data : [response.data]
-
-      return {
-        success: true,
-        data,
-        tokenSesion,
-        summary: {
-          totalEvents: data.length,
-          baseCode: data[0]?.baseCode,
-          sessionToken: data[0]?.sessionToken,
-          user: data[0]?.person?.nombreCompleto,
-          office: data[0]?.oficina?.nombre,
-          processes: [...new Set(data.map(item => item.process))],
-          errorTypes: [...new Set(data.map(item => item.type))],
-          dateRange: {
-            start: data[0]?.date,
-            end: data[data.length - 1]?.date
-          }
-        }
-      }
-
+      return response.data
     } catch (error) {
       console.error('❌ Error al obtener detalles de sesión:', error)
       console.error('📋 Session error details:', {
@@ -187,10 +55,11 @@ export class DiagnosticService {
       if (device) params.append('device', device)
       if (user) params.append('user', user)
 
-      const url = `${API_BASE_URL}/support?${params.toString()}`
-      console.log(`🌐 URL: ${url}`)
+      // const url = `${API_BASE_URL}/support?${params.toString()}`
+      // console.log(`🌐 URL: ${url}`)
 
-      const response = await axios.get(url, buildApiConfig())
+      // const response = await axios.get(url, buildApiConfig())
+      const response = []
 
 
       // La API de soporte también devuelve arrays de información relacionada

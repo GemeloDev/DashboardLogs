@@ -3,15 +3,15 @@ import { API_BASE_URL } from './apiConfig'
 // DTOs y endpoints
 export const endpoints = {
   // Logs
-  logsFilter: `${API_BASE_URL}/logs#`,
-  logsSummary: `${API_BASE_URL}/logs/summary`,
-  logsCalendar: `${API_BASE_URL}/logs/calendar`,
+  logs: `${API_BASE_URL}/dashboard/passports/events`,
 
   // Catálogos
-  catalogOficinas: `${API_BASE_URL}/oficinas`,
-  catalogDevices: `${API_BASE_URL}/catalog/devices`,
-  catalogScanDevices: `${API_BASE_URL}/catalog/scan-devices`,
-  catalogPersons: `${API_BASE_URL}/catalog/persons`,
+  catalogSummary: `${API_BASE_URL}/dashboard/passports/summary`,
+  catalogEvents: `${API_BASE_URL}/dashboard/passports/events`,
+  catalogOficinas: `${API_BASE_URL}/dashboard/passports/by-office`,
+  catalogDevices: `${API_BASE_URL}/dashboard/passports/events`,
+  catalogEstatus: `${API_BASE_URL}/dashboard/passports/by-type`,
+  catalogPersons: `${API_BASE_URL}/core/users`,
 }
 
 // DTOs para diferentes tipos de consultas - FLUJO REFACTORIZADO

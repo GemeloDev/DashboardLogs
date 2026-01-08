@@ -90,7 +90,7 @@
           <q-tab name="busqueda" icon="search" label="🔍 Búsqueda Rápida" />
           <q-tab name="errorCode" icon="error" label="🔴 Código Error" />
           <q-tab name="baseCode" icon="code" label="📟 Análisis Código Base" />
-          <q-tab name="token" icon="account_circle" label="👤 Análisis Token" />
+          <q-tab name="codeById" icon="account_circle" label="👤 Análisis Token" />
         </q-tabs>
 
         <!-- Contenido de Pestañas MODERNIZADO -->
@@ -157,10 +157,10 @@
                       </div>
                       <div
                         class="example-chip token-code"
-                        @click="busquedaRapida = 'pBwQdT8snpp7'"
+                        @click="busquedaRapida = '8-123-008'"
                       >
                         <q-icon name="account_circle" size="16px" />
-                        <span>pBwQdT8snpp7</span>
+                        <span>8-123-008</span>
                         <div class="chip-glow"></div>
                       </div>
                     </div>
@@ -709,7 +709,7 @@
             </q-card>
           </q-tab-panel>
 
-          <q-tab-panel name="token" class="no-border bg-dark">
+          <q-tab-panel name="codeById" class="no-border bg-dark">
             <q-card class="modern-card text-white session-card">
               <q-card-section>
                 <div class="card-header">
@@ -717,7 +717,7 @@
                     <q-icon name="data_object" size="32px" color="blue-4" />
                   </div>
                   <div class="header-content">
-                    <h3 class="card-title">Busqueda Rápida por Token de Sesión</h3>
+                    <h3 class="card-title">Busqueda Rápida por ID de usuario</h3>
                     <p class="card-subtitle">
                       Ingresa cualquier token de sesión para iniciar el análisis automático.
                     </p>
@@ -727,12 +727,12 @@
                 <div class="card-body">
                   <div class="modern-input-group">
                     <q-input
-                      v-model="formulario.tokenCode"
+                      v-model="formulario.idCode"
                       class="modern-input"
-                      placeholder="Ej: ihJak3VeUMNA"
+                      placeholder="Ej: 8-123-008"
                       dark
                       borderless
-                      @keyup.enter="() => consultarToken()"
+                      @keyup.enter="() => consultarId()"
                     >
                       <template v-slot:prepend>
                         <q-icon name="search" color="blue-4" size="20px" />
@@ -741,7 +741,7 @@
                     <q-btn
                       class="search-action-btn"
                       icon="send"
-                      @click="() => consultarToken()"
+                      @click="() => consultarId()"
                       :loading="cargandoBusqueda"
                       unelevated
                       size="lg"
@@ -752,12 +752,13 @@
             </q-card>
 
             <!-- Resultados de la consulta por tokén de sesión -->
-            <div class="row q-mt-md" v-if="resultadoToken !== null">
+            <div class="row q-mt-md">
               <div class="col-xs-12 col-sm-12 col-md-12">
                 <ResultadosByToken
-                  :counterUsers="countUsers"
-                  :counterOficinas="countOficinas"
-                  :resultados="resultadoToken"
+                  v-if="resultadoId"
+                  :counterItems="countItems"
+                  :passportData="passportData"
+                  :resultados="resultadoId.data"
                 />
               </div>
             </div>
@@ -782,7 +783,7 @@ import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import { DiagnosticService } from '../services/diagnosticService.js'
 import ResultadosByToken from 'src/components/escritorio/resultadosEscritorio/ResultadosByToken.vue'
-import { counterKeyRegister, formatearFecha } from 'src/helpers/index.js'
+import { formatearFecha } from 'src/helpers/index.js'
 
 const $q = useQuasar()
 const route = useRoute()
@@ -797,12 +798,13 @@ const busquedaRapida = ref('')
 const cargandoBusqueda = ref(false)
 
 const formulario = ref({
-  errorCode: '',
-  sessionToken: '',
-  supportCode: '',
-  tokenCode: '',
-  device: '',
-  user: '',
+  idCode: '',
+  // errorCode: '',
+  // sessionToken: '',
+  // supportCode: '',
+  // tokenCode: '',
+  // device: '',
+  // user: '',
 })
 
 // Resultados EXACTOS al modal
@@ -827,9 +829,9 @@ const erroresRecientes = ref([])
 const resultadoError = ref(null)
 
 // Estados de análisis de token
-const resultadoToken = ref(null)
-const countUsers = ref(0)
-const countOficinas = ref(0)
+const resultadoId = ref(null)
+const countItems = ref(0)
+const passportData = ref(0)
 
 // Estados de gestión de sesiones
 const gestionSesion = ref({
@@ -1110,20 +1112,16 @@ const realizarBusquedaRapida = async () => {
   try {
     // Determinar si es código de error o baseCode (exacto al modal)
     if (busquedaRapida.value.includes('-')) {
-      // Es código de error
-      formulario.value.errorCode = busquedaRapida.value
-      tabActiva.value = 'errorCode'
+      // Es token de sesión
+      formulario.value.idCode = busquedaRapida.value
+      tabActiva.value = 'codeById'
+      await consultarId()
       await consultarCodigoError()
     } else if(busquedaRapida.value.startsWith('USR')) {
       // Es baseCode para sesión
       formulario.value.sessionToken = busquedaRapida.value
       tabActiva.value = 'baseCode'
       await consultarSesion()
-    } else {
-      // Es token de sesión
-      formulario.value.tokenCode = busquedaRapida.value
-      tabActiva.value = 'token'
-      await consultarToken()
     }
   } finally {
     cargandoBusqueda.value = false
@@ -1161,25 +1159,35 @@ const consultarCodigoError = async (codigo = null) => {
   }
 }
 
-const consultarToken = async (codigo = null) => {
-  const sesion = codigo || formulario.value.tokenCode
+const consultarId = async (codigo = null) => {
+  const sesion = codigo || formulario.value.idCode
   if (!sesion || !String(sesion).trim()) return
 
   cargandoBusqueda.value = true
 
   try {
-    resultadoToken.value = await DiagnosticService.getTokenSesionData(sesion)
-    countUsers.value = counterKeyRegister(resultadoToken.value.data).persons
-    countOficinas.value = counterKeyRegister(resultadoToken.value.data).oficina
+    resultadoId.value = await DiagnosticService.getSessionId(sesion)
+    console.log(`Datos de pasaporte [${sesion}] consultados: `, resultadoId.value)
+
+    const { itmes, passport } = resultadoId.value.data
+    countItems.value = itmes
+    passportData.value = passport
 
     $q.notify({
       type: 'positive',
-      message: 'Token consultado',
+      message: `${resultadoId.value.path}`,
       icon: 'account_circle',
       position: 'top-right',
     })
+    
   } catch (error) {
     console.log(`🔄 Error en consulta:', ${error.message}`)
+    $q.notify({
+      type: 'error',
+      message: `${error.message}`,
+      icon: 'account_circle',
+      position: 'top-right',
+    })
   } finally {
     cargandoBusqueda.value = false
   }

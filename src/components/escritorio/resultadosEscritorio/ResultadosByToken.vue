@@ -1,105 +1,138 @@
 <template>
-  <q-card class="modern-card text-white session-card">
-    <q-card-section class="row card-body">
-      <div class="col-sm-12 col-md-12 col-lg-12">
-        <p class="text-h5 text-bold text-white">Listado de Datos</p>
+  <q-card class="modern-card text-white session-card q-mt-lg">
+    <q-card-section v-if="passportData" class="row card-body q-pb-none">
+      <div class="col-12 q-pt-md q-pl-md">
+        <div class="row items-center q-mb-md">
+          <q-icon name="history_edu" size="md" class="q-mr-sm text-blue-4" />
+          <p class="text-h5 text-bold text-white no-margin">Historial del Trámite</p>
+        </div>
       </div>
 
-      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 grid column">
-        <p class="text-h6 text-white no-margin q-pt-sm">👤 Usuarios encontrados: {{ duplicateCurps.length }}</p>
-        <q-chip color="green" class="text-white shadow-8" v-for="person in duplicateCurps" :key="person">
-          {{ person }}
-        </q-chip>
-      </div>
-      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 grid column">
-        <p class="text-h6 text-white no-margin q-pt-sm">🏢 Oficinas encontradas: {{ duplicateOffice.length }}</p>
-        <q-chip color="blue" class="text-white shadow-8" v-for="office in duplicateOffice" :key="office">
-          {{ office }}
-        </q-chip>
+      <div class="col-12 q-px-md">
+        <div class="passport-info-container row q-col-gutter-sm">
+          <div class="col-12 col-md-12">
+             <p class="text-h6 text-white no-margin">
+              📄 Pasaporte: <span class="text-blue-3">{{ passportData.passportNumber }}</span>
+            </p>
+          </div>
+
+          <div class="col-6 col-sm-4">
+            <div class="info-pill">
+              <q-icon name="badge" size="xs" class="q-mr-xs text-grey-4" />
+              <span>ID: {{ passportData.personId }}</span>
+            </div>
+          </div>
+          <div class="col-6 col-sm-4">
+            <div class="info-pill">
+              <q-icon name="person" size="xs" class="q-mr-xs text-grey-4" />
+              <span class="ellipsis">{{ passportData.fullName }}</span>
+            </div>
+          </div>
+          <div class="col-12 col-sm-4">
+            <div class="info-pill">
+              <q-icon name="flag" size="xs" class="q-mr-xs text-grey-4" />
+              <span>{{ passportData.nationality }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </q-card-section>
-  </q-card>
 
-  <q-card class="modern-card text-white session-card q-mt-lg">
-    <q-card-section class="col card-body">
-      <div class="q-pr-lg q-py-md">
-        <q-timeline color="secondary" class="session-timeline q-px-xl">
+    <q-separator dark spaced class="q-mx-lg" />
+
+    <q-card-section class="col card-body q-pt-none">
+      <div class="q-px-md q-py-md">
+        <q-timeline color="secondary" class="session-timeline">
+
           <q-timeline-entry heading>
-            <strong class="text-h5 text-bold">Detalle de la Consulta</strong>
+            <strong class="text-h6 text-bold text-grey-4">Eventos Registrados</strong>
           </q-timeline-entry>
+
           <q-timeline-entry
-            v-for="(log, index) in resultados.data"
-            :key="index"
-            :title="`PROCESO: ${log.process}`"
-            :subtitle="formatearFecha(log.date)"
-            :color="getEventColor(log.type)"
-            :icon="getEventIcon(log.type)"
+            v-for="(log, index) in resultados.items"
+            :key="log.id || index"
+            :title="log.operationType"
+            :subtitle="formatearFecha(log.eventTime)"
+            :color="getStatusColor(log.status)"
+            :icon="getStatusIcon(log.status)"
           >
-            <div class="row flex justify-center q-gutter-md">
+            <div class="row q-col-gutter-md">
+
               <div class="col-12">
-                <q-card class="kpi-card gradient-cyan">
-                  <q-card-section class="q-pa-lg">
+                <q-card class="kpi-card" :class="getGradientClass(log.status)">
+                  <q-card-section class="q-pa-md">
                     <div class="kpi-content">
                       <div class="kpi-icon-container">
-                        <q-icon name="message" size="xs" class="kpi-icon" />
+                        <q-icon name="info" size="sm" class="kpi-icon" />
                       </div>
                       <div class="kpi-data">
-                        <div class="kpi-title">Mensaje</div>
-                        <div class="kpi-subtitle">{{ log.message }}</div>
+                        <div class="kpi-title text-white">Mensaje del Sistema</div>
+                        <div class="kpi-value text-body1">{{ log.message }}</div>
+                        <div v-if="log.reasonDescription" class="kpi-subtitle text-italic q-mt-xs">
+                          "{{ log.reasonDescription }}"
+                        </div>
                       </div>
+                      <q-chip
+                        dense
+                        :color="getStatusColor(log.status)"
+                        text-color="white"
+                        class="text-bold shadow-2"
+                      >
+                        {{ log.status }}
+                      </q-chip>
                     </div>
                   </q-card-section>
                 </q-card>
               </div>
-              <div v-if="log.person" class="col-xs-12 col-sm-12 col-md-5 content-center text-body2">
-                <div class="log-message">
-                  👤 Nombre:
-                  {{
-                    log.person.nombres +
-                    ' ' +
-                    log.person.primerApellido +
-                    ' ' +
-                    log.person.segundoApellido
-                  }}
-                </div>
-              </div>
-              <div v-if="log.oficina" class="col-xs-12 col-sm-12 col-md-5 text-body2">
-                <div class="log-ofice">
-                  <p class="text-weight-thin">
-                    <span class="text-bold">🏢 Oficina:</span> {{ log.oficina.nombre }}
-                    <br />
-                    <span class="text-bold">🚩 Dirección:</span>
-                    {{ log.oficina.direccion }}
-                  </p>
-                </div>
-              </div>
-              <!-- Detalles técnicos del log -->
+
               <div class="col-12">
-                <div class="row flex justify-around text-center">
-                  <div class="col-xs-12 col-sm-12 col-md-auto bordered">
-                    <q-icon color="blue-5" name="tag" size="xs" class="q-mr-xs" />
-                    <span class="text-blue-5">ID: </span>
-                    <p>{{ log.id }}</p>
+                <div class="row q-col-gutter-sm">
+
+                  <div class="col-12 col-sm-6">
+                    <div class="detail-box">
+                      <div class="text-caption text-grey-5 q-mb-xs">📍 Ubicación</div>
+                      <div class="text-body2 text-bold">{{ log.officeName }}</div>
+                      <div class="text-caption text-grey-4">ID: {{ log.officeId }}</div>
+                      <div class="text-caption text-blue-3 q-mt-xs">
+                        <q-icon name="devices" /> Canal: {{ log.channel }}
+                      </div>
+                    </div>
                   </div>
-                  <div v-if="log.errorCode" class="col-xs-12 col-sm-12 col-md-auto bordered">
-                    <q-icon color="red" name="error_outline" size="xs" class="q-mr-xs" />
-                    <span class="text-red-4 text-bold">Código de error: </span>
-                    <p>{{ log.errorCode }}</p>
+
+                  <div class="col-12 col-sm-6">
+                    <div class="detail-box">
+                      <div class="text-caption text-grey-5 q-mb-xs">👤 Operador</div>
+                      <div class="text-body2 text-bold">{{ log.userFullName || 'Sistema' }}</div>
+                      <div class="text-caption text-grey-4">{{ log.username }}</div>
+                      <div class="text-caption text-orange-3 q-mt-xs" v-if="log.elapsedSeconds">
+                        <q-icon name="timer" /> Duración: {{ log.elapsedSeconds }}s
+                      </div>
+                    </div>
                   </div>
-                  <div v-if="log.sessionToken" class="col-xs-12 col-sm-12 col-md-auto bordered">
-                    <q-icon name="security" size="xs" class="q-mr-xs" />
-                    <span class="text-purple-4 text-bold">Token de sesión: </span>
-                    <p>{{ log.sessionToken }}</p>
-                  </div>
-                  <div v-if="log.baseCode" class="col-xs-12 col-sm-12 col-md-auto bordered">
-                    <q-icon name="qr_code" size="xs" class="q-mr-xs" />
-                    <span class="text-orange-4 text-bold">Código base: </span>
-                    <p>{{ log.baseCode }}</p>
-                  </div>
+
                 </div>
               </div>
+
+              <div class="col-12">
+                <div class="technical-footer row q-gutter-x-md q-gutter-y-sm">
+
+                  <div class="tech-item">
+                    <q-icon name="fingerprint" color="blue-4" />
+                    <span class="q-ml-xs text-caption">ID: {{ log.id.substring(0, 8) }}...</span>
+                    <q-tooltip>{{ log.id }}</q-tooltip>
+                  </div>
+
+                  <div v-if="log.reasonCode" class="tech-item text-red-3">
+                    <q-icon name="bug_report" />
+                    <span class="q-ml-xs text-caption text-bold">Code: {{ log.reasonCode }}</span>
+                  </div>
+
+                </div>
+              </div>
+
             </div>
           </q-timeline-entry>
+
         </q-timeline>
       </div>
     </q-card-section>
@@ -107,260 +140,163 @@
 </template>
 
 <script setup>
-import { watchEffect } from 'vue'
+import { date } from 'quasar' // Usamos utilidades de fecha de Quasar si están disponibles, sino usar JS nativo
 
-import { formatearFecha, getEventColor, getEventIcon } from 'src/helpers/index.js'
+// const props = defineProps({
+//   passportData: {
+//     type: Object,
+//     required: true,
+//     default: () => ({})
+//   },
+//   resultados: {
+//     type: Object,
+//     required: true,
+//     default: () => ({ items: [] })
+//   }
+// })
 
-const props = defineProps({
-  counterUsers: Number,
-  counterOficinas: Number,
-  resultados: Object,
-})
+// --- Helpers de Formato ---
 
-watchEffect(() => {
-  props.counterUsers
-})
-watchEffect(() => {
-  props.counterOficinas
-})
-watchEffect(() => {
-  props.resultados
-})
+const formatearFecha = (fechaISO) => {
+  if (!fechaISO) return ''
+  // Formato: 18 Dic 2025, 18:20
+  return date.formatDate(fechaISO, 'D MMM YYYY, HH:mm a')
+}
 
-//  Oficinas dúplicadas
-const withOficinas = props.resultados.data.filter(item => item.oficina && item.oficina.nombre)
-const countsOficinas = withOficinas.reduce((acc, item) => {
-  const nombre = item.oficina.nombre
-  acc[nombre] = (acc[nombre] || 0) + 1
-  return acc
-}, {})
+// --- Helpers de UI basados en Estatus ---
 
-const duplicateOffice = Object.keys(countsOficinas).filter(nombre => countsOficinas[nombre] > 1)
+const getStatusColor = (status) => {
+  if (!status) return 'grey'
+  const s = status.toUpperCase()
+  if (s === 'EMITIDO' || s === 'EMITIDOS') return 'green'
+  if (s === 'RECHAZADO' || s === 'RECHAZADOS') return 'red'
+  if (s === 'ENTRAMITE' || s === 'EN TRAMITE') return 'cyan'
+  if (s === 'CANCELADO' || s === 'CANCELADOS') return 'orange'
+  return 'blue'
+}
 
-//  Personas duplicadas
-const withPerson = props.resultados.data.filter(item => item.person && item.person.curp)
+const getStatusIcon = (status) => {
+  if (!status) return 'circle'
+  const s = status.toUpperCase()
+  if (s.includes('EMITIDO')) return 'check_circle'
+  if (s.includes('RECHAZADO')) return 'cancel'
+  if (s.includes('TRAMITE')) return 'pending_actions'
+  if (s.includes('CANCELADO')) return 'block'
+  return 'info'
+}
 
-const countsPersonas = withPerson.reduce((acc, item) => {
-  const curp = '👤 ' + item.person.nombres + ' ' + item.person.primerApellido + ' ' + item.person.segundoApellido
-  acc[curp] = (acc[curp] || 0) + 1
-  return acc
-}, {})
-
-const duplicateCurps = Object.keys(countsPersonas).filter(curp => countsPersonas[curp] > 1)
-
-console.log(duplicateOffice, duplicateCurps)
+const getGradientClass = (status) => {
+  if (!status) return 'gradient-blue'
+  const s = status.toUpperCase()
+  if (s.includes('EMITIDO')) return 'gradient-green'
+  if (s.includes('RECHAZADO')) return 'gradient-red'
+  if (s.includes('TRAMITE')) return 'gradient-cyan'
+  if (s.includes('CANCELADO')) return 'gradient-orange'
+  return 'gradient-blue'
+}
 </script>
 
-
 <style lang="scss" scoped>
-
-.log-message {
-  font-weight: 500;
-  margin-bottom: 12px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 8px 12px;
-  border-radius: 6px;
-  border-left: 3px solid #42a5f5;
+// Variables para el glassmorphism
+:root {
+  --gradient-card: linear-gradient(135deg, rgba(30, 30, 47, 0.95) 0%, rgba(45, 45, 60, 0.98) 100%);
+  --border-glass: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.log-ofice {
-  font-weight: 500;
-  margin-bottom: 12px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 8px 12px;
-  border-radius: 6px;
-  border-left: 3px solid #04b949;
-}
-
-.bordered {
-  border-left: 1px solid #ccc;
-  border-right: 1px solid #ccc;
-  padding: 12px;
-}
-
-// Estilos para KPIs
-.kpi-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  position: relative;
+.modern-card {
+  background: #1e1e2f; // Fallback
+  background: var(--gradient-card);
+  border: var(--border-glass);
+  border-radius: 16px;
   overflow: hidden;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
 
-  &.gradient-blue {
-    background: linear-gradient(145deg, rgba(33, 150, 243, 0.2) 0%, rgba(25, 118, 210, 0.1) 100%);
-    border-color: rgba(33, 150, 243, 0.3);
-  }
+// Estilos de Pastillas de información (Header)
+.info-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 
-  &.gradient-green {
-    background: linear-gradient(145deg, rgba(76, 175, 80, 0.2) 0%, rgba(56, 142, 60, 0.1) 100%);
-    border-color: rgba(76, 175, 80, 0.3);
-  }
-
-  &.gradient-red {
-    background: linear-gradient(145deg, rgba(244, 67, 54, 0.2) 0%, rgba(211, 47, 47, 0.1) 100%);
-    border-color: rgba(244, 67, 54, 0.3);
-  }
-
-  &.gradient-orange {
-    background: linear-gradient(145deg, rgba(255, 152, 0, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
-    border-color: rgba(255, 152, 0, 0.3);
-  }
-
-  &.gradient-cyan {
-    background: linear-gradient(145deg, rgba(0, 188, 212, 0.2) 0%, rgba(0, 150, 136, 0.1) 100%);
-    border-color: rgba(0, 188, 212, 0.3);
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
+
+// Timeline adjustments
+.session-timeline {
+  width: 100%;
+}
+
+// KPI / Message Card Gradients
+.kpi-card {
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gradient-blue { background: linear-gradient(90deg, rgba(33, 150, 243, 0.15) 0%, rgba(21, 101, 192, 0.05) 100%); border-left: 4px solid #2196F3; }
+.gradient-green { background: linear-gradient(90deg, rgba(76, 175, 80, 0.15) 0%, rgba(46, 125, 50, 0.05) 100%); border-left: 4px solid #4CAF50; }
+.gradient-red { background: linear-gradient(90deg, rgba(244, 67, 54, 0.15) 0%, rgba(198, 40, 40, 0.05) 100%); border-left: 4px solid #F44336; }
+.gradient-orange { background: linear-gradient(90deg, rgba(255, 152, 0, 0.15) 0%, rgba(230, 81, 0, 0.05) 100%); border-left: 4px solid #FF9800; }
+.gradient-cyan { background: linear-gradient(90deg, rgba(0, 188, 212, 0.15) 0%, rgba(0, 96, 100, 0.05) 100%); border-left: 4px solid #00BCD4; }
 
 .kpi-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
 }
 
 .kpi-icon-container {
+  background: rgba(255,255,255,0.1);
+  padding: 8px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-}
-
-.kpi-icon {
-  color: rgba(255, 255, 255, 0.9);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .kpi-data {
   flex: 1;
 }
 
-.kpi-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
+// Cajas de detalle (Ubicación / Operador)
+.detail-box {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 
-.kpi-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.2;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.kpi-subtitle {
-  font-size: 0.75rem;
-  color: white;
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.timeline-scroll {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.session-timeline {
-  max-height: 350px;
-  width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* Scrollbar vertical u horizontal completo */
-::-webkit-scrollbar {
-  width: 3px; /* ancho de la barra (barStyle width) */
-  height: 9px; /* alto si es horizontal */
-}
-
-/* Track: fondo de la barra */
-::-webkit-scrollbar-track {
-  background-color: #027be3; /* barStyle backgroundColor */
-  border-radius: 9px; /* barStyle borderRadius */
-  opacity: 0.2; /* barStyle opacity */
-}
-
-/* Thumb: la parte que se mueve */
-::-webkit-scrollbar-thumb {
-  background-color: #002c53; /* thumbStyle backgroundColor */
-  border-radius: 5px; /* thumbStyle borderRadius */
-  width: 5px; /* thumbStyle width (opcional, se suele controlar con scrollbar) */
-  opacity: 0.75; /* thumbStyle opacity */
-}
-
-/* Thumb al hacer hover */
-::-webkit-scrollbar-thumb:hover {
-  background-color: #004883; /* color más oscuro para hover */
-}
-
-// Cards modernos
-.modern-card {
-  background: var(--gradient-card);
-  backdrop-filter: var(--blur-glass);
-  border: var(--border-glass);
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
-  transition: var(--transition-smooth);
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 2rem 2rem 1rem 2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-
-    .header-icon {
-      width: 64px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--gradient-primary);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-    }
-
-    .header-content {
-      flex: 1;
-
-      .card-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #fff;
-        margin: 0 0 0.5rem 0;
-      }
-
-      .card-subtitle {
-        font-size: 1rem;
-        color: rgba(255, 255, 255, 0.7);
-        margin: 0;
-      }
-    }
+  &:hover {
+    background: rgba(0, 0, 0, 0.3);
   }
-
-  // .card-body {
-  //   padding: 2rem;
-  // }
 }
+
+// Footer técnico
+.technical-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.tech-item {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.03);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+// Scrollbars
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
 </style>
