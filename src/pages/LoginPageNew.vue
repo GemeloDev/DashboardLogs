@@ -249,7 +249,7 @@
                 </q-btn>
 
                 <!-- QR Scanner Section (solo en modo login) -->
-                <div v-if="!modoRegistro" class="qr-scanner-section">
+                <div v-if="!modoRegistro && $q.platform.is.desktop" class="qr-scanner-section">
                   <div class="divider-container">
                     <div class="divider-line"></div>
                     <span class="divider-text">O</span>
@@ -277,7 +277,7 @@
                       </div>
                     </q-banner>
                     <div class="flex justify-center">
-                      <div id="qrcode-container" class="q-pa-md q-mb-md bg-white shadow-3"></div>
+                      <div id="qrcode-container" v-if="$q.platform.is.desktop" class="q-pa-md q-mb-md bg-white shadow-3"></div>
                     </div>
                   </div>
 
@@ -583,7 +583,8 @@ const clearTimers = () => {
 // Función ESSENCIAL para manejar el éxito del login (Disparada por el backend)
 const handleLoginSuccess = (data) => {
 
-  if (data.payload && data.payload.status === 'APROVED') {
+  console.log('Data del login por QR: ', data)
+  if (data.payload && data.payload.status === 'APPROVED') {
     const buildSession = authService.buildSession(data)
 
     if (!buildSession.success) {

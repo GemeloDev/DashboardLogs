@@ -10,44 +10,27 @@
         <q-toolbar-title>Consola Logs</q-toolbar-title>
 
         <!-- Botones de herramientas rápidas -->
-        <div class="row items-center q-gutter-sm">
+        <div class="row items-center q-gutter-x-sm mobile-scroll-row">
           <!-- Botón de filtros avanzados -->
           <q-btn
-            flat
-            dense
-            round
-            icon="filter_list"
-            color="orange"
-            @click="toggleFiltros"
-            class="q-mr-sm"
-          >
-            <q-tooltip>Filtros Avanzados</q-tooltip>
-          </q-btn>
-
-          <!-- Botón de filtros avanzados -->
-          <q-btn
-            v-if="currentFlow !== 'escritorio'"
+            v-if="currentFlow !== 'escritorio' && $q.platform.is.mobile"
             flat
             dense
             round
             icon="security"
             color="green"
             @click="toogleStartSession"
-            class="q-mr-sm"
           >
             <q-tooltip>Sesiones</q-tooltip>
           </q-btn>
 
+          <!-- Botón de filtros avanzados -->
+          <q-btn flat dense round icon="filter_list" color="green" @click="toggleDinamicFilters">
+            <q-tooltip>Filtros Avanzados</q-tooltip>
+          </q-btn>
+
           <!-- Botón de consola -->
-          <q-btn
-            flat
-            dense
-            round
-            icon="terminal"
-            color="purple"
-            @click="openConsole"
-            class="q-mr-sm"
-          >
+          <q-btn flat dense round icon="terminal" color="purple" @click="openConsole">
             <q-tooltip>Consola de Logs</q-tooltip>
           </q-btn>
 
@@ -65,22 +48,35 @@
             <q-tooltip>Gestionar Empleados</q-tooltip>
           </q-btn>
 
-          <q-chip
-            :icon="currentFlow === 'escritorio' ? 'desktop_windows' : 'smartphone'"
-            :label="currentFlow === 'escritorio' ? 'Escritorio' : 'Mobile'"
+          <q-btn-dropdown
+            :label="selectedSystem"
             outline
-            color="white"
+            color="black"
             text-color="white"
             size="sm"
-            class="q-mt-sm"
-          />
+            rounded
+          >
+            <q-list>
+              <q-item
+                v-for="system in systems"
+                :key="system"
+                clickable
+                @click="selectedSystem = system"
+                v-close-popup
+              >
+                <q-item-section>
+                  <q-item-label>{{ system }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
 
           <!-- Menú de usuario -->
           <q-btn-dropdown
             flat
             dense
             no-caps
-            :label="userInfo.nombre"
+            :label="$q.screen.gt.xs ? userInfo.nombre : ''"
             icon="account_circle"
             dropdown-icon="expand_more"
           >
@@ -111,25 +107,12 @@
 
       <!-- Panel de filtros expandible -->
       <q-slide-transition>
-        <div v-show="showFilters" class="filters-panel">
-          <div
-            class="q-pa-md"
-            style="background: rgba(30, 30, 47, 0.95); border-top: 1px solid #333"
-          >
-            <!-- <div class="row items-center justify-between q-mb-sm">
-              <div class="text-subtitle1 text-white">
-                <q-icon name="filter_list" class="q-mr-sm" color="orange" />
-                Filtros Avanzados
-              </div>
-              <q-btn flat dense round icon="close" color="white" @click="showFilters = false" />
-            </div> -->
-            <EscritorioFiltros @filtrar="onFiltrar" />
-          </div>
-        </div>
+        <QRScannerModal v-model="showSessionQR" @qr-scanned="handleQRScanned" />
       </q-slide-transition>
+
       <!-- Panel de filtros expandible -->
       <q-slide-transition>
-        <QRScannerModal v-model="showSessionQR" @qr-scanned="handleQRScanned" />
+        <DinamicFilters v-show="showDinamicFilters" @campos-seleccionados="onFiltrar" />
       </q-slide-transition>
     </q-header>
 
@@ -181,6 +164,12 @@
               <q-icon name="bug_report" color="red" />
             </q-item-section>
             <q-item-section><span style="font-weight: 600">Diagnóstico</span></q-item-section>
+          </q-item>
+          <q-item clickable v-ripple to="/myApiKeys">
+            <q-item-section avatar>
+              <q-icon name="key" color="cyan" />
+            </q-item-section>
+            <q-item-section><span style="font-weight: 600">Mis API Key's</span></q-item-section>
           </q-item>
         </q-list>
         <div style="margin-top: 32px; text-align: center">
@@ -299,27 +288,38 @@ import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
 import SantoroChat from '../components/SantoroChat.vue'
 import GeminiConfigModal from '../components/GeminiConfigModal.vue'
-import EscritorioFiltros from '../components/escritorio/EscritorioFiltros.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 import authService from '../services/authService.js'
 import { santoroContextService } from '../services/santoroContextService.js'
 import QRScannerModal from 'src/components/QRScannerModal.vue'
+import DinamicFilters from 'src/components/blocks/DinamicFilters.vue'
 
 const $q = useQuasar()
 const router = useRouter()
 const route = useRoute()
 const leftDrawerOpen = ref(false)
-const filtros = ref({})
+const filtros = ref({
+  //  Sistema que actualmente esta en flujo
+  system: '',
+  //  Campos que actualmente están activos
+  fields: {
+    // status: ['SUCCESS']
+  },
+})
 const modalVisible = ref(false)
 const detalleModal = ref(null)
-const showFilters = ref(false)
 const showSessionQR = ref(false)
+const showDinamicFilters = ref(false)
 const consolaRef = ref(null)
 const geminiConfigRef = ref(null)
 
 // Estado del flujo guardado en localStorage
-const savedFlow = ref(localStorage.getItem('dashboardFlow') || 'escritorio')
+const savedFlow = ref(JSON.parse(localStorage.getItem('dashboardFlow'))[0] || 'escritorio')
+const systems = ref(
+  JSON.parse(localStorage.getItem('dashboardLogsSession'))?.user?.authz?.systems || [],
+)
+const selectedSystem = ref(JSON.parse(localStorage.getItem('dashboardFlow'))[1] || 'DASHBOARD')
 
 // Computed para obtener el flujo actual desde la ruta
 const currentFlow = computed(() => {
@@ -333,20 +333,20 @@ const currentFlow = computed(() => {
 })
 
 // Watcher para guardar cambios de flujo
-watch(
-  currentFlow,
-  (newFlow) => {
-    if (route.meta?.flow) {
-      // Si la ruta tiene meta.flow específico, guardarlo como preferencia
-      savedFlow.value = newFlow
-      localStorage.setItem('dashboardFlow', newFlow)
-    }
-  },
-  { immediate: true }
-)
+watch([currentFlow, selectedSystem], (newFlow) => {
+  if (route.meta?.flow) {
+    // Si la ruta tiene meta.flow específico, guardarlo como preferencia
+    savedFlow.value = newFlow
+    localStorage.setItem(
+      'dashboardFlow',
+      JSON.stringify( newFlow || [currentFlow.value, selectedSystem.value] ),
+    )
+  }
+})
 
 // Proporcionar el estado del flujo a los componentes hijos
 provide('selectedFlow', currentFlow)
+provide('selectedSystem', selectedSystem)
 provide('filtrosGlobales', filtros)
 
 // Servicio de autenticación ya importado
@@ -360,14 +360,14 @@ const userInfo = computed(() => ({
 
 // Verificar si el usuario es admin
 const isAdmin = computed(() => {
-  return userInfo.value.roles.includes('ADMIN')
+  return userInfo.value.roles.includes('ORG_ADMIN')
 })
 
 // Función para cambiar de flujo mediante rutas
 const cambiarFlujo = (nuevoFlujo) => {
   // Guardar la nueva preferencia de flujo
   savedFlow.value = nuevoFlujo
-  localStorage.setItem('dashboardFlow', nuevoFlujo)
+  localStorage.setItem('dashboardFlow', { nuevoFlujo, selectedSystem })
 
   let rutaDestino
 
@@ -405,27 +405,32 @@ watch(
     const flujo = newPath.includes('/mobile') ? 'mobile' : 'escritorio'
     santoroContextService.cambiarFlujo(flujo)
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
-function toggleFiltros() {
-  showFilters.value = !showFilters.value
-}
-
 function toogleStartSession() {
   showSessionQR.value = !showSessionQR.value
 }
 
-function onFiltrar(val) {
-  console.log('🔄 MainLayout: Aplicando filtros:', val)
-  filtros.value = val
+function toggleDinamicFilters() {
+  showDinamicFilters.value = !showDinamicFilters.value
+}
+
+async function onFiltrar(fields) {
+  const buildFiltros = {
+    system: selectedSystem.value,
+    fields,
+  }
+
+  filtros.value = buildFiltros
+  console.log('🔄 MainLayout: Aplicando filtros:', buildFiltros)
 
   // Emitir evento para que las gráficas escuchen los cambios
-  window.dispatchEvent(new CustomEvent('filtros-aplicados', { detail: val }))
+  window.dispatchEvent(new CustomEvent('filtros-aplicados', { detail: fields }))
 
   $q.notify({
     message: '🔍 Filtros aplicados correctamente',
@@ -434,7 +439,7 @@ function onFiltrar(val) {
     position: 'top-right',
   })
 
-  showFilters.value = false
+  showDinamicFilters.value = false
 }
 
 function onGeminiConfigurado() {
@@ -505,7 +510,7 @@ onMounted(() => {
   })
 
   window.addEventListener('santoro-mostrar-filtros', () => {
-    showFilters.value = true
+    showDinamicFilters.value = true
   })
 })
 </script>
@@ -597,6 +602,33 @@ onMounted(() => {
 
 .fadeOut {
   animation-name: fadeOut;
+}
+
+/* Aplicar solo en pantallas móviles (punto de quiebre xs de Quasar < 600px) */
+@media (max-width: 599px) {
+  .mobile-scroll-row {
+    /* Fuerza a los items a quedarse en una sola línea */
+    flex-wrap: nowrap !important;
+
+    /* Habilita el scroll horizontal */
+    overflow-x: auto;
+
+    /* Habilita el "momentum scrolling" suave en iOS */
+    -webkit-overflow-scrolling: touch;
+
+    /* Opcional: Asegura que el contenido no se corte por el gutter */
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* Opcional: Ocultar la barra de scroll visualmente pero mantener la función */
+  .mobile-scroll-row::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-scroll-row {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
 }
 
 /* Scrollbar vertical u horizontal completo */

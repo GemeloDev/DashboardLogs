@@ -4,18 +4,20 @@ import { axiosInstance } from './axiosConfig.js'
 
 export class DiagnosticService {
 
-  static async getSessionId(tokenSesion) {
+  static async getCaseId(tokenSesion, system) {
     try {
-      console.log(`🔍 Consultando sesión por id: ${tokenSesion}`)
-      console.log(`🌐 URL: ${API_ENDPOINTS.PERSON_ID}`)
+      console.log(`🔍 Consultando sesión del sistema ${system} por id: ${tokenSesion}`)
+      console.log(`🌐 URL: ${API_ENDPOINTS.SESSION_ID}`)
 
-      const response = await axiosInstance.get(`${API_ENDPOINTS.PERSON_ID}`, {
+      //  Obtener el 'system' para realizar la petición
+      const response = await axiosInstance.get(`${API_ENDPOINTS.SESSION_ID}`, {
         params: {
-          personId: tokenSesion
+          system,
+          caseId: tokenSesion
         }
       })
 
-      console.log('✅ Detalles de sesión obtenidos:', response.data)
+      console.log('✅ Datos de "caseId" obtenidos:', response.data.data.items)
       console.log('📊 Status:', response.status)
 
       return response.data
@@ -29,12 +31,6 @@ export class DiagnosticService {
         url: error.config?.url,
         method: error.config?.method
       })
-
-      // // Si es un error de red o servidor, usar datos de muestra
-      // if (error.code === 'NETWORK_ERROR' || error.response?.status >= 500 || !error.response) {
-      //   console.log('🔄 Usando datos de muestra por error de conectividad')
-      //   return this.getSampleSessionData(sesion)
-      // }
 
       return {
         success: false,

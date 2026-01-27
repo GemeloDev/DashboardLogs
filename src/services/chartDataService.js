@@ -8,30 +8,68 @@ export class ChartDataService {
 
   // Helper para construir parámetros de filtrado consistentes
   static buildFilterParams(filtros, additionalParams = {}) {
-    const params = new URLSearchParams({
-      fromDate: filtros.fechaInicio || '2025-01-01',
-      toDate: filtros.fechaFin || '2025-12-31',
-      ...additionalParams
+    const params = new URLSearchParams(additionalParams)
+
+    //  Manejamos defaults si no vienen en el filtro
+    const defaultStart = '2025-01-01'
+    const defaultEnd = '2025-12-31'
+
+    if(filtros.rangoFechas){
+      if(typeof filtros.rangoFechas === 'string'){
+        params.append('date', filtros.rangoFechas)
+      }else if(filtros.rangoFechas.from && filtros.rangoFechas.to) {
+        //  Si es un objeto de rango { from, to }
+        params.append('fromDate', filtros.rangoFechas.from)
+        params.append('toDate', filtros.rangoFechas.to)
+      } else {
+        //  Fallback
+        params.append('fromDate', defaultStart)
+        params.append('toDate', defaultEnd)
+      }
+    } else {
+      params.append('fromDate', defaultStart)
+      params.append('toDate', defaultEnd)
+    }
+
+    //  Manejo de busqueda General (Caso especial)
+    if( filtros.busqueda && filtros.busqueda.trim() !== ''){
+      params.append('search', filtros.busqueda.trim())
+    }
+
+    //  Iteración Dínamica de Filtros
+    // Lista de claves que NO son filtros directos de base de datos
+    const clavesIgnoradas = ['rangoFechas', 'busqueda', 'fields']
+
+    Object.entries(filtros).forEach(([key, value]) => {
+      //  Si la clave está en la lista de los ignorados, saltamos
+      if(clavesIgnoradas.includes(key)) return
+
+      //  Si el valir es nulo, indefinidos o string vacío, saltamos
+      if(value == null || value === undefined || value == '') return
+
+      // Si el backend espera 'officeId' pero tu filtro se llama 'location.name',
+      // puedes usar un mapa. Si el backend es flexible, omite este bloque.
+      /* const mapBackend = {
+        'location.name': 'locationName',
+        'status': 'dbStatus'
+      }
+      const finalKey = mapBackend[key] || key
+      params.append(finalKey, value)
+      */
+
+      //  Agregar el parametro tal cual viene del componente dínamico
+      params.append(key, value)
     })
-
-    // Filtros avanzados opcionales
-    if (filtros.oficina) params.append('officeId', filtros.oficina.value)
-    if (filtros.usuario) params.append('userId', filtros.usuario)
-    if (filtros.proceso) params.append('operationType', filtros.proceso.value)
-    if (filtros.estatus) params.append('dbStatus', filtros.estatus.value)
-    if (filtros.dispositivo) params.append('channel', filtros.dispositivo.value)
-
-    console.log('🧱 Filtros cons truidos: ', params)
+    console.log('🧱 Filtros construidos dinámicamente: ', params.toString())
     return params
   }
 
-  static async getAll(filtros) {
+  static async getAll(filtros = {}) {
     try {
       const params = this.buildFilterParams(filtros)
-      console.log('🔍 Solicitando todos los datos: /api/dashboard/passports/events', Object.fromEntries(params))
+      console.log(`🔍 Solicitando todos los datos: ${endpoints.logs}` , Object.fromEntries(params))
 
       const { data } = await axiosInstance.get(`${endpoints.logs}`)
-      console.log('✅ Datos consultados: ', data)
 
       return data
     } catch(error) {
@@ -39,44 +77,44 @@ export class ChartDataService {
     }
   }
 
-  static async getPassportsSummary(filtros) {
-    try {
-      const params = this.buildFilterParams(filtros)
-      console.log(`🔍 Solicitando resumen con filtros: /api/dashboard/passports/summary`, Object.fromEntries(params));
+  // static async getPassportsSummary(filtros) {
+  //   try {
+  //     const params = this.buildFilterParams(filtros)
+  //     console.log(`🔍 Solicitando resumen con filtros: /api/dashboard/passports/summary`, Object.fromEntries(params));
 
-      // AQUÍ REALIZAS LA PETICIÓN (Ajusta 'api' a tu instancia de axios)
-      const { data } = await axiosInstance.get(`${endpoints.catalogSummary}`, { params })
-      return data // Retornamos todo el objeto data para acceder a .totales en el componente
-    } catch (error) {
-      console.error('❌ Error al obtener resumen pasaportes: ', error.message)
-      return null
-    }
-  }
+  //     // AQUÍ REALIZAS LA PETICIÓN (Ajusta 'api' a tu instancia de axios)
+  //     const { data } = await axiosInstance.get(`${endpoints.catalogSummary}`, { params })
+  //     return data // Retornamos todo el objeto data para acceder a .totales en el componente
+  //   } catch (error) {
+  //     console.error('❌ Error al obtener resumen pasaportes: ', error.message)
+  //     return null
+  //   }
+  // }
 
-  static async getPassportsByOffice() {
-    try {
-      // AQUÍ REALIZAS LA PETICIÓN (Ajusta 'api' a tu instancia de axios)
-      const { data } = await axiosInstance.get(`${endpoints.catalogOficinas}`)
-      console.log(`🔍 Solicitando resumen con filtros: /api/dashboard/passports/by-office`, data);
-      return data.data
-    } catch (error) {
-      console.error('❌ Error al obtener resumen pasaportes: ', error.message)
-      return null
-    }
-  }
+  // static async getPassportsByOffice() {
+  //   try {
+  //     // AQUÍ REALIZAS LA PETICIÓN (Ajusta 'api' a tu instancia de axios)
+  //     const { data } = await axiosInstance.get(`${endpoints.catalogOficinas}`)
+  //     console.log(`🔍 Solicitando resumen con filtros: /api/dashboard/passports/by-office`, data);
+  //     return data.data
+  //   } catch (error) {
+  //     console.error('❌ Error al obtener resumen pasaportes: ', error.message)
+  //     return null
+  //   }
+  // }
 
-  static async getPassportsByStatus(){
-    try {
-      //  PETICIÓN
-      const { data } = await axiosInstance.get(`${endpoints.catalogEstatus}`)
-      console.log('ℹ️ Solicitando información de pasaportes por PROCESO: ', data)
+  // static async getPassportsByStatus(){
+  //   try {
+  //     //  PETICIÓN
+  //     const { data } = await axiosInstance.get(`${endpoints.catalogEstatus}`)
+  //     console.log('ℹ️ Solicitando información de pasaportes por PROCESO: ', data)
 
-      return data.data
-    } catch (error) {
-      console.error('❌ Error al obtener datos de pasaportes por PROCESO', error.message)
-      return null
-    }
-  }
+  //     return data.data
+  //   } catch (error) {
+  //     console.error('❌ Error al obtener datos de pasaportes por PROCESO', error.message)
+  //     return null
+  //   }
+  // }
 
   // Función helper para retornar datos vacíos
   static getEmptyChartData() {

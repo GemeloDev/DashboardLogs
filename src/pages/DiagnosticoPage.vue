@@ -1,13 +1,12 @@
-﻿<template>
-  <q-page class="diagnostic-page bg-dark text-white">
+<template>
+  <q-page class="diagnostic-page text-white">
     <!-- Header Principal - Estilo EscritorioPage -->
     <div class="diagnostic-header bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
       <div class="container">
         <div class="row items-center q-col-gutter-md">
           <div class="col-12 col-md-8">
-            <div class="text-h3 diagnostic-title q-mb-md">
-              <q-icon name="medical_services" class="q-mr-sm" color="blue-4" size="48px" />
-              <span class="diagnostic-title-text">🔬 Centro de Diagnóstico Técnico</span>
+            <div class="text-h3 diagnostic-title q-my-md">
+              🔬 <span class="diagnostic-title-text">Centro de Diagnóstico Técnico</span>
             </div>
             <div class="text-h6 text-blue-3 diagnostic-subtitle q-mb-md">
               <span class="diagnostic-subtitle-text"
@@ -88,9 +87,7 @@
           align="justify"
         >
           <q-tab name="busqueda" icon="search" label="🔍 Búsqueda Rápida" />
-          <q-tab name="errorCode" icon="error" label="🔴 Código Error" />
-          <q-tab name="baseCode" icon="code" label="📟 Análisis Código Base" />
-          <q-tab name="codeById" icon="account_circle" label="👤 Análisis Token" />
+          <q-tab name="caseId" icon="timer" label="⏰ Análisis de Sesión" />
         </q-tabs>
 
         <!-- Contenido de Pestañas MODERNIZADO -->
@@ -116,14 +113,11 @@
                     <q-input
                       v-model="busquedaRapida"
                       class="modern-input"
-                      placeholder="Ej: USR02808190918-SUC001, USR02808190918"
+                      placeholder="⚡Ejemplo: fwp6c5iztZvA"
                       dark
                       borderless
                       @keyup.enter="realizarBusquedaRapida"
                     >
-                      <template v-slot:prepend>
-                        <q-icon name="search" color="blue-4" size="20px" />
-                      </template>
                     </q-input>
                     <q-btn
                       class="search-action-btn"
@@ -139,28 +133,9 @@
                   <div class="examples-section">
                     <h4 class="examples-title">Ejemplos de códigos</h4>
                     <div class="examples-grid">
-                      <div
-                        class="example-chip error-code"
-                        @click="busquedaRapida = 'USR02808190918-SUC001'"
-                      >
-                        <q-icon name="error" size="16px" />
-                        <span>USR02808190918-SUC001</span>
-                        <div class="chip-glow"></div>
-                      </div>
-                      <div
-                        class="example-chip user-code"
-                        @click="busquedaRapida = 'USR02808191331'"
-                      >
+                      <div class="example-chip token-code" @click="busquedaRapida = 'fwp6c5iztZvA'">
                         <q-icon name="account_circle" size="16px" />
-                        <span>USR02808191331</span>
-                        <div class="chip-glow"></div>
-                      </div>
-                      <div
-                        class="example-chip token-code"
-                        @click="busquedaRapida = '8-123-008'"
-                      >
-                        <q-icon name="account_circle" size="16px" />
-                        <span>8-123-008</span>
+                        <span>fwp6c5iztZvA</span>
                         <div class="chip-glow"></div>
                       </div>
                     </div>
@@ -170,546 +145,7 @@
             </div>
           </q-tab-panel>
 
-          <!-- CÓDIGO DE ERROR (exacto al modal) -->
-          <q-tab-panel name="errorCode" class="q-pa-none">
-            <q-card class="diagnostic-card bg-grey-7 text-white">
-              <q-card-section>
-                <div class="text-h6">🔍 Análisis de Código de Error</div>
-                <div class="text-caption text-grey-3 q-mb-lg">Formato: USR02808190918-SUC001</div>
-
-                <div class="row q-col-gutter-md">
-                  <div class="col-xs-12 col-sm-12 col-md-11">
-                    <q-input
-                      v-model="formulario.errorCode"
-                      label="Código de Error"
-                      placeholder="USR02808190918-SUC001"
-                      dark
-                      outlined
-                      @keyup.enter="() => consultarCodigoError()"
-                    >
-                      <template v-slot:prepend>
-                        <q-icon name="error" color="red-5" />
-                      </template>
-                    </q-input>
-                  </div>
-                  <div class="col-xs-12 col-sm-12 col-md">
-                    <q-btn
-                      class="btn-error"
-                      icon="search"
-                      @click="() => consultarCodigoError()"
-                      :loading="cargandoError"
-                      size="lg"
-                    />
-                  </div>
-                </div>
-
-                <!-- Resultado del Error (exacto al modal) -->
-                <div v-if="resultadoError" class="q-mt-lg">
-                  <q-separator class="q-mb-md" color="grey-5" />
-                  <div v-if="resultadoError.success && resultadoError.data.length > 0">
-                    <div class="">
-                      <p class="text-h6 text-red-4 q-mt-lg q-mb-xl">
-                        <q-icon name="error" class="q-mr-sm" />
-                        Código de Error: {{ resultadoError.errorCode }}
-                        <q-chip color="red-6" text-color="white" size="sm" class="q-ml-sm">
-                          {{ resultadoError.data.length }} registro(s)
-                        </q-chip>
-                      </p>
-                    </div>
-
-                    <!-- Resumen principal -->
-
-                    <div class="row q-col-gutter-md q-mb-lg">
-                      <div class="col-12 col-lg-6">
-                        <q-card class="bg-gradient-red summary-card">
-                          <q-card-section>
-                            <div class="text-subtitle2 q-mb-md text-white">
-                              📊 Información Principal
-                            </div>
-                            <q-list dark class="transparent">
-                              <q-item dense class="summary-item">
-                                <q-item-section avatar>
-                                  <q-avatar color="blue-5" text-color="white" size="sm">
-                                    <q-icon name="person" />
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label class="text-weight-medium">{{
-                                    resultadoError.summary?.user || 'No disponible'
-                                  }}</q-item-label>
-                                  <q-item-label caption class="text-blue-2"
-                                    >Usuario</q-item-label
-                                  >
-                                </q-item-section>
-                              </q-item>
-                              <q-item dense class="summary-item">
-                                <q-item-section avatar>
-                                  <q-avatar color="green-5" text-color="white" size="sm">
-                                    <q-icon name="business" />
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label class="text-weight-medium">{{
-                                    resultadoError.summary?.office || 'No disponible'
-                                  }}</q-item-label>
-                                  <q-item-label caption class="text-blue-2"
-                                    >Oficina</q-item-label
-                                  >
-                                </q-item-section>
-                              </q-item>
-                            </q-list>
-                          </q-card-section>
-                        </q-card>
-                      </div>
-
-                      <div class="col-12 col-lg-6">
-                        <q-card class="bg-gradient-red summary-card">
-                          <q-card-section>
-                            <div class="text-subtitle2 q-mb-md text-white">
-                              📈 Estadísticas de Sesión
-                            </div>
-                            <q-list dark class="transparent">
-                              <q-item dense class="summary-item">
-                                <q-item-section avatar>
-                                  <q-avatar color="orange-5" text-color="white" size="sm">
-                                    <q-icon name="security" />
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label class="text-weight-medium">{{
-                                    resultadoError.summary?.baseCode || 'No disponible'
-                                  }}</q-item-label>
-                                  <q-item-label caption class="text-purple-2"
-                                    >Código Base (Mostrar)</q-item-label
-                                  >
-                                </q-item-section>
-                              </q-item>
-                              <q-item dense class="summary-item">
-                                <q-item-section avatar>
-                                  <q-avatar color="blue-5" text-color="white" size="sm">
-                                    <q-icon name="schedule" />
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label class="text-weight-medium">
-                                    {{ resultadoError.summary?.sessionToken || 'No disponible' }}
-                                  </q-item-label>
-                                  <q-item-label caption class="text-purple-2"
-                                    >Token de Sesión (para logs)</q-item-label
-                                  >
-                                </q-item-section>
-                              </q-item>
-                            </q-list>
-                          </q-card-section>
-                        </q-card>
-                      </div>
-                    </div>
-
-                    <!-- Lista de registros -->
-                    <div class="row q-col-gutter-md">
-                      <div class="col-12">
-                        <q-card class="bg-gradient-pure-list">
-                          <q-card-section>
-                            <div class="text-subtitle2 q-mb-md">📋 Registros Relacionados</div>
-                            <q-list dark separator>
-                              <q-item
-                                v-for="(record, index) in resultadoError.data"
-                                :key="record.id || index"
-                                clickable
-                                @click="verDetalleCompleto(record)"
-                              >
-                                <q-item-section avatar>
-                                  <q-avatar color="white" text-color="black" size="sm">
-                                    {{ index + 1 }}
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label>{{
-                                    record.message || record.descripcion || 'Sin mensaje'
-                                  }}</q-item-label>
-                                  <q-item-label caption class="text-grey-3">
-                                    {{ formatearFecha(record.fecha) }} | <span class="text-bold">Usuario:</span>
-                                    {{ record.person?.nombreCompleto || 'N/A' }} | <span class="text-bold">Oficina:</span>
-                                    {{ record.oficina?.nombre || 'N/A' }}
-                                  </q-item-label>
-                                </q-item-section>
-                                <q-item-section side>
-                                  <q-btn
-                                    icon="visibility"
-                                    flat
-                                    round
-                                    color="blue-4"
-                                    size="sm"
-                                    @click.stop="verDetalleCompleto(record)"
-                                  />
-                                </q-item-section>
-                              </q-item>
-                            </q-list>
-                          </q-card-section>
-                        </q-card>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-else class="text-center">
-                    <q-icon name="error_outline" size="3rem" color="red-5" class="q-mb-md" />
-                    <div class="text-h6 text-red-4">Error al consultar código</div>
-                    <div class="text-body2 text-grey-4">
-                      {{ resultadoError.error || 'No se encontraron datos' }}
-                    </div>
-                  </div>
-                </div>
-              </q-card-section>
-            </q-card>
-          </q-tab-panel>
-
-          <!-- SESIÓN (exacto al modal con diseño creativo) -->
-          <q-tab-panel name="baseCode">
-            <q-card class="bg-grey-8 text-white session-card">
-              <q-card-section>
-                <div class="text-h6 q-mb-sm">
-                  <q-icon name="account_circle" color="blue-5" size="sm" class="q-mr-sm" />
-                  Análisis de Sesión por Código Base
-                </div>
-                <div class="text-caption text-grey-4 q-mb-lg">
-                  <q-icon name="info" size="xs" class="q-mr-xs" />
-                  Formato: USR02808191331 (usar baseCode sin sufijos)
-                </div>
-
-                <div class="row q-col-gutter-md">
-                  <div class="col-12 col-md-8">
-                    <q-input
-                      v-model="formulario.sessionToken"
-                      label="Código Base de Sesión"
-                      placeholder="USR02808191331"
-                      dark
-                      outlined
-                      class="session-input"
-                      @keyup.enter="() => consultarSesion()"
-                    >
-                      <template v-slot:prepend>
-                        <q-icon name="account_circle" color="blue-5" />
-                      </template>
-                      <template v-slot:hint>
-                        <span class="text-blue-4">
-                          <q-icon name="lightbulb" size="xs" class="q-mr-xs" />
-                          Ingresa solo el código base, sin sufijos como -SUC001
-                        </span>
-                      </template>
-                    </q-input>
-                  </div>
-                  <div class="col-12 col-md-4">
-                    <q-btn
-                      color="blue-5"
-                      icon="search"
-                      label="Consultar Sesión"
-                      @click="() => consultarSesion()"
-                      :loading="cargandoSesion"
-                      size="lg"
-                      class="full-width session-btn"
-                      unelevated
-                    >
-                      <template v-slot:loading>
-                        <q-spinner-facebook color="white" />
-                      </template>
-                    </q-btn>
-                  </div>
-                </div>
-
-                <!-- Resultado de la Sesión (creativo y responsive) -->
-                <div v-if="resultadoSesion" class="q-mt-lg session-results">
-                  <q-separator class="q-mb-lg" color="blue-5" />
-
-                  <div v-if="resultadoSesion.success && resultadoSesion.data.length > 0">
-                    <!-- Header de resultados con animación -->
-                    <div class="session-header q-mb-lg">
-                      <div class="row items-center">
-                        <div class="col">
-                          <div class="text-h5 text-blue-4 q-mb-xs">
-                            <q-icon name="account_circle" class="q-mr-sm session-icon-pulse" />
-                            Sesión de Logs: {{ resultadoSesion.baseCode }}
-                          </div>
-                          <q-chip
-                            color="blue-6"
-                            text-color="white"
-                            icon="data_usage"
-                            class="session-count-chip"
-                          >
-                            {{ resultadoSesion.data.length }} registro(s) encontrado(s)
-                          </q-chip>
-                        </div>
-                        <div class="col-auto">
-                          <q-btn
-                            round
-                            color="blue-5"
-                            icon="refresh"
-                            @click="() => consultarSesion()"
-                            :loading="cargandoSesion"
-                            class="refresh-btn"
-                            glossy
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Resumen principal mejorado -->
-                    <div class="row q-col-gutter-md q-mb-lg">
-                      <div class="col-12 col-lg-6">
-                        <q-card class="bg-gradient-blue summary-card">
-                          <q-card-section>
-                            <div class="text-subtitle2 q-mb-md text-white">
-                              <q-icon name="person" class="q-mr-sm" />
-                              📊 Información del Usuario
-                            </div>
-                            <q-list dark class="transparent">
-                              <q-item dense class="summary-item">
-                                <q-item-section avatar>
-                                  <q-avatar color="blue-5" text-color="white" size="sm">
-                                    <q-icon name="person" />
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label class="text-weight-medium">{{
-                                    resultadoSesion.summary?.user || 'No disponible'
-                                  }}</q-item-label>
-                                  <q-item-label caption class="text-blue-2"
-                                    >Usuario Principal</q-item-label
-                                  >
-                                </q-item-section>
-                              </q-item>
-                              <q-item dense class="summary-item">
-                                <q-item-section avatar>
-                                  <q-avatar color="green-5" text-color="white" size="sm">
-                                    <q-icon name="business" />
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label class="text-weight-medium">{{
-                                    resultadoSesion.summary?.office || 'No disponible'
-                                  }}</q-item-label>
-                                  <q-item-label caption class="text-blue-2"
-                                    >Oficina Asignada</q-item-label
-                                  >
-                                </q-item-section>
-                              </q-item>
-                            </q-list>
-                          </q-card-section>
-                        </q-card>
-                      </div>
-
-                      <div class="col-12 col-lg-6">
-                        <q-card class="bg-gradient-purple summary-card">
-                          <q-card-section>
-                            <div class="text-subtitle2 q-mb-md text-white">
-                              <q-icon name="analytics" class="q-mr-sm" />
-                              📈 Estadísticas de Sesión
-                            </div>
-                            <q-list dark class="transparent">
-                              <q-item dense class="summary-item">
-                                <q-item-section avatar>
-                                  <q-avatar color="orange-5" text-color="white" size="sm">
-                                    <q-icon name="security" />
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label class="text-weight-medium">{{
-                                    resultadoSesion.summary?.sessionToken || 'No disponible'
-                                  }}</q-item-label>
-                                  <q-item-label caption class="text-purple-2"
-                                    >Token de Sesión</q-item-label
-                                  >
-                                </q-item-section>
-                              </q-item>
-                              <q-item dense class="summary-item">
-                                <q-item-section avatar>
-                                  <q-avatar color="blue-5" text-color="white" size="sm">
-                                    <q-icon name="schedule" />
-                                  </q-avatar>
-                                </q-item-section>
-                                <q-item-section>
-                                  <q-item-label class="text-weight-medium">
-                                    {{ resultadoSesion.data.length }} eventos
-                                  </q-item-label>
-                                  <q-item-label caption class="text-purple-2"
-                                    >Total de Actividades</q-item-label
-                                  >
-                                </q-item-section>
-                              </q-item>
-                            </q-list>
-                          </q-card-section>
-                        </q-card>
-                      </div>
-                    </div>
-
-                    <!-- Lista detallada de registros de sesión (creativa y responsive) -->
-                    <div class="session-records">
-                      <div class="text-h6 text-blue-4 q-mb-md">
-                        <q-icon name="list_alt" class="q-mr-sm" />
-                        Registros Detallados de la Sesión
-                      </div>
-
-                      <div class="row q-col-gutter-md">
-                        <div
-                          v-for="(record, index) in resultadoSesion.data"
-                          :key="record.id || index"
-                          class="col-12 col-md-6 col-lg-4 flex items-stretch"
-                        >
-                          <q-card
-                            class="session-record-card bg-grey-9 text-white"
-                            :style="{ 'animation-delay': `${index * 0.1}s` }"
-                          >
-                            <q-card-section>
-                              <div class="row items-start q-mb-sm">
-                                <div class="col-12">
-                                  <div class="record-type q-mb-xs">
-                                    <q-chip
-                                      :color="getRecordTypeColor(record.type || record.proceso)"
-                                      text-color="white"
-                                      size="sm"
-                                      icon="category"
-                                    >
-                                      {{ record.type || record.proceso || 'Evento' }}
-                                    </q-chip>
-                                  </div>
-                                  <div class="record-message text-body2 q-mb-sm">
-                                    {{
-                                      record.message ||
-                                      record.detail ||
-                                      record.data ||
-                                      'Sin mensaje disponible'
-                                    }}
-                                  </div>
-                                </div>
-                                <div class="col-auto">
-                                  <q-chip
-                                    dense
-                                    color="blue-6"
-                                    text-color="white"
-                                    icon="schedule"
-                                    class="record-time"
-                                  >
-                                    {{ formatearFechaCorta(record.date || record.fecha) }}
-                                  </q-chip>
-                                </div>
-                              </div>
-
-                              <!-- Metadata del registro -->
-                              <div class="record-metadata">
-                                <div class="metadata-grid">
-                                  <div class="metadata-item">
-                                    <q-icon
-                                      name="person"
-                                      size="xs"
-                                      color="blue-4"
-                                      class="q-mr-xs"
-                                    />
-                                    <span class="metadata-label">Usuario:</span>
-                                    <span class="metadata-value">
-                                      {{
-                                        getPersonName(record.person) ||
-                                        record.persona ||
-                                        record.baseCode ||
-                                        'N/A'
-                                      }}
-                                    </span>
-                                  </div>
-
-                                  <div class="metadata-item">
-                                    <q-icon
-                                      name="apartment"
-                                      size="xs"
-                                      color="green-4"
-                                      class="q-mr-xs"
-                                    />
-                                    <span class="metadata-label">Oficina:</span>
-                                    <span class="metadata-value">
-                                      {{ record.oficina?.nombre || record.office || 'N/A' }}
-                                    </span>
-                                  </div>
-
-                                  <div class="metadata-item">
-                                    <q-icon
-                                      name="computer"
-                                      size="xs"
-                                      color="orange-4"
-                                      class="q-mr-xs"
-                                    />
-                                    <span class="metadata-label">Dispositivo:</span>
-                                    <span class="metadata-value">
-                                      {{ record.device || record.dispositivo || 'N/A' }}
-                                    </span>
-                                  </div>
-
-                                  <div class="metadata-item">
-                                    <q-icon
-                                      name="qr_code_scanner"
-                                      size="xs"
-                                      color="purple-4"
-                                      class="q-mr-xs"
-                                    />
-                                    <span class="metadata-label">Scanner:</span>
-                                    <span class="metadata-value">
-                                      {{
-                                        record.scanDevice ||
-                                        record.scan_device ||
-                                        record.scanner ||
-                                        'N/A'
-                                      }}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <!-- Botón de detalle -->
-                              <div class="record-actions q-mt-sm">
-                                <q-btn
-                                  flat
-                                  dense
-                                  color="blue-4"
-                                  icon="visibility"
-                                  label="Ver detalles"
-                                  @click="verDetalleCompleto(record)"
-                                  class="full-width detail-btn"
-                                  size="sm"
-                                />
-                              </div>
-                            </q-card-section>
-                          </q-card>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Estado de error mejorado -->
-                  <div v-else class="error-state text-center q-pa-xl">
-                    <div class="error-animation q-mb-lg">
-                      <q-icon
-                        name="error_outline"
-                        size="4rem"
-                        color="blue-5"
-                        class="error-icon-bounce"
-                      />
-                    </div>
-                    <div class="text-h6 text-blue-4 q-mb-sm">Sin datos de sesión</div>
-                    <div class="text-body2 text-grey-4 q-mb-lg">
-                      {{
-                        resultadoSesion.error || 'No se encontraron registros para este código base'
-                      }}
-                    </div>
-                    <q-btn
-                      color="blue-5"
-                      icon="refresh"
-                      label="Intentar nuevamente"
-                      @click="() => consultarSesion()"
-                      unelevated
-                    />
-                  </div>
-                </div>
-              </q-card-section>
-            </q-card>
-          </q-tab-panel>
-
-          <q-tab-panel name="codeById" class="no-border bg-dark">
+          <q-tab-panel name="caseId" class="no-margin no-padding">
             <q-card class="modern-card text-white session-card">
               <q-card-section>
                 <div class="card-header">
@@ -717,9 +153,10 @@
                     <q-icon name="data_object" size="32px" color="blue-4" />
                   </div>
                   <div class="header-content">
-                    <h3 class="card-title">Busqueda Rápida por ID de usuario</h3>
+                    <h3 class="card-title">Busqueda Rápida por ID de Sesión</h3>
                     <p class="card-subtitle">
-                      Ingresa cualquier token de sesión para iniciar el análisis automático.
+                      Asegurese de estar en el sistema correcto y posteriormente ingrese el código
+                      que desea visualizar.
                     </p>
                   </div>
                 </div>
@@ -727,12 +164,12 @@
                 <div class="card-body">
                   <div class="modern-input-group">
                     <q-input
-                      v-model="formulario.idCode"
+                      v-model="formulario.caseId"
                       class="modern-input"
-                      placeholder="Ej: 8-123-008"
+                      placeholder="Ej: fwp6c5iztZvA"
                       dark
                       borderless
-                      @keyup.enter="() => consultarId()"
+                      @keyup.enter="() => consultarCaseId()"
                     >
                       <template v-slot:prepend>
                         <q-icon name="search" color="blue-4" size="20px" />
@@ -741,7 +178,7 @@
                     <q-btn
                       class="search-action-btn"
                       icon="send"
-                      @click="() => consultarId()"
+                      @click="() => consultarCaseId()"
                       :loading="cargandoBusqueda"
                       unelevated
                       size="lg"
@@ -755,10 +192,8 @@
             <div class="row q-mt-md">
               <div class="col-xs-12 col-sm-12 col-md-12">
                 <ResultadosByToken
-                  v-if="resultadoId"
-                  :counterItems="countItems"
-                  :passportData="passportData"
-                  :resultados="resultadoId.data"
+                  v-if="resultadoCaseId"
+                  :resultados="resultadoCaseId.data"
                 />
               </div>
             </div>
@@ -778,15 +213,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, inject } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import { DiagnosticService } from '../services/diagnosticService.js'
 import ResultadosByToken from 'src/components/escritorio/resultadosEscritorio/ResultadosByToken.vue'
-import { formatearFecha } from 'src/helpers/index.js'
 
 const $q = useQuasar()
 const route = useRoute()
+const currentSystem = inject('selectedSystem', '')
 
 // Estado principal
 const tabActiva = ref('busqueda')
@@ -798,7 +233,7 @@ const busquedaRapida = ref('')
 const cargandoBusqueda = ref(false)
 
 const formulario = ref({
-  idCode: '',
+  caseId: '',
   // errorCode: '',
   // sessionToken: '',
   // supportCode: '',
@@ -808,7 +243,6 @@ const formulario = ref({
 })
 
 // Resultados EXACTOS al modal
-const cargandoError = ref(false)
 const cargandoSesion = ref(false)
 
 // Estados de búsqueda
@@ -827,59 +261,21 @@ const analisisError = ref({
 const analisisCargando = ref(false)
 const erroresRecientes = ref([])
 const resultadoError = ref(null)
-
-// Estados de análisis de token
-const resultadoId = ref(null)
-const countItems = ref(0)
-const passportData = ref(0)
+const resultadoCaseId = ref(null)
 
 // Estados de gestión de sesiones
 const gestionSesion = ref({
   usuario: '',
   estado: null,
 })
-const sesionesCargando = ref(false)
-const sesionesEncontradas = ref([])
-const resultadoSesion = ref(null)
 
 // Computed para verificar si hay datos para exportar
 const hayDatosParaExportar = computed(() => {
   return (
-    (resultadoError.value?.success && resultadoError.value?.data?.length > 0) ||
-    (resultadoSesion.value?.success && resultadoSesion.value?.data?.length > 0)
+    (resultadoCaseId.value?.success && resultadoCaseId.value?.data?.length > 0)
+    //  Más códigos de error o sesión
   )
 })
-
-// Datos del sistema (comentados porque no se usan actualmente)
-// const versionSistema = ref('2.1.0')
-// const ultimaActualizacion = ref('10 Sep 2025')
-
-// Computed para métricas (temporalmente deshabilitado)
-/*
-const metricas = computed(() => [
-  {
-    key: 'logs',
-    label: 'Logs Analizados',
-    value: resultadosBusqueda.value.length,
-    icon: 'description',
-    color: 'text-blue-4',
-  },
-  {
-    key: 'errores',
-    label: 'Errores Detectados',
-    value: erroresRecientes.value.length,
-    icon: 'error',
-    color: 'text-red-4',
-  },
-  {
-    key: 'sesiones',
-    label: 'Sesiones Activas',
-    value: sesionesEncontradas.value.filter((s) => s.estado === 'activa').length,
-    icon: 'people',
-    color: 'text-green-4',
-  },
-])
-*/
 
 // Métodos principales
 const actualizarDatos = async () => {
@@ -1021,187 +417,39 @@ const analizarError = async () => {
   }
 }
 
-const buscarSesiones = async () => {
-  if (!gestionSesion.value.usuario.trim()) return
-
-  sesionesCargando.value = true
-  diagnosticoActivo.value = `Buscando sesiones: ${gestionSesion.value.usuario}`
-
-  try {
-    console.log(`🔍 Consultando sesión por baseCode: ${gestionSesion.value.usuario}`)
-    const resultado = await DiagnosticService.getSessionDetails(gestionSesion.value.usuario)
-
-    if (resultado.success && resultado.data.length > 0) {
-      // Usar los datos reales del servicio
-      sesionesEncontradas.value = resultado.data.map((record) => ({
-        usuario: record.person?.nombreCompleto || gestionSesion.value.usuario,
-        sessionId: record.sessionToken || record.id,
-        estado: record.estado || 'activa',
-        ultimaActividad: record.fecha || record.lastActivity || new Date(),
-        baseCode: record.baseCode,
-        device: record.device,
-        office: record.oficina?.nombre,
-      }))
-
-      // Guardar resultado completo
-      resultadoSesion.value = resultado
-
-      $q.notify({
-        type: 'positive',
-        message: `👤 Encontradas ${resultado.data.length} sesiones`,
-        position: 'top-right',
-      })
-    } else {
-      $q.notify({
-        type: 'warning',
-        message: `⚠️ No se encontraron sesiones para: ${gestionSesion.value.usuario}`,
-        position: 'top-right',
-      })
-    }
-  } catch (error) {
-    console.log('🔄 Error en consulta de sesión:', error.message)
-    // Usar datos de muestra como fallback igual que el modal original
-    const sampleData = DiagnosticService.getSampleSessionData(gestionSesion.value.usuario)
-    sesionesEncontradas.value =
-      sampleData.data?.map((record) => ({
-        usuario: record.person?.nombreCompleto || 'Usuario de prueba',
-        sessionId: record.sessionToken || 'sess_sample',
-        estado: 'activa',
-        ultimaActividad: record.fecha || new Date(),
-        baseCode: record.baseCode,
-        device: record.device,
-      })) || []
-
-    resultadoSesion.value = sampleData
-
-    $q.notify({
-      type: 'warning',
-      message: 'Usando datos de ejemplo - Error de conectividad',
-      position: 'top-right',
-    })
-  } finally {
-    sesionesCargando.value = false
-    diagnosticoActivo.value = ''
-  }
-}
-
-// Métodos de soporte técnico (comentados porque no se usan actualmente)
-/*
-const limpiarCache = async () => {
-  operacionCargando.value = true
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    $q.notify({
-      type: 'positive',
-      message: '🧹 Cache limpiado correctamente',
-      position: 'top-right',
-    })
-  } finally {
-    operacionCargando.value = false
-  }
-}
-*/
-
 // FUNCIONES EXACTAS AL MODAL ORIGINAL
-
 const realizarBusquedaRapida = async () => {
   if (!busquedaRapida.value.trim()) return
 
   cargandoBusqueda.value = true
 
   try {
-    // Determinar si es código de error o baseCode (exacto al modal)
-    if (busquedaRapida.value.includes('-')) {
+    // Determinar si es código 'caseId' (exacto al modal)
+    if (busquedaRapida.value) {
       // Es token de sesión
-      formulario.value.idCode = busquedaRapida.value
-      tabActiva.value = 'codeById'
-      await consultarId()
-      await consultarCodigoError()
-    } else if(busquedaRapida.value.startsWith('USR')) {
-      // Es baseCode para sesión
-      formulario.value.sessionToken = busquedaRapida.value
-      tabActiva.value = 'baseCode'
-      await consultarSesion()
+      // Es caseId para el timeline
+      formulario.value.caseId = busquedaRapida.value
+      tabActiva.value = 'caseId'
+      await consultarCaseId()
     }
   } finally {
     cargandoBusqueda.value = false
   }
 }
 
-const consultarCodigoError = async (codigo = null) => {
-  const errorCode = codigo || formulario.value.errorCode
-  if (!errorCode || !String(errorCode).trim()) return
-
-  cargandoError.value = true
-
-  try {
-    console.log(`🔍 Consultando código de error: ${errorCode}`)
-    resultadoError.value = await DiagnosticService.getErrorCodeDetails(errorCode)
-
-    $q.notify({
-      type: 'positive',
-      message: 'Código de error consultado',
-      icon: 'error',
-      position: 'top-right',
-    })
-  } catch (error) {
-    console.log('🔄 Error en consulta:', error.message)
-    resultadoError.value = DiagnosticService.getSampleErrorData(errorCode)
-
-    $q.notify({
-      type: 'warning',
-      message: 'Usando datos de ejemplo',
-      caption: 'Error al conectar con el servidor',
-      position: 'top-right',
-    })
-  } finally {
-    cargandoError.value = false
-  }
-}
-
-const consultarId = async (codigo = null) => {
-  const sesion = codigo || formulario.value.idCode
-  if (!sesion || !String(sesion).trim()) return
-
-  cargandoBusqueda.value = true
-
-  try {
-    resultadoId.value = await DiagnosticService.getSessionId(sesion)
-    console.log(`Datos de pasaporte [${sesion}] consultados: `, resultadoId.value)
-
-    const { itmes, passport } = resultadoId.value.data
-    countItems.value = itmes
-    passportData.value = passport
-
-    $q.notify({
-      type: 'positive',
-      message: `${resultadoId.value.path}`,
-      icon: 'account_circle',
-      position: 'top-right',
-    })
-    
-  } catch (error) {
-    console.log(`🔄 Error en consulta:', ${error.message}`)
-    $q.notify({
-      type: 'error',
-      message: `${error.message}`,
-      icon: 'account_circle',
-      position: 'top-right',
-    })
-  } finally {
-    cargandoBusqueda.value = false
-  }
-}
-
-const consultarSesion = async (codigo = null) => {
-  const baseCode = codigo || formulario.value.sessionToken
-  if (!baseCode || !String(baseCode).trim()) return
+const consultarCaseId = async (codigo = null) => {
+  const caseId = codigo || formulario.value.caseId
+  if (!caseId || !String(caseId).trim()) return
 
   cargandoSesion.value = true
 
   try {
-    console.log(`🔍 Consultando sesión por baseCode: ${baseCode}`)
-    resultadoSesion.value = await DiagnosticService.getSessionDetails(baseCode)
+    console.log(`🔍 Consultando sesión de '${currentSystem.value}' por caseId: ${caseId}`)
+    resultadoCaseId.value = await DiagnosticService.getCaseId(caseId, currentSystem.value)
+
+    const sortedItems = getTop10RecentEvents(resultadoCaseId.value.data.items)
+
+    resultadoCaseId.value.data.items = sortedItems
 
     $q.notify({
       type: 'positive',
@@ -1211,7 +459,7 @@ const consultarSesion = async (codigo = null) => {
     })
   } catch (error) {
     console.log('🔄 Error en consulta de sesión:', error.message)
-    resultadoSesion.value = DiagnosticService.getSampleSessionData(baseCode)
+    resultadoCaseId.value = DiagnosticService.getSampleSessionData(caseId)
 
     $q.notify({
       type: 'warning',
@@ -1224,104 +472,31 @@ const consultarSesion = async (codigo = null) => {
   }
 }
 
-// Funciones auxiliares para el diseño mejorado de sesiones
-const getRecordTypeColor = (type) => {
-  const colors = {
-    LOGIN: 'green-6',
-    LOGOUT: 'red-6',
-    ERROR: 'red-7',
-    WARNING: 'orange-6',
-    INFO: 'blue-6',
-    DEBUG: 'purple-6',
-    SUCCESS: 'green-5',
-    PROCESS: 'blue-6',
-  }
-  return colors[type?.toString().toUpperCase()] || 'grey-6'
-}
-
-const formatearFechaCorta = (fecha) => {
-  if (!fecha) return 'N/A'
-  const f = new Date(fecha)
-  const ahora = new Date()
-  const diff = ahora - f
-
-  // Si es menos de 1 hora, mostrar "hace X minutos"
-  if (diff < 3600000) {
-    const minutos = Math.floor(diff / 60000)
-    return `${minutos}m`
+const getTop10RecentEvents = (items) => {
+  //  isArray?
+  if(!Array.isArray(items)){
+    console.error('El parametro proporcionado no es un array válido,')
+    return []
   }
 
-  // Si es menos de 24 horas, mostrar "hace X horas"
-  if (diff < 86400000) {
-    const horas = Math.floor(diff / 3600000)
-    return `${horas}h`
-  }
+  //  Crear una copia para no mutar el array original y ordenarlo
+  const sortedItems = [...items].sort((a, b) => {
+    const dateA = new Date(a.eventTime);
+    const dateB = new Date(b.eventTime);
 
-  // Si no, mostrar fecha completa
-  return f.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+    // Ordenar descendente (del más reciente al más antiguo)
+    return dateB - dateA;
   })
+
+  //  Retornamos solo los primeros 10 elementos
+  return sortedItems.slice(0, 10);
 }
-
-const getPersonName = (person) => {
-  if (!person) return null
-
-  const curp = person.curp ? `(${person.curp})` : ''
-  const nombres = person.nombres || ''
-  const apellido1 = person.primerApellido || ''
-  const apellido2 = person.segundoApellido || ''
-
-  const nombreCompleto = `${nombres} ${apellido1} ${apellido2}`.trim()
-  return nombreCompleto ? `${curp} ${nombreCompleto}`.trim() : null
-}
-
-/*
-const verificarBaseDatos = async () => {
-  operacionCargando.value = true
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    $q.notify({
-      type: 'positive',
-      message: '✅ Base de datos verificada - Estado: OK',
-      position: 'top-right',
-    })
-  } finally {
-    operacionCargando.value = false
-  }
-}
-
-const testearConexion = async () => {
-  operacionCargando.value = true
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    $q.notify({
-      type: 'positive',
-      message: '🌐 Conexión verificada - Latencia: 45ms',
-      position: 'top-right',
-    })
-  } finally {
-    operacionCargando.value = false
-  }
-}
-
-const verLogsDelSistema = () => {
-  $q.dialog({
-    title: 'Logs del Sistema',
-    message: 'Funcionalidad en desarrollo. Pronto podrás ver los logs detallados del sistema.',
-    ok: 'Entendido',
-  })
-}
-*/
 
 const mostrarDialogoExportacion = () => {
   // Determinar qué datos están disponibles
-  const tieneErrores = resultadoError.value?.success && resultadoError.value?.data?.length > 0
-  const tieneSesiones = resultadoSesion.value?.success && resultadoSesion.value?.data?.length > 0
+  const tieneSesiones = resultadoCaseId.value?.success && resultadoCaseId.value?.data?.length > 0
 
-  if (!tieneErrores && !tieneSesiones) {
+  if (!tieneSesiones) {
     $q.notify({
       type: 'warning',
       message: 'No hay datos disponibles para exportar',
@@ -1344,13 +519,7 @@ const mostrarDialogoExportacion = () => {
               <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                 <span style="background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">✨ Exportación Avanzada de Datos</span>
               </h3>
-              <p style="margin: 12px 0 0 0; opacity: 0.85; font-size: 1rem; font-weight: 500;">
-                📊 Datos disponibles: ${
-                  tieneErrores ? '<span style="color: #f87171;">🔴 Códigos de Error</span>' : ''
-                }${tieneErrores && tieneSesiones ? ' y ' : ''}${
-      tieneSesiones ? '<span style="color: #34d399;">👤 Sesiones</span>' : ''
-    }
-              </p>
+
             </div>
           </div>
 
@@ -1526,16 +695,16 @@ const exportarDatos = async (formato) => {
     if (tabActiva.value === 'errorCode' && resultadoError.value?.success) {
       datosExportar = resultadoError.value
       tipoExportacion = 'error'
-    } else if (tabActiva.value === 'session' && resultadoSesion.value?.success) {
-      datosExportar = resultadoSesion.value
-      tipoExportacion = 'session'
+    } else if (tabActiva.value === 'caseId' && resultadoCaseId.value?.success) {
+      datosExportar = resultadoCaseId.value
+      tipoExportacion = 'caseId'
     } else {
       // Auto-detectar los datos disponibles
       if (resultadoError.value?.success && resultadoError.value?.data?.length > 0) {
         datosExportar = resultadoError.value
         tipoExportacion = 'error'
-      } else if (resultadoSesion.value?.success && resultadoSesion.value?.data?.length > 0) {
-        datosExportar = resultadoSesion.value
+      } else if (resultadoCaseId.value?.success && resultadoCaseId.value?.data?.length > 0) {
+        datosExportar = resultadoCaseId.value
         tipoExportacion = 'session'
       }
     }
@@ -1582,73 +751,6 @@ const exportarDatos = async (formato) => {
   }
 }
 
-const verDetalleCompleto = (record) => {
-  $q.dialog({
-    title: '<p class="text-h4 text-center text-bold q-pt-lg">Detalle Completo del Registro</p>',
-    message: `
-      <div class="row" style="text-align: left; color: #ffff; margin: 0;">
-        <div class="col-12" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-          <h4 style="margin: 0; font-size: 18px;">Informacion del Registro</h4>
-        </div>
-
-        <div class="row flex justify-center q-gutter-sm">
-          <div class="col-sm-12 col-md col-lg-5" style="border-left: 3px solid #007bff; background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px;">
-            <h5 style="color: #007bff; margin-top: 20px; font-weight: bold;">Detalles del Error</h5>
-            <p><span style="font-weight: bold; color: #007bff">Mensaje:</span> ${record.message || record.descripcion || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #007bff">Fecha:</span> ${formatearFecha(record.fecha || record.date)}</p>
-            <p><span style="font-weight: bold; color: #007bff">Tipo:</span> ${record.type || record.tipo || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #007bff">Proceso:</span> ${record.process || record.proceso || 'N/A'}</p>
-          </div>
-
-          <div class="col-sm-12 col-md col-lg-5" style="border-left: 3px solid #28a745; background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px;">
-            <h5 style="color: #28a745; margin-top: 20px; font-weight: bold;">Códigos de Identificación</h5>
-            <p><span style="font-weight: bold; color: #28a745">Base Code:</span> ${record.baseCode || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #28a745">Session Token:</span> ${record.sessionToken || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #28a745">Error Code:</span> ${record.errorCode || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #28a745">Tracking Code:</span> ${record.trackingCode || 'N/A'}</p>
-          </div>
-
-          <div class="col-sm-12 col-md col-lg-5" style="border-left: 3px solid #e67e22; background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px;">
-            <h5 style="color: #e67e22; margin-top: 20px; font-weight: bold;">Información del Usuario</h5>
-            <p><span style="font-weight: bold; color: #e67e22">Nombre Completo:</span> ${record.person?.nombreCompleto || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #e67e22">CURP:</span> ${record.person?.curp || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #e67e22">Nombres:</span> ${record.person?.nombres || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #e67e22">Apellidos:</span> ${
-              (record.person?.primerApellido || '') +
-                ' ' +
-                (record.person?.segundoApellido || '') || 'N/A'
-            }</p>
-          </div>
-          <div class="col-sm-12 col-md col-lg-5" style="border-left: 3px solid #6f42c1; background: linear-gradient(135deg, #2c2f4a 0%, #3a3d5c 100%); padding: 15px; border-radius: 8px;">
-            <h5 style="color: #6f42c1; margin-top: 20px; font-weight: bold;">Ubicación y Dispositivos</h5>
-            <p><span style="font-weight: bold; color: #6f42c1">Oficina:</span> ${record.oficina?.nombre || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #6f42c1">ID Oficina:</span> ${record.oficina?.id || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #6f42c1">Dispositivo:</span> ${record.device || record.dispositivo || 'N/A'}</p>
-            <p><span style="font-weight: bold; color: #6f42c1">Scanner:</span> ${record.scanDevice || record.scan_device || 'N/A'}</p>
-          </div>
-
-          <div class="col-12" style="background: #343a40; color: white; padding: 15px; border-radius: 8px;">
-          <h5 style="color: #17a2b8; margin-top: 20px; font-weight: bold;">Datos Técnicos Completos (JSON)</h5>
-          <pre style="background: #2d3436; color: #00b894; padding: 10px; border-radius: 4px; font-size: 11px; max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${JSON.stringify(
-            record,
-            null,
-            2
-          )}</pre>
-        </div>
-        </div>
-      </div>
-    `,
-    html: true,
-    style: 'width: 800px; max-width: 80vw; color: #ffff; background: linear-gradient(to right, #c31432, #240b36); border-radius: 12px; padding: 0;',
-    persistent: false,
-    ok: {
-      label: 'Cerrar',
-      color: 'success',
-      flat: true,
-    },
-  })
-}
-
 const mostrarAyuda = () => {
   $q.dialog({
     message: `
@@ -1670,26 +772,27 @@ const mostrarAyuda = () => {
 
           <!-- Grid de Funcionalidades -->
           <div style="display: grid; gap: 24px; margin-bottom: 32px;">
-
-            <!-- Análisis de Errores -->
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(220, 38, 38, 0.2); position: relative; overflow: hidden;">
-              <div style="position: absolute; top: 0; left: 0; right: 0; height: 60px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); border-radius: 50%;"></div>
-              <div style="position: relative; z-index: 1;">
-                <div style="display: flex; align-items: center; margin-bottom: 16px;">
-                  <div style="font-size: 2rem; margin-right: 12px;">🔴</div>
-                  <h3 style="margin: 0; font-size: 1.3rem; font-weight: 700;">Códigos de Error</h3>
+            <!-- Funcionalidades Adicionales en Grid Horizontal -->
+            <div style="display: grid; gap: 20px; margin-bottom: 28px;">
+              <!-- Búsqueda Rápida -->
+              <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);">
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                  <div style="font-size: 1.5rem; margin-right: 10px;">⚡</div>
+                  <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Búsqueda Rápida</h4>
                 </div>
-                <div style="background: rgba(255, 255, 255, 0.1); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
-                  <div style="font-family: 'Courier New', monospace; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px;">
-                    USR02808190918-SUC001
-                  </div>
-                  <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 4px;">Formato estándar de código</div>
+                <p style="margin: 0; font-size: 0.85rem; opacity: 0.9; line-height: 1.5;">
+                  Detección automática del tipo de código • Resultados inmediatos • Sin configuración
+                </p>
+              </div>
+              <!-- Exportación -->
+              <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(5, 150, 105, 0.2);">
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                  <div style="font-size: 1.5rem; margin-right: 10px;">📊</div>
+                  <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Exportación Avanzada</h4>
                 </div>
-                <ul style="margin: 0; padding-left: 16px; font-size: 0.9rem; line-height: 1.6; opacity: 0.9;">
-                  <li>Línea de tiempo detallada</li>
-                  <li>Historial completo de errores</li>
-                  <li>Exportación con todos los registros</li>
-                </ul>
+                <p style="margin: 0; font-size: 0.85rem; opacity: 0.9; line-height: 1.5;">
+                  <strong>PDF</strong> Profesional • <strong>Excel</strong> con 2 hojas • <strong>JSON</strong> estructurado
+                </p>
               </div>
             </div>
 
@@ -1714,34 +817,6 @@ const mostrarAyuda = () => {
                 </ul>
               </div>
             </div>
-
-          </div>
-
-          <!-- Funcionalidades Adicionales en Grid Horizontal -->
-          <div style="display: grid; gap: 20px; margin-bottom: 28px;">
-
-            <!-- Búsqueda Rápida -->
-            <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);">
-              <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                <div style="font-size: 1.5rem; margin-right: 10px;">⚡</div>
-                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Búsqueda Rápida</h4>
-              </div>
-              <p style="margin: 0; font-size: 0.85rem; opacity: 0.9; line-height: 1.5;">
-                Detección automática del tipo de código • Resultados inmediatos • Sin configuración
-              </p>
-            </div>
-
-            <!-- Exportación -->
-            <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(5, 150, 105, 0.2);">
-              <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                <div style="font-size: 1.5rem; margin-right: 10px;">📊</div>
-                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Exportación Avanzada</h4>
-              </div>
-              <p style="margin: 0; font-size: 0.85rem; opacity: 0.9; line-height: 1.5;">
-                <strong>PDF</strong> Profesional • <strong>Excel</strong> con 2 hojas • <strong>JSON</strong> estructurado
-              </p>
-            </div>
-
           </div>
 
           <!-- Footer con Tips -->
@@ -1760,13 +835,15 @@ const mostrarAyuda = () => {
       </div>
     `,
     html: true,
-    style: 'padding: 0; margin: 0; width: 700px; color: #ffff; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); border-radius: 12px;',
+    style:
+      'padding: 0; margin: 0; width: 700px; color: #ffff; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); border-radius: 12px;',
     persistent: false,
     ok: {
       label: '✓ Perfecto, entendido',
       color: 'green-6',
       unelevated: true,
-      style: 'border-radius: 12px; padding: 12px 28px; font-weight: 600; letter-spacing: 0.5px; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);',
+      style:
+        'border-radius: 12px; padding: 12px 28px; font-weight: 600; letter-spacing: 0.5px; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);',
     },
     class: 'help-dialog-custom',
   })
@@ -1784,9 +861,9 @@ onMounted(() => {
     analisisError.value.codigo = codigo
     setTimeout(() => analizarError(), 500)
   } else if (usuario) {
-    tabActiva.value = 'session'
+    tabActiva.value = 'caseId'
     gestionSesion.value.usuario = usuario
-    setTimeout(() => buscarSesiones(), 500)
+    setTimeout(() => consultarCaseId(), 500)
   } else if (busqueda) {
     tabActiva.value = 'busqueda'
     busquedaAvanzada.value.texto = busqueda
@@ -1799,13 +876,13 @@ onMounted(() => {
 // Estilo principal similar a EscritorioPage
 .diagnostic-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  // background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
 // Header limpio y moderno
 .diagnostic-header {
   border-bottom: 2px solid rgba(59, 130, 246, 0.3);
-  backdrop-filter: blur(10px);
+  // backdrop-filter: blur(10px);
 }
 
 .diagnostic-title {
@@ -1854,7 +931,7 @@ onMounted(() => {
 .q-tab-panel {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  // border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
 }
 
@@ -2439,7 +1516,7 @@ onMounted(() => {
   border: var(--border-glass);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+  // box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
   transition: var(--transition-smooth);
 
   .card-header {
@@ -2497,6 +1574,7 @@ onMounted(() => {
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 16px;
       min-height: 56px;
+      padding-left: 1%;
       transition: var(--transition-smooth);
 
       &:hover {
@@ -2860,15 +1938,13 @@ onMounted(() => {
 }
 </style>
 
-
 <style lang="scss" scoped>
-
 .bg-gradient-pure-list {
   background: linear-gradient(to right, #333333, #dd1818);
 }
 
 .diagnostic-page {
-  background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+  // background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
   min-height: 100vh;
 }
 
@@ -3286,7 +2362,9 @@ onMounted(() => {
     color: white !important;
     border-radius: 24px !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05),
+    box-shadow:
+      0 32px 64px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
       inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
     backdrop-filter: blur(20px);
     overflow: hidden;

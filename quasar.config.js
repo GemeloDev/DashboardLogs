@@ -105,12 +105,12 @@ export default defineConfig((/* ctx */) => {
           secure: false // Ignora problemas de SSL en el backend si los hubiera
         }
       },
-      // https: {
-      //   key: fs.readFileSync('certs/server.key'),
-      //   cert: fs.readFileSync('certs/server.crt')
-      // },
-      // host: true,
-      // port: 9000,
+      https: {
+        key: fs.readFileSync('certs/server.key'),
+        cert: fs.readFileSync('certs/server.crt')
+      },
+      host: true,
+      port: 9000,
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
@@ -128,7 +128,7 @@ export default defineConfig((/* ctx */) => {
       // directives: [],
 
       // Quasar plugins
-      plugins: ['Notify', 'Dialog'],
+      plugins: ['Notify', 'Dialog', 'Platform'],
     },
 
     // animations: 'all', // --- includes all animations

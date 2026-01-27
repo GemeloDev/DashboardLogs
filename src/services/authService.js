@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Servicio de Autenticación Centralizado
  */
 
@@ -32,7 +32,7 @@ export const useAuthService = () => {
           console.log('🔄 Sesión restaurada:', {
             name: session.user.name,
             roles: session.user.roles || [],
-            isAdmin: (session.user.roles || []).includes('ADMIN')
+            isAdmin: (session.user.authz.roles || []).includes('ORG_ADMIN'),
           })
         }
       }
@@ -51,32 +51,33 @@ export const useAuthService = () => {
         body: JSON.stringify({
           name: userData.name,
           email: userData.email,
-          password: userData.password
-        })
+          password: userData.password,
+        }),
       })
       const data = await response.json()
       console.log(' Respuesta del registro:', data)
       return {
         success: data.status === true,
-        message: data.message || (data.status ? 'Usuario registrado correctamente' : 'Error en el registro'),
-        data: data.data
+        message:
+          data.message ||
+          (data.status ? 'Usuario registrado correctamente' : 'Error en el registro'),
+        data: data.data,
       }
     } catch (error) {
       console.error(' Error en registro:', error)
       return {
         success: false,
         message: 'Error de conexión. Verifica tu conexión a internet.',
-        data: null
+        data: null,
       }
     }
   }
 
   const login = async (credentials, mantenerSesion = true) => {
     try {
-
       // Crear headers con X-Tenant
       const headers = {
-        ...DEFAULT_CONFIG.headers
+        ...DEFAULT_CONFIG.headers,
       }
 
       const response = await fetch(AUTH_ENDPOINTS.LOGIN, {
@@ -84,8 +85,8 @@ export const useAuthService = () => {
         headers: headers,
         body: JSON.stringify({
           email: credentials.email,
-          password: credentials.password
-        })
+          password: credentials.password,
+        }),
       })
       const data = await response.json()
       console.log('📥 Respuesta del login:', data)
@@ -95,16 +96,27 @@ export const useAuthService = () => {
           id: data.data.user.id,
           name: data.data.user.name,
           email: data.data.user.email,
-          roles: data.data.roles || [],
+          authz: {
+            permissions: data.data.authz.permissions,
+            roles: data.data.authz.roles,
+            systems: data.data.authz.systems,
+          },
           tenantId: data.data.tenantId || null,
-          loginTime: new Date().toISOString()
+          loginTime: new Date().toISOString(),
+        }
+
+        if (userData?.authz?.systems && userData?.authz?.systems.length !== 0) {
+          localStorage.setItem(
+            'dashboardFlow',
+            JSON.stringify({ currentFlow: 'escritorio', system: userData?.authz?.systems[0] }),
+          )
         }
 
         console.log('👤 Usuario con roles:', {
           name: userData.name,
-          roles: userData.roles,
+          authz: userData.authz,
           tenantId: userData.tenantId,
-          isAdmin: userData.roles.includes('ADMIN')
+          isAdmin: userData.authz.roles.includes('ORG_ADMIN'),
         })
 
         // Guardar JWT en cookie para interceptores de axios
@@ -119,11 +131,11 @@ export const useAuthService = () => {
           user: userData,
           token: {
             accessToken: data.data.accessToken,
-            refreshToken: data.data.refreshToken
+            refreshToken: data.data.refreshToken,
           },
           isAuthenticated: true,
           sessionType: mantenerSesion ? 'persistent' : 'temporary',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         }
         if (mantenerSesion) {
           localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
@@ -137,41 +149,35 @@ export const useAuthService = () => {
       }
     } catch (error) {
       console.error(' Error en login:', error)
-      return { success: false, message: 'Error de conexión. Verifica tu conexión a internet.', user: null }
+      return {
+        success: false,
+        message: 'Error de conexión. Verifica tu conexión a internet.',
+        user: null,
+      }
     }
   }
 
-  const loginByQR = async (credentials, /* mantenerSesion = true */) => {
+  const loginByQR = async (credentials /* mantenerSesion = true */) => {
     try {
-
       const tokens = JSON.parse(localStorage.getItem('dashboardLogsSession'))
       const { token } = tokens
       console.log('AccessToken del usuario:', token.accessToken)
       console.log('Token del QR:', credentials.qrToken)
 
-      // // Crear headers con X-Tenant
-      // const headers = {
-      //   ...DEFAULT_CONFIG.headers,
-      //   'Authorization': `Bearer ${token.accessToken}`
-      // }
-
       const response = await axiosInstance.post(AUTH_ENDPOINTS.LOGIN_QR, {
-        qrToken: credentials.qrToken
+        qrToken: credentials.qrToken,
       })
 
-      // const response = await fetch(AUTH_ENDPOINTS.LOGIN_QR, {
-      //   method: 'POST',
-      //   headers: headers,
-      //   body: JSON.stringify({
-      //     qrToken: credentials.qrToken
-      //   })
-      // })
       const data = response
       console.log('📥 Respuesta del login:', data)
       return data
     } catch (error) {
       console.error(' Error en login:', error)
-      return { success: false, message: 'Error de conexión. Verifica tu conexión a internet.', user: null }
+      return {
+        success: false,
+        message: 'Error de conexión. Verifica tu conexión a internet.',
+        user: null,
+      }
     }
   }
 
@@ -180,9 +186,13 @@ export const useAuthService = () => {
       id: data.data.uid,
       name: data.data.name,
       email: data.data.email,
-      roles: data.data.roles || [],
+      authz: {
+        permissions: data.data.perms,
+        roles: data.data.roles,
+        systems: data.data.systems,
+      },
       tenantId: data.data.tenantId || null,
-      loginTime: new Date().toISOString()
+      loginTime: new Date().toISOString(),
     }
 
     // Guardar JWT en cookie para interceptores de axios
@@ -191,15 +201,22 @@ export const useAuthService = () => {
       console.log('🍪 JWT guardado en cookie')
     }
 
+    if (userData?.authz?.systems && userData?.authz?.systems !== 0) {
+      localStorage.setItem(
+        'dashboardFlow',
+        JSON.stringify({ currentFlow: 'escritorio', system: userData?.authz?.systems[0] }),
+      )
+    }
+
     const sessionData = {
       user: userData,
       token: {
         accessToken: data.payload.accessToken,
-        refreshToken: data.payload.refreshToken
+        refreshToken: data.payload.refreshToken,
       },
       isAuthenticated: true,
       sessionType: 'persistent',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
 
     localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
@@ -211,6 +228,7 @@ export const useAuthService = () => {
     try {
       localStorage.removeItem(SESSION_KEY)
       sessionStorage.removeItem(SESSION_KEY)
+      localStorage.removeItem('dashboardFlow')
       deleteJWTFromCookie()
       currentUser.value = null
       isAuthenticated.value = false
@@ -248,8 +266,8 @@ export const useAuthService = () => {
   const refreshAuthToken = (accessToken) => {
     try {
       const responseRefresh = axios.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {
-        refreshToken: accessToken
-      });
+        refreshToken: accessToken,
+      })
 
       console.log('🔄 Refrescando token:', responseRefresh)
     } catch (error) {
@@ -262,16 +280,38 @@ export const useAuthService = () => {
   const authenticated = computed(() => isAuthenticated.value)
   initializeAuth()
 
-  return { user, authenticated, currentUser, isAuthenticated, register, login, loginByQR, logout, buildSession, initializeAuth, clearSession, checkSession, refreshAuthToken }
+  return {
+    user,
+    authenticated,
+    currentUser,
+    isAuthenticated,
+    register,
+    login,
+    loginByQR,
+    logout,
+    buildSession,
+    initializeAuth,
+    clearSession,
+    checkSession,
+    refreshAuthToken,
+  }
 }
 
 export const authService = (() => {
   const service = useAuthService()
   return {
-    get user() { return service.currentUser.value },
-    get isAuthenticated() { return service.isAuthenticated.value },
-    get userName() { return service.currentUser.value?.name || 'Usuario' },
-    get userEmail() { return service.currentUser.value?.email || 'Sin email' },
+    get user() {
+      return service.currentUser.value
+    },
+    get isAuthenticated() {
+      return service.isAuthenticated.value
+    },
+    get userName() {
+      return service.currentUser.value?.name || 'Usuario'
+    },
+    get userEmail() {
+      return service.currentUser.value?.email || 'Sin email'
+    },
     register: service.register,
     login: service.login,
     loginByQR: service.loginByQR,
@@ -280,7 +320,7 @@ export const authService = (() => {
     buildSession: service.buildSession,
     clearSession: service.clearSession,
     checkSession: service.checkSession,
-    refreshAuthToken: service.refreshAuthToken
+    refreshAuthToken: service.refreshAuthToken,
   }
 })()
 

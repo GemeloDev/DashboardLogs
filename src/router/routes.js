@@ -64,6 +64,10 @@ const routes = [
         path: 'diagnostico',
         component: () => import('pages/DiagnosticoPage.vue')
       },
+      {
+        path: 'myApiKeys',
+        component: () => import('pages/APIKeysPage.vue')
+      },
 
       // Rutas generales/admin
       { path: 'santoro-demo', component: () => import('pages/SantoroDemoPage.vue') },

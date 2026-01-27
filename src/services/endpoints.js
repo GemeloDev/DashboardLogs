@@ -3,7 +3,7 @@ import { API_BASE_URL } from './apiConfig'
 // DTOs y endpoints
 export const endpoints = {
   // Logs
-  logs: `${API_BASE_URL}/dashboard/passports/events`,
+  logs: `${API_BASE_URL}/logs/events/all`,
 
   // Catálogos
   catalogSummary: `${API_BASE_URL}/dashboard/passports/summary`,

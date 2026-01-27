@@ -29,13 +29,17 @@ export const API_ENDPOINTS = {
   CHARTS: `${BASE_URL}/api/charts`,
 
   // Diagnósticos
-  PERSON_ID: `${BASE_URL}/dashboard/passports/timeline`,
+  SESSION_ID: `${BASE_URL}/logs/timeline`,
 
   // Configuración
   CONFIG: `${BASE_URL}/api/config`,
 
   //  QR
   QR: `/api/auth/qr-token`,
+}
+
+export const API_KEYS = {
+  MAIN: '/catalogs/api-keys'
 }
 
 //  URL (local) del server socket

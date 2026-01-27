@@ -1,34 +1,25 @@
 <template>
-  <q-page class="escritorio-page bg-dark text-white">
+  <q-page class="escritorio-page text-white">
     <!-- Header de Escritorio -->
-    <div class="escritorio-header bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
+    <div class="escritorio-header q-pa-lg">
       <div class="container">
-        <div class="row items-center q-col-gutter-md q-pt-md">
-          <div class="col-12 col-md-8">
-            <div class="text-h3 escritorio-title q-pt-lg">
-              <span class="escritorio-title-text">🖥️ Dashboard de Escritorio</span>
-            </div>
-            <div class="text-h6 text-blue-3 ">
-                📊 Panel de Control Avanzado
-
-            </div>
+        <div class="row items-center q-py-md">
+          <div class="col-12">
+            <div class="text-h3 text-white text-center q-my-lg text-bold padding-microphone">Dashboard de Escritorio <br> <span class="text-h6 text-blue-3 text-center">Panel de Control Avanzado</span> <br> <span class="text-h5 text-center">📊</span> </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Contenido Principal: Gráficas Enhanced -->
-    <div class="escritorio-content q-pa-lg">
-      <EscritorioGraficasEnhanced :filtros="filtros" />
+    <div class="escritorioContent">
+      <EscritorioGraficasEnhanced />
     </div>
   </q-page>
 </template>
 
 <script setup>
 import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGraficasEnhanced.vue'
-
-
-
 </script>
 
 <style lang="scss" scoped>
@@ -38,7 +29,6 @@ import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGrafi
 }
 
 .escritorio-header {
-  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
   backdrop-filter: blur(10px);
 }
 
@@ -49,19 +39,6 @@ import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGrafi
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
-}
-
-.escritorio-subtitle {
-  font-weight: 500;
-  opacity: 0.9;
-}
-
-.escritorio-content {
-  position: relative;
-}
-
-.escritorio-actions {
-  gap: 0.5rem;
 }
 
 .escritorio-action-btn {
@@ -107,18 +84,15 @@ import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGrafi
   }
 }
 
-@media (max-width: 480px) {
-  .escritorio-title-text {
-    font-size: 1.5rem;
+@media (max-width: 768px) {
+  .escritorioContent {
+    margin-block: 6rem;
   }
+}
 
-  .escritorio-subtitle-text {
-    font-size: 0.8rem;
-  }
-
-  .escritorio-action-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
+@media (max-width: 300px) {
+  .padding-microphone{
+    margin-bottom: 5rem;
   }
 }
 
