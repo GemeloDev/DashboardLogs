@@ -1,9 +1,11 @@
+import { useQuasar } from 'quasar'
 import { axiosInstance } from './axiosConfig'
+import { API_BASE_URL } from './apiConfig'
 
-const BASE_URL = '/api/catalogs/api-keys'
+const $q = useQuasar()
+const BASE_URL = `${API_BASE_URL}/catalogs/api-keys`
 
 export class ApiKeyService {
-
   /**
    * Obtiene el listado paginado de API Keys
    * GET /api/catalogs/api-keys?page=0&size=25
@@ -24,14 +26,21 @@ export class ApiKeyService {
    * POST /api/catalogs/api-keys
    * @param {Object} payload - { name, systemId, environmentId, scopes, ttlDays, rotateDays }
    */
-  static async create(payload) {
+  static async create(payload, extension = 'txt') {
     try {
-      const response = await axiosInstance.post(BASE_URL, payload, {
-        responseType: 'blob' // Importante para recibir el archivo
+      const response = await axiosInstance.post(`${BASE_URL}?export=${extension}`, payload, {
+        responseType: 'arraybuffer', // Importante para recibir el archivo
+        headers: {
+          'Accept': '*/*'
+        }
       })
 
+      //  Construcción del nombre del archivo con la extensión seleccionada
+      const safeName = (payload.name || 'api_key').replace(/[^a-z0-9]/gi, '_').toLowerCase()
+      const filename = `${safeName}-credentials.${extension}`
+
       // Lógica para descargar el archivo
-      this.descargarArchivo(response, `${payload.name || 'api-key'}-credentials.txt`)
+      this.descargarArchivo(response, filename)
 
       return { success: true, message: 'API Key creada y descargada.' }
     } catch (error) {
@@ -43,8 +52,7 @@ export class ApiKeyService {
   /**
    * Renueva una API Key existente
    * POST /api/catalogs/api-keys/{id}/renew
-   * @param {String} id - ID de la API Key
-   * @param {Object} payload - { ttlDays: 35, rotateDays: 30 }
+   * @param {Object} payload - { id:#######, ttlDays: 35, rotateDays: 30 }
    */
   static async renew(id, payload) {
     try {
@@ -66,7 +74,11 @@ export class ApiKeyService {
       const response = await axiosInstance.delete(`${BASE_URL}/${id}`)
       return response.data
     } catch (error) {
-      console.error('Error al eliminar API Key:', error)
+      console.error('❌ Error al eliminar API Key:', error)
+      $q.notify({
+        type: 'negative',
+        message: '❌ Error al eliminar la API Key.',
+      })
       throw error
     }
   }
@@ -85,7 +97,7 @@ export class ApiKeyService {
     }
 
     // Crear Blob y Link
-    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/plain' }))
     const link = document.createElement('a')
     link.href = url
     link.setAttribute('download', filename)
@@ -95,5 +107,17 @@ export class ApiKeyService {
     // Limpieza
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
+  }
+}
+
+export const RateLimitService = {
+  get() {
+    return axiosInstance.get(`${API_BASE_URL}/admin/rate-limit`)
+  },
+  update(payload) {
+    return axiosInstance.put(`${API_BASE_URL}/admin/rate-limit`, payload)
+  },
+  clear() {
+    return axiosInstance.delete(`${API_BASE_URL}/admin/rate-limit`)
   }
 }

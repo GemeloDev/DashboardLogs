@@ -64,24 +64,32 @@
                 <div class="col-12">
                   <div class="row q-col-gutter-sm">
                     <div class="col-12 col-sm-6">
-                      <div class="detail-box">
+                      <div v-if="existUbication(log)" class="detail-box">
                         <div class="text-caption text-grey-5 q-mb-xs">📍 Ubicación</div>
-                        <div class="text-body2 text-bold">{{ log.locationName }}</div>
-                        <div class="text-caption text-grey-4">ID: {{ log.locationId }}</div>
+                        <div class="text-body2 text-bold" v-if="log.locationName">{{ log.locationName || 'Sin ubicación disponible' }}</div>
+                        <div class="text-caption text-grey-4" v-if="log.locationId">ID: {{ log.locationId }}</div>
                         <div class="text-caption text-blue-3 q-mt-xs">
-                          <q-icon name="devices" /> Salida: {{ log.outcome }}
+                          <q-icon name="devices" v-if="log.outcome" /> Salida: {{ log.outcome }}
                         </div>
+                      </div>
+                      <div v-else class="detail-box">
+                        <div class="text-caption text-grey-5 q-mb-xs">📍 Ubicación</div>
+                        <div class="text-body2 text-bold">Sin ubicación disponible</div>
                       </div>
                     </div>
 
                     <div class="col-12 col-sm-6">
-                      <div class="detail-box">
+                      <div v-if="log.actorId" class="detail-box">
                         <div class="text-caption text-grey-5 q-mb-xs">👤 Operador</div>
                         <div class="text-caption text-orange-3 q-mt-xs">#ID: {{ log.actorId }}</div>
                         <div class="text-body2 text-bold">{{ log.actorFullName }}</div>
                         <div class="text-caption text-cyan-4">
                           Username: {{ log.actorUsername }}
                         </div>
+                      </div>
+                      <div v-else class="detail-box">
+                        <div class="text-caption text-grey-5 q-mb-xs">👤 Operador</div>
+                        <div class="text-body2 text-bold">Sin operador disponible</div>
                       </div>
                     </div>
                   </div>
@@ -144,7 +152,7 @@ const getGradientClass = (status) => {
     ERROR: 'gradient-red',
     BLOCKED: 'gradient-red',
     FAILED: 'gradient-red',
-    REJECTED: 'gradient-red-10',
+    REJECTED: 'gradient-red',
 
     // Advertencia / Revisión (Amber / Warning)
     WARNING: 'gradient-orange',
@@ -220,6 +228,10 @@ const getStatusIcon = (status) => {
     IN_PROGRESS: 'hourglass_empty', // Reloj de arena (o 'sync' para rotación)
   }
   return map[status] || 'info'
+}
+
+const existUbication = (log) => {
+  return log.locationName || log.locationId
 }
 </script>
 

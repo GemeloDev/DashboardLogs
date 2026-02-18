@@ -18,13 +18,16 @@
           </div>
           <div class="header-text">
             <h1>
-              <span class="gradient-text">Gestión de Empleados</span>
+              <span class="gradient-text no-padding no-margin">Gestión de Empleados</span>
             </h1>
-            <p>Administra los usuarios y permisos del sistema</p>
+            <p class="no-padding no-margin">Administra los usuarios y permisos del sistema</p>
           </div>
         </div>
         <q-btn
-          @click="mostrarModalInvitacion = true"
+          @click="() => {
+            mostrarModalInvitacion = true
+            saveMode = 'save'
+          }"
           unelevated
           no-caps
           icon="person_add"
@@ -110,7 +113,7 @@
             filled
             use-input
             input-debounce="300"
-            label="Filtrar por rol"
+            label="Filtrar por Rol"
             clearable
             class="role-filter"
             @filter="filterRoles"
@@ -239,23 +242,6 @@
               </div>
             </div>
 
-            <!-- Último Login con icono animado -->
-            <div class="info-row">
-              <div class="info-icon-container">
-                <q-icon name="schedule" size="20px" />
-              </div>
-              <div class="info-content">
-                <span class="info-label">
-                  <q-icon name="login" size="12px" class="q-mr-xs" />
-                  Último acceso
-                </span>
-                <span class="info-value">
-                  <q-icon name="access_time" size="14px" class="q-mr-xs" />
-                  {{ formatLastLogin(user.lastLoginAt) }}
-                </span>
-              </div>
-            </div>
-
             <!-- Fecha de Creación -->
             <div class="info-row">
               <div class="info-icon-container">
@@ -277,39 +263,22 @@
           <div class="divider"></div>
 
           <q-card-actions class="user-card-actions">
-            <q-btn
-              unelevated
-              no-caps
-              icon="visibility"
-              label="Ver Detalles"
-              class="action-btn action-btn-primary"
-              size="sm"
-              @click="verDetalles(user)"
-            />
             <q-space />
-            <q-btn unelevated no-caps icon="more_vert" class="action-btn-menu" size="sm">
+            <q-btn unelevated no-caps icon="more_vert" class="action-btn-menu" size="xs">
               <q-menu dark class="menu-dark">
                 <q-list class="menu-list">
-                  <q-item clickable v-close-popup class="menu-item">
+                  <q-item clickable v-close-popup class="menu-item" @click="editUsuario(user)">
                     <q-item-section avatar>
                       <q-icon name="edit" color="blue-4" />
                     </q-item-section>
-                    <q-item-section>Editar Usuario</q-item-section>
+                    <q-item-section>Editar Datos</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup class="menu-item">
-                    <q-item-section avatar>
-                      <q-icon name="security" color="purple-4" />
-                    </q-item-section>
-                    <q-item-section>Gestionar Roles</q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup class="menu-item">
-                    <q-item-section avatar>
-                      <q-icon name="block" color="orange-4" />
-                    </q-item-section>
-                    <q-item-section>Desactivar</q-item-section>
-                  </q-item>
-                  <q-separator dark />
-                  <q-item clickable v-close-popup class="menu-item menu-item-danger">
+                  <q-item
+                    clickable
+                    v-close-popup
+                    class="menu-item menu-item-danger"
+                    @click="eliminarUsuario(user)"
+                  >
                     <q-item-section avatar>
                       <q-icon name="delete" color="red-4" />
                     </q-item-section>
@@ -379,7 +348,9 @@
     <!-- Modal de Invitación -->
     <EnviarInvitacionModal
       v-model="mostrarModalInvitacion"
+      :saveMode="saveMode"
       :available-roles="availableRoles"
+      :dataUser="dataUser"
       @invitation-sent="onInvitationSent"
     />
   </q-page>
@@ -388,7 +359,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { getUsers, getAvailableRoles } from '../services/usersService.js'
+import { deleteUser, getUsers } from '../services/usersService.js'
 import EnviarInvitacionModal from '../components/EnviarInvitacionModal.vue'
 
 const $q = useQuasar()
@@ -405,6 +376,8 @@ const totalPages = ref(0)
 const availableRoles = ref([])
 const filteredRoleOptions = ref([])
 const mostrarModalInvitacion = ref(false)
+const saveMode = ref('save')
+const dataUser = ref({})
 
 // Options
 const pageSizeOptions = [
@@ -440,14 +413,16 @@ const fetchUsers = async () => {
       currentPage.value - 1,
       pageSize.value,
       searchTerm.value,
-      selectedRole.value
+      selectedRole.value,
     )
 
-    users.value = response.data || []
-    totalUsers.value = response.total || 0
+    console.log('✅ Usuarios encontrados: ', response)
+
+    users.value = response.data.data || []
+    totalUsers.value = response.data.total || 0
     totalPages.value = Math.ceil(totalUsers.value / pageSize.value)
 
-    console.log('✅ Usuarios cargados:', users.value.length)
+    console.log('✅ Usuarios cargados:', totalUsers.value)
   } catch (error) {
     console.error('❌ Error al cargar usuarios:', error)
     $q.notify({
@@ -462,13 +437,11 @@ const fetchUsers = async () => {
 
 const fetchRoles = async () => {
   try {
-    const roles = await getAvailableRoles()
-
     // Roles predeterminados del sistema
-    const defaultRoles = ['AUDITOR', 'USUARIO', 'ADMIN', 'VIEWER']
+    const defaultRoles = ['ORG_ADMIN', 'SYSTEM_MANAGER', 'AUDITOR', 'SUPPORT_TI', 'VIEWER']
 
     // Combinar roles del servidor con predeterminados (sin duplicados)
-    const allRoles = [...new Set([...defaultRoles, ...roles])]
+    const allRoles = [...new Set([...defaultRoles])]
 
     availableRoles.value = allRoles
     filteredRoleOptions.value = ['Todos los roles', ...allRoles]
@@ -477,7 +450,7 @@ const fetchRoles = async () => {
   } catch (error) {
     console.error('❌ Error al cargar roles:', error)
     // En caso de error, usar solo roles predeterminados
-    availableRoles.value = ['AUDITOR', 'USUARIO', 'ADMIN', 'VIEWER']
+    availableRoles.value = ['ORG_ADMIN', 'SYSTEM_MANAGER', 'AUDITOR', 'SUPPORT_TI', 'VIEWER']
     filteredRoleOptions.value = ['Todos los roles', ...availableRoles.value]
   }
 }
@@ -498,7 +471,7 @@ const filterRoles = (val, update) => {
   update(() => {
     const needle = val.toLowerCase()
     filteredRoleOptions.value = roleOptions.value.filter(
-      (role) => role.toLowerCase().indexOf(needle) > -1
+      (role) => role.toLowerCase().indexOf(needle) > -1,
     )
   })
 }
@@ -566,42 +539,41 @@ const formatDate = (dateString) => {
   })
 }
 
-const formatLastLogin = (dateString) => {
-  if (!dateString) return 'Nunca'
-  const date = new Date(dateString)
-  const now = new Date()
-  const diff = now - date
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-
-  if (days === 0) return 'Hoy'
-  if (days === 1) return 'Ayer'
-  if (days < 7) return `Hace ${days} días`
-  if (days < 30) return `Hace ${Math.floor(days / 7)} semanas`
-  return formatDate(dateString)
+const editUsuario = (user) => {
+  dataUser.value = user
+  saveMode.value = 'edit'
+  mostrarModalInvitacion.value = true
 }
 
-const verDetalles = (user) => {
+const eliminarUsuario = (user) => {
   $q.dialog({
-    title: 'Detalles del Usuario',
-    message: `
-      Nombre: ${user.name}
-      Email: ${user.email}
-      ID: ${user.id}
-      Tenant: ${user.tenantId}
-      Estado: ${user.status}
-      Roles: ${user.roles?.join(', ') || 'Sin roles'}
-    `,
-    html: true,
+    title: 'Eliminar usuario',
+    message: `¿Desea eliminar al usuario ${user.name}?`,
+    cancel: true,
+    dark: true,
+  }).onOk(async () => {
+    const response = await deleteUser(user.id)
+    $q.notify({
+      message: `✅ ${response.data.message}!`,
+      color: 'green',
+      position: 'top',
+    })
+
+    // Opcional: recargar usuarios
+    fetchUsers()
   })
 }
 
-const onInvitationSent = () => {
+const onInvitationSent = (response) => {
+  mostrarModalInvitacion.value = false
+
   $q.notify({
     type: 'positive',
-    message: '✅ Invitación enviada correctamente',
+    message: `✅ ${response?.data?.message ?? response?.message}!`,
     position: 'top',
     timeout: 3000,
   })
+
   // Opcional: recargar usuarios
   fetchUsers()
 }
@@ -1117,7 +1089,9 @@ $border-hover: rgba(255, 255, 255, 0.2);
   &:hover {
     transform: translateY(-8px) scale(1.02);
     border-color: $border-hover;
-    box-shadow: 0 15px 40px rgba(99, 102, 241, 0.3), 0 0 20px rgba(99, 102, 241, 0.1);
+    box-shadow:
+      0 15px 40px rgba(99, 102, 241, 0.3),
+      0 0 20px rgba(99, 102, 241, 0.1);
 
     .card-glow {
       opacity: 1;

@@ -53,7 +53,7 @@
             <template v-slot:prepend><q-icon name="search" /></template>
           </q-input>
         </div>
-        <div class="col-12">
+        <div class="row justify-center col-12">
           <q-input
             v-model="rangoFechasTexto"
             label="Rango de Fechas *"
@@ -63,17 +63,83 @@
             color="primary"
             clearable
             readonly
-            class="custom-select"
+            class="custom-select col-12 full-width q-ma-sm"
           >
             <template v-slot:prepend>
               <q-icon name="date_range" color="primary" />
             </template>
+
             <template v-slot:append>
-              <q-icon name="calendar_today" class="cursor-pointer" color="primary">
+              <q-icon name="calendar_today" class="cursor-pointer q-mr-sm" color="primary">
                 <q-popup-proxy cover>
-                  <q-date v-model="filtrosSeleccionados.rangoFechas" range dark color="primary"> </q-date>
+                  <q-date
+                    v-model="filtrosSeleccionados.rangoFechas"
+                    range
+                    dark
+                    color="primary"
+                    mask="YYYY-MM-DD"
+                  />
                 </q-popup-proxy>
               </q-icon>
+
+              <q-btn-dropdown
+                flat
+                dense
+                rounded
+                icon="schedule"
+                color="blue-4"
+                dropdown-icon="expand_more"
+                no-caps
+              >
+                <q-list dense class="q-pa-none">
+                  <q-item clickable v-close-popup @click="seleccionarPeriodo('hoy')">
+                    <q-item-section avatar>
+                      <q-icon name="today" color="blue-4" size="sm" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white text-caption">Hoy</q-item-label>
+                    </q-item-section>
+                  </q-item>
+
+                  <q-item clickable v-close-popup @click="seleccionarPeriodo('ayer')">
+                    <q-item-section avatar>
+                      <q-icon name="yesterday" color="blue-4" size="sm" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white text-caption">Ayer</q-item-label>
+                    </q-item-section>
+                  </q-item>
+
+                  <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos7')">
+                    <q-item-section avatar>
+                      <q-icon name="date_range" color="blue-4" size="sm" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white text-caption">Últimos 7 días</q-item-label>
+                    </q-item-section>
+                  </q-item>
+
+                  <q-item clickable v-close-popup @click="seleccionarPeriodo('ultimos30')">
+                    <q-item-section avatar>
+                      <q-icon name="calendar_month" color="blue-4" size="sm" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white text-caption">Últimos 30 días</q-item-label>
+                    </q-item-section>
+                  </q-item>
+
+                  <q-separator class="bg-grey-7" />
+
+                  <q-item clickable v-close-popup @click="seleccionarPeriodo('mesActual')">
+                    <q-item-section avatar>
+                      <q-icon name="calendar_today" color="green-4" size="sm" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white text-caption">Mes actual</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
             </template>
           </q-input>
         </div>
@@ -121,7 +187,7 @@
             icon="filter_alt"
             size="md"
             @click="emitirFiltros"
-            :loading="loadingFiltros"
+            :loading="loading"
           />
           <q-btn
             class="q-ml-md"
@@ -140,31 +206,33 @@
 
 <script setup>
 import { useQuasar } from 'quasar'
-// import { MockPassportService } from 'src/data/MockLogsService'
-import { ChartDataService } from 'src/services/chartDataService'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, inject } from 'vue'
 
 const $q = useQuasar()
-const emit = defineEmits(['filtrar', 'camposSeleccionados'])
 
-const logs = ref([])
+const props = defineProps({
+  datosOrigen: { type: Array, default: null },
+})
+
+const emit = defineEmits(['filtrar', 'camposSeleccionados', 'campos-seleccionados'])
+
 const loading = ref(false)
-
-// 1. CATÁLOGO MAESTRO: Define todos los filtros disponibles
+const logsGlobales = inject('logsGlobales', ref([]))
 const configFiltros = ref([])
-
-// 2. MODELO DEL MULTI-SELECT: Controla qué filtros se ven
-// Inicializamos con los keys que queremos ver por defecto
 const camposVisibles = ref(['status', 'severity', 'location.name', 'eventType'])
 
-// 3. MODELO DE VALORES: Donde se guardan las selecciones (ej: status: 'EMITIDO')
 const filtrosSeleccionados = ref({
   busqueda: '',
   rangoFechas: {
     from: '',
-    to: ''
+    to: '',
   },
-  fields: camposVisibles.value
+})
+
+const sourceItems = computed(() => {
+  if (Array.isArray(props.datosOrigen) && props.datosOrigen.length) return props.datosOrigen
+  const lg = logsGlobales?.value
+  return Array.isArray(lg) ? lg : []
 })
 
 // 4. COMPUTED: Filtros Renderizables
@@ -175,159 +243,193 @@ const filtrosRenderizables = computed(() => {
 
 const rangoFechasTexto = computed(() => {
   if (!filtrosSeleccionados.value.rangoFechas) return ''
-  if (typeof filtrosSeleccionados.value.rangoFechas === 'string') return filtrosSeleccionados.value.rangoFechas
+  if (typeof filtrosSeleccionados.value.rangoFechas === 'string')
+    return filtrosSeleccionados.value.rangoFechas
   if (filtrosSeleccionados.value.rangoFechas.from && filtrosSeleccionados.value.rangoFechas.to) {
     return `${filtrosSeleccionados.value.rangoFechas.from} - ${filtrosSeleccionados.value.rangoFechas.to}`
   }
   return filtrosSeleccionados.value.rangoFechas.from || ''
 })
 
-// 5. LIMPIEZA AUTOMÁTICA
-// Si el usuario oculta un filtro, debemos limpiar su valor seleccionado
-// para evitar que filtre datos en segundo plano.
-watch(camposVisibles, (nuevos, viejos) => {
-  // Encontramos qué campo se eliminó
-  const eliminados = viejos.filter((x) => !nuevos.includes(x))
+const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
 
-  eliminados.forEach((key) => {
-    if (filtrosSeleccionados.value[key]) {
-      delete filtrosSeleccionados.value[key] // Borramos el valor del filtro
-      console.log(`🧹 Filtro oculto y limpiado: ${key}`)
-    }
-  })
-})
+const pushValue = (v, set) => {
+  if (v == null) return
+  if (Array.isArray(v)) {
+    v.forEach((x) => pushValue(x, set))
+    return
+  }
+  if (typeof v === 'object') return // ignorar objetos
+  set.add(String(v))
+}
 
-// 3. MOTOR DE EXTRACCIÓN: Lee tu Mock y llena las opciones
 const generarOpcionesDesdeDatos = (items) => {
   if (!items || !items.length) return
 
-  // Recorremos nuestra configuración de filtros
   configFiltros.value.forEach((filtro) => {
     const valoresUnicos = new Set()
 
     items.forEach((item) => {
-      // Magia para leer propiedades anidadas (ej: item['office']['officeName'])
-      const valor = filtro.key.split('.').reduce((obj, k) => (obj ? obj[k] : null), item)
-
-      if (valor) valoresUnicos.add(valor)
+      const valor = getDeep(item, filtro.key)
+      pushValue(valor, valoresUnicos)
     })
 
-    // Asignamos las opciones encontradas al filtro correspondiente
     filtro.options = Array.from(valoresUnicos).sort()
   })
-
-  console.log('✅ Filtros generados:', configFiltros.value)
 }
 
-// --- Integración con tu función de carga ---
-// Cuando cargues tu Mock, llama a la función generadora:
-const cargarLogs = async () => {
-  loading.value = true
-
-  // ... tu lógica de carga del Mock ...
-  // const response = await MockPassportService.getAll()
-  const response = await ChartDataService.getAll()
-  logs.value = response.data.items
-
-  if (logs.value) {
-    // 1. Molde de los logs
-    const primerLog = logs.value[0]
-    const claves = obtenerClavesProfundas(primerLog)
-
-    // (Opcional) Filtrar las claves que no se desean
-    const clavesIgnoradas = [
-      'id',
-      'tenantId',
-      'date',
-      'meta.requestId',
-      'geoPoint.type',
-      'person.id',
-      'eventTime',
-      'system',
-    ]
-    const clavesFiltrables = claves.filter((k) => !clavesIgnoradas.includes(k))
-
-    // 2. Configuración dínamica
-    configFiltros.value = clavesFiltrables.map((key) => ({
-      key,
-      label: formatearLabel(key),
-      icon: adivinarIcono(key),
-      options: [], //  Se llena con función
-    }))
-
-    // Pasamos los datos crudos para que se generen los filtros
-    generarOpcionesDesdeDatos(logs.value)
-
-    if (camposVisibles.value.length === 0) {
-      camposVisibles.value = configFiltros.value
-        .slice(0, 5) //  Tomar los primeros 5
-        .map((f) => f.key)
-    }
+const reconstruirDesdeLogs = (items) => {
+  if (!items || !items.length) {
+    configFiltros.value = []
+    return
   }
 
-  loading.value = false
+  const primerLog = items[0]
+  const claves = obtenerClavesProfundas(primerLog)
+
+  // No queremos filtros que ya existen fuera (system) o que explotan cardinalidad (eventTime, payload, ids)
+  const ignoradasExactas = new Set([
+    'id',
+    'tenantId',
+    'schemaVersion',
+    'system', // 👈 ya lo filtras en MainLayout
+    'eventTime', // 👈 rango lo filtra backend
+    'message',
+    'meta.requestId',
+    'geo.type',
+    'geo.coordinates',
+  ])
+
+  const clavesFiltrables = claves
+    .filter((k) => !ignoradasExactas.has(k))
+    .filter((k) => k !== 'payload' && !k.startsWith('payload.')) // 👈 fuera payload completo
+
+  configFiltros.value = clavesFiltrables.map((key) => ({
+    key,
+    label: formatearLabel(key),
+    icon: adivinarIcono(key),
+    options: [],
+  }))
+
+  generarOpcionesDesdeDatos(items)
+
+  // Mantener campos visibles si aún existen
+  const setKeys = new Set(clavesFiltrables)
+  camposVisibles.value = camposVisibles.value.filter((k) => setKeys.has(k))
+
+  // Defaults si quedó vacío
+  if (camposVisibles.value.length === 0) {
+    camposVisibles.value = ['status', 'severity', 'location.country', 'eventType'].filter((k) =>
+      setKeys.has(k),
+    )
+  }
+
+  // Limpiar selecciones inválidas (si el valor ya no existe en options)
+  configFiltros.value.forEach((f) => {
+    const selected = filtrosSeleccionados.value[f.key]
+    if (selected && Array.isArray(f.options) && !f.options.includes(String(selected))) {
+      filtrosSeleccionados.value[f.key] = ''
+    }
+  })
+}
+
+function aplicarFiltrosLocal(items, payload) {
+  const { busqueda = '', rangoFechas, _visibleFields, ...values } = payload
+  const search = (busqueda || '').trim().toLowerCase()
+
+  console.log('✅ Payload para el filtrado de datos: ', {
+    busqueda,
+    rangoFechas,
+    _visibleFields,
+    values,
+  })
+
+  let out = items || []
+  // selects
+  out = out.filter((log) => {
+    for (const [k, v] of Object.entries(values)) {
+      if (!v) continue
+      const actual = getDeep(log, k)
+
+      //  Si el campo es array, el filtro debe matchear "includes"
+      if (Array.isArray(actual)) {
+        const norm = actual.map((x) => String(x))
+        if (!norm.includes(String(v))) return false
+        continue
+      }
+
+      if (String(actual) !== String(v)) return false
+    }
+    return true
+  })
+
+  // búsqueda
+  if (search) out = out.filter((l) => JSON.stringify(l).toLowerCase().includes(search))
+
+  return out
 }
 
 const emitirFiltros = () => {
-  const payload = {}
-
-  // 1. Agregar campos fijos (Búsqueda y Fechas) que siempre están en la UI
-  // Si no tienen valor, los mandamos como string vacío o null según prefieras
-  payload.busqueda = filtrosSeleccionados.value.busqueda || ''
-  payload.rangoFechas = filtrosSeleccionados.value.rangoFechas || ''
-
-  // 2. Iterar SOLO sobre los campos que el usuario decidió ver (camposVisibles)
-  camposVisibles.value.forEach((key) => {
-    const valor = filtrosSeleccionados.value[key]
-
-    // Si tiene valor lo asignamos, si es null/undefined asignamos ''
-    payload[key] = (valor !== null && valor !== undefined) ? valor : ''
-  })
-
-  console.log('📤 Enviando filtros limpios:', payload)
-
-  // 3. Emitir los eventos
-  emit('camposSeleccionados', payload)
-  emit('filtrar', logsFiltrados.value)
-}
-
-// 4. COMPUTED DE FILTRADO DINÁMICO
-// Esta función filtra los logs basándose en lo que haya en 'filtrosSeleccionados'
-const logsFiltrados = computed(() => {
-  // 1. Obtenemos los valores de los filtros
-  const filtros = filtrosSeleccionados.value
-
-  // 2. Verificamos si hay AL MENOS UN filtro con valor (que no sea null ni vacío)
-  const hayFiltrosActivos = Object.values(filtros).some(
-    (valor) => valor !== null && valor !== undefined && valor !== '',
-  )
-
-  // 3. OPTIMIZACIÓN: Si no hay filtros, retornamos todo el array inmediatamente
-  // Esto evita recorrer miles de registros innecesariamente
-  if (!hayFiltrosActivos) {
-    return logs.value
+  const payload = {
+    _visibleFields: camposVisibles.value,
+    busqueda: filtrosSeleccionados.value.busqueda || '',
+    rangoFechas: filtrosSeleccionados.value.rangoFechas || { from: '', to: '' },
   }
 
-  // 4. Si hay filtros, ejecutamos la lógica de filtrado
-  return logs.value.filter((log) => {
-    for (const [key, valorSeleccionado] of Object.entries(filtros)) {
-      // Solo comparamos si este filtro específico tiene valor
-      if (valorSeleccionado) {
-        // Obtenemos el valor del log (soporta 'office.name')
-        const valorLog = key.split('.').reduce((obj, k) => (obj ? obj[k] : null), log)
-
-        // Si no coinciden, descartamos el registro
-        if (valorLog !== valorSeleccionado) {
-          return false
-        }
-      }
-    }
-    return true // Pasó todas las validaciones activas
+  filtrosRenderizables.value.forEach((f) => {
+    const v = filtrosSeleccionados.value[f.key]
+    if (v != null && v !== '') payload[f.key] = v
   })
-})
+
+  emit('campos-seleccionados', payload)
+  emit('camposSeleccionados', payload)
+  emit('filtrar', aplicarFiltrosLocal(sourceItems.value, payload))
+}
+
+function applyChartFilter(fieldKey, value) {
+  if (!fieldKey) return
+
+  //  1) Asegurar que el campo esté visible
+  if (!camposVisibles.value.includes(fieldKey)) {
+    camposVisibles.value.push(fieldKey)
+  }
+
+  //  2) Asegurar que exista el filtro en config
+  let filtro = configFiltros.value.find((f) => f.key === fieldKey)
+  if (!filtro) {
+    filtro = {
+      key: fieldKey,
+      label: formatearLabel(fieldKey),
+      icon: adivinarIcono(fieldKey),
+      options: [],
+    }
+    configFiltros.value.push(filtro)
+  }
+
+  //  3) Intentar machear por case-insensitive contra options (por tu .toUppperCase() en buildCategorical)
+  const optMatch = (filtro.options || []).find(
+    (o) => String(o).toUpperCase() === String(value).toUpperCase(),
+  )
+
+  const finalValue = optMatch ?? value
+
+  //  4) Asegurar que el valor exista en options (para que el q-select lo muestre)
+  if (finalValue && !filtro.options.includes(finalValue)) {
+    filtro.options.push(finalValue)
+    filtro.options.sort()
+  }
+
+  // 5) Setear el filtro seleccionado
+  filtrosSeleccionados.value[fieldKey] = finalValue
+
+  emitirFiltros()
+}
+
+//  Ya está el defineExpose
+defineExpose({ applyChartFilter })
 
 // A. Función recursiva para obtener claves tipo "office.officeName"
-const obtenerClavesProfundas = (obj, prefix = '') => {
+function obtenerClavesProfundas(obj, prefix = '') {
   let keys = []
 
   for (const key in obj) {
@@ -348,7 +450,7 @@ const obtenerClavesProfundas = (obj, prefix = '') => {
 }
 
 // B. Función para hacer bonitos los labels (CamelCase -> Texto Legible)
-const formatearLabel = (key) => {
+function formatearLabel(key) {
   // 1. Tomamos solo la última parte si tiene puntos (ej: office.name -> name)
   // Opcional: si quieres el path completo, quita esta línea
   // const lastPart = key.split('.').pop()
@@ -361,7 +463,7 @@ const formatearLabel = (key) => {
 }
 
 // C. Asignar iconos según el nombre del campo
-const adivinarIcono = (key) => {
+function adivinarIcono(key) {
   const k = key.toLowerCase()
   if (k.includes('time') || k.includes('date')) return 'event'
   if (k.includes('user') || k.includes('person')) return 'person'
@@ -373,19 +475,108 @@ const adivinarIcono = (key) => {
 }
 
 const limpiarFiltros = () => {
-  // Limpiamos el modelo
-  filtrosSeleccionados.value = {
-      busqueda: '',
-      rangoFechas: ''
-  }
-  // Emitimos usando la misma lógica para que llegue limpio
-  emitirFiltros()
+  const base = { busqueda: '', rangoFechas: { from: '', to: '' } }
 
+  // reiniciar también valores de los campos visibles
+  camposVisibles.value.forEach((k) => {
+    base[k] = ''
+  })
+
+  filtrosSeleccionados.value = base
+
+  emitirFiltros()
   $q.notify({ type: 'info', message: 'Filtros limpiados', position: 'top' })
 }
 
+//  Helpers para fechas (evita UTC/toISOString que puede cambiar el día)
+const pad2 = (n) => String(n).padStart(2, '0')
+const startOfDay = (d) => {
+  const x = new Date(d)
+  x.setHours(0,0,0,0)
+  return x
+}
+
+const toYMDLocal = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+
+const seleccionarPeriodo = (periodo, aplicar = true) => {
+  const hoy = startOfDay(new Date())
+
+  let inicioDate = null
+  let finDate = null
+
+  switch (periodo) {
+    case 'hoy':{
+      inicioDate = new Date(hoy)
+      finDate = new Date(hoy)
+      break;
+    }
+
+    case 'ayer': {
+      const ayer = new Date(hoy)
+      ayer.setDate(ayer.getDate() - 1)
+      inicioDate = ayer
+      finDate = ayer
+      break;
+    }
+
+    case 'ultimos7':{
+      const start = new Date(hoy)
+      start.setDate(start.getDate() - 6) // hoy esta dentro de los 7 días
+      inicioDate = start
+      finDate = new Date(hoy)
+      break;
+    }
+
+    case 'ultimos30':{
+      const start = new Date(hoy)
+      start.setDate(start.getDate() - 29) // hoy está dentro de los 30 días
+      inicioDate = start
+      finDate = new Date(hoy)
+      break;
+    }
+
+    case 'mesActual': {
+      inicioDate = startOfDay(new Date(hoy.getFullYear(), hoy.getMonth(), 1))
+      finDate = new Date(hoy) // mes de la fecha
+      break;
+    }
+
+    default: {
+      console.warn('DinamicFilters periodo no soportado: ', periodo)
+      return;
+    }
+  }
+  const from = toYMDLocal(inicioDate)
+  const to = toYMDLocal(finDate)
+
+  filtrosSeleccionados.value.rangoFechas = { from, to }
+
+  // Para que el quick period aplique en caliente:
+  if (aplicar) emitirFiltros()
+}
+
+
+watch(camposVisibles, (nuevos, viejos) => {
+  // Encontramos qué campo se eliminó
+  const eliminados = viejos.filter((x) => !nuevos.includes(x))
+
+  eliminados.forEach((key) => {
+    if (filtrosSeleccionados.value[key]) {
+      delete filtrosSeleccionados.value[key] // Borramos el valor del filtro
+      console.log(`🧹 Filtro oculto y limpiado: ${key}`)
+    }
+  })
+})
+
+watch(
+  sourceItems,
+  (items) => {
+    reconstruirDesdeLogs(items)
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
-  cargarLogs()
   emitirFiltros()
 })
 </script>
@@ -712,5 +903,9 @@ onMounted(async () => {
   .q-field__input {
     color: white;
   }
+}
+
+.q-list {
+  background: #1e1e2f !important;
 }
 </style>

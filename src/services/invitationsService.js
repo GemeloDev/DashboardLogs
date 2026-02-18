@@ -17,7 +17,7 @@ import { SERVER_CONFIG } from '../config/serverConfig'
 export const sendInvitation = async (inviteData) => {
     try {
         const response = await axiosInstance.post(
-            `${SERVER_CONFIG.BASE_URL}/api/admin/invites`,
+            `${SERVER_CONFIG.BASE_URL}/admin/invites`,
             inviteData
         )
 

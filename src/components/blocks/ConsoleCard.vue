@@ -104,16 +104,16 @@
         </div>
       </div>
 
-      <!-- Información del dispositivo mejorada -->
+      <!-- Información del dispositivo -->
       <div v-if="log.meta" class="log-device-section enhanced-section q-mt-sm">
         <div class="section-header">
           <q-icon name="devices" color="purple-4" size="20px" class="q-mr-sm" />
           <div class="text-weight-bold text-purple-4 section-title">Sistema & Dispositivos</div>
         </div>
         <div class="section-content">
-          <div v-if="log.meta.deviceId" class="detail-item">
+          <div v-if="deviceLabel" class="detail-item">
             <span class="detail-label">Dispositivo:</span>
-            <span class="detail-value">{{ log.meta?.deviceId || 'N/A' }}</span>
+            <span class="detail-value">{{ deviceLabel }}</span>
           </div>
           <div v-if="log.meta.sourceApp" class="detail-item">
             <span class="detail-label">Sistema:</span>
@@ -161,7 +161,7 @@
           <q-icon name="message" color="amber-4" size="18px" class="q-mr-sm" />
           <div class="text-weight-medium text-amber-4">Mensaje</div>
         </div>
-        <div class="error-content q-ml-md text-caption">
+        <div class="error-content q-ml-md text-caption ellipsis-2-lines">
           {{ log.message }}
         </div>
       </div>
@@ -262,7 +262,7 @@ const statusIcon = computed(() => {
 
 const formatDate = (isoDate) => {
   if (!isoDate) return ''
-  return date.formatDate(isoDate, 'DD/MM/YY HH:mm')
+  return date.formatDate(isoDate, 'DD/MM/YYYY HH:mm')
 }
 
 const getHttpColorClass = (code) => {
@@ -271,6 +271,11 @@ const getHttpColorClass = (code) => {
   if (code >= 400) return 'text-red-4'
   return 'text-grey-4'
 }
+
+const deviceLabel = computed(() => {
+  const m = props.log.meta || {}
+  return m.deviceId || m.deviceName || (m.platform && m.osVersion ? `${m.platform} ${m.osVersion}` : null) || ''
+})
 </script>
 
 <style lang="scss" scoped>

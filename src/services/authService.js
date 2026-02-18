@@ -11,6 +11,7 @@ import { axiosInstance } from './axiosConfig.js'
 const currentUser = ref(null)
 const isAuthenticated = ref(false)
 const SESSION_KEY = 'dashboardLogsSession'
+const DEFAULT_PREFS = { flow: 'escritorio', system: 'DASHBOARD' }
 
 export const useAuthService = () => {
   const clearSession = () => {
@@ -26,13 +27,21 @@ export const useAuthService = () => {
       const sessionData = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY)
       if (sessionData) {
         const session = JSON.parse(sessionData)
-        if (session && session.isAuthenticated === true) {
-          currentUser.value = session.user
+
+        if (session && session.isAuthenticated && session.user) {
+          const roles = session.user?.authz?.roles || []
+          currentUser.value = {
+            ...session.user,
+            isAdmin: roles.includes('ORG_OWNER'),
+          }
+
           isAuthenticated.value = true
+
           console.log('🔄 Sesión restaurada:', {
-            name: session.user.name,
-            roles: session.user.roles || [],
-            isAdmin: (session.user.authz.roles || []).includes('ORG_ADMIN'),
+            name: currentUser.value?.name,
+            roles,
+            permissions: currentUser.value?.authz?.permissions || [],
+            isAdmin: currentUser.value?.isAdmin,
           })
         }
       }
@@ -108,7 +117,7 @@ export const useAuthService = () => {
         if (userData?.authz?.systems && userData?.authz?.systems.length !== 0) {
           localStorage.setItem(
             'dashboardFlow',
-            JSON.stringify({ currentFlow: 'escritorio', system: userData?.authz?.systems[0] }),
+            JSON.stringify({ flow: 'escritorio', system: userData?.authz?.systems[0] }),
           )
         }
 
@@ -116,7 +125,9 @@ export const useAuthService = () => {
           name: userData.name,
           authz: userData.authz,
           tenantId: userData.tenantId,
-          isAdmin: userData.authz.roles.includes('ORG_ADMIN'),
+          isAdmin:
+            userData.authz.roles.includes('ORG_ADMIN') ||
+            userData.authz.roles.includes('ORG_OWNER'),
         })
 
         // Guardar JWT en cookie para interceptores de axios
@@ -181,6 +192,24 @@ export const useAuthService = () => {
     }
   }
 
+  const loadPrefs = () => {
+    try {
+      const raw = localStorage.getItem('dashboardFlow')
+      if (!raw) return DEFAULT_PREFS
+      const p = JSON.parse(raw)
+      return {
+        flow: p.flow ?? DEFAULT_PREFS.flow,
+        system: p.system ?? DEFAULT_PREFS.system,
+      }
+    } catch {
+      return DEFAULT_PREFS
+    }
+  }
+
+  const savePrefs = (flow, system) => {
+    localStorage.setItem('dashboardFlow', JSON.stringify({ flow, system }))
+  }
+
   const buildSession = (data) => {
     const userData = {
       id: data.data.uid,
@@ -204,7 +233,7 @@ export const useAuthService = () => {
     if (userData?.authz?.systems && userData?.authz?.systems !== 0) {
       localStorage.setItem(
         'dashboardFlow',
-        JSON.stringify({ currentFlow: 'escritorio', system: userData?.authz?.systems[0] }),
+        JSON.stringify({ flow: 'escritorio', system: userData?.authz?.systems[0] }),
       )
     }
 
@@ -276,6 +305,69 @@ export const useAuthService = () => {
     }
   }
 
+  /**
+   * Helpers de permisos/roles
+   */
+  const getPermissions = () => currentUser.value?.authz?.permissions || []
+  const getRoles = () => currentUser.value?.authz.roles || []
+
+  const hasPermission = (permissions) => {
+    if(!permissions) return true
+    return getPermissions().includes(permissions)
+  }
+
+  const hasAnyPermissions = (permissions = []) => {
+    if (!permissions || permissions.length === 0) return true
+    const perms = getPermissions()
+    return permissions.some((p) => perms.includes(p))
+  }
+
+  const hasAllPermissions = (permissions = []) => {
+    if (!permissions || permissions.length === 0) return true
+    const perms = getPermissions()
+    return permissions.some((p) => perms.includes(p))
+  }
+
+  const hasRole = (role) => {
+    if (!role) return true
+    return getRoles().includes(role)
+  }
+
+  const hasAnyRole = (roles = []) => {
+    if(!roles || roles.length === 0) return true
+    const r = getRoles()
+    return roles.some((x) => r.includes(x))
+  }
+
+  /**
+   * Método "can" universal:
+   * - string => permiso único
+   * - array => ALL permisos
+   * - objeto => control fino (any/all/roles)
+   */
+
+  const can = (rule) => {
+    if (!rule) return true
+
+    //  Si no hay sesión válida, no autoriza
+    if (!isAuthenticated.value) return false
+
+    if (typeof rule === 'string') return hasPermission(rule)
+
+    if (Array.isArray(rule)) return hasAllPermissions(rule.all)
+
+    //  rule: { any, all, rolesAny, rolesAlll }
+    const any = rule.any ? hasAnyPermissions(rule.any) : true
+    const all = rule.all ? hasAllPermissions(rule.all) : true
+
+    const rolesAny = rule.any ? hasAnyRole(rule.rolesAny) : true
+    const rolesAll = rule.rolesAll
+      ? (rule.rolesAll || []).every((x) => getRoles().includes(x))
+      : true
+
+    return any && all && rolesAny && rolesAll
+  }
+
   const user = computed(() => currentUser.value)
   const authenticated = computed(() => isAuthenticated.value)
   initializeAuth()
@@ -294,6 +386,18 @@ export const useAuthService = () => {
     clearSession,
     checkSession,
     refreshAuthToken,
+    loadPrefs,
+    savePrefs,
+
+    //  ✅ Nuevos
+    getPermissions,
+    getRoles,
+    hasPermission,
+    hasAnyPermissions,
+    hasAllPermissions,
+    hasRole,
+    hasAnyRole,
+    can
   }
 }
 
@@ -321,6 +425,18 @@ export const authService = (() => {
     clearSession: service.clearSession,
     checkSession: service.checkSession,
     refreshAuthToken: service.refreshAuthToken,
+    loadPrefs: service.loadPrefs,
+    savePrefs: service.savePrefs,
+
+    //  Roles / Permisos
+    getPermissions: service.getPermissions,
+    getRoles: service.getRoles,
+    hasPermission: service.hasPermission,
+    hasAnyPermission: service.hasAnyPermissions,
+    hasAllPermissions: service.hasAllPermissions,
+    hasRole: service.hasRole,
+    hasAnyRole: service.hasAnyRole,
+    can: service.can,
   }
 })()
 

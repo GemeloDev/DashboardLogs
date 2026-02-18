@@ -36,7 +36,7 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     // Si la ruta requiere ser admin
     if (to.meta.requiresAdmin && authenticated) {
       const user = authService.user
-      const isAdmin = user?.roles?.includes('ADMIN')
+      const isAdmin = user?.authz?.roles.includes('ORG_ADMIN') || user?.authz?.roles.includes('ORG_OWNER')
 
       if (!isAdmin) {
         console.log('🚫 Acceso denegado - Se requiere rol de administrador')

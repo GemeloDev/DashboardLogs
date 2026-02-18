@@ -3,14 +3,12 @@
     <div class="q-pa-lg text-white">
       <div class="container">
         <div class="row items-center justify-between">
-          <div class="col-12 col-md-8">
+          <div class="col-12 col-md-6">
             <div class="text-h3 diagnostic-title q-mt-md flex items-center">
               <span class="q-mr-sm">🔐</span>
               <span class="text-weight-bold">Mis API Key's</span>
             </div>
-            <div class="text-h6 text-blue-3 q-mt-sm">
-              🛠️ Gestión y control de accesos
-            </div>
+            <div class="text-h6 text-blue-3 q-mt-sm">🛠️ Gestión y control de accesos</div>
           </div>
           <div class="col-12 col-md-4 text-right q-mt-md q-mt-md-none">
             <q-btn
@@ -22,6 +20,16 @@
               @click="abrirModalCrear"
             />
           </div>
+          <div class="col-12 col-md-2 text-center q-mt-md q-mt-md-none">
+            <q-btn
+              color="secondary"
+              icon="settings"
+              label="Rate-limit"
+              class="glossy-btn"
+              size="md"
+              @click="abrirModalRateLimit"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -31,7 +39,7 @@
         <q-card class="modern-card">
           <q-card-section class="q-pa-none">
             <q-table
-              :rows="rowsExample"
+              :rows="rows"
               :columns="columns"
               row-key="id"
               dark
@@ -40,7 +48,9 @@
               :pagination="{ rowsPerPage: 10 }"
             >
               <template v-slot:top>
-                <div class="row items-center text-h6 text-white q-my-sm q-ml-md">Listado de Llaves</div>
+                <div class="row items-center text-h6 text-white q-my-sm q-ml-md">
+                  Listado de Llaves
+                </div>
                 <q-space />
                 <q-input
                   dark
@@ -73,44 +83,59 @@
               <template v-slot:body="props">
                 <q-tr :props="props" class="body-row">
                   <q-td key="nombre" :props="props">
-                    <div class="text-weight-bold">{{ props.row.nombre }}</div>
+                    <div class="text-weight-bold">{{ props.row.name }}</div>
                     <div class="text-caption text-grey-5">{{ props.row.descripcion }}</div>
                   </q-td>
 
-                  <q-td key="prefix" :props="props">
-                    <q-badge outline color="cyan" class="q-pa-xs font-mono">
-                      {{ props.row.prefix }}••••••••
-                    </q-badge>
+                  <q-td key="prefix" :props="props.row.scopes">
+                    <q-chip dense color="grey-7" text-color="white" size="sm" class="log-id-chip">
+                      {{ props.row.scopes }}
+                    </q-chip>
                   </q-td>
 
                   <q-td key="estado" :props="props">
                     <q-chip
                       dense
-                      :color="props.row.activo ? 'positive' : 'negative'"
+                      :color="apiKeyUi(props.row).color"
                       text-color="white"
-                      :icon="props.row.activo ? 'check_circle' : 'block'"
+                      :icon="apiKeyUi(props.row).icon"
                     >
-                      {{ props.row.activo ? 'Activa' : 'Revocada' }}
+                      {{ apiKeyUi(props.row).label }}
                     </q-chip>
                   </q-td>
 
                   <q-td key="creado" :props="props">
-                    <div class="text-grey-4">{{ props.row.creado }}</div>
+                    <div class="text-grey-4">{{ formatearFecha(props.row.createdAt) }}</div>
                   </q-td>
 
                   <q-td key="ultimoUso" :props="props">
-                    <div class="text-grey-4">{{ props.row.ultimoUso || 'Nunca' }}</div>
+                    <div class="text-grey-4">{{ timeAgoIntl(props.row.lastUsedAt) }}</div>
                   </q-td>
 
                   <q-td key="acciones" :props="props" align="center">
                     <div class="row justify-center q-gutter-x-sm">
-                      <q-btn flat round dense color="blue-4" icon="content_copy" size="sm">
-                        <q-tooltip>Copiar ID</q-tooltip>
+                      <q-btn
+                        flat
+                        round
+                        dense
+                        color="cyan-4"
+                        icon="autorenew"
+                        size="sm"
+                        @click="renewToken(props.row.id)"
+                        :disable="props.row.status !== 'active'"
+                      >
+                        <q-tooltip>Recargar Token</q-tooltip>
                       </q-btn>
-                      <q-btn flat round dense color="orange-4" icon="edit" size="sm">
-                        <q-tooltip>Editar</q-tooltip>
-                      </q-btn>
-                      <q-btn flat round dense color="red-4" icon="delete" size="sm">
+                      <q-btn
+                        flat
+                        round
+                        dense
+                        color="red-4"
+                        :disable="props.row.status !== 'active'"
+                        icon="delete"
+                        size="sm"
+                        @click="ApiKeyService.delete(props.row.id)"
+                      >
                         <q-tooltip>Revocar</q-tooltip>
                       </q-btn>
                     </div>
@@ -125,46 +150,53 @@
 
     <q-dialog v-model="modalOpen" persistent>
       <q-card class="modal-card bg-dark text-white" style="min-width: 500px">
-        <q-card-section class="row items-center q-pb-none bg-grey-9">
-          <div class="text-h6">✨ Nueva API Key</div>
-          <q-space />
+        <q-card-section class="row items-center justify-between header-modal-bg">
+          <h6 class="no-padding no-margin">✨ Nueva API Key</h6>
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-pt-lg">
+        <q-card-section class="q-pt-lg body-modal-bg">
           <q-form class="q-gutter-md">
             <q-input
               filled
               dark
-              v-model="form.nombre"
+              v-model="form.name"
               label="Nombre de la llave *"
-              hint="Ej: Integración Facturación"
+              hint="El archivo de credenciales tendrá este nombre"
               color="primary"
-            />
+              :rules="[(val) => !!val || 'El nombre es requerido']"
+            >
+              <template v-slot:append>
+                <div class="row items-center no-wrap">
+                  <q-btn-dropdown color="green" :label="'.' + form.formato">
+                    <q-list>
+                      <q-item clickable v-close-popup @click="form.formato = 'txt'">
+                        <q-item-section>
+                          <q-item-label>.txt</q-item-label>
+                        </q-item-section>
+                      </q-item>
 
-            <q-input
-              filled
-              dark
-              v-model="form.descripcion"
-              label="Descripción"
-              type="textarea"
-              rows="3"
-              color="primary"
-            />
-
-            <div class="row items-center justify-between q-mt-md q-px-sm rounded-borders bg-grey-9 q-py-sm">
-              <div class="text-subtitle2">Permisos de Lectura/Escritura</div>
-              <q-toggle v-model="form.permisosFull" color="green" />
-            </div>
+                      <q-item clickable v-close-popup @click="form.formato = 'json'">
+                        <q-item-section>
+                          <q-item-label>.json</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-btn-dropdown>
+                </div>
+              </template>
+            </q-input>
           </q-form>
         </q-card-section>
 
-        <q-card-actions align="right" class="bg-grey-9 q-pa-md">
+        <q-card-actions align="right" class="q-pa-md header-modal-bg">
           <q-btn flat label="Cancelar" color="grey-5" v-close-popup />
-          <q-btn label="Generar Llave" color="primary" class="q-px-md" />
+          <q-btn label="Generar Llave" color="primary" class="q-px-md" @click="crearAPIKey" />
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <rate-limit-config v-model="rateLimitDialog" />
 
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
       <q-btn fab icon="add" color="primary" @click="abrirModalCrear" class="shadow-10">
@@ -176,62 +208,175 @@
 
 <script setup>
 import { useQuasar } from 'quasar'
+import RateLimitConfig from 'src/components/blocks/RateLimitConfig.vue'
+import { timeAgoIntl, formatearFecha } from 'src/helpers'
 import { ApiKeyService } from 'src/services/apiKeys'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const $q = useQuasar()
 
 const filter = ref('')
 const modalOpen = ref(false)
-const rows = ref([{
-  id: null,
-  nombre: '',
-  status: '',
-  createdAt: '',
-  lastUsedAt: '',
-  expiresAt: '',
-  rotatesAt: ''
-}])
+const rows = ref([])
+const rateLimitDialog = ref(false)
+
+const ttlDays = 35
+const rotateDays = 30
 
 const form = ref({
-  nombre: '',
-  descripcion: '',
-  permisosFull: false
+  name: '',
+  systemId: null,
+  environmentId: null,
+  scopes: ['LOGS_INGEST'], // "LOGS_INGEST", "INGEST", "ALL"
+  ttlDays,
+  formato: 'txt',
+  rotateDays,
 })
 
 const columns = [
-  { name: 'nombre', required: true, label: 'Nombre / Aplicación', align: 'left', field: 'nombre', sortable: true },
-  { name: 'prefix', align: 'center', label: 'Prefijo', field: 'prefix' },
+  {
+    name: 'nombre',
+    required: true,
+    label: 'Nombre / Aplicación',
+    align: 'center',
+    field: 'nombre',
+    sortable: true,
+  },
   { name: 'estado', align: 'center', label: 'Estado', field: 'activo', sortable: true },
   { name: 'creado', align: 'center', label: 'Creado', field: 'creado', sortable: true },
   { name: 'ultimoUso', align: 'center', label: 'Último Uso', field: 'ultimoUso', sortable: true },
-  { name: 'acciones', align: 'center', label: 'Acciones' }
+  { name: 'acciones', align: 'center', label: 'Acciones' },
 ]
 
-// Datos Mock para visualización
-const rowsExample = [
-  { id: 1, nombre: 'App Móvil iOS', descripcion: 'Llave para la app de clientes', prefix: 'pk_live_55a...', activo: true, creado: '2025-01-10', ultimoUso: 'Hace 5 min' },
-  { id: 2, nombre: 'Backend Facturación', descripcion: 'Servidor de finanzas', prefix: 'sk_test_99b...', activo: true, creado: '2024-12-05', ultimoUso: 'Ayer 14:30' },
-  { id: 3, nombre: 'Integración CRM', descripcion: 'Sistema legacy v1', prefix: 'pk_live_11c...', activo: false, creado: '2024-08-20', ultimoUso: '2024-11-01' },
-]
+const MS_DAY = 24 * 60 * 60 * 1000
 
-const startPage = async () => {
-  try {
-  const response = await ApiKeyService.getAll()
-    if ( response.ok && response.data.items) {
-      $q.notify({
-        message: `✅ API Keys obtenidas correctamente!`,
-        type: 'success',
-        position: 'top-right'
-      })
+function toMs(d) {
+  if (!d) return null
+  const t = new Date(d).getTime()
+  return Number.isFinite(t) ? t : null
+}
+
+function getApiKeyLifecycleUi(apiKey, opts) {
+  const {
+    now = new Date(),
+    renewWindowDays = 7,
+    treatMissingDatesAs = 'active',
+    showUnsedHint = true,
+    unsedDays = 30,
+  } = opts
+
+  const nowMs = now.getTime()
+
+  const status = String(apiKey?.status || '').toLowerCase()
+
+  const expiresMs = toMs(apiKey?.expiresAt)
+  const rotatesMs = toMs(apiKey?.rotatesAt)
+  const lastUsedMs = toMs(apiKey?.lastUsedAt)
+
+  //  1) Revocada (prioridad máxima)
+  if (status == 'revoked' || status === 'disabled' || status === 'blocked') {
+    return { state: 'revoked', label: 'Revocada', color: 'negative', icon: 'block' }
+  }
+
+  //  2) Expirada
+  if (expiresMs !== null && nowMs >= expiresMs) {
+    return { state: 'expires', label: 'Expirada', color: 'grey-8', icon: 'event_busy' }
+  }
+
+  //  3) Renovación expirada (rotación)
+  if (rotatesMs !== null) {
+    // días para la fecha de renovación (rotación)
+    const diasParaRenovar = Math.ceil((rotatesMs - nowMs) / MS_DAY)
+
+    const renewFromMs = rotatesMs - renewWindowDays * MS_DAY
+
+    const needsRenew = nowMs >= renewFromMs
+
+    if (needsRenew) {
+      const label = nowMs >= rotatesMs ? 'Renovar ahora' : `${diasParaRenovar} día(s) para renovar`
+      return { state: 'renew', label, color: 'warning', icon: 'autorenew' }
+    }
+  }
+
+  //  4) Activa (si estatus 'active')
+  if (status === 'active') {
+    //  Hint opcional: sin uso
+    if (showUnsedHint) {
+      const isUnsed = lastUsedMs === null || nowMs - lastUsedMs >= unsedDays * MS_DAY
+
+      if (isUnsed) {
+        return { state: 'active_unsed', label: 'Activa (sin uso)', color: 'blue', icon: 'info' }
+      }
     }
 
-  } catch (error) {
-    console.log('❌ Error al obtener API Keys: ', error.message)
+    return { state: 'active', label: 'Activa', color: 'positive', icon: 'check_circle' }
+  }
+
+  // 5) Inactiva / desconocida
+  if (!status) {
+    if (treatMissingDatesAs === 'unknown') {
+      return { state: 'unknown', label: 'Estado desconocido', color: 'grey-7', icon: 'help' }
+    }
+    return { state: 'active', label: 'Activa', color: 'positive', icon: 'check_circle' }
+  }
+
+  return { state: 'inactive', label: 'Inactiva', color: 'negative', icon: 'block' }
+}
+
+const apiKeyUi = computed(() => {
+  const opts = { renewWindowDays: 7 }
+  return (row) => getApiKeyLifecycleUi(row, opts)
+})
+
+const cargarKeys = async () => {
+  try {
+    const { data } = await ApiKeyService.getAll({ page: 0, size: 25 })
+    rows.value = data.items || data
+  } catch (err) {
+    console.log('❌ Error al cargar las API Keys: ', err.message)
+    $q.notify({ type: 'negative', message: 'Error cargando llaves' })
+  }
+}
+
+const crearAPIKey = async () => {
+  try {
+    const payload = { ...form.value }
+    await ApiKeyService.create(payload, form.value.formato)
     $q.notify({
-        message: `❌ Error al obtener API Keys`,
-        type: 'error',
-        position: 'top-right'
+      type: 'positive',
+      message: 'Llave creada. La descarga comenzará automáticamente.',
+    })
+
+    form.value.name = ''
+    modalOpen.value = false
+    cargarKeys()
+  } catch (error) {
+    console.error('❌ Error al crear una nueva API Key: ', error.message)
+    $q.notify({ type: 'negative', message: 'Error creando claves' })
+    return
+  }
+}
+
+const renewToken = async (id) => {
+  try {
+    const payload = {
+      ttlDays,
+      rotateDays,
+    }
+
+    await ApiKeyService.renew(id, payload)
+
+    $q.notify({
+      type: 'positive',
+      message: 'API Key renovada correctamente!',
+    })
+
+    cargarKeys()
+  } catch (error) {
+    console.error('❌ Error al renovar API Key: ', error.message)
+    $q.notify({
+      type: 'negative',
+      message: 'Llave creada. La descarga comenzará automáticamente.',
     })
   }
 }
@@ -240,8 +385,12 @@ const abrirModalCrear = () => {
   modalOpen.value = true
 }
 
+const abrirModalRateLimit = () => {
+  rateLimitDialog.value = true
+}
+
 onMounted(() => {
-  startPage()
+  cargarKeys()
 })
 </script>
 
@@ -286,6 +435,14 @@ onMounted(() => {
       background-color: rgba(255, 255, 255, 0.03) !important;
     }
   }
+}
+
+.header-modal-bg {
+  background-color: #252b37;
+}
+
+.body-modal-bg {
+  background-color: #333c4d;
 }
 
 // Input de búsqueda personalizado

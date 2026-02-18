@@ -7,13 +7,13 @@
     >
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-        <q-toolbar-title>Consola Logs</q-toolbar-title>
+        <q-toolbar-title v-if="!$q.platform.is.mobile">Consola Logs</q-toolbar-title>
 
         <!-- Botones de herramientas rápidas -->
         <div class="row items-center q-gutter-x-sm mobile-scroll-row">
-          <!-- Botón de filtros avanzados -->
+          <!-- (Opcional) QR Sesiones: lo dejo solo si estás en móvil por plataforma, ya NO por flow -->
           <q-btn
-            v-if="currentFlow !== 'escritorio' && $q.platform.is.mobile"
+            v-if="$q.platform.is.mobile"
             flat
             dense
             round
@@ -34,18 +34,67 @@
             <q-tooltip>Consola de Logs</q-tooltip>
           </q-btn>
 
-          <!-- Botón de gestión de empleados (solo admin) -->
+          <!-- Notificaciones sobre API Keys -->
           <q-btn
-            v-if="isAdmin"
+            v-can="{ any: ['USERS_MANAGE'] }"
             flat
             dense
             round
-            icon="group"
-            color="cyan"
-            @click="router.push('/gestion-empleados')"
-            class="q-mr-sm"
+            icon="notifications"
+            size="sm"
+            color="white"
           >
-            <q-tooltip>Gestionar Empleados</q-tooltip>
+            <q-badge color="red" floating v-if="apiKeysPorExpirar.length > 0">
+              {{ apiKeysPorExpirar.length }}
+            </q-badge>
+
+            <q-menu
+              fit
+              anchor="bottom left"
+              self="top left"
+              class="bg-dark text-white"
+              style="max-width: 350px"
+            >
+              <q-list style="min-width: 300px">
+                <q-item-label header class="text-grey-4 text-weight-bold">
+                  Alertas de API Keys
+                </q-item-label>
+
+                <q-separator color="grey-8" />
+
+                <div v-if="apiKeysPorExpirar.length === 0" class="q-pa-md text-center text-grey">
+                  <q-icon name="check_circle" color="green" size="md" />
+                  <div class="q-mt-xs">Todo en orden</div>
+                </div>
+
+                <q-item
+                  v-for="key in apiKeysPorExpirar"
+                  :key="key.id"
+                  clickable
+                  v-close-popup
+                  @click="router.push('/myApiKeys')"
+                >
+                  <q-item-section avatar>
+                    <q-icon name="warning" :color="key.tipoAlerta === 'ROTA' ? 'orange' : 'red'" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-weight-bold">{{ key.name }}</q-item-label>
+                    <q-item-label caption class="text-grey-5">
+                      <template v-if="key.tipoAlerta === 'ROTA'">
+                        {{ key.diasParaRotar }} día(s) para renovar.
+                      </template>
+                      <template v-else> Expira en {{ key.diasParaExpirar }} días </template>
+                    </q-item-label>
+                  </q-item-section>
+                  <q-item-section side top>
+                    <q-badge
+                      :color="key.tipoAlerta === 'ROTA' ? 'orange' : 'negative'"
+                      :label="key.tipoAlerta === 'ROTA' ? 'Renovar' : 'Expira'"
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
           </q-btn>
 
           <q-btn-dropdown
@@ -105,20 +154,19 @@
         </div>
       </q-toolbar>
 
-      <!-- Panel de filtros expandible -->
+      <!-- Panel QR Sesiones -->
       <q-slide-transition>
         <QRScannerModal v-model="showSessionQR" @qr-scanned="handleQRScanned" />
       </q-slide-transition>
 
       <!-- Panel de filtros expandible -->
       <q-slide-transition>
-        <DinamicFilters v-show="showDinamicFilters" @campos-seleccionados="onFiltrar" />
+        <DinamicFilters v-show="showDinamicFilters" @camposSeleccionados="onFiltrar" />
       </q-slide-transition>
     </q-header>
 
-    <!-- SIDEBAR ESCRITORIO -->
+    <!-- SIDEBAR ESCRITORIO (ÚNICO) -->
     <q-drawer
-      v-if="currentFlow === 'escritorio'"
       v-model="leftDrawerOpen"
       show-if-above
       bordered
@@ -132,24 +180,16 @@
       "
     >
       <q-scroll-area class="fit">
+        <div style="margin-top: 32px; text-align: center">
+          <q-avatar size="64px" icon="hive" color="primary" text-color="white" />
+          <div class="text-h6 q-mt-sm" style="color: #fff; font-weight: 700">
+            Consola Logs
+          </div>
+          <div class="text-caption q-px-md" style="color: #cfd8dc">
+            Panel avanzado para gestión de logs y eventos
+          </div>
+        </div>
         <q-list padding class="menu-list">
-          <q-item>
-            <q-item-section>
-              <q-btn-toggle
-                :model-value="currentFlow"
-                @update:model-value="cambiarFlujo"
-                spread
-                no-caps
-                rounded
-                unelevated
-                :options="[
-                  { label: 'Mobile', value: 'mobile', icon: 'smartphone' },
-                  { label: 'Escritorio', value: 'escritorio', icon: 'desktop_windows' },
-                ]"
-                class="full-width"
-              />
-            </q-item-section>
-          </q-item>
           <q-separator dark spaced />
           <q-item clickable v-ripple to="/escritorio" exact>
             <q-item-section avatar>
@@ -159,96 +199,30 @@
           </q-item>
           <q-separator dark spaced />
           <q-item-label header class="text-grey-4">Herramientas</q-item-label>
+
           <q-item clickable v-ripple to="/diagnostico">
             <q-item-section avatar>
               <q-icon name="bug_report" color="red" />
             </q-item-section>
             <q-item-section><span style="font-weight: 600">Diagnóstico</span></q-item-section>
           </q-item>
-          <q-item clickable v-ripple to="/myApiKeys">
+
+          <q-item v-can="'SETTINGS_MANAGE'" v-if="isAdmin" clickable v-ripple to="/myApiKeys">
             <q-item-section avatar>
               <q-icon name="key" color="cyan" />
             </q-item-section>
             <q-item-section><span style="font-weight: 600">Mis API Key's</span></q-item-section>
           </q-item>
-        </q-list>
-        <div style="margin-top: 32px; text-align: center">
-          <q-avatar size="64px" icon="desktop_windows" color="primary" text-color="white" />
-          <div class="text-h6 q-mt-sm" style="color: #fff; font-weight: 700">
-            Santoro Escritorio
-          </div>
-          <div class="text-caption" style="color: #cfd8dc">
-            Panel avanzado para gestión de logs y eventos
-          </div>
-        </div>
-      </q-scroll-area>
-    </q-drawer>
 
-    <!-- SIDEBAR MOBILE -->
-    <q-drawer
-      v-if="currentFlow === 'mobile'"
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-      :width="220"
-      :breakpoint="1440"
-      class="app-drawer mobile-drawer"
-      style="
-        background: linear-gradient(135deg, #1e1e2f 0%, #43cea2 100%);
-        box-shadow: 0 4px 24px rgba(67, 206, 162, 0.2);
-        border-right: 2px solid #43cea2;
-      "
-    >
-      <q-scroll-area class="fit">
-        <q-list padding class="menu-list">
-          <q-item>
+          <q-item v-can="'USERS_MANAGE'" v-if="isAdmin" clickable v-ripple to="/gestion-empleados">
+            <q-item-section avatar>
+              <q-icon name="group" color="amber" />
+            </q-item-section>
             <q-item-section>
-              <q-btn-toggle
-                :model-value="currentFlow"
-                @update:model-value="cambiarFlujo"
-                spread
-                no-caps
-                rounded
-                unelevated
-                :options="[
-                  { label: 'Mobile', value: 'mobile', icon: 'smartphone' },
-                  { label: 'Escritorio', value: 'escritorio', icon: 'desktop_windows' },
-                ]"
-                class="full-width"
-              />
+              <span style="font-weight: 600">Gestión Empleados</span>
             </q-item-section>
-          </q-item>
-          <q-separator dark spaced />
-          <q-item clickable v-ripple to="/mobile" exact>
-            <q-item-section avatar>
-              <q-icon name="dashboard" color="primary" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Dashboard</span></q-item-section>
-          </q-item>
-          <q-item clickable v-ripple to="/estadisticas">
-            <q-item-section avatar>
-              <q-icon name="insert_chart" color="blue" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Estadísticas</span></q-item-section>
-          </q-item>
-          <q-item clickable v-ripple to="/eventos">
-            <q-item-section avatar>
-              <q-icon name="event" color="green" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Eventos</span></q-item-section>
-          </q-item>
-          <q-item clickable v-ripple to="/eventos-fallidos">
-            <q-item-section avatar>
-              <q-icon name="report_problem" color="red" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Eventos Fallidos</span></q-item-section>
           </q-item>
         </q-list>
-        <div style="margin-top: 32px; text-align: center">
-          <q-avatar size="64px" icon="smartphone" color="primary" text-color="white" />
-          <div class="text-h6 q-mt-sm" style="color: #fff; font-weight: 700">Santoro Mobile</div>
-          <div class="text-caption" style="color: #cfd8dc">Panel rápido para gestión móvil</div>
-        </div>
       </q-scroll-area>
     </q-drawer>
 
@@ -291,22 +265,16 @@ import GeminiConfigModal from '../components/GeminiConfigModal.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 import authService from '../services/authService.js'
-import { santoroContextService } from '../services/santoroContextService.js'
 import QRScannerModal from 'src/components/QRScannerModal.vue'
 import DinamicFilters from 'src/components/blocks/DinamicFilters.vue'
+import { ApiKeyService } from 'src/services/apiKeys'
+import { ChartDataService } from 'src/services/chartDataService'
 
 const $q = useQuasar()
 const router = useRouter()
 const route = useRoute()
+
 const leftDrawerOpen = ref(false)
-const filtros = ref({
-  //  Sistema que actualmente esta en flujo
-  system: '',
-  //  Campos que actualmente están activos
-  fields: {
-    // status: ['SUCCESS']
-  },
-})
 const modalVisible = ref(false)
 const detalleModal = ref(null)
 const showSessionQR = ref(false)
@@ -314,99 +282,141 @@ const showDinamicFilters = ref(false)
 const consolaRef = ref(null)
 const geminiConfigRef = ref(null)
 
-// Estado del flujo guardado en localStorage
-const savedFlow = ref(JSON.parse(localStorage.getItem('dashboardFlow'))[0] || 'escritorio')
-const systems = ref(
-  JSON.parse(localStorage.getItem('dashboardLogsSession'))?.user?.authz?.systems || [],
-)
-const selectedSystem = ref(JSON.parse(localStorage.getItem('dashboardFlow'))[1] || 'DASHBOARD')
+const apiKeysPorExpirar = ref([])
+const prefs = authService.loadPrefs()
 
-// Computed para obtener el flujo actual desde la ruta
-const currentFlow = computed(() => {
-  // Priorizar el meta.flow de la ruta si existe (rutas específicas)
-  if (route.meta?.flow) {
-    return route.meta.flow
-  }
+const systems = ref(JSON.parse(localStorage.getItem('dashboardLogsSession')).user.authz.systems)
+const selectedSystem = ref(prefs.system)
 
-  // Para rutas sin meta.flow, usar el flujo guardado
-  return savedFlow.value
+const logsGlobales = ref([])
+const MS_DIA = 1000 * 60 * 60 * 24
+
+const filtros = ref({
+  system: '',
+  rangoFechas: { from: '', to: '' },
+  busqueda: '',
+  visibleFields: [],
+  values: {},
 })
 
-// Watcher para guardar cambios de flujo
-watch([currentFlow, selectedSystem], (newFlow) => {
-  if (route.meta?.flow) {
-    // Si la ruta tiene meta.flow específico, guardarlo como preferencia
-    savedFlow.value = newFlow
-    localStorage.setItem(
-      'dashboardFlow',
-      JSON.stringify( newFlow || [currentFlow.value, selectedSystem.value] ),
-    )
-  }
-})
-
-// Proporcionar el estado del flujo a los componentes hijos
-provide('selectedFlow', currentFlow)
-provide('selectedSystem', selectedSystem)
+provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
 
-// Servicio de autenticación ya importado
-
-// Información del usuario reactiva desde el servicio de autenticación
+// Info usuario
 const userInfo = computed(() => ({
   nombre: authService.user?.name || 'Usuario',
   email: authService.user?.email || 'Sin email',
-  roles: authService.user?.roles || [],
+  roles: authService.user?.authz?.roles || [],
 }))
 
-// Verificar si el usuario es admin
-const isAdmin = computed(() => {
-  return userInfo.value.roles.includes('ORG_ADMIN')
-})
+const logsRango = ref([])
+const loadingLogs = ref(false)
 
-// Función para cambiar de flujo mediante rutas
-const cambiarFlujo = (nuevoFlujo) => {
-  // Guardar la nueva preferencia de flujo
-  savedFlow.value = nuevoFlujo
-  localStorage.setItem('dashboardFlow', { nuevoFlujo, selectedSystem })
-
-  let rutaDestino
-
-  // Lógica inteligente para mantener la página actual cuando sea posible
-  if (nuevoFlujo === 'mobile') {
-    // Para flujo móvil: ir a la ruta específica móvil
-    rutaDestino = '/mobile'
-  } else {
-    // Para flujo escritorio: ir a la ruta específica escritorio
-    rutaDestino = '/escritorio'
-  }
-
-  router.push(rutaDestino)
-
-  const message =
-    nuevoFlujo === 'mobile' ? 'Cambiado a vista móvil' : 'Cambiado a vista de escritorio'
-
-  $q.notify({
-    message,
-    color: 'info',
-    icon: nuevoFlujo === 'mobile' ? 'smartphone' : 'desktop_windows',
-  })
-
-  // Emitir evento personalizado para comunicar el cambio a componentes hijos
-  window.dispatchEvent(new CustomEvent('cambiar-flujo', { detail: nuevoFlujo }))
-
-  // Actualizar contexto de Santoro
-  santoroContextService.cambiarFlujo(nuevoFlujo)
+const aplicarFiltroSystem = () => {
+  const sys = filtros.value.system
+  logsGlobales.value = sys ? logsRango.value.filter((l) => l.system === sys) : logsRango.value
 }
 
-// Observar cambios en la ruta para notificar cambios de flujo
-watch(
-  () => route.path,
-  (newPath) => {
-    const flujo = newPath.includes('/mobile') ? 'mobile' : 'escritorio'
-    santoroContextService.cambiarFlujo(flujo)
-  },
-  { immediate: true },
-)
+const cargarLogsPorRango = async () => {
+  loadingLogs.value = true
+  try {
+    const resp = await ChartDataService.getAll({ rangoFechas: filtros.value.rangoFechas })
+    logsRango.value = resp?.data?.items || []
+    aplicarFiltroSystem()
+  } catch (e) {
+    console.error('❌ Error al cargar los datos: ', e)
+    logsRango.value = []
+    logsGlobales.value = []
+  } finally {
+    loadingLogs.value = false
+  }
+}
+
+const isAdmin = computed(() => {
+  return userInfo.value.roles.includes('ORG_ADMIN') || userInfo.value.roles.includes('ORG_OWNER')
+})
+
+const diffDias = (fechaISO, hoy) => {
+  if (!fechaISO) return null
+  const ms = new Date(fechaISO).getTime() - hoy.getTime()
+  if (!Number.isFinite(ms)) return null
+  return Math.ceil(ms / MS_DIA)
+}
+
+const checkApiKeysExpirations = async () => {
+  try {
+    const response = await ApiKeyService.getAll()
+    const listaKeys = response.data.items || []
+    const hoy = new Date()
+    const diasLimite = 7
+
+    apiKeysPorExpirar.value = listaKeys
+      .map((key) => {
+        const status = String(key.status || '').toLowerCase()
+
+        const diasParaRotar = diffDias(key.rotatesAt, hoy)
+        const diasParaExpirar = diffDias(key.expiresAt, hoy)
+
+        const expirada = diasParaExpirar !== null && diasParaExpirar < 0
+        const esBloqueada = ['revoked', 'disabled', 'blocked', 'inactive'].includes(status)
+
+        const requiereRotacion =
+          !expirada &&
+          !esBloqueada &&
+          diasParaRotar !== null &&
+          diasParaRotar >= 0 &&
+          diasParaRotar <= diasLimite
+
+        const expiraPronto =
+          !esBloqueada &&
+          diasParaExpirar !== null &&
+          diasParaExpirar >= 0 &&
+          diasParaExpirar <= diasLimite
+
+        let tipoAlerta = null
+        let diasRestantes = null
+
+        if (requiereRotacion) {
+          tipoAlerta = 'ROTA'
+          diasRestantes = diasParaRotar
+        } else if (expiraPronto) {
+          tipoAlerta = 'EXPIRA'
+          diasRestantes = diasParaExpirar
+        }
+
+        return {
+          ...key,
+          diasParaRotar,
+          diasParaExpirar,
+          tipoAlerta,
+          diasRestantes,
+        }
+      })
+      .filter((key) => key.tipoAlerta !== null)
+      .sort((a, b) => a.diasRestantes - b.diasRestantes)
+
+    if (apiKeysPorExpirar.value.length) {
+      $q.notify({
+        message: '🚨 Tienes notificaciones nuevas sobre tus API Keys!',
+        color: 'yellow',
+        textColor: 'black',
+        position: $q.platform.is.mobile ? 'bottom' : 'top',
+      })
+    }
+  } catch (error) {
+    console.error('Error verificando expiraciones:', error)
+  }
+}
+
+const handleQRScanned = (payload) => {
+  console.log('📷 QR Scanned:', payload)
+  showSessionQR.value = false
+  $q.notify({
+    message: '✅ Inicio de Sesión por QR realizado!',
+    position: 'bottom',
+    color: 'green',
+  })
+}
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
@@ -420,23 +430,27 @@ function toggleDinamicFilters() {
   showDinamicFilters.value = !showDinamicFilters.value
 }
 
-async function onFiltrar(fields) {
-  const buildFiltros = {
-    system: selectedSystem.value,
-    fields,
+async function onFiltrar(payload) {
+  const {
+    _visibleFields = [],
+    busqueda = '',
+    rangoFechas = { from: '', to: '' },
+    ...rest
+  } = payload
+
+  filtros.value = {
+    ...filtros.value,
+    busqueda,
+    rangoFechas,
+    visibleFields: _visibleFields,
+    values: rest,
   }
-
-  filtros.value = buildFiltros
-  console.log('🔄 MainLayout: Aplicando filtros:', buildFiltros)
-
-  // Emitir evento para que las gráficas escuchen los cambios
-  window.dispatchEvent(new CustomEvent('filtros-aplicados', { detail: fields }))
 
   $q.notify({
     message: '🔍 Filtros aplicados correctamente',
     color: 'positive',
     icon: 'filter_list',
-    position: 'top-right',
+    position: $q.platform.is.mobile ? 'bottom' : 'top',
   })
 
   showDinamicFilters.value = false
@@ -446,14 +460,12 @@ function onGeminiConfigurado() {
   console.log('✅ Gemini configurado desde MainLayout')
 }
 
-// Funciones para modales
 function openConsole() {
   if (consolaRef.value && consolaRef.value.abrirConsola) {
     consolaRef.value.abrirConsola()
     console.log('✅ Consola abierta correctamente')
   } else {
     console.warn('❌ Referencia de consola no disponible:', consolaRef.value)
-
     $q.notify({
       message: '❌ Error al abrir la consola. Referencia no disponible.',
       color: 'negative',
@@ -463,7 +475,6 @@ function openConsole() {
 }
 
 function logout() {
-  // Usar el servicio de autenticación para hacer logout
   const result = authService.logout()
 
   if (result.success) {
@@ -473,8 +484,6 @@ function logout() {
       icon: 'logout',
       position: 'top',
     })
-
-    // Redirigir al login
     router.push('/login')
   } else {
     $q.notify({
@@ -486,32 +495,34 @@ function logout() {
   }
 }
 
-// Eventos del asistente Santoro
-onMounted(() => {
-  // Configurar flujo inicial desde localStorage o por defecto
-  const savedFlow = localStorage.getItem('selectedFlow')
-  const initialFlow =
-    savedFlow && ['mobile', 'escritorio'].includes(savedFlow) ? savedFlow : 'escritorio'
+// 1) Cuando cambia system: NO pega al backend, solo refiltra logsRango
+watch(
+  selectedSystem,
+  (sys) => {
+    filtros.value.system = sys
+    aplicarFiltroSystem()
+  },
+  { immediate: true },
+)
 
-  // Si estamos en la ruta raíz, redirigir al flujo inicial
+// 2) Cuando cambia rango: SÍ pega al backend
+watch(
+  () => `${filtros.value.rangoFechas?.from || ''}|${filtros.value.rangoFechas?.to || ''}`,
+  () => cargarLogsPorRango(),
+  { immediate: true },
+)
+
+onMounted(() => {
+  // Siempre arrancar en escritorio
   if (route.path === '/' || route.path === '/dashboard' || route.path === '/logs') {
-    router.push(`/${initialFlow}`)
+    router.push('/escritorio')
   }
 
-  // Escuchar eventos del asistente para cambio de flujo
-  window.addEventListener('santoro-cambiar-flujo', (event) => {
-    const { flujo } = event.detail
-    cambiarFlujo(flujo)
-  })
+  // Eventos del asistente (solo los que NO son de flujo)
+  window.addEventListener('santoro-abrir-consola', () => openConsole())
+  window.addEventListener('santoro-mostrar-filtros', () => (showDinamicFilters.value = true))
 
-  // Otros eventos del asistente...
-  window.addEventListener('santoro-abrir-consola', () => {
-    openConsole()
-  })
-
-  window.addEventListener('santoro-mostrar-filtros', () => {
-    showDinamicFilters.value = true
-  })
+  checkApiKeysExpirations()
 })
 </script>
 

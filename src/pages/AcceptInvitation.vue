@@ -198,12 +198,12 @@
 
 <script setup>
 import { acceptInvite } from 'src/services/acceptInviteService'
-import authService from 'src/services/authService'
+// import authService from 'src/services/authService'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { generateAndDownloadTenantQR } from 'src/services/qrService'
-import { storeJWTInCookie } from 'src/services/cookieService'
+// import { generateAndDownloadTenantQR } from 'src/services/qrService'
+// import { storeJWTInCookie } from 'src/services/cookieService'
 
 const route = useRoute()
 const router = useRouter()
@@ -319,25 +319,6 @@ const submit = async () => {
       throw new Error(response.message || 'Error al aceptar invitación')
     }
 
-    const { tenantId, token: jwtToken, user, roles } = response.data
-
-    // Guardar JWT en cookie
-    storeJWTInCookie(jwtToken)
-
-    // Guardar datos del usuario en localStorage para la sesión
-    const sessionData = {
-      user: {
-        ...user,
-        tenantId,
-        roles: roles || [],
-      },
-      isAuthenticated: true,
-    }
-    localStorage.setItem('dashboardLogsSession', JSON.stringify(sessionData))
-
-    // Reinicializar authService para cargar la nueva sesión
-    authService.initializeAuth()
-
     // Mostrar mensaje de éxito
     mensajeExito.value = `${response.message} ✅`
 
@@ -349,17 +330,17 @@ const submit = async () => {
     })
 
     // Generar y descargar QR con tenantId
-    try {
-      await generateAndDownloadTenantQR(tenantId)
-      console.log('✅ QR generado y descargado')
-    } catch (qrError) {
-      console.warn('⚠️ Error al generar QR:', qrError)
-      // No bloquear el flujo si falla el QR
-    }
+    // try {
+    //   await generateAndDownloadTenantQR(tenantId)
+    //   console.log('✅ QR generado y descargado')
+    // } catch (qrError) {
+    //   console.warn('⚠️ Error al generar QR:', qrError)
+    //   // No bloquear el flujo si falla el QR
+    // }
 
     // Redirigir al escritorio
     setTimeout(() => {
-      router.push('/escritorio')
+      router.push('/login')
     }, 2000)
   } catch (error) {
     console.error('❌ Error al aceptar invitación:', error)

@@ -6,8 +6,14 @@
         <div class="header-content">
           <q-icon name="email" size="32px" color="primary" />
           <div>
-            <h2>Enviar Invitación</h2>
-            <p>Invita a un nuevo usuario al sistema</p>
+            <h2>{{ saveMode === 'save' ? 'Envíar Invitación' : 'Editar Usuario' }}</h2>
+            <p>
+              {{
+                saveMode === 'save'
+                  ? 'Invita a un nuevo usuario al sistema.'
+                  : 'Edita los datos del usuario.'
+              }}
+            </p>
           </div>
         </div>
         <q-btn icon="close" flat round dense @click="closeModal" />
@@ -17,7 +23,7 @@
 
       <!-- Body -->
       <q-card-section class="modal-body">
-        <q-form @submit="enviarInvitacion" class="invitation-form">
+        <q-form v-if="saveMode === 'save'" @submit="enviarInvitacion" class="invitation-form">
           <!-- Email -->
           <div class="form-field">
             <label class="field-label">
@@ -50,7 +56,6 @@
             <q-select
               v-model="formData.roles"
               :options="roleOptions"
-              multiple
               outlined
               placeholder="Selecciona uno o más roles"
               use-chips
@@ -74,7 +79,42 @@
                 </q-chip>
               </template>
             </q-select>
-            <div class="field-hint">Puedes seleccionar múltiples roles para el usuario</div>
+          </div>
+
+          <!-- Sistemas -->
+          <div v-if="formData.roles === 'SYSTEM_MANAGER'" class="form-field">
+            <label class="field-label">
+              <q-icon name="devices" size="20px" />
+              Sistemas *
+            </label>
+            <q-select
+              v-model="formData.systems"
+              :options="systemOptions"
+              multiple
+              outlined
+              placeholder="Selecciona uno o más sistemas"
+              use-chips
+              stack-label
+              :rules="[(val) => (val && val.length > 0) || 'Selecciona al menos un sistema']"
+              lazy-rules
+            >
+              <template v-slot:prepend>
+                <q-icon name="dashboard" />
+              </template>
+              <template v-slot:selected-item="scope">
+                <q-chip
+                  removable
+                  @remove="scope.removeAtIndex(scope.index)"
+                  :tabindex="scope.tabindex"
+                  color="amber"
+                  text-color="white"
+                  dense
+                >
+                  {{ scope.opt }}
+                </q-chip>
+              </template>
+            </q-select>
+            <div class="field-hint">Puedes seleccionar múltiples sistemas para el usuario.</div>
           </div>
 
           <!-- TTL Hours -->
@@ -117,7 +157,7 @@
           </div>
 
           <!-- Preview -->
-          <div v-if="formData.email && formData.roles.length > 0" class="invitation-preview">
+          <div v-if="isFormValid" class="invitation-preview">
             <div class="preview-header">
               <q-icon name="visibility" size="20px" />
               Vista Previa
@@ -128,16 +168,94 @@
                 <span>{{ formData.email }}</span>
               </div>
               <div class="preview-row">
-                <strong>Roles:</strong>
+                <strong>Rol:</strong>
                 <div class="preview-roles">
-                  <q-badge v-for="role in formData.roles" :key="role" color="secondary">
-                    {{ role }}
+                  <q-badge color="secondary">
+                    {{ formData.roles }}
+                  </q-badge>
+                </div>
+              </div>
+              <div v-if="formData.roles === 'SYSTEM_MANAGER'" class="preview-row">
+                <strong>Sistema(s):</strong>
+                <div class="preview-roles">
+                  <q-badge v-for="system in formData.systems" :key="system" color="amber">
+                    {{ system }}
                   </q-badge>
                 </div>
               </div>
               <div class="preview-row">
                 <strong>Expira:</strong>
                 <span>{{ formatExpiration(formData.ttlHours) }}</span>
+              </div>
+            </div>
+          </div>
+        </q-form>
+
+        <!-- Formulario para editar a un usuario -->
+        <q-form v-if="saveMode !== 'save'" @submit="editarUsuario" class="invitation-form">
+          <!-- Nombre -->
+          <div class="form-field">
+            <label class="field-label">
+              <q-icon name="account_circle" size="20px" />
+              Usuario *
+            </label>
+            <q-input
+              v-model="formData.name"
+              type="text"
+              outlined
+              placeholder="Nombre de la persona"
+              :rules="[(val) => !!val || 'El nombre es requerido']"
+              lazy-rules
+            >
+              <template v-slot:prepend>
+                <q-icon name="edit" />
+              </template>
+            </q-input>
+          </div>
+
+          <!-- Email -->
+          <div class="form-field">
+            <label class="field-label">
+              <q-icon name="alternate_email" size="20px" />
+              Correo Electrónico *
+            </label>
+            <q-input
+              v-model="formData.email"
+              type="email"
+              outlined
+              placeholder="usuario@ejemplo.com"
+              :rules="[
+                (val) => !!val || 'El email es requerido',
+                (val) => isValidEmail(val) || 'Email inválido',
+              ]"
+              lazy-rules
+            >
+              <template v-slot:prepend>
+                <q-icon name="mail" />
+              </template>
+            </q-input>
+            <q-toggle v-model="formData.status" color="primary" label="Activo" keep-color />
+          </div>
+          <!-- Preview -->
+          <div class="invitation-preview">
+            <div class="preview-header">
+              <q-icon name="visibility" size="20px" />
+              Vista Previa
+            </div>
+            <div class="preview-content">
+              <div class="preview-row">
+                <strong>Nombre (usuario):</strong>
+                <span>{{ formData.name }}</span>
+              </div>
+              <div class="preview-row">
+                <strong>Email:</strong>
+                <span>{{ formData.email }}</span>
+              </div>
+              <div class="preview-row">
+                <strong>Estatus:</strong>
+                <q-badge :color="formData.status ? 'secondary' : 'red'">
+                  {{ formData.status ? 'Activo' : 'Inactivo' }}
+                </q-badge>
               </div>
             </div>
           </div>
@@ -151,11 +269,11 @@
         <q-btn label="Cancelar" flat color="grey-7" @click="closeModal" :disable="sending" />
         <q-space />
         <q-btn
-          label="Enviar Invitación"
+          :label="saveMode === 'save' ? 'Enviar Invitación' : 'Guardar Cambios'"
           unelevated
           color="primary"
-          icon-right="send"
-          @click="enviarInvitacion"
+          :icon-right="saveMode === 'save' ? 'send' : 'save'"
+          @click="saveMode === 'save' ? enviarInvitacion() : editarUsuario()"
           :loading="sending"
           :disable="!isFormValid"
         />
@@ -197,32 +315,44 @@
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { sendInvitation } from '../services/invitationsService.js'
+import { editUser } from 'src/services/usersService.js'
 
 const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    required: true,
-  },
-  availableRoles: {
-    type: Array,
-    default: () => [],
-  },
+  modelValue: { type: Boolean, required: true },
+  availableRoles: { type: Array, default: () => [] },
+  saveMode: { type: String, default: 'save', required: true },
+  dataUser: { type: Object, required: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'invitation-sent'])
-
 const $q = useQuasar()
-
-// State
-const formData = ref({
-  email: '',
-  roles: [],
-  ttlHours: 48,
-})
 
 const sending = ref(false)
 const invitationSent = ref(false)
 const invitationLink = ref('')
+
+const systemOptions = ref(
+  JSON.parse(localStorage.getItem('dashboardLogsSession'))?.user?.authz?.systems || [],
+)
+
+const bodyInvite = () => ({
+  email: '',
+  roles: null,
+  systems: [],
+  ttlHours: 48,
+})
+
+const bodyEdit = () => ({
+  id: '',
+  name: '',
+  status: true,
+})
+
+// State
+const formData = ref({
+  ...bodyInvite(),
+  ...bodyEdit(),
+})
 
 // Computed
 const dialogModel = computed({
@@ -230,19 +360,66 @@ const dialogModel = computed({
   set: (val) => emit('update:modelValue', val),
 })
 
-const roleOptions = computed(() => {
-  return props.availableRoles || []
-})
+const roleOptions = computed(() => props.availableRoles)
+
+// Methods
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '')
 
 const isFormValid = computed(() => {
+  if (props.saveMode !== 'save') {
+    return !!formData.value.email && isValidEmail(formData.value.email) && !!formData.value.name
+  }
+
+  if (formData.value.roles === 'SYSTEM_MANAGER') {
+    return (
+      !!formData.value.email &&
+      isValidEmail(formData.value.email) &&
+      formData.value.roles &&
+      formData.value.systems.length > 0 &&
+      formData.value.ttlHours > 0 &&
+      formData.value.ttlHours <= 168
+    )
+  }
+
   return (
-    formData.value.email &&
+    !!formData.value.email &&
     isValidEmail(formData.value.email) &&
-    formData.value.roles.length > 0 &&
+    formData.value.roles &&
     formData.value.ttlHours > 0 &&
     formData.value.ttlHours <= 168
   )
 })
+
+const boolToStatus = (val) => (val ? 'active' : 'inactive')
+
+function hydrateForm() {
+  invitationSent.value = false
+  invitationLink.value = ''
+
+  if (props.saveMode === 'edit' && props.dataUser) {
+    const statusBool =
+      props.dataUser.status === 'active'
+        ? true
+        : props.dataUser.status === 'inactive'
+          ? false
+          : !!props.dataUser.status
+
+    formData.value = {
+      ...bodyInvite(),
+      ...bodyEdit(),
+      id: props.dataUser.id ?? '',
+      name: props.dataUser.name ?? '',
+      email: props.dataUser.email ?? '',
+      status: statusBool,
+    }
+  } else {
+    // modo invitar
+    formData.value = {
+      ...bodyInvite(),
+      ...bodyEdit(),
+    }
+  }
+}
 
 // Data
 const ttlPresets = [
@@ -251,12 +428,6 @@ const ttlPresets = [
   { label: '72h', value: 72 },
   { label: '7 días', value: 168 },
 ]
-
-// Methods
-const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
 
 const formatExpiration = (hours) => {
   if (hours < 24) {
@@ -277,37 +448,31 @@ const enviarInvitacion = async () => {
     return
   }
 
-  try {
-    sending.value = true
-
-    const response = await sendInvitation({
+  console.log('📤 Datos a envíar para la invitación:', {
       email: formData.value.email,
       roles: formData.value.roles,
+      systems: formData.value.systems,
       ttlHours: formData.value.ttlHours,
     })
 
-    console.log('✅ Invitación enviada:', response)
+  try {
+    sending.value = true
+    const response = await sendInvitation({
+      email: formData.value.email,
+      roles: [formData.value.roles],
+      systems: formData.value.systems,
+      ttlHours: formData.value.ttlHours,
+    })
 
-    // Guardar el link si viene en la respuesta
-    if (response.invitationLink) {
-      invitationLink.value = response.invitationLink
-    } else if (response.inviteId) {
-      // Construir el link manualmente si solo viene el ID
+    if (response.invitationLink) invitationLink.value = response.invitationLink
+    else if (response.inviteId)
       invitationLink.value = `${window.location.origin}/accept-invitation?inviteId=${response.inviteId}`
-    }
 
     invitationSent.value = true
 
-    $q.notify({
-      type: 'positive',
-      message: '✅ Invitación enviada correctamente',
-      position: 'top',
-      timeout: 3000,
-    })
-
-    emit('invitation-sent', response)
+    emit('invitation-sent', response ?? 'Invitación realizada correctamente!')
+    closeModal()
   } catch (error) {
-    console.error('❌ Error al enviar invitación:', error)
     $q.notify({
       type: 'negative',
       message: error.response?.data?.message || 'Error al enviar la invitación',
@@ -316,6 +481,33 @@ const enviarInvitacion = async () => {
     })
   } finally {
     sending.value = false
+  }
+}
+
+const editarUsuario = async () => {
+  try {
+    console.log('✏️ Enviando datos a editar: ', {
+      id: formData.value.id,
+      email: formData.value.email,
+      name: formData.value.name,
+      status: boolToStatus(formData.value.status),
+    })
+
+    const response = await editUser({
+      id: formData.value.id,
+      email: formData.value.email,
+      name: formData.value.name,
+      status: boolToStatus(formData.value.status), // 👈 aquí
+    })
+
+    emit('invitation-sent', response)
+    closeModal()
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error.response?.data?.message || error.message,
+      position: 'top',
+    })
   }
 }
 
@@ -335,27 +527,27 @@ const resetForm = () => {
   formData.value = {
     email: '',
     roles: [],
+    systems: [],
     ttlHours: 48,
+    name: '',
+    id: '',
+    status: true,
   }
   invitationSent.value = false
   invitationLink.value = ''
 }
 
 const closeModal = () => {
-  if (!sending.value) {
-    resetForm()
-    emit('update:modelValue', false)
-  }
+  if (!sending.value) emit('update:modelValue', false)
 }
 
 // Watchers
 watch(
-  () => props.modelValue,
-  (newVal) => {
-    if (newVal) {
-      resetForm()
-    }
-  }
+  () => [props.modelValue, props.saveMode, props.dataUser],
+  ([open]) => {
+    if (open) hydrateForm()
+  },
+  { deep: true }
 )
 </script>
 

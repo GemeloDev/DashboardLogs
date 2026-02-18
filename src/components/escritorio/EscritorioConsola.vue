@@ -83,10 +83,10 @@
                 <q-item
                   clickable
                   v-close-popup
-                  @click="
+                  @click="() => {
                     filtroOficina = null
                     oficinaSeleccionada = null
-                  "
+                  }"
                 >
                   <q-item-section>
                     <q-item-label>Todas las oficinas</q-item-label>
@@ -98,10 +98,10 @@
                   :key="oficina"
                   clickable
                   v-close-popup
-                  @click="
-                    filtroOficina = oficina
-                    oficinaSeleccionada = oficina
-                  "
+                  @click="() => {
+                    filtroOficina = null
+                    oficinaSeleccionada = null
+                  }"
                 >
                   <q-item-section>
                     <q-item-label>{{ oficina }}</q-item-label>
@@ -126,9 +126,10 @@
                 <q-item
                   clickable
                   v-close-popup
-                  @click="
+                  @click="() => {
                     filtroUsuario = null
                     usuarioSeleccionado = null
+                  }
                   "
                 >
                   <q-item-section>
@@ -141,9 +142,10 @@
                   :key="usuario"
                   clickable
                   v-close-popup
-                  @click="
+                  @click=" () => {
                     filtroUsuario = usuario
                     usuarioSeleccionado = usuario
+                  }
                   "
                 >
                   <q-item-section>
@@ -169,9 +171,10 @@
                 <q-item
                   clickable
                   v-close-popup
-                  @click="
+                  @click="() => {
                     filtroTipo = []
                     tipoSeleccionado = null
+                  }
                   "
                 >
                   <q-item-section>
@@ -184,9 +187,10 @@
                   :key="tipo.value"
                   clickable
                   v-close-popup
-                  @click="
+                  @click="() => {
                     filtroTipo = [tipo.value]
                     tipoSeleccionado = tipo.label
+                  }
                   "
                 >
                   <q-item-section>
@@ -236,9 +240,10 @@
                 <q-item
                   clickable
                   v-close-popup
-                  @click="
+                  @click="() => {
                     filtroFecha = null
                     rangoFechaSeleccionado = null
+                  }
                   "
                 >
                   <q-item-section>
@@ -279,9 +284,10 @@
             <q-chip
               v-if="oficinaSeleccionada"
               removable
-              @remove="
+              @remove="() => {
                 filtroOficina = null
                 oficinaSeleccionada = null
+              }
               "
               color="primary"
               text-color="white"

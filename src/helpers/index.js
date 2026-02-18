@@ -10,48 +10,37 @@ const formatearFecha = (fecha) => {
   }
 }
 
-const counterKeyRegister = (object) => {
-  const persons = object.filter(obj => "person" in obj).length
-  const oficina = object.filter(obj => "oficina" in obj).length
-  return {
-    persons,
-    oficina
-  }
-}
+const timeAgoIntl = (dateString) => {
+  if (!dateString) return 'Nunca'
 
-const getEventIcon = (type) => {
-  switch (type?.toUpperCase()) {
-    case 'SUCCESS':
-      return 'check_circle'
-    case 'ERROR':
-      return 'error'
-    case 'WARNING':
-      return 'warning'
-    case 'INFO':
-      return 'info'
-    default:
-      return 'timeline'
-  }
-}
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = (date - now) / 1000
 
-const getEventColor = (type) => {
-  switch (type?.toUpperCase()) {
-    case 'SUCCESS':
-      return 'green-5'
-    case 'ERROR':
-      return 'red-5'
-    case 'WARNING':
-      return 'orange-5'
-    case 'INFO':
-      return 'blue-5'
-    default:
-      return 'grey-5'
+  const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' })
+
+  // Definir cortes
+  const cutoffs = [
+    { amount: 60, unit: 'seconds' },
+    { amount: 60, unit: 'minutes' },
+    { amount: 24, unit: 'hours' },
+    { amount: 7, unit: 'days' },
+    { amount: 4.34524, unit: 'weeks' },
+    { amount: 12, unit: 'months' },
+    { amount: Number.POSITIVE_INFINITY, unit: 'years' }
+  ]
+
+  let duration = diffInSeconds
+
+  for (const { amount, unit } of cutoffs) {
+    if (Math.abs(duration) < amount) {
+      return rtf.format(Math.round(duration), unit)
+    }
+    duration /= amount
   }
 }
 
 export {
   formatearFecha,
-  getEventIcon,
-  getEventColor,
-  counterKeyRegister
+  timeAgoIntl,
 }

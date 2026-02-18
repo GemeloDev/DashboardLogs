@@ -3,8 +3,10 @@
  * Punto único de configuración para todas las URLs del backend
  */
 
+import { API_BASE_URL } from "src/services/apiConfig"
+
 export const SERVER_CONFIG = {
-    BASE_URL: 'http://187.188.66.56:8040',
+    BASE_URL: API_BASE_URL || 'http://187.188.66.56:8040',
     API_VERSION: 'v1',
     TIMEOUT: 30000, // 30 segundos
 }

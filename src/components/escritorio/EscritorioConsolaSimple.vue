@@ -1,10 +1,11 @@
-﻿<template>
+<template>
   <q-dialog
-    v-model="mostrarConsola"
+    v-model="consoleStore.consoleOpen"
     maximized
     transition-show="slide-up"
     transition-hide="slide-down"
     @escape-key="cerrarConsola"
+    @hide="cerrarConsola"
   >
     <q-card class="console-modal-card console-dialog-fullscreen text-white">
       <q-card-section class="console-header bg-dark-10">
@@ -12,7 +13,7 @@
           <div class="col">
             <div class="card-title q-mt-md">
               <q-icon name="history_edu" class="q-mr-sm" color="primary" />
-              Bitácora de Eventos de Pasaportes
+              Bitácora de Eventos - {{ currentSystem }}
               <q-chip
                 v-if="logs.length || rawLogs.length"
                 color="primary"
@@ -33,6 +34,32 @@
           </div>
 
           <div class="col-auto">
+            <q-btn-dropdown
+              round
+              color="secondary"
+              icon="upload"
+              class="no-arrow q-mr-xs"
+            >
+              <q-list>
+                <q-item clickable v-close-popup @click="exportLogs('excel')">
+                  <q-item-section>
+                    <q-item-label>Excel (.xlsx)</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="exportLogs('json')">
+                  <q-item-section>
+                    <q-item-label>JSON (.json)</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="exportLogs('txt')">
+                  <q-item-section>
+                    <q-item-label>Texto (.txt)</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
             <q-btn icon="minimize" flat round color="grey-4" @click="cerrarConsola" class="q-mr-sm">
               <q-tooltip>Minimizar</q-tooltip>
             </q-btn>
@@ -70,7 +97,13 @@
                 </q-item-section>
               </template>
 
-              <DinamicFilters ref="filtroRef" :datos-origen="rawLogs" @filtrar="onLogsFiltrados" />
+              <DinamicFilters
+                ref="filtroRef"
+                :datos-origen="rawLogs"
+                @filtrar="onLogsFiltrados"
+                @campos-seleccionados="onFiltrosPayload"
+                @camposSeleccionados="onFiltrosPayload"
+              />
             </q-expansion-item>
           </div>
         </div>
@@ -134,18 +167,21 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, inject, watch, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
-// import { MockPassportService } from 'src/data/MockLogsService' -> Datos para hacer pruebas en lugar del endpoint
 import DinamicFilters from '../blocks/DinamicFilters.vue'
 import ConsoleCard from '../blocks/ConsoleCard.vue'
 import DetailDialog from '../blocks/DetailDialog.vue'
 import { ChartDataService } from 'src/services/chartDataService'
+import { useConsoleFiltersStore } from 'src/stores/consoleFilters.store'
+import ConsoleExportService from 'src/services/consoleExportService'
 
 const $q = useQuasar()
 
+const filtrosGlobales = inject('filtrosGlobales', ref(null))
+
 // --- ESTADO ---
-const mostrarConsola = ref(false)
+const consoleStore = useConsoleFiltersStore()
 const loading = ref(false)
 const filtrosToggle = ref(true)
 const modalDetalle = ref(false)
@@ -153,8 +189,11 @@ const logSeleccionado = ref(null)
 const filtroRef = ref(null)
 
 // --- DATOS ---
+const logsRango = ref([])
 const rawLogs = ref([]) // 🗄️ Fuente de verdad (Todos los datos de la API)
 const logs = ref([]) // 👁️ Datos visualizados (Filtrados)
+const lastPayload = ref(null)
+const ignoreNextFiltrar = ref(false)
 
 // --- PAGINACIÓN ---
 const paginaActual = ref(1)
@@ -171,50 +210,124 @@ const totalPaginas = computed(() => {
   return Math.ceil(logs.value.length / registrosPorPagina.value) || 1
 })
 
+const currentSystem = computed(() => filtrosGlobales?.value?.system || '')
+
+const globalRange = computed(() => filtrosGlobales?.value?.rangoFechas || { from: '', to: '' })
+
+const logsToExport = computed(() => {
+  return Array.isArray(logs.value) ? logs.value : []
+})
+
+const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
+
+const sameRange = (a = {}, b = {}) =>
+  String(a?.from || '') === String(b?.from || '') && String(a?.to || '') === String(b?.to || '')
+
+function aplicarFiltrosSystem() {
+  const sys = currentSystem.value
+  rawLogs.value = sys
+    ? (logsRango.value || []).filter((l) => l?.system === sys)
+    : logsRango.value || []
+}
+
+function aplicarPayloadLocal(items, payload) {
+  if (!payload) return items || []
+
+  const { busqueda = '', rangoFechas, _visibleFields, ...values } = payload
+
+  console.log('✅ Payload para el filtrado de datos: ', {
+    busqueda,
+    rangoFechas,
+    _visibleFields,
+    values,
+  })
+
+  const search = (busqueda || '').trim().toLowerCase()
+
+  let out = Array.isArray(items) ? items : []
+
+  out = out.filter((log) => {
+    for (const [k, v] of Object.entries(values)) {
+      if (!v) continue
+
+      const actual = getDeep(log, k)
+
+      if (Array.isArray(actual)) {
+        const norm = actual.map((x) => String(x))
+        if (!norm.includes(String(v))) return false
+        continue
+      }
+
+      if (String(actual) !== String(v)) return false
+    }
+
+    return false
+  })
+
+  //  Busqueda
+  if (search) out = out.filter((l) => JSON.stringify(l).toLowerCase().includes(search))
+
+  return out
+}
+
+function recomputarVista() {
+  aplicarFiltrosSystem()
+  logs.value = aplicarPayloadLocal(rawLogs.value, lastPayload.value)
+  paginaActual.value = 1
+}
+
 // --- FUNCIONES PRINCIPALES ---
 /**
  * Abre la consola y decide qué datos cargar
  * @param {Array|null} dataGrafica - Datos opcionales si vienen de un click en gráfica
  */
 const abrirConsola = async (dataGrafica = null) => {
-  mostrarConsola.value = true
-  filtrosToggle.value = true
-  paginaActual.value = 1
+  ignoreNextFiltrar.value = false
 
   if (dataGrafica && dataGrafica.length > 0) {
     // Escenario 1: Datos vienen desde una gráfica
     console.log('📊 Cargando datos desde gráfica:', dataGrafica.length)
-    rawLogs.value = [...dataGrafica]
-    logs.value = [...dataGrafica]
+    logsRango.value = [...dataGrafica]
+    lastPayload.value = null
+    recomputarVista()
   } else {
     // Escenario 2: Carga inicial completa desde API
-    await cargarLogsDesdeAPI()
+    await cargarLogsDesdeAPI(globalRange.value)
   }
+
+  consoleStore.consoleOpen = true
+  filtrosToggle.value = true
+  paginaActual.value = 1
 
   setTimeout(() => {
     filtrosToggle.value = false
-  }, 1000)
+  }, 600)
 }
 
-const cargarLogsDesdeAPI = async () => {
+const cargarLogsDesdeAPI = async (range = { from: '', to: '' }) => {
   loading.value = true
   try {
-    console.log('🌐 Obteniendo datos del servidor...')
     // Simulamos parámetros de fecha por defecto
     // const response = await MockPassportService.getAll() -> archivo con logs de prueba en lugar del endpoint en servidor
-    const response = await ChartDataService.getAll()
+    const response = await ChartDataService.getAll({ rangoFechas: range })
 
-    if (response.data.items && Array.isArray(response.data.items)) {
-      rawLogs.value = response.data.items
-      logs.value = response.data.items
-      console.log(`✅ ${rawLogs.value.length} registros cargados.`)
+    const items = response?.data?.items
+
+    if (Array.isArray(response.data.items)) {
+      logsRango.value = items
+      recomputarVista()
+      console.log(`✅ ${rawLogs.value.length} registros para consola cargados.`)
     } else {
-      logs.value = []
+      logsRango.value = []
       rawLogs.value = []
+      logs.value = []
     }
   } catch (error) {
     console.error('❌ Error API:', error)
     $q.notify({ type: 'negative', message: 'Error al cargar datos' })
+    logsRango.value = []
+    rawLogs.value = []
+    logs.value = []
   } finally {
     loading.value = false
   }
@@ -225,15 +338,50 @@ const cargarLogsDesdeAPI = async () => {
  */
 const onLogsFiltrados = (resultadosFiltrados) => {
   console.log('⚡ Actualizando vista con filtros:', resultadosFiltrados.length)
-  logs.value = resultadosFiltrados
+  if (ignoreNextFiltrar.value) return
+  logs.value = Array.isArray(resultadosFiltrados) ? resultadosFiltrados : []
   paginaActual.value = 1
 }
 
+const onFiltrosPayload = async (payload) => {
+  lastPayload.value = payload
+
+  const newRange = payload?.rangoFechas || { from: '', to: '' }
+
+  if (!sameRange(newRange, globalRange.value)) {
+    ignoreNextFiltrar.value = true
+    await cargarLogsDesdeAPI(newRange)
+
+    ignoreNextFiltrar.value = false
+    return
+  }
+
+  recomputarVista()
+}
+
+function exportLogs(format) {
+  try {
+    const items = logsToExport.value // <-- tus logs visibles/filtrados en consola
+    const base = `logs-${currentSystem.value || 'all'}`
+
+    if (format === 'excel') return ConsoleExportService.exportExcel(items, base)
+    if (format === 'json') return ConsoleExportService.exportJSON(items, base)
+    if (format === 'txt') return ConsoleExportService.exportTXT(items, base)
+
+    throw new Error('Formato no soportado')
+  } catch (e) {
+    console.error(e)
+    $q.notify({ type: 'negative', message: e.message || 'Error exportando logs' })
+  }
+}
+
 const cerrarConsola = () => {
-  mostrarConsola.value = false
+  consoleStore.consoleOpen = false
   // Opcional: Limpiar datos al cerrar
   logs.value = []
   rawLogs.value = []
+  logsRango.value = []
+  lastPayload.value = null
 }
 
 const mostrarDetalleLog = (log) => {
@@ -245,6 +393,36 @@ const scrollArriba = () => {
   const container = document.querySelector('.console-body')
   if (container) container.scrollTop = 0
 }
+
+//  Si campbia el system global mientras la consola está abierta, re-aplica system y re-aplica payload
+watch(currentSystem, () => {
+  if (!consoleStore.consoleOpen) return
+  recomputarVista()
+})
+
+watch(
+  () => consoleStore.pendingSelection,
+  async (sel) => {
+    if (!sel) return
+
+    // 1) Abre consola
+    consoleStore.openConsole?.()
+
+    //  2) asegura data cargada
+    if (!logsRango.value.length) {
+      await cargarLogsDesdeAPI(globalRange.value)
+    }
+
+    //  3) abre panel filtros y aplica filtro DynamicFilters
+    filtrosToggle.value = true
+    await nextTick()
+    filtroRef.value?.applyChartFilter?.(sel.fieldKey, sel.value)
+
+    //  4) limpia pending
+    consoleStore.clearPending()
+  },
+  { immediate: true, flush: 'post' },
+)
 
 defineExpose({
   abrirConsola,
@@ -410,6 +588,10 @@ defineExpose({
       border-top: none;
     }
   }
+}
+
+.no-arrow :deep(.q-btn-dropdown__arrow-container) {
+  display: none;
 }
 
 @keyframes filter-glow {

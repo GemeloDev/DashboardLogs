@@ -15,78 +15,120 @@ import { SERVER_CONFIG } from '../config/serverConfig'
  * @returns {Promise<Object>}
  */
 export const getUsers = async (page = 0, size = 10, search = '', role = '') => {
-    try {
-        const params = {
-            page,
-            size
-        }
+  try {
+    // 1) Descargar todo desde backend (solo page/size)
+    const batchSize = 10; // ajusta (100/200/500) según performance
+    let currentPage = 0;
 
-        if (search) params.search = search
-        if (role) params.role = role
+    let total = null;
+    let allUsers = [];
 
-        const response = await axiosInstance.get(`${SERVER_CONFIG.BASE_URL}/api/core/users`, {
-            params
-        })
+    while (true) {
+      const resp = await axiosInstance.get(`${SERVER_CONFIG.BASE_URL}/core/users`, {
+        params: { page: currentPage, size: batchSize }
+      });
 
-        console.log('✅ Usuarios obtenidos:', response.data)
-        return response.data
-    } catch (error) {
-        console.error('❌ Error al obtener usuarios:', error)
-        throw error
+      // shape real:
+      // resp.data.data = { page, size, total, data:[...] }
+      const payload = resp?.data;
+      const dataBlock = payload?.data || {};
+      const users = Array.isArray(dataBlock?.data) ? dataBlock.data : [];
+      const apiTotal = Number(dataBlock?.total ?? 0);
+
+      if (total === null) total = apiTotal;
+
+      allUsers = allUsers.concat(users);
+
+      // stop cuando ya tenemos todo
+      if (allUsers.length >= total) break;
+
+      // seguridad extra por si algo raro pasa
+      if (!users.length) break;
+
+      currentPage += 1;
     }
+
+    // 2) Filtrar en FRONT (search + role)
+    const s = String(search || '').trim().toLowerCase();
+    const r = String(role || '').trim().toLowerCase();
+
+    const filtered = allUsers.filter((u) => {
+      const haystack = [
+        u?.name,
+        u?.email,
+        u?.status,
+        u?.id
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      const matchSearch = s ? haystack.includes(s) : true;
+
+      const roles = Array.isArray(u?.roles)
+        ? u.roles.map(x => String(x).toLowerCase())
+        : [];
+
+      const matchRole = r ? roles.includes(r) : true;
+
+      return matchSearch && matchRole;
+    });
+
+    // 3) Paginar el resultado filtrado (para UI)
+    const start = page * size;
+    const end = start + size;
+    const paged = filtered.slice(start, end);
+
+    // 4) Regresar con el MISMO formato del backend (pero ya filtrado)
+    return {
+      ok: true,
+      code: 'ok',
+      message: 'Usuarios listados (filtrado en front)',
+      timestamp: new Date().toISOString(),
+      data: {
+        page,
+        size,
+        total: filtered.length,
+        data: paged
+      }
+    };
+  } catch (error) {
+    console.error('❌ Error al obtener usuarios:', error);
+    throw error;
+  }
+};
+
+export const editUser = async (formData) => {
+  const { id, email, name, status } = formData
+  try {
+    const response = await axiosInstance.put(`${SERVER_CONFIG.BASE_URL}/core/users/${id}`, {
+      email,
+      name,
+      status
+    })
+
+    return response
+  } catch(error) {
+    console.error(`❌ Error al editar usuario: ${ id }`, error.message)
+    throw error
+  }
 }
 
-/**
- * Obtiene los roles disponibles desde los usuarios
- * @returns {Promise<Array<string>>}
- */
-export const getAvailableRoles = async () => {
-    try {
-        // Obtener todos los usuarios para extraer roles
-        const response = await getUsers(0, 100) // Obtener más usuarios para análisis
 
-        // Extraer roles únicos
-        const rolesSet = new Set()
-        response.data?.forEach(user => {
-            if (user.roles && Array.isArray(user.roles)) {
-                user.roles.forEach(role => rolesSet.add(role))
-            }
-        })
+export const deleteUser = async (idUser) => {
+  try {
+    console.log('🗑️ Eliminando registro de usuario: ', idUser)
+    const response = await axiosInstance.delete(`${SERVER_CONFIG.BASE_URL}/core/users/${idUser}`)
 
-        const roles = Array.from(rolesSet)
-        console.log('✅ Roles disponibles:', roles)
-        return roles
-    } catch (error) {
-        console.error('❌ Error al obtener roles:', error)
-        return []
-    }
-}
-
-/**
- * Busca usuarios por término
- * @param {string} searchTerm - Término de búsqueda
- * @param {number} page - Página
- * @param {number} size - Tamaño
- * @returns {Promise<Object>}
- */
-export const searchUsers = async (searchTerm, page = 0, size = 10) => {
-    return await getUsers(page, size, searchTerm)
-}
-
-/**
- * Filtra usuarios por rol
- * @param {string} role - Rol a filtrar
- * @param {number} page - Página
- * @param {number} size - Tamaño
- * @returns {Promise<Object>}
- */
-export const filterUsersByRole = async (role, page = 0, size = 10) => {
-    return await getUsers(page, size, '', role)
+    return response
+  } catch(error) {
+    console.log(`❌ Error al eliminar el usuario: ${idUser}`, error.message)
+    throw error
+  }
 }
 
 export default {
     getUsers,
-    getAvailableRoles,
-    searchUsers,
-    filterUsersByRole
+    editUser,
+    deleteUser,
 }

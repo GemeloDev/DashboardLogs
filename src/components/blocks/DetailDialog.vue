@@ -2,7 +2,7 @@
   <q-dialog v-model="isOpen" transition-show="scale" transition-hide="scale">
     <q-card
       style="width: 100%; max-width: 800px; min-width: min(600px, 95vw)"
-      class="bg-more-info-card text-white"
+      class="bg-more-info-card no-scroll-visual text-white"
     >
       <q-card-section class="row items-center q-pb-none grey-9">
         <div class="text-h6 row items-center">
@@ -526,5 +526,16 @@ const getSeverityIcon = (val) => {
 .custom-chip.q-chip--outline {
   background-color: #2e3045 !important; /* Fondo oscuro del chip */
   border-color: #43455c !important; /* Color del borde */
+}
+
+.no-scroll-visual {
+  /* Ocultar en Chrome, Safari y Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Ocultar en Firefox, IE y Edge */
+  -ms-overflow-style: none;  /* IE y Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 </style>

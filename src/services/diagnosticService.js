@@ -17,7 +17,7 @@ export class DiagnosticService {
         }
       })
 
-      console.log('✅ Datos de "caseId" obtenidos:', response.data.data.items)
+      console.log('✅ Datos de "caseId" obtenidos:', response.data)
       console.log('📊 Status:', response.status)
 
       return response.data
