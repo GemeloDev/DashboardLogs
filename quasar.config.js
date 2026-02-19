@@ -109,7 +109,7 @@ export default defineConfig((/* ctx */) => {
         key: fs.readFileSync('certs/server.key'),
         cert: fs.readFileSync('certs/server.crt')
       },
-      host: true,
+      host: '0.0.0.0',
       port: 9000,
     },
 
