@@ -106,10 +106,11 @@ export default defineConfig((/* ctx */) => {
         }
       },
       https: {
-        key: fs.readFileSync('certs/server.key'),
-        cert: fs.readFileSync('certs/server.crt')
+        key: fs.readFileSync('certs/cpanel/clave.key'),
+        cert: fs.readFileSync('certs/cpanel/cert.crt'),
+        ca: fs.readFileSync('certs/cpanel/csb.cabundle')
       },
-      host: true,
+      host: 'prueba.grupo-santoro.com.mx',
       port: 9000,
     },
 
