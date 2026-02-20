@@ -16,12 +16,14 @@
     "start": "quasar dev",
     "postinstall": "quasar prepare",
     "mobileInstall": "quasar mode add capacitor",
+    "mobile-build": "quasar build -m capacitor -T android",
     "mobile": "quasar dev -m capacitor -T android"
   },
   "dependencies": {
     "@capacitor/android": "^7.5.0",
     "@capacitor/cli": "^7.5.0",
     "@capacitor/core": "^7.5.0",
+    "@capacitor/status-bar": "^7.0.5",
     "@quasar/extras": "^1.16.4",
     "@stomp/stompjs": "^7.2.1",
     "axios": "^1.10.0",

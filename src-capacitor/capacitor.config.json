@@ -1,5 +1,12 @@
 {
   "appId": "com.logsSantoro.quasar.app",
   "appName": "logs",
-  "webDir": "www"
+  "webDir": "www",
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "backgroundColor": "#1e1e2f",
+      "style": "DARK"
+    }
+  }
 }
