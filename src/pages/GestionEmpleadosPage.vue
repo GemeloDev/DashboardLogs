@@ -24,10 +24,12 @@
           </div>
         </div>
         <q-btn
-          @click="() => {
-            mostrarModalInvitacion = true
-            saveMode = 'save'
-          }"
+          @click="
+            () => {
+              mostrarModalInvitacion = true
+              saveMode = 'save'
+            }
+          "
           unelevated
           no-caps
           icon="person_add"
@@ -717,6 +719,12 @@ $border-hover: rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     gap: 20px;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      text-align: center;
+      gap: 1rem;
+    }
   }
 
   .icon-container {
@@ -762,6 +770,11 @@ $border-hover: rgba(255, 255, 255, 0.2);
         background-clip: text;
         animation: gradient-shift 3s ease infinite;
       }
+
+      @media (max-width: 768px) {
+        font-size: 20px;
+        margin: 0;
+      }
     }
 
     p {
@@ -806,6 +819,16 @@ $border-hover: rgba(255, 255, 255, 0.2);
     &:active {
       transform: translateY(-1px);
     }
+
+    @media (max-width: 768px) {
+      font-size: small;
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
   }
 }
 

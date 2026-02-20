@@ -3,18 +3,53 @@
     <!-- Header Principal -->
     <div class="diagnostic-header bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
       <div class="container">
-        <div class="row items-center q-col-gutter-md">
-          <div class="col-12 col-md-8">
-            <div class="text-h3 diagnostic-title q-my-md">
-              🔬 <span class="diagnostic-title-text">Centro de Diagnóstico Técnico</span>
-            </div>
-            <div class="text-h6 text-blue-3 diagnostic-subtitle q-mb-md">
-              <span class="diagnostic-subtitle-text"
-                >🛡️ Sistema de Análisis de Errores y Sesiones | 📊 Reportes Avanzados</span
-              >
-            </div>
+        <!-- IMPORTANTE: q-row-gutter para separación vertical cuando se apilan -->
+        <div class="row items-center q-col-gutter-md q-row-gutter-md">
+          <!-- Izquierda: título + subtítulo -->
+          <div class="col-12 col-md-8 diagnostic-header-left">
+            <div class="text-white text-bold diagnostic-title-block">
+              <span class="text-h4">🔬</span>
+              <div class="diagnostic-title-main">Centro de Diagnóstico Técnico</div>
 
-            <div class="row q-gutter-sm diagnostic-chips-container">
+              <div class="text-blue-3 diagnostic-subtitle">
+                🛡️ Sistema de Análisis de Errores y Sesiones | 📊 Reportes Avanzados
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="col-12 col-md-4 diagnostic-header-actions">
+            <div class="row q-col-gutter-sm q-row-gutter-sm justify-center justify-md-end">
+              <!-- XS: col-12 (stack); SM: 6/6; MD: auto -->
+              <div class="col-12 col-sm-6 col-md-auto">
+                <q-btn
+                  color="primary"
+                  icon="refresh"
+                  label="Actualizar"
+                  @click="actualizarDatos"
+                  :loading="cargando"
+                  unelevated
+                  class="diagnostic-action-btn full-width"
+                />
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-auto">
+                <q-btn
+                  color="secondary"
+                  icon="download"
+                  label="Exportar"
+                  @click="mostrarDialogoExportacion"
+                  :disable="!hayDatosParaExportar"
+                  unelevated
+                  class="diagnostic-action-btn full-width"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Chips (SIEMPRE en su propia fila y centrados) -->
+          <div class="col-12">
+            <div class="row q-gutter-sm diagnostic-header-chips">
               <q-chip
                 color="green-6"
                 text-color="white"
@@ -37,30 +72,6 @@
               </q-chip>
             </div>
           </div>
-
-          <!-- Acciones -->
-          <div class="col-12 col-md-4">
-            <div class="row q-gutter-sm justify-end diagnostic-actions">
-              <q-btn
-                color="primary"
-                icon="refresh"
-                label="Actualizar"
-                @click="actualizarDatos"
-                :loading="cargando"
-                unelevated
-                class="diagnostic-action-btn"
-              />
-              <q-btn
-                color="secondary"
-                icon="download"
-                label="Exportar"
-                @click="mostrarDialogoExportacion"
-                :disable="!hayDatosParaExportar"
-                unelevated
-                class="diagnostic-action-btn"
-              />
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -73,11 +84,13 @@
           <div class="modern-card">
             <div class="card-header">
               <div class="header-icon">
-                <q-icon name="search" size="32px" color="blue-4" />
+                <q-icon name="search" size="32px" color="cyan-1" />
               </div>
               <div class="header-content">
                 <h3 class="card-title">Búsqueda Rápida de Diagnóstico</h3>
-                <p class="card-subtitle">Busca directamente por <b>caseId</b> y muestra la línea del tiempo</p>
+                <p class="card-subtitle">
+                  Ingresa cualquier código para iniciar el análisis automático
+                </p>
               </div>
             </div>
 
@@ -117,7 +130,10 @@
               class="q-mt-md"
               rounded
               dense
-              style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
+              style="
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+              "
             >
               <template v-slot:avatar>
                 <q-icon name="info" color="info" />
@@ -378,55 +394,108 @@ const exportarDatos = async (formato) => {
   min-height: 100vh;
 }
 
-.diagnostic-header {
-  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+/* Evita conflictos con clases globales tipo header-actions */
+.diagnostic-header-actions {
+  position: static !important;
 }
 
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
+/* Bloque de título */
+.diagnostic-title-block {
+  text-align: left;
 }
 
-.diagnostic-title {
-  font-weight: 700;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+.diagnostic-title-main {
+  font-size: 3rem;
+  line-height: 1.1;
+  margin-top: 6px;
 }
 
 .diagnostic-subtitle {
-  font-weight: 500;
-  opacity: 0.9;
+  margin-top: 10px;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  font-weight: 600;
+  opacity: 0.95;
 }
 
-.diagnostic-actions {
-  gap: 0.5rem;
+/* Chips */
+.diagnostic-header-chips {
+  flex-wrap: wrap;
 }
 
+/* Botones: que el texto NO se salga y no se rompa */
 .diagnostic-action-btn {
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  height: 44px;
+  min-width: 0;
+  max-width: 100%;
 }
 
-.diagnostic-status-chip {
-  font-size: 0.85rem;
-  border-radius: 16px;
+.diagnostic-action-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
+  max-width: 100%;
+  min-width: 0;
 }
 
-.diagnostic-chip {
-  font-weight: 600;
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+.diagnostic-action-btn :deep(.q-btn__content .block) {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Card + input (reusando tu look moderno) */
+// Cards modernos
 .modern-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--gradient-card);
+  backdrop-filter: var(--blur-glass);
+  border: var(--border-glass);
   border-radius: 24px;
   overflow: hidden;
-  backdrop-filter: blur(20px);
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+  transition: var(--transition-smooth);
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem 2rem 1rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .header-icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    }
+
+    .header-content {
+      flex: 1;
+
+      .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .card-subtitle {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+      }
+    }
+  }
+
+  .card-body {
+    padding: 2rem;
+  }
 }
 
 .card-header {
@@ -481,7 +550,7 @@ const exportarDatos = async (formato) => {
       transition: all 0.25s ease;
 
       &:hover {
-        border-color: rgba(52, 211, 153, 0.5);
+        border-color: rgba(52, 121, 211, 0.5);
         background: rgba(255, 255, 255, 0.08);
       }
     }
@@ -508,7 +577,32 @@ const exportarDatos = async (formato) => {
   }
 }
 
-@media (max-width: 480px) {
+/* MOBILE: centrar todo y compactar tipografía */
+@media (max-width: 600px) {
+  .diagnostic-title-block {
+    text-align: center;
+  }
+
+  .diagnostic-title-main {
+    font-size: 2.7rem;
+  }
+
+  .diagnostic-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .diagnostic-action-btn {
+    height: 36px;
+    font-size: 0.85rem;
+    letter-spacing: 0.2px; /* ayuda a que no “reviente” */
+  }
+
+  .modern-card .card-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
   .modern-input-group {
     display: grid;
   }

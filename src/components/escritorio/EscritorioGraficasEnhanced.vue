@@ -1,22 +1,27 @@
 <template>
-  <q-card class="enhanced-graphics-container q-pa-md">
-    <div class="text-h6 row items-center q-mb-lg text-white">
+  <q-card class="enhanced-graphics-container q-pa-md dashboard-card">
+    <div class="text-h6 row items-center q-mb-lg text-white dashboard-header">
       <q-icon name="dashboard" size="28px" class="q-mr-sm" color="primary" />
       <span>Dashboard Dinámico</span>
+
       <q-space />
+
       <q-spinner v-if="loading" color="primary" size="24px" />
+
       <div v-else class="text-caption text-grey-5 q-ml-sm">
         {{ logsFiltrados.length }} registros procesados
-        <q-btn-dropdown round color="secondary" icon="upload" class="no-arrow q-mr-xs">
-          <q-list>
-            <q-item clickable v-close-popup @click="exportPdfGraficas()">
-              <q-item-section>
-                <q-item-label>Resumen PDF</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-btn-dropdown>
       </div>
+
+      <!-- DROPDOWN fijo en esquina -->
+      <q-btn-dropdown round color="secondary" icon="upload" class="no-arrow dashboard-export">
+        <q-list>
+          <q-item clickable v-close-popup @click="exportPdfGraficas()">
+            <q-item-section>
+              <q-item-label>Resumen PDF</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
     </div>
 
     <!-- ✅ KPI CARDS (estilo screenshots) -->
@@ -115,7 +120,12 @@
         :key="def.id"
         :class="i === 0 ? 'col-12 col-lg-8' : 'col-12 col-md-6 col-lg-4'"
       >
-        <DynamicChartCard :definition="def" :logs="logsFiltrados" :ref="setChartRef(`gold:${def.id}`)" :color-index="i" />
+        <DynamicChartCard
+          :definition="def"
+          :logs="logsFiltrados"
+          :ref="setChartRef(`gold:${def.id}`)"
+          :color-index="i"
+        />
       </div>
     </div>
 
@@ -130,11 +140,16 @@
         :key="field"
         :class="idx < 2 ? 'col-12 col-md-6 col-lg-6' : 'col-12 col-md-4'"
       >
-        <DynamicChartCard :field-key="field" :logs="logsFiltrados" :ref="setChartRef(`gold:${field}`)" :color-index="idx + 20" />
+        <DynamicChartCard
+          :field-key="field"
+          :logs="logsFiltrados"
+          :ref="setChartRef(`gold:${field}`)"
+          :color-index="idx + 20"
+        />
       </div>
     </div>
 
-    <div v-if="!loading && !goldChartDefs.length" class="col-12 text-center q-pa-xl text-grey-5">
+    <div v-if="!loading && !goldChartDefs.length" class="col-12 text-center q-pa-xl q-mt-sm text-grey-5">
       <q-icon name="tune" size="48px" />
       <div class="text-h6">No hay datos suficientes para gráficas</div>
       <div>Revisa el rango de fechas o la fuente de logs.</div>
@@ -182,13 +197,13 @@ function exportPdfGraficas() {
       title: c?.title || 'Gráfica',
       image: c?.getChartPng?.({ withLegend: true }), // 👈 aquí
     }))
-    .filter(x => x.image)
+    .filter((x) => x.image)
 
   ExportService.exportConsoleChartsPDF({
     title: 'Reporte de Consola',
     subtitle: 'KPIs por status + gráficas',
     logs: logsFiltrados.value,
-    charts
+    charts,
   })
 }
 
@@ -231,7 +246,8 @@ const parseGeoLight = (geo) => {
 
   // Array [a,b]
   if (Array.isArray(geo) && geo.length >= 2) {
-    const a = Number(geo[0]), b = Number(geo[1])
+    const a = Number(geo[0]),
+      b = Number(geo[1])
     if (!Number.isFinite(a) || !Number.isFinite(b)) return null
     // deducción por rangos
     const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
@@ -255,9 +271,7 @@ const parseGeoLight = (geo) => {
   return null
 }
 
-const logsConGeo = computed(() =>
-  (logsFiltrados.value || []).filter((l) => !!parseGeoLight(l.geo))
-)
+const logsConGeo = computed(() => (logsFiltrados.value || []).filter((l) => !!parseGeoLight(l.geo)))
 
 const hasGeoLogs = computed(() => logsConGeo.value.length > 0)
 
@@ -323,12 +337,20 @@ const kpis = computed(() => {
   const total = items.length
 
   const success = items.filter(
-    (l) => String(getDeep(l, 'status')).toUpperCase() === 'SUCCESS' || String(getDeep(l, 'outcome')).toUpperCase() === 'SUCCESS',
+    (l) =>
+      String(getDeep(l, 'status')).toUpperCase() === 'SUCCESS' ||
+      String(getDeep(l, 'outcome')).toUpperCase() === 'SUCCESS',
   ).length
   const failure = items.filter(
-    (l) => String(getDeep(l, 'severity')).toUpperCase() === 'CRITICAL' || String(getDeep(l, 'outcome')).toUpperCase() === 'CANCELED',
+    (l) =>
+      String(getDeep(l, 'severity')).toUpperCase() === 'CRITICAL' ||
+      String(getDeep(l, 'outcome')).toUpperCase() === 'CANCELED',
   ).length
-  const errors = items.filter((l) => String(getDeep(l, 'status')).toUpperCase() === 'ERROR' || String(getDeep(l, 'outcome')).toUpperCase() === 'FAILURE').length
+  const errors = items.filter(
+    (l) =>
+      String(getDeep(l, 'status')).toUpperCase() === 'ERROR' ||
+      String(getDeep(l, 'outcome')).toUpperCase() === 'FAILURE',
+  ).length
 
   const blocked = items.filter((l) => {
     const code = Number(getDeep(l, 'http.statusCode'))
@@ -465,5 +487,20 @@ const extraFields = computed(() => {
 }
 .no-arrow :deep(.q-btn-dropdown__arrow-container) {
   display: none;
+}
+
+.dashboard-card {
+  position: relative; /* clave: referencia para absolute */
+}
+
+.dashboard-header {
+  padding-right: 56px; /* deja espacio para el botón en la esquina */
+}
+
+.dashboard-export {
+  position: absolute;
+  top: 12px;     /* ajusta a tu gusto */
+  right: 12px;   /* ajusta a tu gusto */
+  z-index: 5;
 }
 </style>

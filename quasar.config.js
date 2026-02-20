@@ -106,11 +106,13 @@ export default defineConfig((/* ctx */) => {
         }
       },
       https: {
-        key: fs.readFileSync('certs/server.key'),
-        cert: fs.readFileSync('certs/server.crt')
+        key: fs.readFileSync('certs/cpanel/clave.key'),
+        cert: fs.readFileSync('certs/cpanel/cert.crt'),
+        ca: fs.readFileSync('certs/cpanel/csb.cabundle')
       },
-      host: '0.0.0.0',
+      host: '0.0.0.0', // Acepta conexiones desde cualquier IP (PC y celular)
       port: 9000,
+      allowedHosts: 'all', // Permite acceso con cualquier hostname
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
