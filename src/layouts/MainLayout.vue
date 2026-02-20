@@ -269,6 +269,8 @@ import QRScannerModal from 'src/components/QRScannerModal.vue'
 import DinamicFilters from 'src/components/blocks/DinamicFilters.vue'
 import { ApiKeyService } from 'src/services/apiKeys'
 import { ChartDataService } from 'src/services/chartDataService'
+import { Capacitor } from '@capacitor/core'
+import { StatusBar, Style } from '@capacitor/status-bar'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -495,6 +497,19 @@ function logout() {
   }
 }
 
+const configureStatusBar = async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      // Pintar el fondo del status bar del mismo color que tu header
+      await StatusBar.setBackgroundColor({ color: '#1e1e2f' });
+      // Style.Dark hace que los textos (hora, wifi) sean BLANCOS
+      await StatusBar.setStyle({ style: Style.Dark });
+    } catch (error) {
+      console.error('Error configurando StatusBar:', error);
+    }
+  }
+};
+
 // 1) Cuando cambia system: NO pega al backend, solo refiltra logsRango
 watch(
   selectedSystem,
@@ -523,6 +538,7 @@ onMounted(() => {
   window.addEventListener('santoro-mostrar-filtros', () => (showDinamicFilters.value = true))
 
   checkApiKeysExpirations()
+  configureStatusBar()
 })
 </script>
 
@@ -666,5 +682,16 @@ onMounted(() => {
 /* Thumb al hacer hover */
 ::-webkit-scrollbar-thumb:hover {
   background-color: #004883; /* color más oscuro para hover */
+}
+
+/* Agrega esto al final de tus estilos en MainLayout.vue */
+.q-header {
+  /* Toma el tamaño de la barra de estado. Si falla, usa 35px por defecto */
+  padding-top: env(safe-area-inset-top, 35px) !important;
+}
+
+/* Opcional: También protege la parte de abajo por si hay una barra de navegación gestual (la rayita de iOS o Android) */
+.q-page-container {
+  padding-bottom: env(safe-area-inset-bottom, 20px) !important;
 }
 </style>
