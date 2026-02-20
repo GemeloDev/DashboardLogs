@@ -937,7 +937,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
 
     &.stat-card-2 {
       .stat-icon-container {
-        background: linear-gradient(135deg, $secondary, darken($secondary, 10%));
+        background: linear-gradient(135deg, $secondary, #10b981);
       }
       .stat-glow {
         background: radial-gradient(circle, rgba($secondary, 0.2), transparent);
@@ -946,7 +946,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
 
     &.stat-card-3 {
       .stat-icon-container {
-        background: linear-gradient(135deg, $accent, darken($accent, 10%));
+        background: linear-gradient(135deg, $secondary, #10b981);
       }
       .stat-glow {
         background: radial-gradient(circle, rgba($accent, 0.2), transparent);
