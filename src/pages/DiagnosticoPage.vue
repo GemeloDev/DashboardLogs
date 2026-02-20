@@ -1,83 +1,80 @@
 <template>
   <q-page class="diagnostic-page text-white">
     <!-- Header Principal -->
-<div class="diagnostic-header bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
-  <div class="container">
-    <!-- IMPORTANTE: q-row-gutter para separación vertical cuando se apilan -->
-    <div class="row items-center q-col-gutter-md q-row-gutter-md">
+    <div class="diagnostic-header bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
+      <div class="container">
+        <!-- IMPORTANTE: q-row-gutter para separación vertical cuando se apilan -->
+        <div class="row items-center q-col-gutter-md q-row-gutter-md">
+          <!-- Izquierda: título + subtítulo -->
+          <div class="col-12 col-md-8 diagnostic-header-left">
+            <div class="text-white text-bold diagnostic-title-block">
+              <span class="text-h4">🔬</span>
+              <div class="diagnostic-title-main">Centro de Diagnóstico Técnico</div>
 
-      <!-- Izquierda: título + subtítulo -->
-      <div class="col-12 col-md-8 diagnostic-header-left">
-        <div class="text-white text-bold diagnostic-title-block">
-          <span class="text-h4">🔬</span>
-          <div class="diagnostic-title-main">Centro de Diagnóstico Técnico</div>
+              <div class="text-blue-3 diagnostic-subtitle">
+                🛡️ Sistema de Análisis de Errores y Sesiones | 📊 Reportes Avanzados
+              </div>
+            </div>
+          </div>
 
-          <div class="text-blue-3 diagnostic-subtitle">
-            🛡️ Sistema de Análisis de Errores y Sesiones | 📊 Reportes Avanzados
+          <!-- Acciones -->
+          <div class="col-12 col-md-4 diagnostic-header-actions">
+            <div class="row q-col-gutter-sm q-row-gutter-sm justify-center justify-md-end">
+              <!-- XS: col-12 (stack); SM: 6/6; MD: auto -->
+              <div class="col-12 col-sm-6 col-md-auto">
+                <q-btn
+                  color="primary"
+                  icon="refresh"
+                  label="Actualizar"
+                  @click="actualizarDatos"
+                  :loading="cargando"
+                  unelevated
+                  class="diagnostic-action-btn full-width"
+                />
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-auto">
+                <q-btn
+                  color="secondary"
+                  icon="download"
+                  label="Exportar"
+                  @click="mostrarDialogoExportacion"
+                  :disable="!hayDatosParaExportar"
+                  unelevated
+                  class="diagnostic-action-btn full-width"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Chips (SIEMPRE en su propia fila y centrados) -->
+          <div class="col-12">
+            <div class="row q-gutter-sm diagnostic-header-chips">
+              <q-chip
+                color="green-6"
+                text-color="white"
+                icon="wifi"
+                size="sm"
+                class="diagnostic-status-chip"
+              >
+                🟢 Conectado
+              </q-chip>
+
+              <q-chip
+                v-if="diagnosticoActivo"
+                color="blue-5"
+                text-color="white"
+                size="sm"
+                icon="auto_fix_high"
+                class="diagnostic-chip"
+              >
+                <span>✨ {{ diagnosticoActivo }}</span>
+              </q-chip>
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- Acciones -->
-      <div class="col-12 col-md-4 diagnostic-header-actions">
-        <div class="row q-col-gutter-sm q-row-gutter-sm justify-center justify-md-end">
-          <!-- XS: col-12 (stack); SM: 6/6; MD: auto -->
-          <div class="col-12 col-sm-6 col-md-auto">
-            <q-btn
-              color="primary"
-              icon="refresh"
-              label="Actualizar"
-              @click="actualizarDatos"
-              :loading="cargando"
-              unelevated
-              class="diagnostic-action-btn full-width"
-            />
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-auto">
-            <q-btn
-              color="secondary"
-              icon="download"
-              label="Exportar"
-              @click="mostrarDialogoExportacion"
-              :disable="!hayDatosParaExportar"
-              unelevated
-              class="diagnostic-action-btn full-width"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Chips (SIEMPRE en su propia fila y centrados) -->
-      <div class="col-12">
-        <div class="row q-gutter-sm diagnostic-header-chips">
-          <q-chip
-            color="green-6"
-            text-color="white"
-            icon="wifi"
-            size="sm"
-            class="diagnostic-status-chip"
-          >
-            🟢 Conectado
-          </q-chip>
-
-          <q-chip
-            v-if="diagnosticoActivo"
-            color="blue-5"
-            text-color="white"
-            size="sm"
-            icon="auto_fix_high"
-            class="diagnostic-chip"
-          >
-            <span>✨ {{ diagnosticoActivo }}</span>
-          </q-chip>
-        </div>
-      </div>
-
     </div>
-  </div>
-</div>
-
 
     <!-- Contenido ÚNICO: Buscador + Timeline -->
     <div class="diagnostic-content q-pa-lg">
@@ -91,7 +88,9 @@
               </div>
               <div class="header-content">
                 <h3 class="card-title">Búsqueda Rápida de Diagnóstico</h3>
-                <p class="card-subtitle">Busca directamente por <b>caseId</b> y muestra la línea del tiempo</p>
+                <p class="card-subtitle">
+                  Ingresa cualquier código para iniciar el análisis automático
+                </p>
               </div>
             </div>
 
@@ -131,7 +130,10 @@
               class="q-mt-md"
               rounded
               dense
-              style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
+              style="
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+              "
             >
               <template v-slot:avatar>
                 <q-icon name="info" color="info" />
@@ -445,12 +447,55 @@ const exportarDatos = async (formato) => {
 }
 
 /* Card + input (reusando tu look moderno) */
+// Cards modernos
 .modern-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--gradient-card);
+  backdrop-filter: var(--blur-glass);
+  border: var(--border-glass);
   border-radius: 24px;
   overflow: hidden;
-  backdrop-filter: blur(20px);
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+  transition: var(--transition-smooth);
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem 2rem 1rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .header-icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    }
+
+    .header-content {
+      flex: 1;
+
+      .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .card-subtitle {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+      }
+    }
+  }
+
+  .card-body {
+    padding: 2rem;
+  }
 }
 
 .card-header {
@@ -550,6 +595,16 @@ const exportarDatos = async (formato) => {
     height: 36px;
     font-size: 0.85rem;
     letter-spacing: 0.2px; /* ayuda a que no “reviente” */
+  }
+
+  .modern-card .card-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .modern-input-group {
+    display: grid;
   }
 }
 </style>

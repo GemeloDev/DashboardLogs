@@ -110,8 +110,9 @@ export default defineConfig((/* ctx */) => {
         cert: fs.readFileSync('certs/cpanel/cert.crt'),
         ca: fs.readFileSync('certs/cpanel/csb.cabundle')
       },
-      host: 'prueba.grupo-santoro.com.mx',
+      host: '0.0.0.0', // Acepta conexiones desde cualquier IP (PC y celular)
       port: 9000,
+      allowedHosts: 'all', // Permite acceso con cualquier hostname
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
