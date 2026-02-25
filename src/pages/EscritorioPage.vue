@@ -1,18 +1,24 @@
 <template>
   <q-page class="escritorio-page text-white">
     <!-- Header de Escritorio -->
-    <div class="escritorio-header q-pa-lg">
+    <header class="escritorio-hero q-px-md q-py-xl">
       <div class="container">
-        <div class="row items-center q-py-md">
-          <div class="col-12">
-            <div class="text-h3 text-white text-center q-my-lg text-bold padding-microphone">Dashboard de Escritorio <br> <span class="text-h6 text-blue-3 text-center">Panel de Control Avanzado</span> <br> <span class="text-h5 text-center">📊</span> </div>
+        <div class="text-center">
+          <div class="escritorio-title text-h4 text-sm-h3 text-md-h3 text-weight-bold q-mb-sm">
+            Dashboard de Escritorio
           </div>
+
+          <div class="text-subtitle1 text-sm-h6 text-blue-3 q-mb-sm">
+            Panel de Control Avanzado
+          </div>
+
+          <div class="text-h5 q-mt-xs">📊</div>
         </div>
       </div>
-    </div>
+    </header>
 
     <!-- Contenido Principal: Gráficas Enhanced -->
-    <div class="escritorioContent">
+    <div class="container q-px-md q-pb-xl">
       <EscritorioGraficasEnhanced />
     </div>
   </q-page>
@@ -28,76 +34,32 @@ import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGrafi
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
-.escritorio-header {
-  backdrop-filter: blur(10px);
+/* header adaptativo */
+.escritorio-hero {
+  /* evita que se “salga” y mantiene proporción */
+  width: 100%;
+  max-width: 100%;
 }
 
-.escritorio-title {
-  font-weight: 700;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
-}
-
-.escritorio-action-btn {
-  border-radius: 8px;
-  font-weight: 600;
-}
-
-// Responsive
-@media (max-width: 768px) {
-  .escritorio-header {
-    padding: 1rem !important;
-  }
-
-  .escritorio-title {
-    text-align: center;
-  }
-
-  .escritorio-title-text {
-    display: block;
-    margin-top: 0.5rem;
-    font-size: 1.5rem;
-    line-height: 1.2;
-  }
-
-  .escritorio-subtitle {
-    font-size: 0.9rem !important;
-    text-align: center;
-  }
-
-  .escritorio-subtitle-text {
-    display: block;
-    line-height: 1.3;
-  }
-
-  .escritorio-actions {
-    justify-content: center !important;
-    margin-top: 1rem;
-  }
-
-  .escritorio-action-btn {
-    min-width: auto;
-    font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .escritorioContent {
-    margin-block: 6rem;
-  }
-}
-
-@media (max-width: 300px) {
-  .padding-microphone{
-    margin-bottom: 5rem;
-  }
-}
-
+/* tu container */
 .container {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* mejora legibilidad y evita saltos feos */
+.escritorio-title {
+  padding-top: 15px;
+  line-height: 1.15;
+  word-break: break-word;
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.18);
+}
+
+/* En móvil reduce márgenes/padding un poco */
+@media (max-width: 599px) {
+  .escritorio-hero {
+    padding-top: 25px !important;
+    padding-bottom: 20px !important;
+  }
 }
 </style>

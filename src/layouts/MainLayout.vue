@@ -182,9 +182,7 @@
       <q-scroll-area class="fit">
         <div style="margin-top: 32px; text-align: center">
           <q-avatar size="64px" icon="hive" color="primary" text-color="white" />
-          <div class="text-h6 q-mt-sm" style="color: #fff; font-weight: 700">
-            Consola Logs
-          </div>
+          <div class="text-h6 q-mt-sm" style="color: #fff; font-weight: 700">Consola Logs</div>
           <div class="text-caption q-px-md" style="color: #cfd8dc">
             Panel avanzado para gestión de logs y eventos
           </div>
@@ -229,7 +227,7 @@
     <!-- CONTENIDO -->
     <q-page-container>
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-        <div class="flow-container" style="min-height: 100vh">
+        <div style="min-height: 100vh">
           <router-view />
 
           <!-- Componentes globales accesibles desde cualquier página -->
@@ -309,23 +307,46 @@ const userInfo = computed(() => ({
   roles: authService.user?.authz?.roles || [],
 }))
 
-const logsRango = ref([])
-const loadingLogs = ref(false)
+const eventosRaw = ref([]) // lo que llega del backend (ya filtrado por system)
+const loadingLogs = ref(false) // puedes mantener el mismo nombre
 
-const aplicarFiltroSystem = () => {
-  const sys = filtros.value.system
-  logsGlobales.value = sys ? logsRango.value.filter((l) => l.system === sys) : logsRango.value
+const aplicarFiltroRangoFechas = () => {
+  const r = filtros.value?.rangoFechas || {}
+  const from = r.from || ''
+  const to = r.to || ''
+
+  if (!from && !to) {
+    logsGlobales.value = eventosRaw.value
+    return
+  }
+
+  const startStr = from || to
+  const endStr = to || from
+
+  const startMs = new Date(`${startStr}T00:00:00`).getTime()
+  const endMs = new Date(`${endStr}T23:59:59.999`).getTime()
+
+  logsGlobales.value = eventosRaw.value.filter((e) => {
+    const t = new Date(e?.eventTime || e?.fechaHoraDia || '').getTime()
+    if (!Number.isFinite(t)) return false
+    return t >= startMs && t <= endMs
+  })
 }
 
-const cargarLogsPorRango = async () => {
+const cargarEventosDelSistema = async () => {
   loadingLogs.value = true
   try {
-    const resp = await ChartDataService.getAll({ rangoFechas: filtros.value.rangoFechas })
-    logsRango.value = resp?.data?.items || []
-    aplicarFiltroSystem()
+    const resp = await ChartDataService.getLogsEvents({
+      system: selectedSystem.value,
+      page: 0,
+      size: 10000, // tamaño recomendable
+    })
+
+    eventosRaw.value = resp?.items || []
+    aplicarFiltroRangoFechas()
   } catch (e) {
-    console.error('❌ Error al cargar los datos: ', e)
-    logsRango.value = []
+    console.error('❌ Error al cargar eventos: ', e)
+    eventosRaw.value = []
     logsGlobales.value = []
   } finally {
     loadingLogs.value = false
@@ -500,16 +521,17 @@ watch(
   selectedSystem,
   (sys) => {
     filtros.value.system = sys
-    aplicarFiltroSystem()
+    authService.savePrefs( prefs.flow, sys)
+    cargarEventosDelSistema()
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 // 2) Cuando cambia rango: SÍ pega al backend
 watch(
   () => `${filtros.value.rangoFechas?.from || ''}|${filtros.value.rangoFechas?.to || ''}`,
-  () => cargarLogsPorRango(),
-  { immediate: true },
+  () => aplicarFiltroRangoFechas(),
+  { immediate: true }
 )
 
 onMounted(() => {

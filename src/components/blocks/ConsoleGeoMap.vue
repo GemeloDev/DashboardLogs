@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="q-pa-md text-white" style="background:#1e1e2f;border-radius:12px;">
+  <q-card flat bordered class="q-pa-md text-white" style="background: #1e1e2f; border-radius: 12px">
     <div class="row items-center q-mb-sm">
       <q-icon name="map" class="q-mr-sm" color="primary" />
       <div class="text-subtitle1">Mapa de Logs (geo)</div>
@@ -39,9 +39,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
-  'select-log',        // (log) -> click marcador
-  'select-cluster',    // (summary) -> click cluster
-  'select-area',       // (summary) -> click en mapa
+  'select-log', // (log) -> click marcador
+  'select-cluster', // (summary) -> click cluster
+  'select-area', // (summary) -> click en mapa
 ])
 
 const mapEl = ref(null)
@@ -50,7 +50,9 @@ let markers = null
 
 // -------- Helpers --------
 const getDeep = (obj, path) =>
-  String(path || '').split('.').reduce((o, k) => (o ? o[k] : null), obj)
+  String(path || '')
+    .split('.')
+    .reduce((o, k) => (o ? o[k] : null), obj)
 
 function parseGeo(geo) {
   if (!geo) return null
@@ -64,13 +66,13 @@ function parseGeo(geo) {
   // {lat, lng} | {lat, lon} | {latitude, longitude}
   if (typeof geo === 'object' && !Array.isArray(geo)) {
     const lat =
-      geo.lat ?? geo.latitude ?? (geo.coords ? geo.coords.lat ?? geo.coords.latitude : undefined)
+      geo.lat ?? geo.latitude ?? (geo.coords ? (geo.coords.lat ?? geo.coords.latitude) : undefined)
     const lng =
       geo.lng ??
       geo.lon ??
       geo.long ??
       geo.longitude ??
-      (geo.coords ? geo.coords.lng ?? geo.coords.lon ?? geo.coords.longitude : undefined)
+      (geo.coords ? (geo.coords.lng ?? geo.coords.lon ?? geo.coords.longitude) : undefined)
 
     const la = Number(lat)
     const lo = Number(lng)
@@ -114,21 +116,15 @@ function haversineKm(a, b) {
   const lat1 = toRad(a.lat)
   const lat2 = toRad(b.lat)
 
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * (Math.sin(dLng / 2) ** 2)
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
 
   return 2 * R * Math.asin(Math.sqrt(s))
 }
 
 function buildSummary(logs, center, radiusKm) {
-  const rows = (logs || [])
-    .map((l) => ({ log: l, p: parseGeo(l?.geo) }))
-    .filter((x) => x.p)
+  const rows = (logs || []).map((l) => ({ log: l, p: parseGeo(l?.geo) })).filter((x) => x.p)
 
-  const inArea = rows
-    .filter(({ p }) => haversineKm(center, p) <= radiusKm)
-    .map(({ log }) => log)
+  const inArea = rows.filter(({ p }) => haversineKm(center, p) <= radiusKm).map(({ log }) => log)
 
   const byStatus = {}
   const byEventType = {}
@@ -150,7 +146,9 @@ function buildSummary(logs, center, radiusKm) {
   }
 
   const top = (obj, n = 7) =>
-    Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n)
+    Object.entries(obj)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, n)
 
   return {
     center,
@@ -205,6 +203,11 @@ async function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
     maxZoom: 18,
+    // ✅ evita que se repita el mapa
+    noWrap: true,
+
+    // ✅ opcional: limita el mundo (lon/lat)
+    bounds: L.latLngBounds([-85, -180], [85, 180]),
   }).addTo(map)
 
   // click en mapa -> resumen por radio
@@ -213,6 +216,9 @@ async function initMap() {
     const summary = buildSummary(props.logs, center, props.clickRadiusKm)
     emit('select-area', summary)
   })
+
+  map.setMaxBounds(L.latLngBounds([-85, -180], [85, 180]))
+  map.options.maxBoundsViscosity = 1.0
 
   markers = L.markerClusterGroup({
     chunkedLoading: true,
@@ -264,9 +270,7 @@ function refreshMarkers() {
   if (!map || !markers) return
   markers.clearLayers()
 
-  const rows = (props.logs || [])
-    .map((log) => ({ log, p: parseGeo(log?.geo) }))
-    .filter((x) => x.p)
+  const rows = (props.logs || []).map((log) => ({ log, p: parseGeo(log?.geo) })).filter((x) => x.p)
 
   for (const { log, p } of rows) {
     const color = statusColor(log?.status)
@@ -275,7 +279,12 @@ function refreshMarkers() {
     const t = String(log?.eventType ?? 'N/A')
     const st = String(log?.status ?? 'N/A')
     const who = String(getDeep(log, 'actor.fullName') || getDeep(log, 'actor.username') || 'N/A')
-    const dev = String(getDeep(log, 'meta.device') || getDeep(log, 'meta.platform') || getDeep(log, 'meta.osVersion') || 'N/A')
+    const dev = String(
+      getDeep(log, 'meta.device') ||
+        getDeep(log, 'meta.platform') ||
+        getDeep(log, 'meta.osVersion') ||
+        'N/A',
+    )
     const msg = String(log?.message ?? '')
     const time = log?.eventTime ? new Date(log.eventTime).toLocaleString('es-MX') : 'N/A'
 
@@ -317,7 +326,7 @@ watch(
     await nextTick()
     refreshMarkers()
   },
-  { deep: false }
+  { deep: false },
 )
 
 onBeforeUnmount(() => {
@@ -336,7 +345,7 @@ onBeforeUnmount(() => {
   height: 420px;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 :deep(.leaflet-control-attribution) {

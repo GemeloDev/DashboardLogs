@@ -4,6 +4,7 @@ import { API_BASE_URL } from './apiConfig'
 export const endpoints = {
   // Logs
   logs: `${API_BASE_URL}/logs/events/all`,
+  events: `${API_BASE_URL}/logs/events`,
 
   // Catálogos
   catalogSummary: `${API_BASE_URL}/dashboard/passports/summary`,

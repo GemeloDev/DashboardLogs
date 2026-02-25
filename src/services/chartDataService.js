@@ -41,4 +41,22 @@ export class ChartDataService {
     const { data } = await axiosInstance.get(`${endpoints.logs}`, { params })
     return data // <-- devuelve el body completo { ok, data:{items...} }
   }
+
+  static async getLogsEvents({
+    system,
+    page = 1,
+    size = 500
+  } = {}) {
+    const { data } = await axiosInstance.get(`${endpoints.events}`, {
+      params: { system, page, size }
+    })
+
+    if (!data.ok) {
+      throw new Error(data?.message || 'Error al obtener los eventos del sistema')
+    }
+
+    // Retorna el objeto de paginación + items
+    // { ok: true, data: { items: [...], totalItems, totalPages, currentPage } }
+    return data.data
+  }
 }
