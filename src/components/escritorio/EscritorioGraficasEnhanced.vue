@@ -248,8 +248,25 @@
               </q-item-section>
 
               <!-- ✅ Desktop/tablet: chips a la derecha -->
-              <q-item-section side class="device-badges">
+              <q-item-section side class="device-badges desktop-only">
                 <div class="row items-center q-gutter-xs device-badges-row">
+                  <q-chip dense :color="d.platformColor" text-color="white" size="sm">
+                    {{ d.platformLabel }}
+                  </q-chip>
+
+                  <q-chip dense color="primary" text-color="white" size="sm" v-if="d.lastSeenDate">
+                    {{ d.lastSeenDate }}
+                  </q-chip>
+
+                  <q-chip dense color="orange" text-color="white" size="sm" v-if="d.eventType">
+                    {{ d.eventType }}
+                  </q-chip>
+                </div>
+              </q-item-section>
+
+              <!-- ✅ Mobile: chips debajo (ocupan todo el ancho) -->
+              <q-item-section class="device-badges mobile-only">
+                <div class="row items-center q-gutter-xs device-badges-row mobile-chips">
                   <q-chip dense :color="d.platformColor" text-color="white" size="sm">
                     {{ d.platformLabel }}
                   </q-chip>
@@ -1051,7 +1068,22 @@ onBeforeUnmount(() => {
   }
 }
 
+/* Mostrar/ocultar por breakpoint */
+.desktop-only {
+  display: block;
+}
+.mobile-only {
+  display: none;
+}
+
 @media (max-width: 599px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: block !important;
+  }
+
   /* En móvil, deja que el texto respire */
   .device-item :deep(.q-item__section--main) {
     min-width: 0; /* importante para ellipsis y wrap */
@@ -1087,10 +1119,6 @@ onBeforeUnmount(() => {
   height: calc(100vh - 260px);
   max-height: 420px; /* opcional */
   width: 100%;
-}
-
-.device-scroll :deep(.q-scrollarea__content) {
-  min-height: 100%;
 }
 
 @media (max-width: 599px) {
