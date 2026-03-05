@@ -209,9 +209,12 @@ import { useQuasar } from 'quasar'
 import { ref, computed, onMounted, watch, inject } from 'vue'
 
 const $q = useQuasar()
+const filtrosGlobales = inject('filtrosGlobales', null)
 
+// DinamicFilters.vue
 const props = defineProps({
   datosOrigen: { type: Array, default: null },
+  autoEmitOnMounted: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['filtrar', 'camposSeleccionados', 'campos-seleccionados'])
@@ -219,6 +222,7 @@ const emit = defineEmits(['filtrar', 'camposSeleccionados', 'campos-seleccionado
 const loading = ref(false)
 const logsGlobales = inject('logsGlobales', ref([]))
 const configFiltros = ref([])
+const hydratedOnce = ref(false)
 const camposVisibles = ref(['status', 'severity', 'location.name', 'eventType'])
 
 const filtrosSeleccionados = ref({
@@ -250,6 +254,17 @@ const rangoFechasTexto = computed(() => {
   }
   return filtrosSeleccionados.value.rangoFechas.from || ''
 })
+
+function setRangoFechas(range = { from: '', to: '' }) {
+  const from = String(range?.from || '').trim()
+  const to = String(range?.to || '').trim()
+
+  // 1) actualiza el modelo real
+  filtrosSeleccionados.value.rangoFechas = { from, to }
+
+  // 3) opcional: si quieres que dispare el filtrado inmediatamente desde el mismo DinamicFilters
+  // emitirPayloadYFiltrar()
+}
 
 const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
 
@@ -426,7 +441,7 @@ function applyChartFilter(fieldKey, value) {
 }
 
 //  Ya está el defineExpose
-defineExpose({ applyChartFilter })
+defineExpose({ applyChartFilter, setRangoFechas })
 
 // A. Función recursiva para obtener claves tipo "office.officeName"
 function obtenerClavesProfundas(obj, prefix = '') {
@@ -555,6 +570,41 @@ const seleccionarPeriodo = (periodo, aplicar = true) => {
   if (aplicar) emitirFiltros()
 }
 
+function hasRange(r) {
+  if (!r) return false
+  if (typeof r === 'string') return r.trim() !== ''
+  return !!(r.from || r.to)
+}
+
+const hidratarDesdeGlobales = () => {
+  const fg = filtrosGlobales?.value
+  if (!fg) return
+
+  // 1) visibles
+  if (Array.isArray(fg.visibleFields) && fg.visibleFields.length) {
+    camposVisibles.value = [...fg.visibleFields]
+  }
+
+  // 2) busqueda (solo si viene algo real)
+  if (typeof fg.busqueda === 'string' && fg.busqueda.trim() !== '') {
+    filtrosSeleccionados.value.busqueda = fg.busqueda
+  }
+
+  // ✅ 3) rango: SOLO si global trae rango real, si no, NO pises lo que ya eligió el usuario
+  if (hasRange(fg.rangoFechas)) {
+    const from = typeof fg.rangoFechas === 'string' ? fg.rangoFechas : fg.rangoFechas.from || ''
+    const to = typeof fg.rangoFechas === 'string' ? '' : fg.rangoFechas.to || ''
+    filtrosSeleccionados.value.rangoFechas = { from, to }
+  }
+
+  // 4) values: aplica solo los que tengan valor real
+  const vals = fg.values || {}
+  for (const [k, v] of Object.entries(vals)) {
+    if (v != null && String(v).trim() !== '') {
+      filtrosSeleccionados.value[k] = v
+    }
+  }
+}
 
 watch(camposVisibles, (nuevos, viejos) => {
   // Encontramos qué campo se eliminó
@@ -572,12 +622,20 @@ watch(
   sourceItems,
   (items) => {
     reconstruirDesdeLogs(items)
+
+    // ✅ solo una vez (evita que se borre el rango al aplicar filtros)
+    if (!hydratedOnce.value) {
+      hidratarDesdeGlobales()
+      hydratedOnce.value = true
+    }
   },
   { immediate: true },
 )
 
-onMounted(async () => {
-  emitirFiltros()
+onMounted(() => {
+  hidratarDesdeGlobales()
+  // OJO: si estás en modal, NO auto-emitas aquí si eso te cierra el modal
+  // emitirFiltros()
 })
 </script>
 

@@ -95,7 +95,6 @@
               <DinamicFilters
                 ref="filtroRef"
                 :datos-origen="rawLogs"
-                @filtrar="onLogsFiltrados"
                 @campos-seleccionados="onFiltrosPayload"
                 @camposSeleccionados="onFiltrosPayload"
               />
@@ -192,7 +191,6 @@ const baseLogs = ref([]) // ✅ fuente de verdad: lo que regresa el backend (ya 
 const rawLogs = ref([]) // fuente para DinamicFilters (ya con rango aplicado)
 const logs = ref([]) // vista final
 const lastPayload = ref(null)
-const ignoreNextFiltrar = ref(false)
 
 // --- PAGINACIÓN ---
 const paginaActual = ref(1)
@@ -200,7 +198,7 @@ const registrosPorPagina = ref(25)
 const serverPage = ref(-1) // última page cargada (0-based). -1 = ninguna
 const serverTotalPages = ref(1)
 const serverTotalElements = ref(0)
-const pageSize = ref(200) // tamaño recomendado (200/300/500)
+const pageSize = ref(500) // tamaño recomendado (200/300/500)
 const loadingMore = ref(false)
 const isChartDataMode = ref(false) // si abres con dataGrafica, no paginamos backend
 
@@ -236,19 +234,19 @@ function mergeUniqueById(target, incoming) {
   return Array.from(map.values())
 }
 
+function toMs(val) {
+  if (val == null) return NaN
+  if (typeof val === 'number') return val
+  if (val instanceof Date) return val.getTime()
+  return new Date(String(val)).getTime()
+}
+
 function aplicarFiltroRango(items, range = { from: '', to: '' }) {
-  const from = String(range?.from || '').trim()
-  const to = String(range?.to || '').trim()
-  if (!from && !to) return Array.isArray(items) ? items : []
-
-  const startStr = from || to
-  const endStr = to || from
-
-  const startMs = new Date(`${startStr}T00:00:00`).getTime()
-  const endMs = new Date(`${endStr}T23:59:59.999`).getTime()
+  const { startMs, endMs } = rangeToMsLocal(range)
+  if (startMs === -Infinity && endMs === Infinity) return Array.isArray(items) ? items : []
 
   return (Array.isArray(items) ? items : []).filter((e) => {
-    const t = new Date(e?.eventTime || e?.fechaHoraDia || '').getTime()
+    const t = toMs(e?.eventTime || e?.fechaHoraDia)
     if (!Number.isFinite(t)) return false
     return t >= startMs && t <= endMs
   })
@@ -309,6 +307,105 @@ function resetServerPaging() {
   serverTotalElements.value = 0
 }
 
+function rangeToMsLocal(range) {
+  const from = String(range?.from || '').trim()
+  const to = String(range?.to || '').trim()
+  if (!from && !to) return { startMs: -Infinity, endMs: Infinity }
+
+  const startStr = from || to
+  const endStr = to || from
+
+  const startMs = new Date(`${startStr}T00:00:00`).getTime()
+  const endMs = new Date(`${endStr}T23:59:59.999`).getTime()
+  return { startMs, endMs }
+}
+
+// ✅ descarga páginas hasta que ya tenemos eventos con eventTime <= startMs (o hasta límites)
+async function cargarHastaRango(range) {
+  const { startMs } = rangeToMsLocal(range)
+
+  resetServerPaging()
+  baseLogs.value = []
+
+  let page = 0
+  let oldestFetched = Infinity
+
+  // límites para no matar el navegador (ajusta a gusto)
+  const MAX_PAGES = 40
+  const MAX_ITEMS = 10000
+
+  while (page < MAX_PAGES && baseLogs.value.length < MAX_ITEMS) {
+    const resp = await ChartDataService.getLogsEvents({
+      system: currentSystem.value,
+      page,
+      size: pageSize.value,
+    })
+
+    serverPage.value = Number(resp?.page ?? page)
+    serverTotalPages.value = Number(resp?.totalPages ?? 1)
+    serverTotalElements.value = Number(resp?.totalElements ?? 0)
+
+    const items = Array.isArray(resp?.items) ? resp.items : []
+    if (!items.length) break
+
+    baseLogs.value = mergeUniqueById(baseLogs.value, items)
+
+    // oldest de ESTA página
+    let pageOldest = Infinity
+    for (const it of items) {
+      const t = toMs(it?.eventTime || it?.fechaHoraDia)
+      if (Number.isFinite(t) && t < pageOldest) pageOldest = t
+    }
+    if (Number.isFinite(pageOldest) && pageOldest < oldestFetched) oldestFetched = pageOldest
+
+    // ✅ si ya llegamos a eventos tan viejos como el inicio del rango, podemos parar
+    if (oldestFetched <= startMs) break
+
+    // si ya no hay más páginas
+    if (page + 1 >= serverTotalPages.value) break
+
+    page += 1
+  }
+}
+
+function getOldestLoadedMs() {
+  let oldest = Infinity
+  for (const it of baseLogs.value || []) {
+    const t = toMs(it?.eventTime || it?.fechaHoraDia)
+    if (Number.isFinite(t) && t < oldest) oldest = t
+  }
+  return oldest
+}
+
+async function ensureCoverageForRange(range) {
+  const { startMs } = rangeToMsLocal(range)
+  if (!Number.isFinite(startMs)) return
+
+  // Asegura que exista al menos la primera página
+  if (!baseLogs.value.length) {
+    await cargarPaginaInicial()
+  }
+
+  // Si ya tenemos data suficientemente vieja, no hacemos nada
+  let oldest = getOldestLoadedMs()
+  if (!Number.isFinite(oldest) || oldest <= startMs) return
+
+  // Cargar más páginas hasta cubrir el inicio del rango (con límites)
+  const MAX_EXTRA_PAGES = 30
+  let guards = 0
+
+  loadingMore.value = true
+  try {
+    while (oldest > startMs && hasMore.value && guards < MAX_EXTRA_PAGES) {
+      await fetchPage(serverPage.value + 1, { resetPage: false })
+      oldest = getOldestLoadedMs()
+      guards++
+    }
+  } finally {
+    loadingMore.value = false
+  }
+}
+
 async function cargarPaginaInicial() {
   loading.value = true
   try {
@@ -335,8 +432,6 @@ async function cargarMas() {
  * @param {Array|null} dataGrafica - Datos opcionales si vienen de un click en gráfica
  */
 const abrirConsola = async (dataGrafica = null) => {
-  ignoreNextFiltrar.value = false
-
   if (Array.isArray(dataGrafica) && dataGrafica.length > 0) {
     // ✅ Modo "desde gráfica": no hay paginación backend
     isChartDataMode.value = true
@@ -361,6 +456,122 @@ const abrirConsola = async (dataGrafica = null) => {
   }, 600)
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+async function ensureDinamicFiltersReady() {
+  for (let i = 0; i < 20; i++) {
+    if (filtroRef.value?.applyChartFilter) return true
+    await nextTick()
+    await sleep(50)
+  }
+  return false
+}
+
+const abrirConsolaConFiltros = async (selections = []) => {
+  // separa rango y otros filtros
+  let range = null
+  const other = []
+
+  for (const sel of selections) {
+    if (!sel?.fieldKey) continue
+    if (sel.fieldKey === 'rangoFechas') range = sel.value
+    else other.push(sel)
+  }
+
+  isChartDataMode.value = false
+
+  loading.value = true
+  try {
+    // ✅ si viene rango desde gráfica: descarga páginas hasta cubrir rango
+    if (range?.from || range?.to) {
+      await cargarHastaRango(range)
+      // deja el rango listo en payload
+      lastPayload.value = {
+        ...(lastPayload.value || {}),
+        rangoFechas: { from: range.from || '', to: range.to || '' },
+      }
+      recomputarVista({ resetPage: true })
+    } else {
+      // modo normal
+      await cargarPaginaInicial()
+    }
+  } finally {
+    loading.value = false
+  }
+
+  // ✅ abrir consola siempre
+  consoleStore.consoleOpen = true
+  filtrosToggle.value = true
+  paginaActual.value = 1
+
+  await nextTick()
+  const ok = await ensureDinamicFiltersReady()
+  if (!ok) return
+
+  // ✅ refleja rango en UI
+  if (range?.from || range?.to) {
+    filtroRef.value?.setRangoFechas?.({ from: range.from || '', to: range.to || '' })
+  }
+
+  // ✅ aplica otros filtros (status/eventType/outcome/etc.)
+  for (const sel of other) {
+    filtroRef.value.applyChartFilter(sel.fieldKey, sel.value)
+  }
+}
+
+// ✅ Abre consola (si hace falta) y aplica el filtro en DinamicFilters
+const abrirConsolaConFiltro = async (fieldKey, value) => {
+  // 1) Abre consola y asegura data
+  if (!consoleStore.consoleOpen) {
+    await abrirConsola()
+  } else {
+    // si ya está abierta pero no hay data, asegúrate de tener al menos la primera página
+    if (!baseLogs.value.length && !isChartDataMode.value) {
+      await cargarPaginaInicial()
+    }
+  }
+
+  // 2) Abre panel filtros y espera a que el ref exista
+  filtrosToggle.value = true
+  await nextTick()
+
+  const ok = await ensureDinamicFiltersReady()
+  if (!ok) {
+    console.warn('⚠️ DinamicFilters no estuvo listo para aplicar filtro')
+    return
+  }
+
+  // 3) Aplica filtro en DinamicFilters (esto debe refrescar logs)
+  filtroRef.value.applyChartFilter(fieldKey, value)
+
+  // 4) (Opcional) cerrar panel filtros tras aplicar
+  // setTimeout(() => (filtrosToggle.value = false), 500)
+}
+
+const abrirConsolaConDataYFiltros = async (dataGrafica = [], selections = []) => {
+  // 1) abre en modo gráfica (isChartDataMode = true)
+  await abrirConsola(dataGrafica)
+
+  // 2) abre panel filtros y espera a que DinamicFilters esté listo
+  filtrosToggle.value = true
+  await nextTick()
+  const ok = await ensureDinamicFiltersReady()
+  if (!ok) return
+
+  // 3) aplica selections en DinamicFilters para que el UI refleje valores
+  //    (si viene rangoFechas, primero setRangoFechas para que el payload lo incluya)
+  const rangeSel = selections.find((s) => s?.fieldKey === 'rangoFechas')
+  if (rangeSel?.value) {
+    filtroRef.value?.setRangoFechas?.(rangeSel.value)
+    await nextTick()
+  }
+
+  for (const sel of selections) {
+    if (!sel?.fieldKey || sel.fieldKey === 'rangoFechas') continue
+    filtroRef.value?.applyChartFilter?.(sel.fieldKey, sel.value)
+  }
+}
+
 //  fetchPage anteriormente cargarLogsDesdeApi
 async function fetchPage(page, { resetPage = false } = {}) {
   const resp = await ChartDataService.getLogsEvents({
@@ -380,19 +591,15 @@ async function fetchPage(page, { resetPage = false } = {}) {
   recomputarVista({ resetPage })
 }
 
-/**
- * ⚡ Callback que ejecuta el componente hijo <DinamicFilters>
- */
-const onLogsFiltrados = (resultadosFiltrados) => {
-  console.log('⚡ Actualizando vista con filtros:', resultadosFiltrados.length)
-  if (ignoreNextFiltrar.value) return
-  logs.value = Array.isArray(resultadosFiltrados) ? resultadosFiltrados : []
-  paginaActual.value = 1
-}
-
-const onFiltrosPayload = (payload) => {
+const onFiltrosPayload = async (payload) => {
   lastPayload.value = payload
-  recomputarVista()
+
+  const r = payload?.rangoFechas
+  if (!isChartDataMode.value && (r?.from || r?.to)) {
+    await ensureCoverageForRange(r)
+  }
+
+  recomputarVista({ resetPage: true })
 }
 
 function exportLogs(format) {
@@ -481,6 +688,9 @@ watch(
 
 defineExpose({
   abrirConsola,
+  abrirConsolaConFiltro,
+  abrirConsolaConFiltros,
+  abrirConsolaConDataYFiltros,
   cerrarConsola,
 })
 </script>

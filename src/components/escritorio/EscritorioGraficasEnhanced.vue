@@ -42,7 +42,15 @@
       <!-- Sub-cards -->
       <div class="row justify-center q-col-gutter-md">
         <div v-for="it in funcUsage.items" :key="it.name" class="col-12 col-md-2">
-          <q-card flat bordered class="func-subcard q-pa-md">
+          <q-card
+            flat
+            bordered
+            class="func-subcard q-pa-md func-clickable"
+            clickable
+            v-ripple
+            :class="{ 'func-subcard--active': selectedEventType === it.name }"
+            @click="onEventTypeCardClick(it.name)"
+          >
             <div class="flex items-center q-mb-sm">
               <span class="func-dot q-mr-sm" :style="{ background: it.color }"></span>
               <div class="text-subtitle2 ellipsis" style="max-width: 70%">{{ it.name }}</div>
@@ -71,10 +79,10 @@
   <!-- ✅ Oficinas + Etiquetas + Outcome (cards estilo oficinas) -->
   <div
     v-if="!loading && (topOffices.items.length || topTags.items.length || topOutcomes.items.length)"
-    class="row q-col-gutter-md q-mb-md"
+    class="row q-col-gutter-md q-mb-md items-stretch"
   >
-    <div class="col-12 col-md-4" v-if="topOffices.items.length">
-      <q-card flat bordered class="toplist-card q-pa-lg text-white">
+    <div class="col-12 col-md-4 toplist-col" v-if="topOffices.items.length">
+      <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="apartment" color="cyan" size="18px" class="q-mr-sm" />
           <div>
@@ -83,7 +91,14 @@
           </div>
         </div>
 
-        <div v-for="it in topOffices.items" :key="it.label" class="q-mb-md">
+        <div
+          v-for="it in topOffices.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
+          @click="openConsoleWithFilter('location.name', it.label)"
+        >
           <div class="row items-center">
             <div class="col text-subtitle2">{{ it.label }}</div>
             <div class="col-auto text-grey-5">{{ it.count }}</div>
@@ -100,8 +115,8 @@
       </q-card>
     </div>
 
-    <div class="col-12 col-md-4" v-if="topTags.items.length">
-      <q-card flat bordered class="toplist-card q-pa-lg text-white">
+    <div class="col-12 col-md-4 toplist-col" v-if="topTags.items.length">
+      <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="sell" color="purple" size="18px" class="q-mr-sm" />
           <div>
@@ -110,7 +125,14 @@
           </div>
         </div>
 
-        <div v-for="it in topTags.items" :key="it.label" class="q-mb-md">
+        <div
+          v-for="it in topTags.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
+          @click="openConsoleWithFilter('tags', it.label)"
+        >
           <div class="row items-center">
             <div class="col text-subtitle2">{{ it.label }}</div>
             <div class="col-auto text-grey-5">{{ it.count }}</div>
@@ -127,8 +149,8 @@
       </q-card>
     </div>
 
-    <div class="col-12 col-md-4" v-if="topOutcomes.items.length">
-      <q-card flat bordered class="toplist-card q-pa-lg text-white">
+    <div class="col-12 col-md-4 toplist-col" v-if="topOutcomes.items.length">
+      <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="insights" color="pink" size="18px" class="q-mr-sm" />
           <div>
@@ -137,7 +159,14 @@
           </div>
         </div>
 
-        <div v-for="it in topOutcomes.items" :key="it.label" class="q-mb-md">
+        <div
+          v-for="it in topOutcomes.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
+          @click="openConsoleWithFilter('outcome', it.label)"
+        >
           <div class="row items-center">
             <div class="col text-subtitle2">{{ it.label }}</div>
             <div class="col-auto text-grey-5">{{ it.count }}</div>
@@ -174,10 +203,11 @@
     </div>
   </div>
 
-  <!-- ✅ Severidad (pie por valor único) -->
-  <div v-if="!loading" class="row justify-center q-col-gutter-md q-mb-md">
-    <div class="col-12">
-      <q-card flat bordered class="toplist-card q-pa-lg text-white">
+  <!-- ✅ Severidad + HTTP (layout adaptativo) -->
+  <div v-if="!loading" class="row q-col-gutter-md q-mb-md items-stretch">
+    <!-- Severidad -->
+    <div :class="hasHttpLogs ? 'col-12 col-md-6' : 'col-12'">
+      <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
           <q-icon name="warning" color="orange" size="18px" class="q-mr-sm" />
           <div>
@@ -191,6 +221,25 @@
         </div>
       </q-card>
     </div>
+
+    <!-- HTTP Radar -->
+    <div v-if="hasHttpLogs" class="col-12 col-md-6">
+      <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
+        <div class="row items-center q-mb-md">
+          <q-icon name="http" color="cyan" size="18px" class="q-mr-sm" />
+          <div>
+            <div class="toplist-title">HTTP</div>
+            <div class="toplist-subtitle text-grey-5">
+              Latencia p95 (ms) por statusCode, separado por método
+            </div>
+          </div>
+        </div>
+
+        <div class="http-radar-wrap">
+          <canvas ref="httpRadarCanvas"></canvas>
+        </div>
+      </q-card>
+    </div>
   </div>
 
   <!-- ✅ SOLO: Eventos por Día + Eventos por Semana (acumulado) -->
@@ -201,8 +250,31 @@
   </div>
 
   <!-- ✅ Mapa geográfico -->
-  <div v-if="hasGeoLogs" class="q-mt-xl">
+  <div v-if="hasGeoLogs && mapSelected" class="q-mt-xl">
     <ConsoleGeoMap :logs="logsFiltrados" />
+  </div>
+
+  <div v-if="hasGeoLogs && !mapSelected" class="q-mt-xl">
+    <ConsoleGeoHeatMap
+      :logs="logsFiltrados"
+      :clickRadiusKm="5"
+      :heatRadius="28"
+      :gridPrecision="2"
+    />
+  </div>
+
+  <div v-if="hasGeoLogs" class="flex justify-center q-mt-md">
+    <q-btn-toggle
+      v-model="mapSelected"
+      color="cyan"
+      text-color="white"
+      toggle-color="cyan-8"
+      size="md"
+      :options="[
+        { label: 'Mapa de puntos', value: true },
+        { label: 'Mapa de calor', value: false },
+      ]"
+    />
   </div>
 
   <!-- ✅ Dispositivos de Usuarios (desde meta) -->
@@ -229,6 +301,7 @@
               class="device-item"
               clickable
               v-ripple
+              @click="openConsoleFromDeviceRow(d)"
             >
               <q-item-section avatar>
                 <q-icon name="smartphone" color="cyan" />
@@ -292,11 +365,56 @@
 import { ref, computed, inject, watch, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import DynamicChartCard from '../blocks/DynamicChartCard.vue'
 import ConsoleGeoMap from '../blocks/ConsoleGeoMap.vue'
+import ConsoleGeoHeatMap from '../blocks/ConsoleGeoHeatMap.vue'
 import Chart from 'chart.js/auto'
 
 const loading = ref(false)
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
 const logsGlobales = inject('logsGlobales', ref([]))
+const mapSelected = ref(true)
+
+// ✅ opcional: si el layout provee esta función, la usamos para abrir la consola
+const openConsole = inject('openConsole', null)
+
+// Para pintar "active" en UI
+const selectedEventType = computed(() => filtrosGlobales.value?.values?.eventType || '')
+
+function onEventTypeCardClick(eventType) {
+  // abre consola y preselecciona filtro eventType
+  if (typeof openConsole === 'function') {
+    openConsole({ fieldKey: 'eventType', value: eventType })
+    return
+  }
+
+  // fallback por si no está provided (o estás en otro layout)
+  window.dispatchEvent(
+    new CustomEvent('santoro-abrir-consola', {
+      detail: { fieldKey: 'eventType', value: eventType },
+    }),
+  )
+}
+
+function openConsoleWithFilter(fieldKey, value) {
+  // opcional: si no quieres filtrar por N/A
+  // if (value === 'N/A') return openConsole?.()
+
+  if (typeof openConsole === 'function') {
+    openConsole({ fieldKey, value })
+    return
+  }
+
+  // fallback por si no está provided
+  window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail: { fieldKey, value } }))
+}
+
+function openConsoleWithSelections(selections) {
+  if (typeof openConsole === 'function') {
+    openConsole(selections)
+    return
+  }
+
+  window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail: selections }))
+}
 
 const getDeep = (obj, path) =>
   String(path || '')
@@ -369,6 +487,8 @@ const extractDeviceFromMeta = (metaRaw) => {
   // Si meta trae nested device object, lo “aplanamos”
   if (isPlainObject(meta.device)) meta = { ...meta, ...meta.device }
 
+  const deviceId = meta.deviceId || meta.device_id || meta.id || ''
+
   const deviceName = meta.deviceName || meta.device_name || meta.modelName || meta.model_name
   const deviceModel = meta.deviceModel || meta.device_model || meta.model || meta.hardwareModel
   const deviceBrand = meta.deviceBrand || meta.device_brand || meta.brand || meta.manufacturer
@@ -382,12 +502,62 @@ const extractDeviceFromMeta = (metaRaw) => {
   if (!hasSignal) return null
 
   return {
+    deviceId: deviceId ? String(deviceId) : '',
     deviceName: String(deviceName || deviceModel || 'Dispositivo'),
     deviceModel: deviceModel ? String(deviceModel) : '',
     deviceBrand: deviceBrand ? String(deviceBrand) : '',
     platform: platform ? String(platform) : '',
     osVersion: osVersion ? String(osVersion) : '',
   }
+}
+
+function sameDevice(a, b) {
+  // a y b vienen de extractDeviceFromMeta
+  const norm = (x) =>
+    String(x || '')
+      .trim()
+      .toLowerCase()
+
+  return norm(a.deviceId) && norm(b.deviceId)
+    ? norm(a.deviceId) === norm(b.deviceId)
+    : norm(a.deviceName) === norm(b.deviceName) &&
+        norm(a.deviceModel) === norm(b.deviceModel) &&
+        norm(a.platform) === norm(b.platform) &&
+        norm(a.osVersion) === norm(b.osVersion)
+}
+
+function openConsoleFromDeviceRow(d) {
+  const all = logsFiltrados.value || []
+
+  const filtered = all.filter((log) => {
+    const dev = extractDeviceFromMeta(log?.meta)
+    if (!dev) return false
+
+    // si tu key incluye user, también respetamos usuario para que sea exacto
+    const user =
+      getDeep(log, 'actor.username') ||
+      getDeep(log, 'usuario.usuario') ||
+      getDeep(log, 'actor.id') ||
+      ''
+
+    const sameUser = String(user || '') === String(d.user || '')
+
+    return sameUser && sameDevice(dev, d)
+  })
+  // ✅ Enriquecer: agrega un campo primitivo para que DinamicFilters lo pueda filtrar y mostrar
+  const enriched = filtered.map((log) => {
+    const dev = extractDeviceFromMeta(log?.meta)
+    return {
+      ...log,
+      deviceName: dev?.deviceName || 'Dispositivo', // <-- clave para el select
+    }
+  })
+
+  // ✅ Abre consola y pide que se refleje el filtro en UI
+  openConsole?.({
+    dataGrafica: enriched,
+    selections: [{ fieldKey: 'deviceName', value: d.deviceName }],
+  })
 }
 
 const formatYMD = (iso) => {
@@ -687,6 +857,36 @@ async function renderStatusLineChart() {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
+
+      // ✅ Cambia el cursor cuando estás sobre una línea
+      onHover: (event, activeEls /* chart */) => {
+        const target = event?.native?.target
+        if (target) target.style.cursor = activeEls?.length ? 'pointer' : 'default'
+      },
+
+      // ✅ Click: abre consola con status seleccionado
+      onClick: (event, activeEls, chart) => {
+        const els = activeEls?.length
+          ? activeEls
+          : chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true)
+
+        if (!els?.length) return
+
+        const first = els[0]
+        const dsIdx = first.datasetIndex
+        const i = first.index ?? first.dataIndex // Chart.js suele traer "index"
+
+        const status = chart.data.datasets?.[dsIdx]?.label
+        const day = chart.data.labels?.[i] // tus labels ya son "YYYY-MM-DD"
+
+        if (!status || !day) return
+
+        openConsoleWithSelections([
+          { fieldKey: 'status', value: status },
+          { fieldKey: 'rangoFechas', value: { from: day, to: day } }, // ✅ day exacto
+        ])
+      },
+
       plugins: {
         legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
         tooltip: { titleColor: '#fff', bodyColor: '#fff' },
@@ -778,6 +978,31 @@ async function renderSeverityPieChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+
+      // ✅ Cursor tipo pointer cuando estás sobre un slice
+      onHover: (event, activeEls) => {
+        const t = event?.native?.target
+        if (t) t.style.cursor = activeEls?.length ? 'pointer' : 'default'
+      },
+
+      // ✅ Click en slice -> abrir consola filtrando severity
+      onClick: (event, activeEls, chart) => {
+        const els = activeEls?.length
+          ? activeEls
+          : chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true)
+
+        if (!els?.length) return
+
+        const idx = els[0].index ?? els[0].dataIndex
+        const label = chart.data.labels?.[idx]
+        if (!label) return
+
+        // aquí aplica el filtro en consola
+        openConsoleWithFilter('severity', label)
+        // o si prefieres el estilo multi:
+        // openConsoleWithSelections([{ fieldKey: 'severity', value: label }])
+      },
+
       plugins: {
         legend: {
           position: 'bottom',
@@ -796,6 +1021,175 @@ async function renderSeverityPieChart() {
               return `${ctx.label}: ${v} (${pct}%)`
             },
           },
+        },
+      },
+    },
+  })
+}
+
+/* -------------------------
+   HTTP Radar chart (Chart.js)
+-------------------------- */
+const httpRadarCanvas = ref(null)
+let httpRadarChart = null
+
+const hasHttpLogs = computed(() => {
+  const items = logsFiltrados.value || []
+  return items.some(
+    (l) =>
+      getDeep(l, 'http.statusCode') != null ||
+      getDeep(l, 'http.method') != null ||
+      getDeep(l, 'http.latencyMs') != null,
+  )
+})
+
+const METHOD_COLORS = ['#29d3c2', '#ff5c8a', '#22d3ee', '#ff9f43', '#a78bfa', '#22c55e']
+
+function p95(values) {
+  const arr = Array.isArray(values) ? values.filter(Number.isFinite) : []
+  const n = arr.length
+  if (!n) return 0
+  arr.sort((a, b) => a - b)
+  const idx = Math.ceil(0.95 * n) - 1
+  return arr[Math.max(0, Math.min(idx, n - 1))]
+}
+
+function buildHttpRadarSeries(logs) {
+  const items = Array.isArray(logs) ? logs : []
+
+  // status -> method -> latencies[]
+  const by = new Map()
+  // status -> latencies[] (ALL)
+  const allByStatus = new Map()
+
+  const statusTotals = new Map()
+  const methodTotals = new Map()
+
+  for (const l of items) {
+    const stRaw = getDeep(l, 'http.statusCode')
+    const mRaw = getDeep(l, 'http.method')
+    const latRaw = getDeep(l, 'http.latencyMs')
+
+    const status = String(stRaw ?? 'N/A').trim()
+    const method = String(mRaw ?? 'N/A')
+      .trim()
+      .toUpperCase()
+    const latency = Number(latRaw)
+
+    if (!Number.isFinite(latency)) continue
+
+    // totals para elegir top status/method (por volumen)
+    statusTotals.set(status, (statusTotals.get(status) || 0) + 1)
+    methodTotals.set(method, (methodTotals.get(method) || 0) + 1)
+
+    // ALL por status
+    if (!allByStatus.has(status)) allByStatus.set(status, [])
+    allByStatus.get(status).push(latency)
+
+    // por status-method
+    if (!by.has(status)) by.set(status, new Map())
+    const mm = by.get(status)
+    if (!mm.has(method)) mm.set(method, [])
+    mm.get(method).push(latency)
+  }
+
+  if (!statusTotals.size) return { labels: [], datasets: [] }
+
+  // ✅ Top status codes para que el radar no tenga 30 ejes
+  const topStatusN = 8
+  const statusKeys = Array.from(statusTotals.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, topStatusN)
+    .map(([st]) => st)
+
+  // orden visual: numérico asc cuando se pueda
+  const numericSort = (a, b) => {
+    const na = Number(a),
+      nb = Number(b)
+    const fa = Number.isFinite(na),
+      fb = Number.isFinite(nb)
+    if (fa && fb) return na - nb
+    if (fa && !fb) return -1
+    if (!fa && fb) return 1
+    return String(a).localeCompare(String(b))
+  }
+  statusKeys.sort(numericSort)
+
+  // ✅ Top methods
+  const topMethodN = 4
+  const methods = Array.from(methodTotals.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, topMethodN)
+    .map(([m]) => m)
+
+  // Dataset "ALL" = p95 global por status (todas las methods)
+  const allDataset = {
+    label: 'ALL',
+    data: statusKeys.map((st) => Math.round(p95(allByStatus.get(st)) * 10) / 10),
+    borderColor: '#94a3b8',
+    backgroundColor: 'rgba(148,163,184,0.10)',
+    pointRadius: 2,
+    borderWidth: 2,
+    fill: true,
+  }
+
+  // Datasets por method = p95 por status-method
+  const methodDatasets = methods.map((m, idx) => {
+    const color = METHOD_COLORS[idx % METHOD_COLORS.length]
+    return {
+      label: m,
+      data: statusKeys.map((st) => {
+        const arr = by.get(st)?.get(m) || []
+        return Math.round(p95(arr) * 10) / 10
+      }),
+      borderColor: color,
+      backgroundColor: color + '22', // hex con alpha
+      pointRadius: 2,
+      borderWidth: 2,
+      fill: true,
+    }
+  })
+
+  return { labels: statusKeys, datasets: [allDataset, ...methodDatasets] }
+}
+
+async function renderHttpRadarChart() {
+  await nextTick()
+  const el = httpRadarCanvas.value
+  if (!el) return
+
+  if (httpRadarChart) {
+    httpRadarChart.destroy()
+    httpRadarChart = null
+  }
+
+  const { labels, datasets } = buildHttpRadarSeries(logsFiltrados.value)
+  if (!labels.length || !datasets.length) return
+
+  httpRadarChart = new Chart(el.getContext('2d'), {
+    type: 'radar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: true },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
+        tooltip: {
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: p95 ${ctx.parsed.r} ms`,
+          },
+        },
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          ticks: { color: 'rgba(255,255,255,0.55)' },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          angleLines: { color: 'rgba(255,255,255,0.06)' },
+          pointLabels: { color: 'rgba(255,255,255,0.75)' },
         },
       },
     },
@@ -917,6 +1311,7 @@ const hasGeoLogs = computed(() => logsConGeo.value.length > 0)
 const redrawCharts = () => {
   renderStatusLineChart()
   renderSeverityPieChart()
+  renderHttpRadarChart()
 }
 
 watch(logsFiltrados, () => redrawCharts())
@@ -926,6 +1321,7 @@ onMounted(() => redrawCharts())
 onBeforeUnmount(() => {
   if (statusLineChart) statusLineChart.destroy()
   if (severityPieChart) severityPieChart.destroy()
+  if (httpRadarChart) httpRadarChart.destroy()
 })
 </script>
 
@@ -1008,7 +1404,7 @@ onBeforeUnmount(() => {
 }
 
 .severity-pie-wrap {
-  height: 280px;
+  height: 450px;
 }
 .severity-pie-wrap canvas {
   width: 100% !important;
@@ -1126,5 +1522,67 @@ onBeforeUnmount(() => {
     height: 360px;
     max-height: 360px;
   }
+}
+
+.toplist-col {
+  display: flex; /* permite que el card crezca */
+}
+
+.toplist-card--full {
+  width: 100%;
+  height: 100%; /* se estira al alto del col */
+  display: flex;
+  flex-direction: column; /* opcional, pero recomendado */
+}
+
+.func-clickable {
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.func-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  border-color: rgba(34, 211, 238, 0.25);
+}
+
+.func-subcard--active {
+  border-color: rgba(34, 211, 238, 0.55) !important;
+  box-shadow: 0 18px 42px rgba(34, 211, 238, 0.12);
+}
+
+.toplist-row {
+  cursor: pointer;
+  border-radius: 12px;
+  transition:
+    background 120ms ease,
+    transform 120ms ease,
+    border-color 120ms ease;
+  border: 1px solid transparent;
+}
+
+.toplist-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.toplist-row:active {
+  transform: translateY(0px);
+}
+
+.status-line-wrap canvas {
+  cursor: pointer;
+}
+
+.http-radar-wrap {
+  height: 520px;
+}
+.http-radar-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 </style>

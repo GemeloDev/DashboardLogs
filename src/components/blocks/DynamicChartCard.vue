@@ -36,6 +36,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { inject } from 'vue'
 import Chart from 'chart.js/auto'
 
 const props = defineProps({
@@ -46,30 +47,17 @@ const props = defineProps({
 
 const chartCanvas = ref(null)
 let chartInstance = null
+// ya existe en MainLayout: provide('openConsole', openConsole)
+const openConsole = inject('openConsole', null)
 
 // ---------- Helpers ----------
-const formatMonthLabelEs = (year, month1to12) => {
-  // month1to12: 1..12
-  const d = new Date(Date.UTC(year, month1to12 - 1, 1))
-
-  // "feb 2026" (es-MX). Usa month:'long' si quieres "febrero 2026"
-  const s = new Intl.DateTimeFormat('es-MX', {
-    month: 'long',
-    year: 'numeric',
-  }).format(d)
-
-  // Capitalizar primera letra: "Feb 2026"
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
 const getDeep = (obj, path) =>
   String(path || '')
     .split('.')
     .reduce((o, k) => (o ? o[k] : null), obj)
 
 const pad2 = (n) => String(n).padStart(2, '0')
-
-const toYMD = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+const toYMDLocal = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 
 // ISO week helpers (para ordenar bien semanas)
 function getISOWeekYearAndWeek(date) {
@@ -79,6 +67,62 @@ function getISOWeekYearAndWeek(date) {
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
   const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7)
   return { year: d.getUTCFullYear(), week: weekNo }
+}
+
+// ---------- helpers fechas (YYYY-MM-DD) ----------
+const endOfMonthYMD_Local = (year, month1to12) => {
+  const dt = new Date(Number(year), Number(month1to12), 0)
+  return toYMDLocal(dt)
+}
+
+function isoWeekStartYMD_Local(year, week) {
+  const y = Number(year)
+  const w = Number(week)
+  const simple = new Date(y, 0, 1 + (w - 1) * 7)
+  const dow = simple.getDay() // 0 dom..6 sab
+  const monday = new Date(simple)
+  const diff = dow <= 4 ? 1 - dow : 8 - dow
+  monday.setDate(simple.getDate() + diff)
+  monday.setHours(0, 0, 0, 0)
+  return toYMDLocal(monday)
+}
+
+function addDaysYMD_Local(ymd, days) {
+  const [y, m, d] = String(ymd).split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + Number(days || 0))
+  return toYMDLocal(dt)
+}
+
+function rangeFromKey(bucket, key) {
+  const k = String(key || '').trim()
+
+  if (bucket === 'day') {
+    // YYYY-MM-DD
+    return { from: k, to: k }
+  }
+
+  if (bucket === 'week') {
+    // YYYY-W##
+    const m = k.match(/^(\d{4})-W(\d{2})$/i)
+    if (!m) return null
+    const from = isoWeekStartYMD_Local(m[1], m[2])
+    const to = addDaysYMD_Local(from, 6)
+    return { from, to }
+  }
+
+  if (bucket === 'month') {
+    // YYYY-MM
+    const m = k.match(/^(\d{4})-(\d{2})$/)
+    if (!m) return null
+    const year = m[1]
+    const mm = m[2]
+    const from = `${year}-${mm}-01`
+    const to = endOfMonthYMD_Local(year, Number(mm))
+    return { from, to }
+  }
+
+  return null
 }
 
 // ---------- Aesthetic ----------
@@ -102,6 +146,30 @@ const timeLabel = computed(() => {
 
 const totalLogs = computed(() => (props.logs || []).length)
 
+const MONTHS_ES = [
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dic',
+]
+
+function labelFromMonthKey(key /* YYYY-MM */) {
+  const m = String(key).match(/^(\d{4})-(\d{2})$/)
+  if (!m) return key
+  const y = m[1]
+  const mm = Number(m[2]) // 1..12
+  const idx = Math.max(0, Math.min(11, mm - 1))
+  return `${MONTHS_ES[idx]} ${y}` // "Feb 2026"
+}
+
 // ---------- Data builder: Timeseries ONLY ----------
 function buildTimeseries() {
   const counts = new Map()
@@ -118,15 +186,15 @@ function buildTimeseries() {
     let label = ''
 
     if (bucket.value === 'year') {
-      const y = d.getFullYear()
+      const y = d.getUTCFullYear()
       key = String(y)
       label = String(y)
     } else if (bucket.value === 'month') {
       const y = d.getFullYear()
       const mNum = d.getMonth() + 1
       const m = pad2(mNum)
-      key = `${y}-${m}` // ✅ se mantiene ordenable
-      label = formatMonthLabelEs(y, mNum) // ✅ "Feb 2026"
+      key = `${y}-${m}` // ✅ YYYY-MM
+      label = labelFromMonthKey(key) // ✅ label SIEMPRE consistente con key
     } else if (bucket.value === 'week') {
       const { year, week } = getISOWeekYearAndWeek(d)
       const w = pad2(week)
@@ -134,8 +202,8 @@ function buildTimeseries() {
       label = `Semana ${w}-${year}`
     } else {
       // day
-      key = toYMD(d) // ordenable
-      label = toYMD(d)
+      key = toYMDLocal(d) // ordenable
+      label = toYMDLocal(d)
     }
 
     const prev = counts.get(key)
@@ -154,7 +222,7 @@ function buildTimeseries() {
     cum.push(acc)
   }
 
-  return { labels, data, cum }
+  return { keys, labels, data, cum }
 }
 
 const chartPayload = computed(() => buildTimeseries())
@@ -168,6 +236,7 @@ const renderChart = () => {
 
   const ctx = chartCanvas.value.getContext('2d')
   const payload = chartPayload.value
+  // const keys = payload?.keys || []
 
   const barColor = '#AB47BC'
   const lineColor = '#42A5F5'
@@ -220,6 +289,30 @@ const renderChart = () => {
           ticks: { color: 'rgba(255,255,255,0.55)' },
           grid: { color: 'rgba(255,255,255,0.06)' },
         },
+      },
+
+      onHover: (event, activeEls) => {
+        const t = event?.native?.target
+        if (t) t.style.cursor = activeEls?.length ? 'pointer' : 'default'
+      },
+
+      onClick: (event, activeEls, chart) => {
+        const els = activeEls?.length
+          ? activeEls
+          : chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true)
+
+        if (!els?.length) return
+
+        const i = els[0].index ?? els[0].dataIndex
+        const key = payload?.keys?.[i]
+        if (!key) return
+
+        const bucket = props.definition?.timeBucket
+        const range = rangeFromKey(bucket, key)
+        if (!range?.from) return
+
+        // ✅ abre consola con dataGrafica + setea el rango en UI
+        openConsole?.([{ fieldKey: 'rangoFechas', value: range }])
       },
     },
   })

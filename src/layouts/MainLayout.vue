@@ -159,10 +159,21 @@
         <QRScannerModal v-model="showSessionQR" @qr-scanned="handleQRScanned" />
       </q-slide-transition>
 
-      <!-- Panel de filtros expandible -->
-      <q-slide-transition>
-        <DinamicFilters v-show="showDinamicFilters" @camposSeleccionados="onFiltrar" />
-      </q-slide-transition>
+      <!-- Modal TOP: Filtros avanzados -->
+      <q-dialog
+        v-model="showDinamicFilters"
+        position="top"
+        transition-show="slide-down"
+        transition-hide="slide-up"
+      >
+        <!-- Wrapper para controlar ancho/alto y scroll -->
+        <div
+          class="q-pa-sm"
+          style="max-width: min(1800px, 99vw); max-height: calc(100vh - 80px); overflow: auto"
+        >
+          <DinamicFilters :auto-emit-on-mounted="false" @camposSeleccionados="onFiltrar" />
+        </div>
+      </q-dialog>
     </q-header>
 
     <!-- SIDEBAR ESCRITORIO (ÚNICO) -->
@@ -299,6 +310,7 @@ const filtros = ref({
 
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
+provide('openConsole', openConsole)
 
 // Info usuario
 const userInfo = computed(() => ({
@@ -323,8 +335,8 @@ const aplicarFiltroRangoFechas = () => {
   const startStr = from || to
   const endStr = to || from
 
-  const startMs = new Date(`${startStr}T00:00:00`).getTime()
-  const endMs = new Date(`${endStr}T23:59:59.999`).getTime()
+  const startMs = Date.parse(`${startStr}T00:00:00.000Z`)
+  const endMs = Date.parse(`${endStr}T23:59:59.999Z`)
 
   logsGlobales.value = eventosRaw.value.filter((e) => {
     const t = new Date(e?.eventTime || e?.fechaHoraDia || '').getTime()
@@ -481,18 +493,44 @@ function onGeminiConfigurado() {
   console.log('✅ Gemini configurado desde MainLayout')
 }
 
-function openConsole() {
-  if (consolaRef.value && consolaRef.value.abrirConsola) {
-    consolaRef.value.abrirConsola()
-    console.log('✅ Consola abierta correctamente')
-  } else {
-    console.warn('❌ Referencia de consola no disponible:', consolaRef.value)
-    $q.notify({
-      message: '❌ Error al abrir la consola. Referencia no disponible.',
-      color: 'negative',
-      icon: 'error',
-    })
+function openConsole(selection = null) {
+  if (!consolaRef.value?.abrirConsola) {
+    $q.notify({ message: '❌ Error al abrir consola', color: 'negative' })
+    return
   }
+
+  // ✅ NUEVO: dataGrafica + selections (para que se vea el valor en los selects)
+  if (selection?.dataGrafica && Array.isArray(selection.dataGrafica) && Array.isArray(selection.selections)) {
+    consolaRef.value.abrirConsolaConDataYFiltros?.(selection.dataGrafica, selection.selections)
+    return
+  }
+
+  // ✅ DATA + filtros (ideal para clicks en gráficas)
+  if (selection?.dataGrafica && Array.isArray(selection.dataGrafica) && selection?.selections) {
+    consolaRef.value.abrirConsolaConDataYFiltros?.(selection.dataGrafica, selection.selections)
+    return
+  }
+
+  // ✅ Solo dataGrafica
+  if (selection?.dataGrafica && Array.isArray(selection.dataGrafica)) {
+    consolaRef.value.abrirConsola(selection.dataGrafica)
+    return
+  }
+
+  // ✅ MULTI filtros
+  if (Array.isArray(selection) && selection.length) {
+    consolaRef.value.abrirConsolaConFiltros?.(selection)
+    return
+  }
+
+  // ✅ SINGLE filtro
+  if (selection?.fieldKey) {
+    consolaRef.value.abrirConsolaConFiltro?.(selection.fieldKey, selection.value)
+    return
+  }
+
+  // ✅ normal
+  consolaRef.value.abrirConsola()
 }
 
 function logout() {
@@ -521,17 +559,17 @@ watch(
   selectedSystem,
   (sys) => {
     filtros.value.system = sys
-    authService.savePrefs( prefs.flow, sys)
+    authService.savePrefs(prefs.flow, sys)
     cargarEventosDelSistema()
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 // 2) Cuando cambia rango: SÍ pega al backend
 watch(
   () => `${filtros.value.rangoFechas?.from || ''}|${filtros.value.rangoFechas?.to || ''}`,
   () => aplicarFiltroRangoFechas(),
-  { immediate: true }
+  { immediate: true },
 )
 
 onMounted(() => {
@@ -541,7 +579,7 @@ onMounted(() => {
   }
 
   // Eventos del asistente (solo los que NO son de flujo)
-  window.addEventListener('santoro-abrir-consola', () => openConsole())
+  window.addEventListener('santoro-abrir-consola', (e) => openConsole(e?.detail || null))
   window.addEventListener('santoro-mostrar-filtros', () => (showDinamicFilters.value = true))
 
   checkApiKeysExpirations()
