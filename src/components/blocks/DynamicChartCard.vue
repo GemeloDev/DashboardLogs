@@ -125,9 +125,15 @@ function rangeFromKey(bucket, key) {
   return null
 }
 
-// ---------- Aesthetic ----------
-const accentPalette = ['#22d3ee', '#a78bfa', '#ff9f43', '#29d3c2', '#ff5c8a']
-const accentColor = computed(() => accentPalette[props.colorIndex % accentPalette.length])
+// ---------- Aesthetic (1 color por gráfica) ----------
+const BUCKET_COLORS = {
+  day: '#22d3ee', // cyan (Oficinas vibe)
+  week: '#a78bfa', // purple
+  month: '#ff5c8a', // pink
+  year: '#fbbf24', // amber
+}
+
+const accentColor = computed(() => BUCKET_COLORS[bucket.value] || '#22d3ee')
 
 // ---------- Definition ----------
 const timeKey = computed(() => props.definition?.timeKey || 'eventTime')
@@ -138,10 +144,10 @@ const iconName = computed(() => props.definition?.icon || 'timeline')
 
 const timeLabel = computed(() => {
   const b = bucket.value
-  if (b === 'year') return 'Por año + acumulado'
-  if (b === 'month') return 'Por mes + acumulado'
-  if (b === 'week') return 'Por semana + acumulado'
-  return 'Por día + acumulado'
+  if (b === 'year') return 'Por año'
+  if (b === 'month') return 'Por mes'
+  if (b === 'week') return 'Por semana'
+  return 'Por día'
 })
 
 const totalLogs = computed(() => (props.logs || []).length)
@@ -193,16 +199,15 @@ function buildTimeseries() {
       const y = d.getFullYear()
       const mNum = d.getMonth() + 1
       const m = pad2(mNum)
-      key = `${y}-${m}` // ✅ YYYY-MM
-      label = labelFromMonthKey(key) // ✅ label SIEMPRE consistente con key
+      key = `${y}-${m}`
+      label = labelFromMonthKey(key)
     } else if (bucket.value === 'week') {
       const { year, week } = getISOWeekYearAndWeek(d)
       const w = pad2(week)
-      key = `${year}-W${w}` // ordenable
+      key = `${year}-W${w}`
       label = `Semana ${w}-${year}`
     } else {
-      // day
-      key = toYMDLocal(d) // ordenable
+      key = toYMDLocal(d)
       label = toYMDLocal(d)
     }
 
@@ -215,14 +220,7 @@ function buildTimeseries() {
   const labels = keys.map((k) => counts.get(k)?.label || k)
   const data = keys.map((k) => counts.get(k)?.count || 0)
 
-  const cum = []
-  let acc = 0
-  for (const v of data) {
-    acc += v
-    cum.push(acc)
-  }
-
-  return { keys, labels, data, cum }
+  return { keys, labels, data }
 }
 
 const chartPayload = computed(() => buildTimeseries())
@@ -236,32 +234,27 @@ const renderChart = () => {
 
   const ctx = chartCanvas.value.getContext('2d')
   const payload = chartPayload.value
-  // const keys = payload?.keys || []
 
-  const barColor = '#AB47BC'
-  const lineColor = '#42A5F5'
+  const lineColor = accentColor.value
 
   chartInstance = new Chart(ctx, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: payload.labels,
       datasets: [
         {
-          type: 'bar',
           label: 'Eventos',
           data: payload.data,
-          backgroundColor: barColor,
-          borderRadius: 8,
-        },
-        {
-          type: 'line',
-          label: 'Acumulado',
-          data: payload.cum,
           borderColor: lineColor,
-          backgroundColor: 'transparent',
-          tension: 0.25,
+          backgroundColor: lineColor + '22', // alpha suave
+          borderWidth: 2,
+          tension: 0.35, // curva suave
+          fill: false, // ✅ solo línea + puntos
           pointRadius: 3,
-          pointHoverRadius: 5,
+          pointHoverRadius: 6,
+          pointBackgroundColor: lineColor,
+          pointBorderColor: 'rgba(15,20,32,0.9)', // se ve bien en dark
+          pointBorderWidth: 2,
         },
       ],
     },
@@ -269,16 +262,19 @@ const renderChart = () => {
       devicePixelRatio: 2,
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
+      interaction: { mode: 'nearest', intersect: false },
+
       plugins: {
-        legend: {
-          labels: { color: 'rgba(255,255,255,0.78)' },
-        },
+        legend: { display: false }, // ✅ innecesario (solo 1 dataset)
         tooltip: {
           titleColor: '#fff',
           bodyColor: '#fff',
+          callbacks: {
+            label: (ctx) => `Eventos: ${ctx.parsed.y}`,
+          },
         },
       },
+
       scales: {
         x: {
           ticks: { color: 'rgba(255,255,255,0.60)', maxRotation: 0, autoSkip: true },
@@ -311,7 +307,6 @@ const renderChart = () => {
         const range = rangeFromKey(bucket, key)
         if (!range?.from) return
 
-        // ✅ abre consola con dataGrafica + setea el rango en UI
         openConsole?.([{ fieldKey: 'rangoFechas', value: range }])
       },
     },
@@ -367,6 +362,10 @@ defineExpose({
 
 .chart-wrap {
   height: 280px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 10px;
 }
 .chart-wrap canvas {
   width: 100% !important;

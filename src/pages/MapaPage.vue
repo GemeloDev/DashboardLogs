@@ -912,7 +912,7 @@ defineExpose({ toggleProjection, projectionLabel })
 <style scoped>
 /* tu mapa */
 .mapa-container {
-  height: 520px;
+  height: 420px;
   border-radius: 10px;
   overflow: hidden;
 }

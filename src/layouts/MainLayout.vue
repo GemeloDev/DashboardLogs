@@ -308,10 +308,6 @@ const filtros = ref({
   values: {},
 })
 
-provide('logsGlobales', logsGlobales)
-provide('filtrosGlobales', filtros)
-provide('openConsole', openConsole)
-
 // Info usuario
 const userInfo = computed(() => ({
   nombre: authService.user?.name || 'Usuario',
@@ -321,6 +317,12 @@ const userInfo = computed(() => ({
 
 const eventosRaw = ref([]) // lo que llega del backend (ya filtrado por system)
 const loadingLogs = ref(false) // puedes mantener el mismo nombre
+
+
+provide('logsGlobales', logsGlobales)
+provide('filtrosGlobales', filtros)
+provide('openConsole', openConsole)
+provide('loadingLogs', loadingLogs)
 
 const aplicarFiltroRangoFechas = () => {
   const r = filtros.value?.rangoFechas || {}
@@ -464,6 +466,7 @@ function toggleDinamicFilters() {
 }
 
 async function onFiltrar(payload) {
+  loadingLogs.value = true
   const {
     _visibleFields = [],
     busqueda = '',

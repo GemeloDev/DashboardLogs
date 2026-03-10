@@ -4,6 +4,18 @@
       <q-icon name="local_fire_department" class="q-mr-sm" color="primary" />
       <div class="text-subtitle1">Mapa de Calor (geo)</div>
       <q-space />
+      <q-chip
+        clickable
+        v-ripple
+        color="orange"
+        text-color="white"
+        icon="public"
+        size="sm"
+        class="q-mr-sm"
+        @click="toggleProjection"
+      >
+        {{ projectionLabel }}
+      </q-chip>
       <q-chip v-if="pointsCount" color="primary" text-color="white" icon="place" size="sm">
         {{ pointsCount }} puntos
       </q-chip>
@@ -39,6 +51,25 @@ const mapEl = ref(null)
 let map = null
 let ro = null
 let loaded = false
+const projectionType = ref('globe')
+const projectionLabel = computed(() => (projectionType.value === 'globe' ? 'Globo' : 'Plano'))
+
+function applyProjection(type) {
+  if (!map) return
+  projectionType.value = type
+  try {
+    map.setProjection({ type })
+  } catch (e) {
+    console.warn('Proyección no soportada en este navegador, usando Mercator como fallback.', e)
+  }
+}
+
+function toggleProjection() {
+  if (!map) return
+  const cur = map.getProjection?.()?.type || projectionType.value
+  const next = cur === 'globe' ? 'mercator' : 'globe'
+  applyProjection(next)
+}
 
 // ---------- Helpers ----------
 function parseGeo(geo) {
@@ -221,7 +252,7 @@ async function initMap() {
   })
 
   map.on('style.load', () => {
-    map.setProjection({ type: 'globe' })
+    applyProjection('globe')
   })
 
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left')
@@ -355,9 +386,14 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .mapa-container {
-  height: 420px;
+  height: 520px;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.chip-disabled {
+  opacity: 0.55;
+  pointer-events: none;
 }
 </style>

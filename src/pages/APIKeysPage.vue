@@ -197,12 +197,6 @@
     </q-dialog>
 
     <rate-limit-config v-model="rateLimitDialog" />
-
-    <q-page-sticky position="bottom-right" :offset="[18, 18]">
-      <q-btn fab icon="add" color="primary" @click="abrirModalCrear" class="shadow-10">
-        <q-tooltip anchor="center left" self="center right">Crear API Key</q-tooltip>
-      </q-btn>
-    </q-page-sticky>
   </q-page>
 </template>
 

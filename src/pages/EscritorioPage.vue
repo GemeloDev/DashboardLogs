@@ -4,11 +4,13 @@
     <header class="escritorio-hero q-px-md q-py-xl">
       <div class="container">
         <div class="text-center">
-          <div class="escritorio-title text-h4 text-sm-h3 text-md-h3 text-weight-bold q-mb-sm">
+          <div class="escritorio-title text-h3 text-sm-h3 text-md-h3 text-weight-bold q-mb-sm">
             Dashboard de Escritorio
           </div>
 
-          <div class="text-subtitle1 text-sm-h6 text-blue-3 q-mb-sm">
+          <div
+            class="escritorio-subtitle text-subtitle1 text-sm-h6 text-weight-bold text-blue-3 q-mb-sm"
+          >
             Panel de Control Avanzado
           </div>
 
@@ -49,8 +51,9 @@ import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGrafi
 
 /* mejora legibilidad y evita saltos feos */
 .escritorio-title {
-  padding-top: 15px;
-  line-height: 1.15;
+  padding-top: 25px;
+  padding-bottom: 15px;
+  // line-height: 1.15;
   word-break: break-word;
   text-shadow: 0 0 30px rgba(59, 130, 246, 0.18);
 }
@@ -60,6 +63,10 @@ import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGrafi
   .escritorio-hero {
     padding-top: 25px !important;
     padding-bottom: 20px !important;
+  }
+
+  .escritorio-subtitle {
+    padding-top: 25px !important;
   }
 }
 </style>

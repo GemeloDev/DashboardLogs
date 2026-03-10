@@ -82,13 +82,9 @@
         </div>
       </q-card-section>
       <q-separator color="grey-4" />
-      <q-card-section>
+      <q-card-section align="right" class="q-pt-sm">
         <!-- Header -->
         <q-toolbar>
-          <q-badge color="primary" text-color="white" class="q-mr-sm">
-            Fuente: {{ sourceLabel }}
-          </q-badge>
-          <q-space />
           <q-btn
             label="Guardar"
             color="primary"
@@ -121,13 +117,6 @@ const $q = useQuasar()
 const loading = ref(false)
 const rateLimit = ref(null) // respuesta completa del GET (data.data)
 const form = ref(null) // lo que editarás y mandarás al PUT
-
-const sourceLabel = computed(() => {
-  const src = rateLimit.value?.source
-  if (src === 'ORG_OVERRIDE') return 'Override (Organización)'
-  if (src === 'DEFAULT_YML') return 'Default (application.yml)'
-  return 'Desconocido'
-})
 
 const canReset = computed(() => rateLimit.value?.source === 'ORG_OVERRIDE')
 
