@@ -80,6 +80,12 @@ const routes = [
         component: () => import('pages/GestionEmpleadosPage.vue'),
         meta: { requiresAdmin: true }
       },
+
+      // Ruta para el asistente de IA
+      {
+        path: 'eva',
+        component: () => import('src/pages/EvaWorkspacePage.vue')
+      },
     ],
   },
 

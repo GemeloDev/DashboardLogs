@@ -254,14 +254,11 @@
     </q-page-container>
 
     <!-- 🤖 SANTORO IA ASSISTANT - Chat Flotante Global -->
-    <SantoroChat />
+    <router-view />
 
-    <!-- 🔧 MODAL DE CONFIGURACIÓN GEMINI AI -->
-    <GeminiConfigModal
-      ref="geminiConfigRef"
-      id="gemini-config"
-      @configurado="onGeminiConfigurado"
-    />
+    <EvaFloatingButton />
+    <EvaWidget />
+    <EvaWorkspace />
   </q-layout>
 </template>
 
@@ -269,8 +266,11 @@
 import { ref, provide, onMounted, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
-import SantoroChat from '../components/SantoroChat.vue'
-import GeminiConfigModal from '../components/GeminiConfigModal.vue'
+
+// Importanto la IA
+import EvaFloatingButton from 'src/components/ai/EvaFloatingButton.vue'
+import EvaWidget from 'src/components/ai/EvaWidget.vue'
+
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 import authService from '../services/authService.js'
@@ -278,6 +278,7 @@ import QRScannerModal from 'src/components/QRScannerModal.vue'
 import DinamicFilters from 'src/components/blocks/DinamicFilters.vue'
 import { ApiKeyService } from 'src/services/apiKeys'
 import { ChartDataService } from 'src/services/chartDataService'
+import EvaWorkspace from 'src/components/ai/EvaWorkspace.vue'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -289,7 +290,6 @@ const detalleModal = ref(null)
 const showSessionQR = ref(false)
 const showDinamicFilters = ref(false)
 const consolaRef = ref(null)
-const geminiConfigRef = ref(null)
 
 const apiKeysPorExpirar = ref([])
 const prefs = authService.loadPrefs()
@@ -490,10 +490,6 @@ async function onFiltrar(payload) {
   })
 
   showDinamicFilters.value = false
-}
-
-function onGeminiConfigurado() {
-  console.log('✅ Gemini configurado desde MainLayout')
 }
 
 function openConsole(selection = null) {
