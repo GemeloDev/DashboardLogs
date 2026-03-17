@@ -391,7 +391,6 @@ onMounted(() => {
 <style lang="scss" scoped>
 // Fondo general oscuro
 .bg-dark-page {
-  background-color: #121826; // Color de fondo base de tu app
   min-height: 100vh;
 }
 

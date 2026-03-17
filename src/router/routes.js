@@ -1,9 +1,8 @@
 const routes = [
-  // Ruta de Login (sin layout)
   {
     path: '/login',
     name: 'Login',
-    component: () => import('pages/LoginPageNew.vue'),
+    component: () => import('pages/LoginPage.vue'),
     meta: { hideLayout: true }
   },
   {
@@ -25,71 +24,87 @@ const routes = [
     meta: { hideLayout: true }
   },
 
-  // Rutas principales (con layout y protección)
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
     children: [
-      { path: '', redirect: '/escritorio' }, // Por defecto escritorio
-      { path: 'dashboard', redirect: '/escritorio' }, // Alias para dashboard
-      { path: 'logs', redirect: '/escritorio' }, // Alias para logs
-
-      // Rutas específicas para cada flujo
       {
-        path: 'escritorio',
+        path: 'client/escritorio',
+        name: 'clientEscritorio',
         component: () => import('pages/EscritorioPage.vue'),
-        meta: { flow: 'escritorio' }
+        meta: { flow: 'client' }
       },
       {
-        path: 'mobile',
-        component: () => import('pages/LogsPage.vue'),
-        meta: { flow: 'mobile' }
-      },
-
-      // Rutas accesibles desde ambos flujos (no fuerzan cambio de flujo)
-      {
-        path: 'estadisticas',
-        component: () => import('pages/EstadisticasPage.vue')
+        path: 'client/diagnostico',
+        name: 'clientDiagnostico',
+        component: () => import('pages/DiagnosticoPage.vue'),
+        meta: { flow: 'client' }
       },
       {
-        path: 'eventos',
-        component: () => import('pages/EventosPage.vue')
+        path: 'client/myApiKeys',
+        name: 'clientApiKeys',
+        component: () => import('pages/APIKeysPage.vue'),
+        meta: { flow: 'client' }
       },
       {
-        path: 'eventos-fallidos',
-        component: () => import('pages/EventosFallidos.vue')
-      },
-      {
-        path: 'diagnostico',
-        component: () => import('pages/DiagnosticoPage.vue')
-      },
-      {
-        path: 'myApiKeys',
-        component: () => import('pages/APIKeysPage.vue')
-      },
-
-      // Rutas generales/admin
-      { path: 'santoro-demo', component: () => import('pages/SantoroDemoPage.vue') },
-      { path: 'santoro-config', component: () => import('pages/SantoroConfigPage.vue') },
-
-      // Gestión de Empleados (solo admin)
-      {
-        path: 'gestion-empleados',
-        name: 'gestionEmpleados',
+        path: 'client/gestion-empleados',
+        name: 'clientGestionEmpleados',
         component: () => import('pages/GestionEmpleadosPage.vue'),
-        meta: { requiresAdmin: true }
+        meta: { flow: 'client' }
+      },
+      {
+        path: 'client/eva',
+        name: 'clientEva',
+        component: () => import('src/pages/EvaWorkspacePage.vue'),
+        meta: { flow: 'client' }
       },
 
-      // Ruta para el asistente de IA
       {
-        path: 'eva',
-        component: () => import('src/pages/EvaWorkspacePage.vue')
+        path: 'santoro/inicio',
+        name: 'santoroInicio',
+        component: () => import('pages/admin/EscritorioInicio.vue'),
+        meta: { flow: 'santoro', requiresAdmin: true }
+      },
+      {
+        path: 'santoro/empresas',
+        name: 'santoroEmpresas',
+        component: () => import('pages/admin/EmpresasAdminPage.vue'),
+        meta: { flow: 'santoro', requiresAdmin: true }
+      },
+      {
+        path: 'santoro/usuarios',
+        name: 'santoroUsuarios',
+        component: () => import('pages/admin/UsuariosAdminPage.vue'),
+        meta: { flow: 'santoro', requiresAdmin: true }
+      },
+      {
+        path: 'santoro/api-keys',
+        name: 'santoroApiKeys',
+        component: () => import('pages/admin/APIKeysAdminPage.vue'),
+        meta: { flow: 'santoro', requiresAdmin: true }
+      },
+      {
+        path: 'santoro/gestion-empleados',
+        name: 'gestionEmpleados',
+        component: () => import('pages/admin/GestionEmpleadosSantoroPage.vue'),
+        meta: { flow: 'santoro', requiresAdmin: true }
+      },
+      {
+        path: 'santoro/demo',
+        name: 'santoroDemo',
+        component: () => import('pages/SantoroDemoPage.vue'),
+        meta: { flow: 'santoro', requiresAdmin: true }
+      },
+      {
+        path: 'santoro/config',
+        name: 'santoroConfig',
+        component: () => import('pages/SantoroConfigPage.vue'),
+        meta: { flow: 'santoro', requiresAdmin: true }
       },
     ],
   },
 
-  // Página de error 404
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),

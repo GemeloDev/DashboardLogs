@@ -1,397 +1,377 @@
 <template>
-  <div class="dashboard-wrap relative-position">
-    <!-- ✅ Funcionalidades más usadas (estilo screenshot) -->
-    <div v-if="!loading" class="q-mb-lg">
-      <q-card flat bordered class="func-wrap text-white q-pa-lg">
-        <!-- Header -->
-        <div class="flex items-center q-col-gutter-md">
-          <!-- Doughnut izquierda -->
-          <div class="col-auto">
-            <div class="donut" :style="donutStyle">
-              <div class="donut-inner">
-                <div class="donut-pct">{{ donutCenterPct }}</div>
-                <div class="donut-sub text-grey-5">{{ donutCenterLabel }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Título -->
-          <div class="col">
-            <div
-              class="text-subtitle1 text-grey-4"
-              :class="$q.platform.is.mobile ? 'text-subtitle2' : ''"
-            >
-              Funcionalidades más usadas
-            </div>
-            <div class="text-caption text-grey-5">
-              <span v-if="funcUsage.topName">
-                Top: <span class="text-white">{{ funcUsage.topName }}</span> ({{
-                  funcUsage.topPct
-                }}%)
-              </span>
-              <span v-else>Sin datos</span>
-            </div>
-          </div>
-
-          <!-- Total derecha -->
-          <div class="col-auto text-right">
-            <div class="text-caption text-grey-5 q-mt-md">Total procesados</div>
-            <div class="text-h3 text-weight-bold" :class="$q.platform.is.mobile ? 'text-h4' : ''">
-              {{ funcUsage.total }}
+  <!-- ✅ Funcionalidades más usadas (estilo screenshot) -->
+  <div v-if="!loading" class="q-mb-lg">
+    <q-card flat bordered class="func-wrap text-white q-pa-lg">
+      <!-- Header -->
+      <div class="flex items-center q-col-gutter-md">
+        <!-- Doughnut izquierda -->
+        <div class="col-auto">
+          <div class="donut" :style="donutStyle">
+            <div class="donut-inner">
+              <div class="donut-pct">{{ donutCenterPct }}</div>
+              <div class="donut-sub text-grey-5">{{ donutCenterLabel }}</div>
             </div>
           </div>
         </div>
 
-        <!-- Sub-cards -->
-        <div class="row justify-center q-col-gutter-md">
-          <div v-for="it in funcUsage.items" :key="it.name" class="col-12 col-md-2">
-            <q-card
-              flat
-              bordered
-              class="func-subcard q-pa-md func-clickable"
-              clickable
-              v-ripple
-              :class="{ 'func-subcard--active': selectedEventType === it.name }"
-              @click="onEventTypeCardClick(it.name)"
-            >
-              <div class="flex items-center q-mb-sm">
-                <span class="func-dot q-mr-sm" :style="{ background: it.color }"></span>
-                <div class="text-subtitle2 ellipsis" style="max-width: 70%">{{ it.name }}</div>
-                <q-space />
-                <div class="text-h6 text-weight-bold">{{ it.count }}</div>
-              </div>
-
-              <q-linear-progress
-                :value="it.ratio"
-                :color="it.qColor"
-                track-color="grey-9"
-                rounded
-                size="10px"
-              />
-
-              <div class="row justify-between q-mt-xs text-caption text-grey-5">
-                <div>{{ it.pct }}% del total</div>
-                <div>{{ it.count }}/{{ funcUsage.total }}</div>
-              </div>
-            </q-card>
+        <!-- Título -->
+        <div class="col">
+          <div
+            class="text-subtitle1 text-grey-4"
+            :class="$q.platform.is.mobile ? 'text-subtitle2' : ''"
+          >
+            Funcionalidades más usadas
           </div>
+          <div class="text-caption text-grey-5">
+            <span v-if="funcUsage.topName">
+              Top: <span class="text-white">{{ funcUsage.topName }}</span> ({{ funcUsage.topPct }}%)
+            </span>
+            <span v-else>Sin datos</span>
+          </div>
+        </div>
+
+        <!-- Total derecha -->
+        <div class="col-auto text-right">
+          <div class="text-caption text-grey-5 q-mt-md">Total procesados</div>
+          <div class="text-h3 text-weight-bold" :class="$q.platform.is.mobile ? 'text-h4' : ''">
+            {{ funcUsage.total }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-cards -->
+      <div class="row justify-center q-col-gutter-md">
+        <div v-for="it in funcUsage.items" :key="it.name" class="col-12 col-md-2">
+          <q-card
+            flat
+            bordered
+            class="func-subcard q-pa-md func-clickable"
+            clickable
+            v-ripple
+            :class="{ 'func-subcard--active': selectedEventType === it.name }"
+            @click="onEventTypeCardClick(it.name)"
+          >
+            <div class="flex items-center q-mb-sm">
+              <span class="func-dot q-mr-sm" :style="{ background: it.color }"></span>
+              <div class="text-subtitle2 ellipsis" style="max-width: 70%">{{ it.name }}</div>
+              <q-space />
+              <div class="text-h6 text-weight-bold">{{ it.count }}</div>
+            </div>
+
+            <q-linear-progress
+              :value="it.ratio"
+              :color="it.qColor"
+              track-color="grey-9"
+              rounded
+              size="10px"
+            />
+
+            <div class="row justify-between q-mt-xs text-caption text-grey-5">
+              <div>{{ it.pct }}% del total</div>
+              <div>{{ it.count }}/{{ funcUsage.total }}</div>
+            </div>
+          </q-card>
+        </div>
+      </div>
+    </q-card>
+  </div>
+
+  <!-- ✅ Oficinas + Etiquetas + Outcome (cards estilo oficinas) -->
+  <div
+    v-if="!loading && (topOffices.items.length || topTags.items.length || topOutcomes.items.length)"
+    class="row q-col-gutter-md q-mb-md items-stretch"
+  >
+    <div class="col-12 col-md-4 toplist-col" v-if="topOffices.items.length">
+      <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
+        <div class="row items-center q-mb-md">
+          <q-icon name="apartment" color="cyan" size="18px" class="q-mr-sm" />
+          <div>
+            <div class="toplist-title">Locaciones</div>
+            <div class="toplist-subtitle text-grey-5">Top locaciones</div>
+          </div>
+        </div>
+
+        <div
+          v-for="it in topOffices.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
+          @click="openConsoleWithFilter('location.name', it.label)"
+        >
+          <div class="row items-center">
+            <div class="col text-subtitle2">{{ it.label }}</div>
+            <div class="col-auto text-grey-5">{{ it.count }}</div>
+          </div>
+          <q-linear-progress
+            :value="it.ratioToMax"
+            color="cyan"
+            track-color="grey-9"
+            rounded
+            size="8px"
+            class="q-mt-xs"
+          />
         </div>
       </q-card>
     </div>
 
-    <!-- ✅ Oficinas + Etiquetas + Outcome (cards estilo oficinas) -->
-    <div
-      v-if="
-        !loading && (topOffices.items.length || topTags.items.length || topOutcomes.items.length)
-      "
-      class="row q-col-gutter-md q-mb-md items-stretch"
-    >
-      <div class="col-12 col-md-4 toplist-col" v-if="topOffices.items.length">
-        <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
-          <div class="row items-center q-mb-md">
-            <q-icon name="apartment" color="cyan" size="18px" class="q-mr-sm" />
-            <div>
-              <div class="toplist-title">Oficinas</div>
-              <div class="toplist-subtitle text-grey-5">Top locaciones</div>
-            </div>
+    <div class="col-12 col-md-4 toplist-col" v-if="topTags.items.length">
+      <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
+        <div class="row items-center q-mb-md">
+          <q-icon name="sell" color="purple" size="18px" class="q-mr-sm" />
+          <div>
+            <div class="toplist-title">Etiquetas</div>
+            <div class="toplist-subtitle text-grey-5">Distribución de eventos</div>
           </div>
+        </div>
 
-          <div
-            v-for="it in topOffices.items"
-            :key="it.label"
-            class="q-mb-md toplist-row"
-            clickable
-            v-ripple
-            @click="openConsoleWithFilter('location.name', it.label)"
-          >
-            <div class="row items-center">
-              <div class="col text-subtitle2">{{ it.label }}</div>
-              <div class="col-auto text-grey-5">{{ it.count }}</div>
-            </div>
-            <q-linear-progress
-              :value="it.ratioToMax"
-              color="cyan"
-              track-color="grey-9"
-              rounded
-              size="8px"
-              class="q-mt-xs"
-            />
+        <div
+          v-for="it in topTags.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
+          @click="openConsoleWithFilter('tags', it.label)"
+        >
+          <div class="row items-center">
+            <div class="col text-subtitle2">{{ it.label }}</div>
+            <div class="col-auto text-grey-5">{{ it.count }}</div>
           </div>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-md-4 toplist-col" v-if="topTags.items.length">
-        <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
-          <div class="row items-center q-mb-md">
-            <q-icon name="sell" color="purple" size="18px" class="q-mr-sm" />
-            <div>
-              <div class="toplist-title">Etiquetas</div>
-              <div class="toplist-subtitle text-grey-5">Distribución de eventos</div>
-            </div>
-          </div>
-
-          <div
-            v-for="it in topTags.items"
-            :key="it.label"
-            class="q-mb-md toplist-row"
-            clickable
-            v-ripple
-            @click="openConsoleWithFilter('tags', it.label)"
-          >
-            <div class="row items-center">
-              <div class="col text-subtitle2">{{ it.label }}</div>
-              <div class="col-auto text-grey-5">{{ it.count }}</div>
-            </div>
-            <q-linear-progress
-              :value="it.ratioToMax"
-              color="purple"
-              track-color="grey-9"
-              rounded
-              size="8px"
-              class="q-mt-xs"
-            />
-          </div>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-md-4 toplist-col" v-if="topOutcomes.items.length">
-        <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
-          <div class="row items-center q-mb-md">
-            <q-icon name="insights" color="pink" size="18px" class="q-mr-sm" />
-            <div>
-              <div class="toplist-title">Resultados de eventos (outcome)</div>
-              <div class="toplist-subtitle text-grey-5">Top valores</div>
-            </div>
-          </div>
-
-          <div
-            v-for="it in topOutcomes.items"
-            :key="it.label"
-            class="q-mb-md toplist-row"
-            clickable
-            v-ripple
-            @click="openConsoleWithFilter('outcome', it.label)"
-          >
-            <div class="row items-center">
-              <div class="col text-subtitle2">{{ it.label }}</div>
-              <div class="col-auto text-grey-5">{{ it.count }}</div>
-            </div>
-            <q-linear-progress
-              :value="it.ratioToMax"
-              color="pink"
-              track-color="grey-9"
-              rounded
-              size="8px"
-              class="q-mt-xs"
-            />
-          </div>
-        </q-card>
-      </div>
+          <q-linear-progress
+            :value="it.ratioToMax"
+            color="purple"
+            track-color="grey-9"
+            rounded
+            size="8px"
+            class="q-mt-xs"
+          />
+        </div>
+      </q-card>
     </div>
 
-    <!-- ✅ Status a través del tiempo (líneas por status) -->
-    <div v-if="!loading" class="row q-col-gutter-md q-mb-md">
-      <div class="col-12">
-        <q-card flat bordered class="toplist-card q-pa-lg text-white">
-          <div class="row items-center q-mb-md">
-            <q-icon name="fact_check" color="cyan" size="18px" class="q-mr-sm" />
-            <div>
-              <div class="toplist-title">Estatus</div>
-              <div class="toplist-subtitle text-grey-5">Comportamiento a través del tiempo</div>
-            </div>
+    <div class="col-12 col-md-4 toplist-col" v-if="topOutcomes.items.length">
+      <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
+        <div class="row items-center q-mb-md">
+          <q-icon name="insights" color="pink" size="18px" class="q-mr-sm" />
+          <div>
+            <div class="toplist-title">Resultados de eventos (outcome)</div>
+            <div class="toplist-subtitle text-grey-5">Top valores</div>
           </div>
+        </div>
 
-          <div class="status-line-wrap">
-            <canvas ref="statusLineCanvas"></canvas>
+        <div
+          v-for="it in topOutcomes.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
+          @click="openConsoleWithFilter('outcome', it.label)"
+        >
+          <div class="row items-center">
+            <div class="col text-subtitle2">{{ it.label }}</div>
+            <div class="col-auto text-grey-5">{{ it.count }}</div>
           </div>
-        </q-card>
-      </div>
+          <q-linear-progress
+            :value="it.ratioToMax"
+            color="pink"
+            track-color="grey-9"
+            rounded
+            size="8px"
+            class="q-mt-xs"
+          />
+        </div>
+      </q-card>
     </div>
-
-    <!-- ✅ Severidad + HTTP (layout adaptativo) -->
-    <div v-if="!loading" class="row q-col-gutter-md q-mb-md items-stretch">
-      <!-- Severidad -->
-      <div :class="hasHttpLogs ? 'col-12 col-md-6' : 'col-12'">
-        <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
-          <div class="row items-center q-mb-md">
-            <q-icon name="warning" color="orange" size="18px" class="q-mr-sm" />
-            <div>
-              <div class="toplist-title">Severidad</div>
-              <div class="toplist-subtitle text-grey-5">Distribución por nivel</div>
-            </div>
-          </div>
-
-          <div class="severity-pie-wrap">
-            <canvas ref="severityPieCanvas"></canvas>
-          </div>
-        </q-card>
-      </div>
-
-      <!-- HTTP Radar -->
-      <div v-if="hasHttpLogs" class="col-12 col-md-6">
-        <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
-          <div class="row items-center q-mb-md">
-            <q-icon name="http" color="cyan" size="18px" class="q-mr-sm" />
-            <div>
-              <div class="toplist-title">HTTP</div>
-              <div class="toplist-subtitle text-grey-5">
-                Latencia p95 (ms) por statusCode, separado por método
-              </div>
-            </div>
-          </div>
-
-          <div class="http-radar-wrap">
-            <canvas ref="httpRadarCanvas"></canvas>
-          </div>
-        </q-card>
-      </div>
-    </div>
-
-    <!-- ✅ SOLO: Eventos por Día + Eventos por Semana (acumulado) -->
-    <div v-if="!loading && timeChartDefs.length" class="row justify-center q-col-gutter-md q-mb-md">
-      <div v-for="def in timeChartDefs" :key="def.id" class="col-sm-12 col-md-4">
-        <DynamicChartCard :definition="def" :logs="logsFiltrados" />
-      </div>
-    </div>
-
-    <!-- ✅ Mapa geográfico -->
-    <div v-if="hasGeoLogs && mapSelected" class="q-mt-xl">
-      <ConsoleGeoMap :logs="logsFiltrados" />
-    </div>
-
-    <div v-if="hasGeoLogs && !mapSelected" class="q-mt-xl">
-      <ConsoleGeoHeatMap
-        :logs="logsFiltrados"
-        :clickRadiusKm="5"
-        :heatRadius="28"
-        :gridPrecision="2"
-      />
-    </div>
-
-    <div v-if="hasGeoLogs" class="map-switch q-mt-md">
-      <q-btn-toggle
-        v-model="mapSelected"
-        dense
-        unelevated
-        no-caps
-        class="map-switch__toggle"
-        color="transparent"
-        text-color="grey-5"
-        toggle-color="orange-9"
-        :options="[
-          { label: 'Mapa de Puntos', value: true },
-          { label: 'Mapa de Calor', value: false },
-        ]"
-      />
-    </div>
-
-    <!-- ✅ Dispositivos de Usuarios (desde meta) -->
-    <div v-if="!loading && deviceList.items.length" class="row q-col-gutter-md q-my-md">
-      <div class="col-12">
-        <q-card flat bordered class="toplist-card q-pa-lg text-white">
-          <div class="row items-center q-mb-md">
-            <q-icon name="devices" color="cyan" size="18px" class="q-mr-sm" />
-            <div>
-              <div class="toplist-title">Dispositivos de Usuarios</div>
-              <div class="toplist-subtitle text-grey-5">Detectados desde meta</div>
-            </div>
-            <q-space />
-            <q-chip dense color="grey-9" text-color="grey-4" size="sm">
-              Total: {{ deviceList.total }}
-            </q-chip>
-          </div>
-
-          <q-scroll-area class="device-scroll">
-            <q-list class="device-list">
-              <q-item
-                v-for="d in deviceList.items"
-                :key="d.key"
-                class="device-item"
-                clickable
-                v-ripple
-                @click="openConsoleFromDeviceRow(d)"
-              >
-                <q-item-section avatar>
-                  <q-icon name="smartphone" color="cyan" />
-                </q-item-section>
-
-                <q-item-section>
-                  <q-item-label class="text-weight-bold">
-                    {{ d.deviceName }}
-                    <span v-if="d.user" class="text-grey-5"> | {{ d.user }}</span>
-                  </q-item-label>
-
-                  <q-item-label caption class="text-grey-5">
-                    <span v-if="d.deviceModel">{{ d.deviceModel }}</span>
-                    <span v-if="d.deviceBrand"> · {{ d.deviceBrand }}</span>
-                    <span v-if="d.count > 1"> · {{ d.count }} eventos</span>
-                  </q-item-label>
-                </q-item-section>
-
-                <!-- ✅ Desktop/tablet: chips a la derecha -->
-                <q-item-section side class="device-badges desktop-only">
-                  <div class="row items-center q-gutter-xs device-badges-row">
-                    <q-chip dense :color="d.platformColor" text-color="white" size="sm">
-                      {{ d.platformLabel }}
-                    </q-chip>
-
-                    <q-chip
-                      dense
-                      color="primary"
-                      text-color="white"
-                      size="sm"
-                      v-if="d.lastSeenDate"
-                    >
-                      {{ d.lastSeenDate }}
-                    </q-chip>
-
-                    <q-chip dense color="orange" text-color="white" size="sm" v-if="d.eventType">
-                      {{ d.eventType }}
-                    </q-chip>
-                  </div>
-                </q-item-section>
-
-                <!-- ✅ Mobile: chips debajo (ocupan todo el ancho) -->
-                <q-item-section class="device-badges mobile-only">
-                  <div class="row items-center q-gutter-xs device-badges-row mobile-chips">
-                    <q-chip dense :color="d.platformColor" text-color="white" size="sm">
-                      {{ d.platformLabel }}
-                    </q-chip>
-
-                    <q-chip
-                      dense
-                      color="primary"
-                      text-color="white"
-                      size="sm"
-                      v-if="d.lastSeenDate"
-                    >
-                      {{ d.lastSeenDate }}
-                    </q-chip>
-
-                    <q-chip dense color="orange" text-color="white" size="sm" v-if="d.eventType">
-                      {{ d.eventType }}
-                    </q-chip>
-                  </div>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-scroll-area>
-        </q-card>
-      </div>
-    </div>
-
-    <transition name="fade">
-      <q-inner-loading
-        v-if="uiBusy"
-        showing
-        class="loading-black"
-        label="Cargando datos..."
-        label-class="text-white"
-      >
-        <q-spinner-grid color="cyan" size="60px" />
-      </q-inner-loading>
-    </transition>
   </div>
+
+  <!-- ✅ Status a través del tiempo (líneas por status) -->
+  <div v-if="!loading" class="row q-col-gutter-md q-mb-md">
+    <div class="col-12">
+      <q-card flat bordered class="toplist-card q-pa-lg text-white">
+        <div class="row items-center q-mb-md">
+          <q-icon name="fact_check" color="cyan" size="18px" class="q-mr-sm" />
+          <div>
+            <div class="toplist-title">Estatus</div>
+            <div class="toplist-subtitle text-grey-5">Comportamiento a través del tiempo</div>
+          </div>
+        </div>
+
+        <div class="status-line-wrap">
+          <canvas ref="statusLineCanvas"></canvas>
+        </div>
+      </q-card>
+    </div>
+  </div>
+
+  <!-- ✅ Severidad + HTTP (layout adaptativo) -->
+  <div v-if="!loading" class="row q-col-gutter-md q-mb-md items-stretch">
+    <!-- Severidad -->
+    <div :class="hasHttpLogs ? 'col-12 col-md-6' : 'col-12'">
+      <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
+        <div class="row items-center q-mb-md">
+          <q-icon name="warning" color="orange" size="18px" class="q-mr-sm" />
+          <div>
+            <div class="toplist-title">Severidad</div>
+            <div class="toplist-subtitle text-grey-5">Distribución por nivel</div>
+          </div>
+        </div>
+
+        <div class="severity-pie-wrap">
+          <canvas ref="severityPieCanvas"></canvas>
+        </div>
+      </q-card>
+    </div>
+
+    <!-- HTTP Radar -->
+    <div v-if="hasHttpLogs" class="col-12 col-md-6">
+      <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
+        <div class="row items-center q-mb-md">
+          <q-icon name="http" color="cyan" size="18px" class="q-mr-sm" />
+          <div>
+            <div class="toplist-title">HTTP</div>
+            <div class="toplist-subtitle text-grey-5">
+              Latencia p95 (ms) por statusCode, separado por método
+            </div>
+          </div>
+        </div>
+
+        <div class="http-radar-wrap">
+          <canvas ref="httpRadarCanvas"></canvas>
+        </div>
+      </q-card>
+    </div>
+  </div>
+
+  <!-- ✅ SOLO: Eventos por Día + Eventos por Semana (acumulado) -->
+  <div v-if="!loading && timeChartDefs.length" class="row justify-center q-col-gutter-md q-mb-md">
+    <div v-for="def in timeChartDefs" :key="def.id" class="col-sm-12 col-md-4">
+      <DynamicChartCard :definition="def" :logs="logsFiltrados" />
+    </div>
+  </div>
+
+  <!-- ✅ Mapa geográfico -->
+  <div v-if="hasGeoLogs && mapSelected" class="q-mt-xl">
+    <ConsoleGeoMap :logs="logsFiltrados" />
+  </div>
+
+  <div v-if="hasGeoLogs && !mapSelected" class="q-mt-xl">
+    <ConsoleGeoHeatMap
+      :logs="logsFiltrados"
+      :clickRadiusKm="5"
+      :heatRadius="28"
+      :gridPrecision="2"
+    />
+  </div>
+
+  <div v-if="hasGeoLogs" class="map-switch q-mt-md">
+    <q-btn-toggle
+      v-model="mapSelected"
+      dense
+      unelevated
+      no-caps
+      class="map-switch__toggle"
+      color="transparent"
+      text-color="grey-5"
+      toggle-color="orange-9"
+      :options="[
+        { label: 'Mapa de Puntos', value: true },
+        { label: 'Mapa de Calor', value: false },
+      ]"
+    />
+  </div>
+
+  <!-- ✅ Dispositivos de Usuarios (desde meta) -->
+  <div v-if="!loading && deviceList.items.length" class="row q-col-gutter-md q-my-md">
+    <div class="col-12">
+      <q-card flat bordered class="toplist-card q-pa-lg text-white">
+        <div class="row items-center q-mb-md">
+          <q-icon name="devices" color="cyan" size="18px" class="q-mr-sm" />
+          <div>
+            <div class="toplist-title">Dispositivos de Usuarios</div>
+            <div class="toplist-subtitle text-grey-5">Detectados desde meta</div>
+          </div>
+          <q-space />
+          <q-chip dense color="grey-9" text-color="grey-4" size="sm">
+            Total: {{ deviceList.total }}
+          </q-chip>
+        </div>
+
+        <q-scroll-area class="device-scroll">
+          <q-list class="device-list">
+            <q-item
+              v-for="d in deviceList.items"
+              :key="d.key"
+              class="device-item"
+              clickable
+              v-ripple
+              @click="openConsoleFromDeviceRow(d)"
+            >
+              <q-item-section avatar>
+                <q-icon name="smartphone" color="cyan" />
+              </q-item-section>
+
+              <q-item-section>
+                <q-item-label class="text-weight-bold">
+                  {{ d.deviceName }}
+                  <span v-if="d.user" class="text-grey-5"> | {{ d.user }}</span>
+                </q-item-label>
+
+                <q-item-label caption class="text-grey-5">
+                  <span v-if="d.deviceModel">{{ d.deviceModel }}</span>
+                  <span v-if="d.deviceBrand"> · {{ d.deviceBrand }}</span>
+                  <span v-if="d.count > 1"> · {{ d.count }} eventos</span>
+                </q-item-label>
+              </q-item-section>
+
+              <!-- ✅ Desktop/tablet: chips a la derecha -->
+              <q-item-section side class="device-badges desktop-only">
+                <div class="row items-center q-gutter-xs device-badges-row">
+                  <q-chip dense :color="d.platformColor" text-color="white" size="sm">
+                    {{ d.platformLabel }}
+                  </q-chip>
+
+                  <q-chip dense color="primary" text-color="white" size="sm" v-if="d.lastSeenDate">
+                    {{ d.lastSeenDate }}
+                  </q-chip>
+
+                  <q-chip dense color="orange" text-color="white" size="sm" v-if="d.eventType">
+                    {{ d.eventType }}
+                  </q-chip>
+                </div>
+              </q-item-section>
+
+              <!-- ✅ Mobile: chips debajo (ocupan todo el ancho) -->
+              <q-item-section class="device-badges mobile-only">
+                <div class="row items-center q-gutter-xs device-badges-row mobile-chips">
+                  <q-chip dense :color="d.platformColor" text-color="white" size="sm">
+                    {{ d.platformLabel }}
+                  </q-chip>
+
+                  <q-chip dense color="primary" text-color="white" size="sm" v-if="d.lastSeenDate">
+                    {{ d.lastSeenDate }}
+                  </q-chip>
+
+                  <q-chip dense color="orange" text-color="white" size="sm" v-if="d.eventType">
+                    {{ d.eventType }}
+                  </q-chip>
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-scroll-area>
+      </q-card>
+    </div>
+  </div>
+
+  <q-inner-loading
+    :showing="uiBusy"
+    label="Cargando..."
+    dark
+    label-class="text-teal"
+    label-style="font-size: 1.1em"
+  >
+    <q-spinner-gears size="50px" color="primary" />
+  </q-inner-loading>
 </template>
 
 <script setup>
@@ -1688,20 +1668,5 @@ onBeforeUnmount(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-.dashboard-wrap {
-  position: relative; /* por si acaso */
-}
-
-/* Fuerza backdrop negro (cubre variaciones de Quasar) */
-:deep(.loading-black .q-inner-loading__backdrop),
-:deep(.loading-black .q-inner-loading__background) {
-  background: rgba(0, 0, 0, 0.9) !important;
-}
-
-/* Asegura que quede arriba de todo */
-:deep(.loading-black) {
-  z-index: 9999 !important;
 }
 </style>

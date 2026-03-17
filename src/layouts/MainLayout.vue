@@ -1,50 +1,72 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout view="lHh Lpr lFf" class="main-layout-shell">
     <!-- ENCABEZADO -->
-    <q-header
-      elevated
-      style="background-color: #1e1e2f; color: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4)"
-    >
-      <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-        <q-toolbar-title v-if="!$q.platform.is.mobile">Consola Logs</q-toolbar-title>
+    <q-header elevated class="app-header">
+      <q-toolbar class="app-toolbar">
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          aria-label="Menu"
+          class="toolbar-icon-btn"
+          @click="toggleLeftDrawer"
+        />
+
+        <q-toolbar-title v-if="!$q.platform.is.mobile" class="text-weight-bold app-toolbar-title">
+          {{ isSantoroFlow ? 'Panel Santoro' : 'Consola Logs' }}
+        </q-toolbar-title>
 
         <!-- Botones de herramientas rápidas -->
         <div class="row items-center q-gutter-x-sm mobile-scroll-row">
-          <!-- (Opcional) QR Sesiones: lo dejo solo si estás en móvil por plataforma, ya NO por flow -->
           <q-btn
             v-if="$q.platform.is.mobile"
             flat
             dense
             round
             icon="security"
-            color="green"
+            class="toolbar-icon-btn toolbar-icon-btn--success"
             @click="toogleStartSession"
           >
-            <q-tooltip>Sesiones</q-tooltip>
+            <q-tooltip class="glass-tooltip">Sesiones</q-tooltip>
           </q-btn>
 
-          <!-- Botón de filtros avanzados -->
-          <q-btn flat dense round icon="filter_list" color="green" @click="toggleDinamicFilters">
-            <q-tooltip>Filtros Avanzados</q-tooltip>
+          <q-btn
+            v-if="isClientFlow"
+            flat
+            dense
+            round
+            icon="filter_list"
+            class="toolbar-icon-btn toolbar-icon-btn--success"
+            @click="toggleDinamicFilters"
+          >
+            <q-tooltip class="glass-tooltip">Filtros Avanzados</q-tooltip>
           </q-btn>
 
-          <!-- Botón de consola -->
-          <q-btn flat dense round icon="terminal" color="purple" @click="openConsole">
-            <q-tooltip>Consola de Logs</q-tooltip>
+          <q-btn
+            v-if="isClientFlow"
+            flat
+            dense
+            round
+            icon="terminal"
+            class="toolbar-icon-btn toolbar-icon-btn--purple"
+            @click="openConsole"
+          >
+            <q-tooltip class="glass-tooltip">Consola de Logs</q-tooltip>
           </q-btn>
 
-          <!-- Notificaciones sobre API Keys -->
+          <!-- Notificaciones API Keys -->
           <q-btn
             v-can="{ any: ['USERS_MANAGE'] }"
+            v-if="isClientFlow"
             flat
             dense
             round
             icon="notifications"
             size="sm"
-            color="white"
+            class="toolbar-icon-btn"
           >
-            <q-badge color="red" floating v-if="apiKeysPorExpirar.length > 0">
+            <q-badge color="negative" floating v-if="apiKeysPorExpirar.length > 0">
               {{ apiKeysPorExpirar.length }}
             </q-badge>
 
@@ -52,18 +74,16 @@
               fit
               anchor="bottom left"
               self="top left"
-              class="bg-dark text-white"
+              class="glass-menu"
               style="max-width: 350px"
             >
               <q-list style="min-width: 300px">
-                <q-item-label header class="text-grey-4 text-weight-bold">
-                  Alertas de API Keys
-                </q-item-label>
+                <q-item-label header class="menu-header-label"> Alertas de API Keys </q-item-label>
 
-                <q-separator color="grey-8" />
+                <q-separator class="menu-separator" />
 
-                <div v-if="apiKeysPorExpirar.length === 0" class="q-pa-md text-center text-grey">
-                  <q-icon name="check_circle" color="green" size="md" />
+                <div v-if="apiKeysPorExpirar.length === 0" class="q-pa-md text-center text-grey-5">
+                  <q-icon name="check_circle" color="positive" size="md" />
                   <div class="q-mt-xs">Todo en orden</div>
                 </div>
 
@@ -72,13 +92,20 @@
                   :key="key.id"
                   clickable
                   v-close-popup
+                  class="glass-menu-item"
                   @click="router.push('/myApiKeys')"
                 >
                   <q-item-section avatar>
-                    <q-icon name="warning" :color="key.tipoAlerta === 'ROTA' ? 'orange' : 'red'" />
+                    <q-icon
+                      name="warning"
+                      :color="key.tipoAlerta === 'ROTA' ? 'orange' : 'negative'"
+                    />
                   </q-item-section>
+
                   <q-item-section>
-                    <q-item-label class="text-weight-bold">{{ key.name }}</q-item-label>
+                    <q-item-label class="text-weight-bold text-white">
+                      {{ key.name }}
+                    </q-item-label>
                     <q-item-label caption class="text-grey-5">
                       <template v-if="key.tipoAlerta === 'ROTA'">
                         {{ key.diasParaRotar }} día(s) para renovar.
@@ -86,6 +113,7 @@
                       <template v-else> Expira en {{ key.diasParaExpirar }} días </template>
                     </q-item-label>
                   </q-item-section>
+
                   <q-item-section side top>
                     <q-badge
                       :color="key.tipoAlerta === 'ROTA' ? 'orange' : 'negative'"
@@ -98,29 +126,30 @@
           </q-btn>
 
           <q-btn-dropdown
+            v-if="isClientFlow"
             :label="selectedSystem"
-            outline
-            color="black"
-            text-color="white"
-            size="sm"
-            rounded
+            no-caps
+            unelevated
+            class="system-dropdown"
+            dropdown-icon="expand_more"
           >
-            <q-list>
+            <q-list class="system-dropdown-menu">
               <q-item
                 v-for="system in systems"
                 :key="system"
                 clickable
-                @click="selectedSystem = system"
                 v-close-popup
+                class="glass-menu-item"
+                @click="selectedSystem = system"
               >
                 <q-item-section>
-                  <q-item-label>{{ system }}</q-item-label>
+                  <q-item-label class="text-white">{{ system }}</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
           </q-btn-dropdown>
 
-          <!-- Menú de usuario -->
+          <!-- Menú usuario -->
           <q-btn-dropdown
             flat
             dense
@@ -128,25 +157,28 @@
             :label="$q.screen.gt.xs ? userInfo.nombre : ''"
             icon="account_circle"
             dropdown-icon="expand_more"
+            class="user-dropdown"
           >
-            <q-list>
-              <q-item>
+            <q-list class="user-dropdown-menu">
+              <q-item class="glass-menu-item no-hover">
                 <q-item-section avatar>
-                  <q-icon name="email" />
+                  <q-icon name="email" color="cyan" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label caption>{{ userInfo.email }}</q-item-label>
+                  <q-item-label caption class="text-grey-5">
+                    {{ userInfo.email }}
+                  </q-item-label>
                 </q-item-section>
               </q-item>
 
-              <q-separator />
+              <q-separator class="menu-separator" />
 
-              <q-item clickable v-close-popup @click="logout">
+              <q-item clickable v-close-popup class="glass-menu-item" @click="logout">
                 <q-item-section avatar>
-                  <q-icon name="logout" color="red" />
+                  <q-icon name="logout" color="negative" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>Cerrar Sesión</q-item-label>
+                  <q-item-label class="text-white">Cerrar Sesión</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -166,82 +198,141 @@
         transition-show="slide-down"
         transition-hide="slide-up"
       >
-        <!-- Wrapper para controlar ancho/alto y scroll -->
-        <div
-          class="q-pa-sm"
-          style="max-width: min(1800px, 99vw); max-height: calc(100vh - 80px); overflow: auto"
-        >
+        <div class="filters-dialog-wrap q-pa-sm">
           <DinamicFilters :auto-emit-on-mounted="false" @camposSeleccionados="onFiltrar" />
         </div>
       </q-dialog>
     </q-header>
 
-    <!-- SIDEBAR ESCRITORIO (ÚNICO) -->
+    <!-- SIDEBAR -->
     <q-drawer
       v-model="leftDrawerOpen"
       show-if-above
       bordered
-      :width="280"
+      :width="290"
       :breakpoint="1800"
       class="app-drawer desktop-drawer"
-      style="
-        background: linear-gradient(135deg, #1e1e2f 0%, #1976d2 100%);
-        box-shadow: 0 4px 24px rgba(25, 118, 210, 0.2);
-        border-right: 2px solid #1976d2;
-      "
     >
       <q-scroll-area class="fit">
-        <div style="margin-top: 32px; text-align: center">
-          <q-avatar size="64px" icon="hive" color="primary" text-color="white" />
-          <div class="text-h6 q-mt-sm" style="color: #fff; font-weight: 700">Consola Logs</div>
-          <div class="text-caption q-px-md" style="color: #cfd8dc">
-            Panel avanzado para gestión de logs y eventos
+        <div class="drawer-brand-block">
+          <q-avatar size="68px" class="stat-icon--warm">
+            <q-icon name="hive" size="34px" color="white" />
+          </q-avatar>
+
+          <div class="drawer-brand-title">
+            {{ isSantoroFlow ? 'Panel Santoro' : 'Consola Logs' }}
+          </div>
+
+          <div class="drawer-brand-subtitle">
+            Panel avanzado para gestión de logs, eventos y administración.
           </div>
         </div>
+
         <q-list padding class="menu-list">
-          <q-separator dark spaced />
-          <q-item clickable v-ripple to="/escritorio" exact>
-            <q-item-section avatar>
-              <q-icon name="dashboard" color="primary" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Dashboard</span></q-item-section>
-          </q-item>
-          <q-separator dark spaced />
-          <q-item-label header class="text-grey-4">Herramientas</q-item-label>
+          <q-separator dark spaced class="drawer-separator" />
 
-          <q-item clickable v-ripple to="/diagnostico">
-            <q-item-section avatar>
-              <q-icon name="bug_report" color="red" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Diagnóstico</span></q-item-section>
-          </q-item>
+          <template v-if="isClientFlow">
+            <q-item clickable v-ripple to="/client/escritorio" exact class="drawer-item">
+              <q-item-section avatar>
+                <q-icon name="dashboard" class="item-icon item-icon--cyan" />
+              </q-item-section>
+              <q-item-section>
+                <span class="drawer-item-label">Dashboard</span>
+              </q-item-section>
+            </q-item>
 
-          <q-item v-can="'SETTINGS_MANAGE'" v-if="isAdmin" clickable v-ripple to="/myApiKeys">
-            <q-item-section avatar>
-              <q-icon name="key" color="cyan" />
-            </q-item-section>
-            <q-item-section><span style="font-weight: 600">Mis API Key's</span></q-item-section>
-          </q-item>
+            <q-separator dark spaced class="drawer-separator" />
+            <q-item-label header class="drawer-section-label">Herramientas</q-item-label>
 
-          <q-item v-can="'USERS_MANAGE'" v-if="isAdmin" clickable v-ripple to="/gestion-empleados">
-            <q-item-section avatar>
-              <q-icon name="group" color="amber" />
-            </q-item-section>
-            <q-item-section>
-              <span style="font-weight: 600">Gestión Empleados</span>
-            </q-item-section>
-          </q-item>
+            <q-item clickable v-ripple to="/client/diagnostico" class="drawer-item">
+              <q-item-section avatar>
+                <q-icon name="bug_report" class="item-icon item-icon--red" />
+              </q-item-section>
+              <q-item-section>
+                <span class="drawer-item-label">Diagnóstico</span>
+              </q-item-section>
+            </q-item>
+
+            <q-item
+              v-can="'SETTINGS_MANAGE'"
+              v-if="isAdmin"
+              clickable
+              v-ripple
+              to="/client/myApiKeys"
+              class="drawer-item"
+            >
+              <q-item-section avatar>
+                <q-icon name="key" class="item-icon item-icon--cyan" />
+              </q-item-section>
+              <q-item-section>
+                <span class="drawer-item-label">Mis API Key's</span>
+              </q-item-section>
+            </q-item>
+
+            <q-item
+              v-can="'USERS_MANAGE'"
+              v-if="isAdmin"
+              clickable
+              v-ripple
+              to="/client/gestion-empleados"
+              class="drawer-item"
+            >
+              <q-item-section avatar>
+                <q-icon name="badge" class="item-icon item-icon--warm" />
+              </q-item-section>
+              <q-item-section>
+                <span class="drawer-item-label">Gestión Empleados</span>
+              </q-item-section>
+            </q-item>
+          </template>
+
+          <template v-if="isSantoroFlow && isSantoroUser">
+            <q-item clickable v-ripple to="/santoro/inicio" class="drawer-item">
+              <q-item-section avatar>
+                <q-icon name="home" class="item-icon color-orange-santoro" />
+              </q-item-section>
+              <q-item-section>
+                <span class="drawer-item-label">Inicio</span>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-ripple to="/santoro/empresas" class="drawer-item">
+              <q-item-section avatar>
+                <q-icon name="apartment" class="item-icon item-icon--cyan" />
+              </q-item-section>
+              <q-item-section>
+                <span class="drawer-item-label">Empresas</span>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-ripple to="/santoro/usuarios" class="drawer-item">
+              <q-item-section avatar>
+                <q-icon name="group" class="item-icon item-icon--amber" />
+              </q-item-section>
+              <q-item-section>
+                <span class="drawer-item-label">Usuarios</span>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-ripple to="/santoro/api-keys" class="drawer-item">
+              <q-item-section avatar>
+                <q-icon name="vpn_key" class="item-icon item-icon--purple" />
+              </q-item-section>
+              <q-item-section>
+                <span class="drawer-item-label">API Keys</span>
+              </q-item-section>
+            </q-item>
+          </template>
         </q-list>
       </q-scroll-area>
     </q-drawer>
 
     <!-- CONTENIDO -->
-    <q-page-container>
+    <q-page-container class="app-page-container">
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-        <div style="min-height: 100vh">
+        <div class="page-view-shell">
           <router-view />
 
-          <!-- Componentes globales accesibles desde cualquier página -->
           <EscritorioConsolaSimple ref="consolaRef" />
 
           <EscritorioDetalleModal
@@ -252,9 +343,6 @@
         </div>
       </transition>
     </q-page-container>
-
-    <!-- 🤖 SANTORO IA ASSISTANT - Chat Flotante Global -->
-    <router-view />
 
     <EvaFloatingButton />
     <EvaWidget />
@@ -294,8 +382,8 @@ const consolaRef = ref(null)
 const apiKeysPorExpirar = ref([])
 const prefs = authService.loadPrefs()
 
-const systems = ref(JSON.parse(localStorage.getItem('dashboardLogsSession')).user.authz.systems)
-const selectedSystem = ref(prefs.system)
+const systems = ref(authService.user?.authz?.systems || [])
+const selectedSystem = ref(prefs.system || systems.value?.[0] || 'DASHBOARD')
 
 const logsGlobales = ref([])
 const MS_DIA = 1000 * 60 * 60 * 24
@@ -317,7 +405,6 @@ const userInfo = computed(() => ({
 
 const eventosRaw = ref([]) // lo que llega del backend (ya filtrado por system)
 const loadingLogs = ref(false) // puedes mantener el mismo nombre
-
 
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
@@ -370,6 +457,11 @@ const cargarEventosDelSistema = async () => {
 const isAdmin = computed(() => {
   return userInfo.value.roles.includes('ORG_ADMIN') || userInfo.value.roles.includes('ORG_OWNER')
 })
+
+const isSantoroUser = computed(() => authService.canAccessSantoroFlow())
+const currentFlow = computed(() => route.meta?.flow || authService.getAllowedFlow())
+const isSantoroFlow = computed(() => currentFlow.value === 'santoro')
+const isClientFlow = computed(() => currentFlow.value === 'client')
 
 const diffDias = (fechaISO, hoy) => {
   if (!fechaISO) return null
@@ -490,6 +582,7 @@ async function onFiltrar(payload) {
   })
 
   showDinamicFilters.value = false
+  loadingLogs.value = false
 }
 
 function openConsole(selection = null) {
@@ -499,7 +592,11 @@ function openConsole(selection = null) {
   }
 
   // ✅ NUEVO: dataGrafica + selections (para que se vea el valor en los selects)
-  if (selection?.dataGrafica && Array.isArray(selection.dataGrafica) && Array.isArray(selection.selections)) {
+  if (
+    selection?.dataGrafica &&
+    Array.isArray(selection.dataGrafica) &&
+    Array.isArray(selection.selections)
+  ) {
     consolaRef.value.abrirConsolaConDataYFiltros?.(selection.dataGrafica, selection.selections)
     return
   }
@@ -558,8 +655,11 @@ watch(
   selectedSystem,
   (sys) => {
     filtros.value.system = sys
-    authService.savePrefs(prefs.flow, sys)
-    cargarEventosDelSistema()
+    authService.savePrefs(currentFlow.value, sys)
+
+    if (isClientFlow.value) {
+      cargarEventosDelSistema()
+    }
   },
   { immediate: true },
 )
@@ -567,56 +667,316 @@ watch(
 // 2) Cuando cambia rango: SÍ pega al backend
 watch(
   () => `${filtros.value.rangoFechas?.from || ''}|${filtros.value.rangoFechas?.to || ''}`,
-  () => aplicarFiltroRangoFechas(),
+  () => {
+    if (isClientFlow.value) {
+      aplicarFiltroRangoFechas()
+    }
+  },
   { immediate: true },
 )
 
 onMounted(() => {
-  // Siempre arrancar en escritorio
+  const defaultFlow = authService.getAllowedFlow()
+  const defaultRoute = defaultFlow === 'santoro' ? '/santoro/empresas' : '/client/escritorio'
+
   if (route.path === '/' || route.path === '/dashboard' || route.path === '/logs') {
-    router.push('/escritorio')
+    router.push(defaultRoute)
   }
 
-  // Eventos del asistente (solo los que NO son de flujo)
-  window.addEventListener('santoro-abrir-consola', (e) => openConsole(e?.detail || null))
-  window.addEventListener('santoro-mostrar-filtros', () => (showDinamicFilters.value = true))
-
-  checkApiKeysExpirations()
+  if (isClientFlow.value) {
+    window.addEventListener('santoro-abrir-consola', (e) => openConsole(e?.detail || null))
+    window.addEventListener('santoro-mostrar-filtros', () => (showDinamicFilters.value = true))
+    checkApiKeysExpirations()
+  }
 })
 </script>
 
 <style lang="scss">
-.app-drawer {
-  background-color: #121826;
+:root {
+  --bg-1: #070b14;
+  --bg-2: #0b1220;
+  --bg-3: #111827;
+  --bg-4: #172033;
+  --bg-5: #1c2740;
 
-  .menu-list {
-    .q-item {
-      min-height: 48px;
-      padding: 8px 16px;
-      color: #fff;
-      border-radius: 8px;
-      margin: 4px 8px;
+  --text-main: #ffffff;
+  --text-soft: rgba(255, 255, 255, 0.72);
+  --text-muted: rgba(255, 255, 255, 0.5);
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
+  --cyan: #22d3ee;
+  --cyan-strong: #06b6d4;
+  --purple: #7c3aed;
+  --pink: #ec4899;
+  --orange-accent: #e97132;
 
-      &.q-router-link-active {
-        background: #1976d2;
+  --border-soft: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
 
-        .q-icon {
-          color: #fff;
-        }
-      }
-    }
+  --glass-bg: rgba(255, 255, 255, 0.035);
+  --glass-bg-soft: rgba(255, 255, 255, 0.025);
+  --glass-bg-strong: rgba(255, 255, 255, 0.05);
 
-    .q-icon {
-      font-size: 24px;
-      color: #9e9e9e;
-    }
-  }
+  --gradient-primary: linear-gradient(90deg, #06b6d4 0%, #7c3aed 55%, #ec4899 100%);
+  --gradient-warm: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
 }
 
+.stat-icon--warm {
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
+}
+
+.main-layout-shell {
+  background: transparent;
+  color: var(--text-main);
+}
+
+/* HEADER */
+.app-header {
+  background: linear-gradient(160deg, rgba(11, 18, 32, 0.92), rgba(17, 24, 39, 0.9)) !important;
+  color: white;
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border-soft);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+}
+
+.app-toolbar {
+  min-height: 64px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.app-toolbar-title {
+  color: var(--text-main);
+  letter-spacing: 0.01em;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.app-toolbar-title::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 10px;
+  border-radius: 999px;
+  background: var(--orange-accent);
+  box-shadow: 0 0 16px rgba(233, 113, 50, 0.3);
+  vertical-align: middle;
+}
+
+.toolbar-icon-btn {
+  color: rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    color 0.2s ease;
+}
+
+.toolbar-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.toolbar-icon-btn--success {
+  color: #22c55e;
+}
+
+.toolbar-icon-btn--purple {
+  color: #a855f7;
+}
+
+.system-dropdown,
+.user-dropdown {
+  border-radius: 14px;
+}
+
+.system-dropdown .q-btn,
+.user-dropdown .q-btn {
+  color: white;
+}
+
+.system-dropdown {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border-soft);
+  color: white;
+}
+
+.system-dropdown:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.glass-tooltip {
+  background: #121a2a !important;
+  color: white !important;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+}
+
+.filters-dialog-wrap {
+  max-width: min(1800px, 99vw);
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+}
+
+/* MENUS */
+.glass-menu,
+.system-dropdown-menu,
+.user-dropdown-menu {
+  background: linear-gradient(160deg, rgba(15, 20, 32, 0.96), rgba(18, 25, 42, 0.94)) !important;
+  color: white !important;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px);
+}
+
+.menu-header-label {
+  color: rgba(255, 255, 255, 0.72) !important;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.menu-separator {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.glass-menu-item {
+  color: white;
+  border-radius: 12px;
+  margin: 4px 8px;
+  transition: background 0.15s ease;
+}
+
+.glass-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.glass-menu-item.no-hover:hover {
+  background: transparent;
+}
+
+/* DRAWER */
+.app-drawer {
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.08), transparent 24%),
+    linear-gradient(180deg, #0b1220 0%, #111827 100%) !important;
+  color: white;
+  border-right: 1px solid var(--border-soft) !important;
+  box-shadow: 10px 0 32px rgba(0, 0, 0, 0.22);
+}
+
+.drawer-brand-block {
+  margin-top: 28px;
+  padding: 8px 18px 14px;
+  text-align: center;
+}
+
+.drawer-brand-avatar {
+  background: var(--gradient-warm);
+  box-shadow: 0 16px 34px rgba(34, 211, 238, 0.18);
+}
+
+.drawer-brand-title {
+  margin-top: 14px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: white;
+}
+
+.drawer-brand-subtitle {
+  margin-top: 6px;
+  padding: 0 12px;
+  color: var(--text-soft);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.drawer-separator {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.drawer-section-label {
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.menu-list .drawer-item {
+  min-height: 50px;
+  padding: 10px 16px;
+  color: #fff;
+  border-radius: 14px;
+  margin: 6px 10px;
+  transition:
+    background 0.18s ease,
+    transform 0.15s ease,
+    border-color 0.18s ease;
+  border: 1px solid transparent;
+}
+
+.menu-list .drawer-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(2px);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.menu-list .drawer-item.q-router-link-active {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.18), rgba(124, 58, 237, 0.16));
+  border-color: rgba(34, 211, 238, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.menu-list .drawer-item.q-router-link-active .drawer-item-label {
+  color: white;
+}
+
+.menu-list .drawer-item.q-router-link-active .q-item__section--avatar .q-icon {
+  color: white !important;
+}
+
+.drawer-item-label {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.item-icon {
+  font-size: 22px;
+}
+
+.item-icon--cyan {
+  color: #22d3ee;
+}
+
+.item-icon--purple {
+  color: #a855f7;
+}
+
+.item-icon--warm {
+  color: #e97132;
+}
+
+.item-icon--amber {
+  color: #f59e0b;
+}
+
+.item-icon--red {
+  color: #ef4444;
+}
+
+/* CONTENT */
+.app-page-container {
+  background: transparent !important;
+}
+
+.page-view-shell {
+  min-height: 100vh;
+  background: transparent;
+}
+
+/* FILTER PANEL */
 .filters-panel {
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -626,14 +986,16 @@ onMounted(() => {
 .flow-container {
   min-height: 100vh;
   padding: 16px;
-  background: #121826;
+  background: transparent;
 
   &.desktop-flow {
     .q-card {
-      background: #1e1e2f;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
       color: white;
-      border-radius: 12px;
+      border-radius: 18px;
       margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
 
       .text-h6 {
         color: #fff;
@@ -642,7 +1004,14 @@ onMounted(() => {
   }
 }
 
-// Animaciones
+.q-menu {
+  background: linear-gradient(160deg, rgba(15, 20, 32, 0.96), rgba(18, 25, 42, 0.94)) !important;
+  color: white !important;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+}
+
+/* Animaciones */
 .animated {
   animation-duration: 0.3s;
   animation-fill-mode: both;
@@ -651,18 +1020,22 @@ onMounted(() => {
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @keyframes fadeOut {
   from {
     opacity: 1;
+    transform: translateY(0);
   }
   to {
     opacity: 0;
+    transform: translateY(4px);
   }
 }
 
@@ -674,56 +1047,43 @@ onMounted(() => {
   animation-name: fadeOut;
 }
 
-/* Aplicar solo en pantallas móviles (punto de quiebre xs de Quasar < 600px) */
+/* MÓVIL */
 @media (max-width: 599px) {
   .mobile-scroll-row {
-    /* Fuerza a los items a quedarse en una sola línea */
     flex-wrap: nowrap !important;
-
-    /* Habilita el scroll horizontal */
     overflow-x: auto;
-
-    /* Habilita el "momentum scrolling" suave en iOS */
     -webkit-overflow-scrolling: touch;
-
-    /* Opcional: Asegura que el contenido no se corte por el gutter */
     padding-left: 8px;
     padding-right: 8px;
   }
 
-  /* Opcional: Ocultar la barra de scroll visualmente pero mantener la función */
   .mobile-scroll-row::-webkit-scrollbar {
     display: none;
   }
+
   .mobile-scroll-row {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
-/* Scrollbar vertical u horizontal completo */
+/* SCROLLBAR GLOBAL */
 ::-webkit-scrollbar {
-  width: 3px; /* ancho de la barra (barStyle width) */
-  height: 9px; /* alto si es horizontal */
+  width: 8px;
+  height: 8px;
 }
 
-/* Track: fondo de la barra */
 ::-webkit-scrollbar-track {
-  background-color: #027be3; /* barStyle backgroundColor */
-  border-radius: 9px; /* barStyle borderRadius */
-  opacity: 0.2; /* barStyle opacity */
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
 }
 
-/* Thumb: la parte que se mueve */
 ::-webkit-scrollbar-thumb {
-  background-color: #002c53; /* thumbStyle backgroundColor */
-  border-radius: 5px; /* thumbStyle borderRadius */
-  width: 5px; /* thumbStyle width (opcional, se suele controlar con scrollbar) */
-  opacity: 0.75; /* thumbStyle opacity */
+  background: linear-gradient(180deg, #06b6d4 0%, #7c3aed 100%);
+  border-radius: 999px;
 }
 
-/* Thumb al hacer hover */
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #004883; /* color más oscuro para hover */
+  background: linear-gradient(180deg, #22d3ee 0%, #a855f7 100%);
 }
 </style>
