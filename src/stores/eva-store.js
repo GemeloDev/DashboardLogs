@@ -11,11 +11,21 @@ export const useEvaStore = defineStore('eva', {
         isListening: false,
         loading: false,
 
-        selectedSystem: 'TICKETS',
+        selectedSystem: null,
         selectedTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
         selectedGranularity: 'daily',
         selectedDays: 30,
         selectedHours: 24,
+
+        availableSystem: [],
+
+        lastContex: {
+            intent: null,
+            system: null,
+            granularity: null,
+            days: null,
+            hours: null
+        },
 
         currentConversationId: 'conv-welcome',
 
@@ -41,8 +51,6 @@ export const useEvaStore = defineStore('eva', {
         quickActions: [
             { key: 'daily-summary', label: 'Resumen diario', icon: 'summarize' },
             { key: 'open-alerts', label: 'Alertas abiertas', icon: 'warning' },
-            { key: 'trends', label: 'Tendencias', icon: 'show_chart' },
-            { key: 'ticket-draft', label: 'Ticket draft', icon: 'assignment' },
             { key: 'metrics-chart', label: 'Gráfica por system', icon: 'insights' },
         ],
         contextPanel: {
@@ -58,8 +66,14 @@ export const useEvaStore = defineStore('eva', {
                 state.conversations.find(c => c.id === state.currentConversationId) ||
                 state.conversations[0]
             )
-        }
-    }, 
+        },
+
+        systemOptions(state) {
+            return (state.availableSystem || []).map(item =>
+                typeof item === 'string' ? item : item?.name
+            ).filter(Boolean)
+        },
+    },
 
     actions: {
         toggleWidget() {
@@ -92,7 +106,7 @@ export const useEvaStore = defineStore('eva', {
         },
 
         setSelectedSystem(system) {
-            this.selectedSystem = system
+            this.selectedSystem = system || null
         },
 
         setSelectedGranularity(value) {
@@ -109,6 +123,53 @@ export const useEvaStore = defineStore('eva', {
 
         setSelectedTz(value) {
             this.selectedTz = value
+        },
+
+        setAvailableSystems(systems) {
+            const normalized = Array.isArray(systems)
+                ? systems
+                    .map(item => {
+                        if (typeof item === 'string') {
+                            return { name: item, count: 0 }
+                        }
+                        if (item?.name) {
+                            return {
+                                name: String(item.name).trim(),
+                                count: Number(item.count || 0)
+                            }
+                        }
+                        return null
+                    })
+                    .filter(Boolean)
+                : []
+
+            this.availableSystem = normalized
+
+            // Si no hay system seleccionado o ya no existe, usar el primero disponible
+            const names = normalized.map(x => x.name)
+            if (!this.selectedSystem || !names.includes(this.selectedSystem)) {
+                this.selectedSystem = names[0] || null
+            }
+        },
+
+        setLastContext(ctx = {}) {
+            this.lastContex = {
+                intent: ctx.intent ?? this.lastContex.intent,
+                system: ctx.system ?? this.lastContex.system,
+                granularity: ctx.granularity ?? this.lastContex.granularity,
+                days: ctx.days ?? this.lastContex.days,
+                hours: ctx.hours ?? this.lastContex.hours
+            }
+        },
+
+        clearLastContext() {
+            this.lastContex = {
+                intent: null,
+                system: null,
+                granularity: null,
+                days: null,
+                hours: null
+            }
         },
 
         newConversation(title = 'Nueva conversación') {
@@ -155,8 +216,8 @@ export const useEvaStore = defineStore('eva', {
                     id: uid(),
                     role: 'user',
                     type: 'text',
-                    content,
-                    createdAt: new Date().toString()
+                    content: String(content).trim(),
+                    createdAt: new Date().toISOString()
                 }
             ]
         }, 
@@ -181,6 +242,55 @@ export const useEvaStore = defineStore('eva', {
                     ...extra
                 }
             ]
+        },
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // AGREGA ESTOS 3 MÉTODOS dentro del bloque actions: { ... } de eva-store.js
+        // ─────────────────────────────────────────────────────────────────────────────
+
+        // 1. Crea una burbuja vacía marcada como "streaming" y devuelve su id
+        addStreamingMessage(type = 'text') {
+            if (!this.currentConversationId) return null
+            const conv = this.conversations.find(c => c.id === this.currentConversationId)
+            if (!conv) return null
+
+            const id = uid()
+            conv.messages = [
+                ...conv.messages,
+                {
+                    id,
+                    role:       'assistant',
+                    type,
+                    content:    '',          // vacío — se llena con chunks
+                    streaming:  true,        // flag para mostrar cursor parpadeante
+                    createdAt:  new Date().toISOString()
+                }
+            ]
+            return id
+        },
+
+        // 2. Agrega texto al mensaje que está en streaming
+        appendStreamingChunk(msgId, chunk) {
+            if (!this.currentConversationId || !msgId) return
+            const conv = this.conversations.find(c => c.id === this.currentConversationId)
+            if (!conv) return
+
+            const msg = conv.messages.find(m => m.id === msgId)
+            if (!msg) return
+
+            msg.content += chunk
+        },
+
+        // 3. Marca el mensaje como finalizado (quita el cursor)
+        finalizeStreamingMessage(msgId) {
+            if (!this.currentConversationId || !msgId) return
+            const conv = this.conversations.find(c => c.id === this.currentConversationId)
+            if (!conv) return
+
+            const msg = conv.messages.find(m => m.id === msgId)
+            if (!msg) return
+
+            msg.streaming = false
         },
 
         renameCurrentConversation(title) {

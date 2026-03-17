@@ -42,6 +42,12 @@
                 compact
                 @action="handleMessageAction"
               />
+
+              <!-- Typing indicator — aparece mientras Eva procesa -->
+              <EvaTypingIndicator
+                :visible="eva.loading"
+                :action="currentAction"
+              />
             </div>
 
             <div class="eva-chat-footer">
@@ -58,12 +64,15 @@
                   outlined
                   class="col"
                   placeholder="Escribe a Eva..."
+                  :disable="isStreaming"
                   @keyup.enter="sendMessage"
                 />
                 <q-btn
                   round
                   color="primary"
                   icon="send"
+                  :disable="isStreaming"
+                  :loading="isStreaming"
                   @click="sendMessage"
                 />
               </div>
@@ -81,19 +90,29 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch, onMounted } from 'vue'
 import { useEvaStore } from 'src/stores/eva-store'
 import { EvaService } from 'src/services/eva.service'
-import { parseEvaCommand } from 'src/services/eva-command-parser'
+import { parseEvaCommand, extractContext } from 'src/services/eva-command-parser'
 import { getEvaSuggestions } from 'src/services/eva-suggestions'
+import { loadEvaSystems } from 'src/composables/useEvaSystems'
+import { useEvaStream } from 'src/services/useEvaStream'
+import { buildChartTitle, buildChartSummary, buildAlertsTitle, buildAlertsSummary } from 'src/services/eva-context-labels'
 
 import EvaMessageBubble from './EvaMessageBubble.vue'
 import EvaContextPanel from './EvaContextPanel.vue'
 import EvaSuggestionsBar from './EvaSuggestionsBar.vue'
+import EvaTypingIndicator from './EvaTypingIndicator.vue'
 
-const eva = useEvaStore()
+const eva           = useEvaStore()
 const chatScrollRef = ref(null)
-const input = ref('')
+const input         = ref('')
+const currentAction = ref(null)
+const { streamMessage, isStreaming } = useEvaStream()
+
+onMounted(async () => {
+  await loadEvaSystems
+})
 
 const workspaceOpen = computed({
   get: () => eva.isWorkspaceOpen,
@@ -109,12 +128,26 @@ watch(
   () => messages.value.length,
   async () => {
     await nextTick()
-    const el = chatScrollRef.value
-    if (!el) return
-    el.scrollTop = el.scrollHeight
+    scrollMessagesToBottom()
   },
   { immediate: true }
 )
+
+// Scroll cuando aparece/desaparece el typing indicator
+watch(
+  () => eva.loading,
+  async () => {
+    await nextTick()
+    scrollMessagesToBottom()
+  }
+)
+
+function scrollMessagesToBottom() {
+  const el = chatScrollRef.value
+  if (!el) return
+  el.scrollTop = el.scrollHeight
+}
+
 
 async function handleSuggestionSelect(item) {
   if (!item?.prompt) return
@@ -124,43 +157,77 @@ async function handleSuggestionSelect(item) {
 
 async function sendMessage() {
   const text = input.value.trim()
-  if (!text) return
+  if (!text || isStreaming.value) return   // bloquear si ya está streamando
 
   eva.addUserMessage(text)
+  input.value = ''
 
-  const command = parseEvaCommand(text)
+  const command = parseEvaCommand(text, extractContext(eva))
 
   if (command) {
-    if (command.system) {
-      eva.setSelectedSystem(command.system)
-    }
+    // Aplicar parámetros del comando al store
+    if (command.system)      eva.setSelectedSystem(command.system)
+    if (command.granularity) eva.setSelectedGranularity(command.granularity)
+    if (typeof command.days   === 'number' && command.days   > 0) eva.setSelectedDays(command.days)
+    if (typeof command.hours  === 'number' && command.hours  > 0) eva.setSelectedHours(command.hours)
 
-    if (command.days) {
-      eva.setSelectedDays(command.days)
-      eva.setSelectedGranularity('daily')
-    }
-
-    if (command.hours) {
-      eva.setSelectedHours(command.hours)
-      eva.setSelectedGranularity('hourly')
-    }
-
-    await handleQuickAction({
-      key: command.action,
-      label: text,
-      skipUserMessage: true
+    // Guardar contexto para memoria corta
+    eva.setLastContext({
+      intent:      command.action,
+      system:      command.system      ?? eva.selectedSystem,
+      granularity: command.granularity ?? eva.selectedGranularity,
+      days:        command.days        ?? eva.selectedDays,
+      hours:       command.hours       ?? eva.selectedHours,
     })
 
-    input.value = ''
+    // Acciones con panel contextual → flujo normal (incluye daily-summary)
+    if (['daily-summary', 'metrics-chart', 'trends', 'open-alerts'].includes(command.action)) {
+      currentAction.value = command.action
+      await handleQuickAction({
+        key:             command.action,
+        label:           text,
+        skipUserMessage: true,
+        fromInput:       true
+      })
+      currentAction.value = null
+      await nextTick()
+      scrollMessagesToBottom()
+      return
+    }
+
+    // Texto libre sin acción específica → STREAMING
+    currentAction.value = 'stream'
+    try {
+      await streamMessage({
+        message:     text,
+        system:      eva.selectedSystem,
+        granularity: eva.selectedGranularity,
+        days:        eva.selectedDays,
+        hours:       eva.selectedHours,
+        tz:          eva.selectedTz,
+        type:        'text'
+      })
+    } catch (err) {
+      console.error('Eva stream error:', err)
+    }
+    currentAction.value = null
+
+    await nextTick()
+    scrollMessagesToBottom()
     return
   }
 
-  eva.addAssistantMessage(
-    'No entendí la solicitud. Puedes pedir: resumen diario, alertas abiertas, tendencias o una gráfica.',
-    'text'
-  )
+  // Sin comando reconocido → streaming con fallback descriptivo
+  currentAction.value = 'stream'
+  try {
+    await streamMessage({ message: text, type: 'text' })
+  } catch (err) {
+    console.error('Eva stream error:', err)
+  }
+  currentAction.value = null
 
-  input.value = ''
+  await nextTick()
+  scrollMessagesToBottom()
 }
 
 async function handleQuickAction(action) {
@@ -171,6 +238,7 @@ async function handleQuickAction(action) {
       eva.addUserMessage(action.label)
     }
 
+    currentAction.value = action.key
     eva.setLoading(true)
 
     if (action.key === 'daily-summary') {
@@ -201,6 +269,15 @@ async function handleQuickAction(action) {
       })
 
       eva.setContextPanel('insight', 'Resumen diario', payload)
+
+      eva.setLastContext({
+        intent: 'daily-summary',
+        system: eva.selectedSystem,
+        granularity: 'daily',
+        days: 1,
+        hours: null
+      })
+
       return
     }
 
@@ -215,6 +292,15 @@ async function handleQuickAction(action) {
       const payload = res?.data?.data || {}
       const content = payload?.content || []
 
+      const ctx = {
+        system: eva.lastContext?.system || eva.selectedSystem || null,
+        granularity: eva.lastContext?.granularity || 'daily',
+        days: eva.lastContext?.days || 30,
+        hours: eva.lastContext?.hours || null
+      }
+
+      const alertBullets = buildAlertsSummary(ctx)
+
       const text = !content.length
         ? 'No encontré alertas abiertas para este tenant.'
         : `Encontré ${content.length} alertas recientes. La más nueva está en estado ${content[0].status}.`
@@ -223,6 +309,7 @@ async function handleQuickAction(action) {
         raw: payload,
         meta: {
           items: content,
+          bullets: alertBullets,
           actions: [
             { key: 'open-context', label: 'Ver panel', icon: 'right_panel_open' },
             { key: 'go-alerts-module', label: 'Ir a alertas', icon: 'warning' }
@@ -230,7 +317,25 @@ async function handleQuickAction(action) {
         }
       })
 
-      eva.setContextPanel('alert', 'Alertas abiertas', payload)
+      eva.setContextPanel(
+        'alert', 
+        buildAlertsTitle(ctx),
+        {
+          ...payload,
+          evaContext: ctx
+        }
+      )
+
+      eva.setLastContext({
+        intent: 'open-alerts',
+        system: ctx.system,
+        granularity: ctx.granularity,
+        days: ctx.days,
+        hours: ctx.hours
+      })
+
+      await nextTick()
+      scrollMessagesToBottom()
       return
     }
 
@@ -241,28 +346,88 @@ async function handleQuickAction(action) {
       })
 
       const payload = res?.data?.data || {}
-      const text =
-        payload?.warnings?.[0] ||
-        payload?.highlights?.[0] ||
-        'Ya consulté las tendencias de las últimas 24 horas.'
+
+      // ── Alcance: global o por sistema ─────────────────────────────────────
+      const scopeSystem = payload?.system || eva.selectedSystem || null
+      const scopeLabel  = scopeSystem
+        ? `del sistema **${scopeSystem}**`
+        : 'de **todos los sistemas** (vista global)'
+
+      // ── Buckets: intervalos de tiempo agrupados ───────────────────────────
+      const bucketCount  = payload?.buckets?.length ?? payload?.totalBuckets ?? 0
+      const totalEvents  = payload?.totalEvents ?? payload?.total ?? 0
+      const bucketExpl   = bucketCount > 0
+        ? `Analicé ${bucketCount} intervalos de tiempo (buckets) — cada bucket representa ` +
+          `una ventana horaria donde se agrupan los eventos para detectar patrones. ` +
+          `En total se registraron **${totalEvents} eventos** distribuidos en esos intervalos.`
+        : `No se encontraron intervalos con actividad en las últimas 24 horas.`
+
+      // ── Status y señales ──────────────────────────────────────────────────
+      const status       = payload?.status || 'OK'
+      const statusMsg    = {
+        OK:   'Los indicadores están dentro de parámetros normales. ✅',
+        WARN: 'Se detectaron señales que merecen atención. ⚠️',
+        CRIT: 'Hay indicadores críticos — se recomienda revisión inmediata. 🔴'
+      }[status] ?? 'Estado desconocido.'
+
+      // ── Highlights y warnings ─────────────────────────────────────────────
+      const highlights   = Array.isArray(payload?.highlights) ? payload.highlights : []
+      const warnings     = Array.isArray(payload?.warnings)   ? payload.warnings   : []
+
+      const signalLines  = [
+        ...warnings.slice(0, 2).map(w => `⚠️ ${w}`),
+        ...highlights.slice(0, 2).map(h => `💡 ${h}`)
+      ]
+
+      // ── Texto final compuesto ─────────────────────────────────────────────
+      const text = [
+        `📊 **Tendencias de las últimas 24 horas** ${scopeLabel}.`,
+        '',
+        bucketExpl,
+        '',
+        `**Estado general:** ${statusMsg}`,
+        ...(signalLines.length ? ['', ...signalLines] : []),
+        '',
+        '_Puedes pedir "abre la gráfica" para ver la evolución visual en detalle._'
+      ].join('\n')
 
       eva.addAssistantMessage(text, 'trend', {
         raw: payload,
         meta: {
-          severity: payload?.status || 'INFO',
+          severity: status,
           recommendations: payload?.recommendations || [],
           actions: [
-            { key: 'open-context', label: 'Ver panel', icon: 'right_panel_open' },
+            { key: 'open-context',      label: 'Ver panel',    icon: 'right_panel_open' },
             { key: 'open-metrics-chart', label: 'Abrir gráfica', icon: 'insights' }
           ]
         }
       })
 
       eva.setContextPanel('trend', 'Tendencias', payload)
+
+      eva.setLastContext({
+        intent:      'trends',
+        system:      scopeSystem,
+        granularity: 'hourly',
+        days:        null,
+        hours:       24
+      })
+
       return
     }
 
     if (action.key === 'metrics-chart') {
+
+      if (!eva.selectedSystem) {
+        eva.addAssistantMessage(
+          'Aún no tengo un system seleccionado. Espera a que cargue el ctálogo dinámico',
+          'text'
+        )
+        await nextTick()
+        scrollMessagesToBottom()
+        return 
+      }
+
       const res = await EvaService.getMetricsSeries({
         granularity: eva.selectedGranularity,
         system: eva.selectedSystem,
@@ -274,23 +439,62 @@ async function handleQuickAction(action) {
       const payload = res?.data?.data || {}
       const points = payload?.points || []
 
+      const ctx = {
+        system: payload?.system || eva.selectedSystem,
+        granularity: payload?.granularity || eva.selectedGranularity,
+        days:
+          (payload?.granularity || eva.selectedGranularity) === 'daily'
+            ? eva.selectedDays
+            : null,
+        hours:
+          (payload?.granularity || eva.selectedGranularity) === 'hourly'
+            ? eva.selectedHours
+            : null
+      }
+
+      const contextBullets = buildChartSummary(ctx)
+
       const text = points.length
-        ? `Ya preparé la gráfica de ${payload.system || eva.selectedSystem} con ${points.length} puntos.`
-        : `No encontré puntos para ${eva.selectedSystem} en el rango solicitado.`
+        ? `Ya preparé la gráfica de ${ctx.system} con ${points.length} puntos.`
+        : `No encontré puntos para ${ctx.system} en el rango solicitado.`
 
       eva.addAssistantMessage(text, 'chart', {
         raw: payload,
         meta: {
-          system: payload?.system || eva.selectedSystem,
+          system: ctx.system,
+          granularity: ctx.granularity,
+          rangeLabel: ctx.granularity === 'hourly'
+            ? `${ctx.hours || 24} horas`
+            : `${ctx.days || 30} días`,
           points: points.length,
+          bullets: contextBullets,
           actions: [
-            { key: 'open-context', label: 'Ver panel', icon: 'right_panel_open' },
-            { key: 'refresh-chart', label: 'Actualizar', icon: 'refresh' }
+            { key: 'open-context', label: 'Ver panel', icon: 'right_panel_open' }
           ]
         }
       })
 
-      eva.setContextPanel('chart', `Gráfica: ${payload.system || eva.selectedSystem}`, payload)
+      eva.setContextPanel(
+        'chart', 
+        buildChartTitle(ctx),
+        {
+          ...payload,
+          evaContext: ctx
+        }
+      )
+
+      eva.setLastContext({
+        intent: 'metrics-chart',
+        system: ctx.system,
+        granularity: ctx.granularity,
+        days: ctx.granularity === 'daily' ? eva.selectedDays : null,
+        hours: ctx.granularity === 'hourly' ? eva.selectedHours : null
+      })
+
+      eva.openWorkspace()
+
+      await nextTick()
+      scrollMessagesToBottom()
       return
     }
 
@@ -300,6 +504,7 @@ async function handleQuickAction(action) {
     eva.addAssistantMessage('Ocurrió un error al procesar la solicitud.', 'text')
   } finally {
     eva.setLoading(false)
+    currentAction.value = null
   }
 }
 
