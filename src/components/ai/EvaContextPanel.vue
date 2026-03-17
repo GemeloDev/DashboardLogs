@@ -177,6 +177,22 @@
         </div>
 
         <div class="eva-kpi-card">
+          <div class="eva-kpi-label">Granularity</div>
+          <div class="eva-kpi-value">{{ evaContext.granularity || '-' }}</div>
+        </div>
+
+        <div class="eva-kpi-card">
+          <div class="eva-kpi-label">Range</div>
+          <div class="eva-kpi-value">
+            {{
+              evaContext.granularity === 'hourly'
+                ? `${evaContext.hours || 24} horas`
+                : `${evaContext.days || 30} días`
+            }}
+          </div>
+        </div>
+
+        <div class="eva-kpi-card">
           <div class="eva-kpi-label">Puntos</div>
           <div class="eva-kpi-value">
             {{ chartPoints.length }}
@@ -279,18 +295,13 @@ const eva = useEvaStore()
 const localSystem = ref(eva.selectedSystem)
 const localGranularity = ref(eva.selectedGranularity)
 
-const systemOptions = [
-  'TICKETS',
-  'LECTOR GRUPO SANTORO',
-  'LECTOR BIOMETRICO',
-  'HID_BIOMETRIC_CAMERA',
-  'TRUSTVALUE'
-]
+const systemOptions = computed(() => eva.systemOptions)
 
 watch(localSystem, val => eva.setSelectedSystem(val))
 watch(localGranularity, val => eva.setSelectedGranularity(val))
 
 const payloadData = computed(() => eva.contextPanel.payload || {})
+const evaContext = computed(() => payloadData.value?.evaContext || {})
 
 // INSIGHT
 const insightNarrative = computed(() => {

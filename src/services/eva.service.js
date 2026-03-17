@@ -23,5 +23,9 @@ export const EvaService = {
 
     async getTicketDraft(id, params) {
         return axiosInstance.get(`/api/ai/alerts/${id}/ticket/draft`, { params })
+    },
+
+    async getSystems(params) {
+        return axiosInstance.get('/api/ai/catalogs/systems', { params })
     }
 }
