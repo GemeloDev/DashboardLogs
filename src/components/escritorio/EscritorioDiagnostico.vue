@@ -7,14 +7,14 @@
     transition-hide="slide-down"
     @escape-key="cerrarDiagnostico"
   >
-    <q-card class="diagnostic-modal diagnostico-dialog-fullscreen bg-grey-9 text-white">
+    <q-card class="diagnostic-modal diagnostico-dialog-fullscreen bg-grey-9">
       <!-- Header Mejorado -->
       <q-card-section class="diagnostic-header bg-gradient-to-r from-grey-8 to-grey-7">
         <div class="row items-center">
           <div class="col">
             <div class="text-h5 diagnostic-title">
               <q-icon name="medical_services" class="q-mr-sm diagnostic-icon" color="cyan-4" />
-              🔬 Centro de Diagnóstico Técnico Avanzado
+              🔬 <span style="color: #e97132;">Centro de Diagnóstico</span> Técnico Avanzado
               <q-chip
                 v-if="diagnosticoActivo"
                 color="cyan-5"
@@ -1352,6 +1352,10 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
+.orange-santoro {
+  color: #e97132;
+}
+
 .diagnostic-modal {
   .diagnostic-header {
     min-height: 80px;

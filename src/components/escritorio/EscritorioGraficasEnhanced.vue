@@ -370,7 +370,7 @@
     label-class="text-teal"
     label-style="font-size: 1.1em"
   >
-    <q-spinner-gears size="50px" color="primary" />
+    <q-spinner-gears size="50px" color="orange-9" />
   </q-inner-loading>
 </template>
 
@@ -1352,7 +1352,7 @@ onBeforeUnmount(() => {
 .func-wrap {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
   border-radius: 18px;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 26px rgba(255, 125, 50, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1569,7 +1569,7 @@ onBeforeUnmount(() => {
 .func-clickable:hover {
   transform: translateY(-2px);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
-  border-color: rgba(34, 211, 238, 0.25);
+  border-color: rgba(238, 143, 34, 0.377);
 }
 
 .func-subcard--active {

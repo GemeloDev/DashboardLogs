@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="q-pa-md text-white" style="background: #1e1e2f; border-radius: 12px">
+  <q-card flat bordered class="q-pa-md text-white" style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.06);">
     <div class="row items-center q-mb-sm">
       <q-icon name="map" class="q-mr-sm" color="primary" />
       <div class="text-subtitle1">Mapa de Logs (geo)</div>

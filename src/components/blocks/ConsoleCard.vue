@@ -1,6 +1,6 @@
 <template>
   <q-card
-    class="log-card fit cursor-pointer log-card-info"
+    class="log-card fit cursor-pointer log-card-santoro"
     bordered
     flat
     @click="$emit('click', log)"
@@ -280,7 +280,7 @@ const deviceLabel = computed(() => {
 
 <style lang="scss" scoped>
 .log-card {
-  background: #2b2b3d;
+  background: rgba(255, 255, 255, 0.070);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -390,6 +390,9 @@ const deviceLabel = computed(() => {
   }
   &.log-card-info {
     border-left: 4px solid #2196f3;
+  }
+  &.log-card-santoro {
+    border-left: 4px solid var(--santoro);
   }
 }
 

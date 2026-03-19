@@ -2,8 +2,6 @@
   <div class="login-page">
     <!-- Fondo -->
     <div class="login-bg">
-      <div class="bg-blur bg-blur--cyan"></div>
-      <div class="bg-blur bg-blur--purple"></div>
       <div class="bg-grid"></div>
       <div class="bg-orb orb-1"></div>
       <div class="bg-orb orb-2"></div>
@@ -437,9 +435,10 @@ $red: #ef4444;
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.08), transparent 24%),
-    linear-gradient(135deg, $bg-1 0%, $bg-2 45%, $bg-3 100%);
+    radial-gradient(circle at top left, rgba(233, 114, 50, 0.329), transparent 20%),
+    radial-gradient(circle at bottom right, rgba(233, 114, 50, 0.24), transparent 18%),
+    linear-gradient(135deg, #000000 0%, #030303 50%, #090909 100%);
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: center;

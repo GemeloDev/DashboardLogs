@@ -211,15 +211,14 @@
     <q-drawer
       v-model="leftDrawerOpen"
       show-if-above
-      bordered
       :width="290"
       :breakpoint="1800"
       class="app-drawer desktop-drawer"
     >
       <q-scroll-area class="fit">
         <div class="drawer-brand-block">
-          <q-avatar size="68px" class="stat-icon--warm">
-            <q-icon name="hive" size="34px" color="white" />
+          <q-avatar size="200px" class="drawer-logo-avatar q-avatar-santoro">
+            <img src="/src/assets/logo-grupo-santoro.png" alt="Santoro" class="drawer-logo-img" />
           </q-avatar>
 
           <div class="drawer-brand-title">
@@ -711,11 +710,11 @@ onMounted(() => {
 
 <style lang="scss">
 :root {
-  --bg-1: #070b14;
-  --bg-2: #0b1220;
-  --bg-3: #111827;
-  --bg-4: #172033;
-  --bg-5: #1c2740;
+  --bg-1: #000000;
+  --bg-2: #050505;
+  --bg-3: #0a0a0a;
+  --bg-4: #120904;
+  --bg-5: #1a0d07;
 
   --text-main: #ffffff;
   --text-soft: rgba(255, 255, 255, 0.72);
@@ -726,6 +725,8 @@ onMounted(() => {
   --purple: #7c3aed;
   --pink: #ec4899;
   --orange-accent: #e97132;
+  --orange-deep: #a44d1f;
+  --orange-dark: #2a1208;
 
   --border-soft: rgba(255, 255, 255, 0.08);
   --border-medium: rgba(255, 255, 255, 0.12);
@@ -736,6 +737,12 @@ onMounted(() => {
 
   --gradient-primary: linear-gradient(90deg, #06b6d4 0%, #7c3aed 55%, #ec4899 100%);
   --gradient-warm: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  --gradient-santoro-dark: linear-gradient(135deg, #1a0d07 0%, #2a1208 45%, #3a170a 100%);
+  --gradient-santoro-soft: linear-gradient(
+    135deg,
+    rgba(233, 113, 50, 0.2),
+    rgba(124, 58, 237, 0.16)
+  );
 }
 
 .stat-icon--warm {
@@ -749,11 +756,14 @@ onMounted(() => {
 
 /* HEADER */
 .app-header {
-  background: linear-gradient(160deg, rgba(11, 18, 32, 0.92), rgba(17, 24, 39, 0.9)) !important;
+  background:
+    radial-gradient(circle at right, rgba(233, 113, 50, 0.16), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.08), transparent 20%),
+    linear-gradient(180deg, #120904 0%, #0c0503 100%) !important;
   color: white;
   backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--border-soft);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+  border-bottom: 1px solid rgba(233, 114, 50, 0.479) !important;;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
 }
 
 .app-toolbar {
@@ -777,32 +787,35 @@ onMounted(() => {
   margin-left: 10px;
   border-radius: 999px;
   background: var(--orange-accent);
-  box-shadow: 0 0 16px rgba(233, 113, 50, 0.3);
+  box-shadow: 0 0 16px rgba(233, 113, 50, 0.35);
   vertical-align: middle;
 }
 
 .toolbar-icon-btn {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.76);
   border-radius: 12px;
   transition:
     background 0.2s ease,
     transform 0.15s ease,
-    color 0.2s ease;
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .toolbar-icon-btn:hover {
   background: rgba(255, 255, 255, 0.06);
   transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(233, 113, 50, 0.12);
 }
 
 .toolbar-icon-btn--success {
-  color: #22c55e;
+  color: #86efac;
 }
 
 .toolbar-icon-btn--purple {
-  color: #a855f7;
+  color: #c084fc;
 }
 
+/* USER + SYSTEM */
 .system-dropdown,
 .user-dropdown {
   border-radius: 14px;
@@ -815,7 +828,7 @@ onMounted(() => {
 
 .system-dropdown {
   background: rgba(255, 255, 255, 0.045);
-  border: 1px solid var(--border-soft);
+  border: 1px solid rgba(233, 113, 50, 0.14);
   color: white;
 }
 
@@ -824,9 +837,9 @@ onMounted(() => {
 }
 
 .glass-tooltip {
-  background: #121a2a !important;
+  background: #160b07 !important;
   color: white !important;
-  border: 1px solid var(--border-soft);
+  border: 1px solid rgba(233, 113, 50, 0.16);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
 }
 
@@ -839,17 +852,20 @@ onMounted(() => {
 /* MENUS */
 .glass-menu,
 .system-dropdown-menu,
-.user-dropdown-menu {
-  background: linear-gradient(160deg, rgba(15, 20, 32, 0.96), rgba(18, 25, 42, 0.94)) !important;
+.user-dropdown-menu,
+.q-menu {
+  background:
+    radial-gradient(circle at top left, rgba(233, 113, 50, 0.08), transparent 28%),
+    linear-gradient(160deg, rgba(22, 11, 7, 0.98), rgba(17, 9, 7, 0.96)) !important;
   color: white !important;
-  border: 1px solid var(--border-soft);
+  border: 1px solid rgba(233, 113, 50, 0.14);
   border-radius: 18px;
-  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.38);
   backdrop-filter: blur(18px);
 }
 
 .menu-header-label {
-  color: rgba(255, 255, 255, 0.72) !important;
+  color: rgba(255, 255, 255, 0.76) !important;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -862,26 +878,31 @@ onMounted(() => {
   color: white;
   border-radius: 12px;
   margin: 4px 8px;
-  transition: background 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+  border: 1px solid transparent;
 }
 
 .glass-menu-item:hover {
   background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(233, 113, 50, 0.1);
 }
 
 .glass-menu-item.no-hover:hover {
   background: transparent;
+  border-color: transparent;
 }
 
 /* DRAWER */
 .app-drawer {
   background:
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 26%),
-    radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.08), transparent 24%),
-    linear-gradient(180deg, #0b1220 0%, #111827 100%) !important;
+    radial-gradient(circle at top left, rgba(233, 113, 50, 0.16), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.08), transparent 20%),
+    linear-gradient(180deg, #120904 0%, #0c0503 100%) !important;
   color: white;
-  border-right: 1px solid var(--border-soft) !important;
-  box-shadow: 10px 0 32px rgba(0, 0, 0, 0.22);
+  border-right: 1px solid rgba(233, 113, 50, 0.14) !important;
+  box-shadow: 10px 0 32px rgba(0, 0, 0, 0.28);
 }
 
 .drawer-brand-block {
@@ -891,8 +912,8 @@ onMounted(() => {
 }
 
 .drawer-brand-avatar {
-  background: var(--gradient-warm);
-  box-shadow: 0 16px 34px rgba(34, 211, 238, 0.18);
+  background: linear-gradient(135deg, #e97132 0%, #ec4899 100%);
+  box-shadow: 0 16px 34px rgba(233, 113, 50, 0.24);
 }
 
 .drawer-brand-title {
@@ -931,19 +952,20 @@ onMounted(() => {
   transition:
     background 0.18s ease,
     transform 0.15s ease,
-    border-color 0.18s ease;
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
   border: 1px solid transparent;
 }
 
 .menu-list .drawer-item:hover {
   background: rgba(255, 255, 255, 0.05);
   transform: translateX(2px);
-  border-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(233, 113, 50, 0.12);
 }
 
 .menu-list .drawer-item.q-router-link-active {
-  background: linear-gradient(90deg, rgba(6, 182, 212, 0.18), rgba(124, 58, 237, 0.16));
-  border-color: rgba(34, 211, 238, 0.22);
+  background: linear-gradient(90deg, rgba(233, 113, 50, 0.18), rgba(124, 58, 237, 0.14));
+  border-color: rgba(233, 113, 50, 0.22);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
@@ -952,7 +974,7 @@ onMounted(() => {
 }
 
 .menu-list .drawer-item.q-router-link-active .q-item__section--avatar .q-icon {
-  color: white !important;
+  color: #fff !important;
 }
 
 .drawer-item-label {
@@ -965,11 +987,11 @@ onMounted(() => {
 }
 
 .item-icon--cyan {
-  color: #22d3ee;
+  color: #7dd3fc;
 }
 
 .item-icon--purple {
-  color: #a855f7;
+  color: #c084fc;
 }
 
 .item-icon--warm {
@@ -981,7 +1003,7 @@ onMounted(() => {
 }
 
 .item-icon--red {
-  color: #ef4444;
+  color: #f87171;
 }
 
 /* CONTENT */
@@ -1022,11 +1044,35 @@ onMounted(() => {
   }
 }
 
-.q-menu {
-  background: linear-gradient(160deg, rgba(15, 20, 32, 0.96), rgba(18, 25, 42, 0.94)) !important;
-  color: white !important;
-  border: 1px solid var(--border-soft);
-  border-radius: 18px;
+/* FOOTER */
+.app-footer {
+  background: rgba(24, 10, 7, 0.88);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(233, 113, 50, 0.12);
+}
+
+.app-footer-toolbar {
+  min-height: 52px;
+}
+
+.q-avatar-santoro {
+  position: relative;
+  vertical-align: middle;
+  display: inline-block;
+  border-radius: 50%;
+  font-size: 48px;
+  height: 0.5em;
+  width: 1em;
+}
+
+.footer-btn {
+  color: white;
+  background: rgba(233, 113, 50, 0.18);
+  border: 1px solid rgba(233, 113, 50, 0.24);
+}
+
+.footer-btn:hover {
+  background: rgba(233, 113, 50, 0.24);
 }
 
 /* Animaciones */
@@ -1089,27 +1135,22 @@ onMounted(() => {
   max-width: 1000px;
 }
 
-.app-footer {
-  background: rgba(18, 24, 38, 0.85);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.drawer-logo-avatar {
+  overflow: hidden;
 }
 
-.app-footer-toolbar {
-  min-height: 52px;
-}
-
-.footer-btn {
-  color: white;
-  background: rgba(33, 150, 243, 0.25);
-  border: 1px solid rgba(33, 150, 243, 0.35);
+.drawer-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 /* SCROLLBAR GLOBAL */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
-  background-color: #070b14;
+  background-color: #050505;
 }
 
 ::-webkit-scrollbar-track {
@@ -1118,11 +1159,11 @@ onMounted(() => {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #06b6d4 0%, #7c3aed 100%);
+  background: linear-gradient(180deg, #e97132 0%, #7c3aed 100%);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #22d3ee 0%, #a855f7 100%);
+  background: linear-gradient(180deg, #ff9d67 0%, #a855f7 100%);
 }
 </style>

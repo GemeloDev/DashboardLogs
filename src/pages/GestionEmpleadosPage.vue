@@ -774,7 +774,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
 }
 
 .gradient-text {
-  color: var(--santoro)
+  color: var(--santoro);
 }
 
 .btn-primary {
@@ -867,7 +867,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
   margin-bottom: 28px;
 
   .stat-card {
-    background: $bg-card;
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 20px;
     padding: 24px;
     display: flex;
@@ -996,7 +996,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
 
 // Filtros
 .filters-section {
-  background: $bg-card;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 20px;
   padding: 24px;
   margin-bottom: 28px;
@@ -1073,7 +1073,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
 }
 
 .user-card {
-  background: $bg-card;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid $border;
