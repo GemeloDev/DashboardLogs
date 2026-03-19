@@ -389,7 +389,19 @@ const logsGlobales = inject('logsGlobales', ref([]))
 const openConsole = inject('openConsole', null)
 const loadingLogs = inject('loadingLogs', ref(false))
 
-const uiBusy = computed(() => loadingLogs.value)
+// ── Dashboard stats del backend (agrupaciones MongoDB) ─────────────────────
+// Si están disponibles, las cards y gráficas las usan en lugar de calcular
+// desde logsGlobales — mucho más rápido con volúmenes grandes
+const dashboardStats   = inject('dashboardStats',   ref(null))
+const dashboardSeries  = inject('dashboardSeries',  ref(null))
+const loadingDashboard = inject('loadingDashboard', ref(false))
+
+// uiBusy cubre cualquiera de las dos cargas
+const uiBusy = computed(() => loadingLogs.value || loadingDashboard.value)
+
+// Helper: convierte DistItem[] del backend al formato que usan los computed locales
+const distToCountList = (arr, max = 10) =>
+  (arr || []).slice(0, max).map(item => ({ label: item.value, count: item.count, pct: item.pct }))
 
 // Para pintar "active" en UI
 const selectedEventType = computed(() => filtrosGlobales.value?.values?.eventType || '')
@@ -661,6 +673,28 @@ const FUNC_COLORS = [
 ]
 
 const funcUsage = computed(() => {
+  // ── Usar datos del backend si están disponibles ─────────────────────────
+  const stats = dashboardStats.value
+  if (stats && stats.topEventTypes?.length) {
+    const total = stats.total || 0
+    const top = stats.topEventTypes.slice(0, 6)
+    const topSum = top.reduce((s, x) => s + x.count, 0)
+    const rest = total - topSum
+
+    const topItems = top.map((x, idx) => {
+      const color = FUNC_COLORS[idx % FUNC_COLORS.length]
+      return { name: x.value, count: x.count, ratio: x.count / total, pct: x.pct, qColor: color.q, color: color.hex }
+    })
+    const donutSegments = [...topItems]
+    if (rest > 0 && stats.topEventTypes.length > 6) {
+      donutSegments.push({ name: 'Otros', count: rest, ratio: rest / total, pct: Math.round((rest / total) * 1000) / 10, qColor: 'grey', color: '#6b7280' })
+    }
+    const topOne = topItems[0]
+    const coveragePct = Math.round((topSum / total) * 1000) / 10
+    return { total, items: topItems, donutSegments, coveragePct, topName: topOne?.name || '', topPct: topOne?.pct || 0 }
+  }
+
+  // ── Fallback: calcular desde logsGlobales ───────────────────────────────
   const items = logsFiltrados.value || []
   const total = items.length
   if (!total) {
@@ -775,22 +809,28 @@ const countByKey = (logs, key, { array = false, emptyLabel = 'N/A' } = {}) => {
     .sort((a, b) => b.count - a.count)
 }
 
-const topOffices = computed(() =>
-  toCountList(
+const topOffices = computed(() => {
+  if (dashboardStats.value?.topLocations?.length)
+    return distToCountList(dashboardStats.value.topLocations, 4)
+  return toCountList(
     countByKey(logsFiltrados.value, 'location.name', { array: false, emptyLabel: 'N/A' }),
     { topN: 4 },
-  ),
-)
-const topTags = computed(() =>
-  toCountList(countByKey(logsFiltrados.value, 'tags', { array: true, emptyLabel: 'N/A' }), {
+  )
+})
+const topTags = computed(() => {
+  if (dashboardStats.value?.topTags?.length)
+    return distToCountList(dashboardStats.value.topTags, 3)
+  return toCountList(countByKey(logsFiltrados.value, 'tags', { array: true, emptyLabel: 'N/A' }), {
     topN: 3,
-  }),
-)
-const topOutcomes = computed(() =>
-  toCountList(countByKey(logsFiltrados.value, 'outcome', { array: false, emptyLabel: 'N/A' }), {
+  })
+})
+const topOutcomes = computed(() => {
+  if (dashboardStats.value?.outcomes?.length)
+    return distToCountList(dashboardStats.value.outcomes, 3)
+  return toCountList(countByKey(logsFiltrados.value, 'outcome', { array: false, emptyLabel: 'N/A' }), {
     topN: 3,
-  }),
-)
+  })
+})
 
 /* -------------------------
    Status line chart (Chart.js)
@@ -862,7 +902,42 @@ async function renderStatusLineChart() {
     statusLineChart = null
   }
 
-  const { labels, datasets } = buildStatusSeries(logsFiltrados.value)
+  // ── Usar datos del backend si están disponibles ───────────────────────────
+  let labels = []
+  let datasets = []
+
+  const series = dashboardSeries.value
+  if (series?.statusOverTime?.length) {
+    // statusOverTime = [{ date, status, count }]
+    const byDay = new Map()
+    const statuses = new Set()
+
+    for (const pt of series.statusOverTime) {
+      const day = pt.date
+      const st  = pt.status || 'N/A'
+      statuses.add(st)
+      if (!byDay.has(day)) byDay.set(day, new Map())
+      byDay.get(day).set(st, pt.count)
+    }
+
+    labels = Array.from(byDay.keys()).sort()
+    const statusList = Array.from(statuses).sort()
+    datasets = statusList.map((st, idx) => {
+      const color = STATUS_COLORS[idx % STATUS_COLORS.length]
+      return {
+        label: st,
+        data: labels.map((day) => byDay.get(day)?.get(st) || 0),
+        borderColor: color, backgroundColor: color,
+        borderWidth: 2, pointRadius: 0, tension: 0.35,
+      }
+    })
+  } else {
+    // Fallback: calcular desde logsGlobales
+    const result = buildStatusSeries(logsFiltrados.value)
+    labels   = result.labels
+    datasets = result.datasets
+  }
+
   if (!labels.length || !datasets.length) return
 
   statusLineChart = new Chart(el.getContext('2d'), {
@@ -969,13 +1044,21 @@ async function renderSeverityPieChart() {
     severityPieChart = null
   }
 
-  const rows = countSeverity(logsFiltrados.value)
+  // ── Usar datos del backend si están disponibles ───────────────────────────
+  let rows = []
+  const stats = dashboardStats.value
+  if (stats?.severities?.length) {
+    rows = stats.severities.map(s => ({ label: s.value, count: s.count }))
+  } else {
+    rows = countSeverity(logsFiltrados.value)
+  }
+
   if (!rows.length) return
 
   const labels = rows.map((r) => r.label)
-  const data = rows.map((r) => r.count)
+  const data   = rows.map((r) => r.count)
   const colors = labels.map((l) => SEVERITY_COLORS[l] || '#29d3c2')
-  const total = data.reduce((s, x) => s + x, 0) || 1
+  const total  = data.reduce((s, x) => s + x, 0) || 1
 
   severityPieChart = new Chart(el.getContext('2d'), {
     type: 'pie', // ✅ pastel
@@ -1330,13 +1413,13 @@ const redrawCharts = () => {
 }
 
 watch(
-  () => [logsFiltrados.value, uiBusy.value],
+  () => [logsFiltrados.value, uiBusy.value, dashboardStats.value, dashboardSeries.value],
   async ([, busy]) => {
     if (busy) return
     await nextTick()
     redrawCharts()
   },
-  { deep: true },
+  { deep: false },
 )
 
 onMounted(() => redrawCharts())

@@ -133,6 +133,19 @@
             class="system-dropdown"
             dropdown-icon="expand_more"
           >
+            <!-- Indicador tiempo real -->
+            <template #before>
+              <q-icon
+                name="circle"
+                :color="wsConnected ? 'positive' : 'grey-6'"
+                size="8px"
+                class="q-mr-xs"
+              >
+                <q-tooltip class="glass-tooltip">
+                  {{ wsConnected ? '● En vivo' : '○ Reconectando...' }}
+                </q-tooltip>
+              </q-icon>
+            </template>
             <q-list class="system-dropdown-menu">
               <q-item
                 v-for="system in systems"
@@ -367,6 +380,7 @@ import DinamicFilters from 'src/components/blocks/DinamicFilters.vue'
 import { ApiKeyService } from 'src/services/apiKeys'
 import { ChartDataService } from 'src/services/chartDataService'
 import EvaWorkspace from 'src/components/ai/EvaWorkspace.vue'
+import { useDashboardRealtime } from 'src/composables/useDashboardRealTime'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -384,6 +398,21 @@ const prefs = authService.loadPrefs()
 
 const systems = ref(authService.user?.authz?.systems || [])
 const selectedSystem = ref(prefs.system || systems.value?.[0] || 'DASHBOARD')
+const tenantId = computed(() => authService.user?.tenantId || authService.user?.authz?.tenantId || '')
+
+// ── Tiempo real: WebSocket dashboard ─────────────────────────────────────────
+// Cuando llegan nuevos logs al system seleccionado, recarga el dashboard
+const { isConnected: wsConnected } = useDashboardRealtime(
+  selectedSystem,
+  tenantId,
+  () => {
+    if (isClientFlow.value) {
+      cargarEventosDelSistema()
+    }
+  }
+)
+// Indicador en consola
+watch(wsConnected, (v) => console.debug(`[WS Dashboard] ${v ? '🟢 Conectado' : '🔴 Desconectado'}`))
 
 const logsGlobales = ref([])
 const MS_DIA = 1000 * 60 * 60 * 24
@@ -406,10 +435,18 @@ const userInfo = computed(() => ({
 const eventosRaw = ref([]) // lo que llega del backend (ya filtrado por system)
 const loadingLogs = ref(false) // puedes mantener el mismo nombre
 
-provide('logsGlobales', logsGlobales)
-provide('filtrosGlobales', filtros)
-provide('openConsole', openConsole)
-provide('loadingLogs', loadingLogs)
+// ── Dashboard stats — del backend, reemplaza clasificación en JS ──────────────
+const dashboardStats   = ref(null)
+const dashboardSeries  = ref(null)
+const loadingDashboard = ref(false)
+
+provide('logsGlobales',     logsGlobales)
+provide('filtrosGlobales',  filtros)
+provide('openConsole',      openConsole)
+provide('loadingLogs',      loadingLogs)
+provide('dashboardStats',   dashboardStats)
+provide('dashboardSeries',  dashboardSeries)
+provide('loadingDashboard', loadingDashboard)
 
 const aplicarFiltroRangoFechas = () => {
   const r = filtros.value?.rangoFechas || {}
@@ -434,7 +471,35 @@ const aplicarFiltroRangoFechas = () => {
   })
 }
 
+// ── Fetch dashboard stats + series (endpoints de agregación) ──────────────────
+const cargarDashboardStats = async () => {
+  const system = selectedSystem.value
+  if (!system) return
+  loadingDashboard.value = true
+  try {
+    const token = authService.getToken?.() || authService.token || ''
+    const headers = { Authorization: `Bearer ${token}` }
+    const base = `/api/logs/dashboard`
+    const q = `?system=${encodeURIComponent(system)}`
+
+    const [statsRes, seriesRes] = await Promise.all([
+      fetch(`${base}/stats${q}`,  { headers }).then(r => r.json()),
+      fetch(`${base}/series${q}`, { headers }).then(r => r.json()),
+    ])
+
+    dashboardStats.value  = statsRes?.data  || null
+    dashboardSeries.value = seriesRes?.data || null
+  } catch (e) {
+    console.error('❌ Error cargando dashboard stats:', e)
+  } finally {
+    loadingDashboard.value = false
+  }
+}
+
 const cargarEventosDelSistema = async () => {
+  // Lanzar stats y logs en paralelo
+  cargarDashboardStats()
+
   loadingLogs.value = true
   try {
     const resp = await ChartDataService.getLogsEvents({
