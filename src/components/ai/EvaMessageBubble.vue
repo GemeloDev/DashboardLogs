@@ -28,6 +28,7 @@
       <EvaMessageRenderer
         :message="message"
         @action="emit('action', $event)"
+        @followup="emit('followup', $event)"
       />
 
       <!-- Cursor parpadeante mientras Eva escribe -->
@@ -55,7 +56,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['action'])
+const emit = defineEmits(['action', 'followup'])
 
 const isAssistant = computed(() => props.message?.role === 'assistant')
 

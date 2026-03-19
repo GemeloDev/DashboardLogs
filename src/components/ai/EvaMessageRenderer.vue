@@ -254,11 +254,20 @@
         />
       </div>
     </template>
+
+    <!-- Follow-ups contextuales — visibles en todos los mensajes de Eva -->
+    <EvaFollowUps
+      v-if="!message.streaming && safeArray(message.meta?.followUps).length"
+      :follow-ups="safeArray(message.meta?.followUps)"
+      @select="emit('followup', $event)"
+    />
+
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import EvaFollowUps from './EvaFollowUps.vue'
 
 const props = defineProps({
   message: {
@@ -267,7 +276,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['action'])
+const emit = defineEmits(['action', 'followup'])
 
 const messageType = computed(() => props.message?.type || 'text')
 

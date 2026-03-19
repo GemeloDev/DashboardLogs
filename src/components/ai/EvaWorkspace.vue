@@ -41,6 +41,7 @@
                 :message="msg"
                 compact
                 @action="handleMessageAction"
+                @followup="handleFollowUp"
               />
 
               <!-- Typing indicator — aparece mientras Eva procesa -->
@@ -94,7 +95,7 @@ import { computed, nextTick, ref, watch, onMounted } from 'vue'
 import { useEvaStore } from 'src/stores/eva-store'
 import { EvaService } from 'src/services/eva.service'
 import { parseEvaCommand, extractContext } from 'src/services/eva-command-parser'
-import { getEvaSuggestions } from 'src/services/eva-suggestions'
+import { getEvaSuggestions, getContextualFollowUps } from 'src/services/eva-suggestions'
 import { loadEvaSystems } from 'src/composables/useEvaSystems'
 import { useEvaStream } from 'src/services/useEvaStream'
 import { buildChartTitle, buildChartSummary, buildAlertsTitle, buildAlertsSummary } from 'src/services/eva-context-labels'
@@ -260,9 +261,10 @@ async function handleQuickAction(action) {
       eva.addAssistantMessage(summaryText, 'insight', {
         raw: payload,
         meta: {
-          bullets: pretty?.executiveBullets || base?.executiveSummary || [],
+          bullets:   pretty?.executiveBullets || base?.executiveSummary || [],
+          followUps: buildFollowUps('daily-summary'),
           actions: [
-            { key: 'open-context', label: 'Ver panel', icon: 'right_panel_open' },
+            { key: 'open-context',         label: 'Ver panel',  icon: 'right_panel_open' },
             { key: 'refresh-daily-summary', label: 'Actualizar', icon: 'refresh' }
           ]
         }
@@ -308,10 +310,11 @@ async function handleQuickAction(action) {
       eva.addAssistantMessage(text, 'alert', {
         raw: payload,
         meta: {
-          items: content,
-          bullets: alertBullets,
+          items:     content,
+          bullets:   alertBullets,
+          followUps: buildFollowUps('open-alerts'),
           actions: [
-            { key: 'open-context', label: 'Ver panel', icon: 'right_panel_open' },
+            { key: 'open-context',    label: 'Ver panel',    icon: 'right_panel_open' },
             { key: 'go-alerts-module', label: 'Ir a alertas', icon: 'warning' }
           ]
         }
@@ -394,10 +397,11 @@ async function handleQuickAction(action) {
       eva.addAssistantMessage(text, 'trend', {
         raw: payload,
         meta: {
-          severity: status,
+          severity:        status,
           recommendations: payload?.recommendations || [],
+          followUps:       buildFollowUps('trends'),
           actions: [
-            { key: 'open-context',      label: 'Ver panel',    icon: 'right_panel_open' },
+            { key: 'open-context',       label: 'Ver panel',     icon: 'right_panel_open' },
             { key: 'open-metrics-chart', label: 'Abrir gráfica', icon: 'insights' }
           ]
         }
@@ -461,13 +465,14 @@ async function handleQuickAction(action) {
       eva.addAssistantMessage(text, 'chart', {
         raw: payload,
         meta: {
-          system: ctx.system,
+          system:      ctx.system,
           granularity: ctx.granularity,
-          rangeLabel: ctx.granularity === 'hourly'
+          rangeLabel:  ctx.granularity === 'hourly'
             ? `${ctx.hours || 24} horas`
             : `${ctx.days || 30} días`,
-          points: points.length,
-          bullets: contextBullets,
+          points:    points.length,
+          bullets:   contextBullets,
+          followUps: buildFollowUps('metrics-chart'),
           actions: [
             { key: 'open-context', label: 'Ver panel', icon: 'right_panel_open' }
           ]
@@ -506,6 +511,24 @@ async function handleQuickAction(action) {
     eva.setLoading(false)
     currentAction.value = null
   }
+}
+
+// ── Follow-ups: construye las sugerencias contextuales para un mensaje ────────
+function buildFollowUps(action) {
+  return getContextualFollowUps(action, {
+    system:           eva.selectedSystem,
+    granularity:      eva.selectedGranularity,
+    days:             eva.selectedDays,
+    hours:            eva.selectedHours,
+    availableSystems: eva.availableSystem ?? []
+  })
+}
+
+// ── Cuando el usuario hace clic en un follow-up ───────────────────────────────
+async function handleFollowUp(item) {
+  if (!item?.prompt) return
+  input.value = item.prompt
+  await sendMessage()
 }
 
 function handleMessageAction(action) {
