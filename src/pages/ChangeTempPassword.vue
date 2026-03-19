@@ -14,25 +14,14 @@
       <div class="login-container">
         <div class="login-form-container">
           <q-card flat bordered class="login-card">
-            <!-- Token inválido -->
-            <div v-if="tokenInvalido" class="card-header-section">
-              <div class="header-icon-container error">
-                <q-icon name="error_outline" size="1.8rem" class="header-icon" />
-              </div>
-              <h2 class="card-title">Invitación inválida</h2>
-              <p class="card-subtitle">
-                El token de invitación es inválido o ha caducado. Serás redirigido al login...
-              </p>
-            </div>
-
             <!-- Token válido -->
-            <div v-else class="card-header-section">
+            <div class="card-header-section">
               <div class="header-icon-container">
                 <q-icon name="check" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Invitación aceptada</h2>
+              <h2 class="card-title">Cambiar contraseña</h2>
               <p class="card-subtitle">
-                Ingresa tu contraseña y un nombre de usuario para acceder.
+                Ingresa una nueva contraseña y confirmala para acceder al sistema.
               </p>
             </div>
 
@@ -43,51 +32,12 @@
               </div>
             </div>
 
-            <div class="form-section">
-              <label class="input-label">Código</label>
-              <div class="row justify-center items-center q-gutter-sm q-mt-md">
-                <q-input
-                  v-for="(n, i) in 6"
-                  :key="i"
-                  ref="inputs"
-                  v-model="codigo[i]"
-                  maxlength="1"
-                  type="text"
-                  outlined
-                  dense
-                  class="otp-input"
-                  input-class="text-center text-white text-h5"
-                  @keyup="moverFoco($event, i)"
-                  @keypress="(e) => !/[0-9]/.test(e.key) && e.preventDefault()"
-                />
-              </div>
-            </div>
-
             <q-card-section v-if="!tokenInvalido" class="form-section">
               <q-form @submit="submit">
                 <div class="input-group">
-                  <label class="input-label">Nombre de usuario</label>
-                  <q-input
-                    v-model="acceptInvitation.name"
-                    outlined
-                    dense
-                    class="premium-input"
-                    placeholder="Ingresa un nombre de usuario válido"
-                    :rules="[
-                      (val) => !!val || 'El nombre es requerido',
-                      (val) => val.length >= 2 || 'Mínimo 2 caracteres',
-                    ]"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="person" class="input-icon" />
-                    </template>
-                  </q-input>
-                </div>
-
-                <div class="input-group">
                   <label class="input-label">Contraseña</label>
                   <q-input
-                    v-model="acceptInvitation.password"
+                    v-model="changePassword.password"
                     :type="mostrarPassword ? 'text' : 'password'"
                     outlined
                     dense
@@ -116,7 +66,7 @@
                   </q-input>
                 </div>
 
-                <div v-if="acceptInvitation.password" class="password-strength-container">
+                <div v-if="changePassword.password" class="password-strength-container">
                   <div class="strength-header">Seguridad de la contraseña</div>
 
                   <div class="strength-indicators">
@@ -153,7 +103,7 @@
                 <div class="input-group">
                   <label class="input-label">Confirmar contraseña</label>
                   <q-input
-                    v-model="acceptInvitation.confirmarPassword"
+                    v-model="changePassword.confirmarPassword"
                     :type="mostrarConfirmarPassword ? 'text' : 'password'"
                     outlined
                     dense
@@ -161,7 +111,7 @@
                     placeholder="Repite tu contraseña"
                     :rules="[
                       (val) => !!val || 'Confirmar contraseña es requerido',
-                      (val) => val === acceptInvitation.password || 'Las contraseñas no coinciden',
+                      (val) => val === changePassword.password || 'Las contraseñas no coinciden',
                     ]"
                   >
                     <template v-slot:prepend>
@@ -211,7 +161,7 @@
 <script setup>
 import { acceptInvite } from 'src/services/acceptInviteService'
 // import authService from 'src/services/authService'
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 // import { generateAndDownloadTenantQR } from 'src/services/qrService'
@@ -227,42 +177,29 @@ const tokenInvalido = ref(false)
 const mostrarPassword = ref(false)
 const mostrarConfirmarPassword = ref(false)
 const mensajeExito = ref('')
-const codigo = ref(Array(6).fill(''))
-const inputs = ref([])
 
-const acceptInvitation = ref({
-  codigo: '',
-  name: '',
+const changePassword = ref({
   password: '',
   confirmarPassword: '',
   token: token.value,
 })
 
-const moverFoco = (event, index) => {
-  const key = event.key
-  if (key.match(/^[0-9]$/) && index < 5) {
-    nextTick(() => inputs.value[index + 1].focus())
-  } else if (key === 'Backspace' && index > 0) {
-    nextTick(() => inputs.value[index - 1].focus())
-  }
-}
-
 // Validar token al montar
-onMounted(() => {
-  if (!token.value) {
-    tokenInvalido.value = true
-    $q.notify({
-      type: 'negative',
-      message: '❌ Token de invitación inválido o caducado',
-      position: 'top',
-      timeout: 5000,
-    })
+// onMounted(() => {
+//   if (!token.value) {
+//     tokenInvalido.value = true
+//     $q.notify({
+//       type: 'negative',
+//       message: '❌ Token de invitación inválido o caducado',
+//       position: 'top',
+//       timeout: 5000,
+//     })
 
-    setTimeout(() => {
-      router.push('/login')
-    }, 3000)
-  }
-})
+//     setTimeout(() => {
+//       router.push('/login')
+//     }, 3000)
+//   }
+// })
 
 // Password strength indicators
 const indicadores = ref({
@@ -273,7 +210,7 @@ const indicadores = ref({
 })
 
 const evaluarPassword = () => {
-  const { password } = acceptInvitation.value
+  const { password } = changePassword.value
 
   indicadores.value = {
     longitud: password.length >= 8,
@@ -285,13 +222,11 @@ const evaluarPassword = () => {
 
 const formularioValidado = computed(() => {
   return (
-    codigo.value.join('').length === 6 &&
-    acceptInvitation.value.name.length >= 2 &&
     indicadores.value.longitud &&
     indicadores.value.simbolos &&
     indicadores.value.mayuscula &&
     indicadores.value.numero &&
-    acceptInvitation.value.password === acceptInvitation.value.confirmarPassword
+    changePassword.value.password === changePassword.value.confirmarPassword
   )
 })
 
@@ -311,16 +246,10 @@ const submit = async () => {
     // Preparar payload con token de la URL
     const payload = {
       token: token.value,
-      name: acceptInvitation.value.name,
-      password: acceptInvitation.value.password,
-      otp: codigo.value.join(''),
+      password: changePassword.value.password,
     }
 
-    console.log('📤 Enviando invitación:', {
-      token: payload.token,
-      name: payload.name,
-      otp: codigo.value.join(''),
-    })
+    console.log('📤 Enviando invitación:', { token: payload.token, name: payload.name })
 
     // Aceptar invitación
     const response = await acceptInvite(payload)
@@ -359,9 +288,8 @@ const submit = async () => {
     console.error('❌ Error al aceptar invitación:', error)
 
     // Limpiar formulario
-    acceptInvitation.value.name = ''
-    acceptInvitation.value.password = ''
-    acceptInvitation.value.confirmarPassword = ''
+    changePassword.value.password = ''
+    changePassword.value.confirmarPassword = ''
 
     // Mostrar error específico
     const errorMessage =
@@ -535,7 +463,7 @@ $red: #ef4444;
   align-items: center;
   justify-content: center;
   margin: 0 auto 1.2rem;
-  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));;
   box-shadow: 0 14px 36px rgba(34, 211, 238, 0.18);
 
   &.error {
@@ -689,7 +617,7 @@ $red: #ef4444;
 .submit-btn {
   width: 100%;
   height: 56px;
-  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
   color: white;
   border-radius: 16px;
   font-weight: 800;
@@ -758,44 +686,6 @@ $red: #ef4444;
 
   .strength-indicators {
     grid-template-columns: 1fr;
-  }
-}
-
-.otp-input {
-  width: 50px;
-  :deep(.q-field__control) {
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: white;
-    transition:
-      border-color 0.2s ease,
-      box-shadow 0.2s ease,
-      background 0.2s ease;
-  }
-
-  :deep(.q-field__native),
-  :deep(.q-field__input) {
-    color: white;
-  }
-
-  :deep(.q-field__native::placeholder),
-  :deep(input::placeholder) {
-    color: rgba(255, 255, 255, 0.35);
-  }
-
-  :deep(.q-field__control:hover) {
-    border-color: rgba(34, 211, 238, 0.2);
-    background: rgba(0, 0, 0, 0.42);
-  }
-
-  :deep(.q-field--focused .q-field__control) {
-    border-color: rgba(34, 211, 238, 0.55);
-    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.08);
-  }
-
-  :deep(.q-field__marginal) {
-    color: rgba(255, 255, 255, 0.55);
   }
 }
 

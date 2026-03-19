@@ -76,7 +76,7 @@
         </div>
 
         <!-- Información de la oficina mejorada -->
-        <div v-if="log.location" class="enhanced-section">
+        <div v-if="log.location?.id" class="enhanced-section">
           <div class="section-header">
             <q-icon name="business" color="orange-4" size="20px" class="q-mr-sm" />
             <div class="text-weight-bold text-orange-4 section-title">Ubicación | Locación</div>
@@ -368,7 +368,7 @@ const deviceLabel = computed(() => {
           padding: 1px 4px;
           border-radius: 3px;
           flex: 1;
-          font-size: 0.7rem;
+          font-size: 0.8rem;
         }
 
         .q-icon {

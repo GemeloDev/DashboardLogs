@@ -9,20 +9,28 @@
     </div>
 
     <div class="page-container">
-      <!-- Header con animaciones -->
+      <!-- Header -->
       <div class="page-header">
         <div class="header-left">
-          <div class="icon-container">
-            <div class="icon-glow"></div>
-            <q-icon name="group" size="36px" />
+          <div class="header-badge">
+            <q-icon name="group" size="18px" color="cyan" />
+            <span>Administración</span>
           </div>
-          <div class="header-text">
-            <h1>
-              <span class="gradient-text no-padding no-margin">Gestión de Empleados</span>
-            </h1>
-            <p class="no-padding no-margin">Administra los usuarios y permisos del sistema</p>
+
+          <div class="header-main">
+            <div class="icon-container">
+              <q-icon name="group" size="30px" />
+            </div>
+
+            <div class="header-text">
+              <h1 class="no-padding no-margin">
+                Gestión de <span class="gradient-text">Empleados</span>
+              </h1>
+              <p class="no-padding no-margin">Administra los usuarios y permisos del sistema</p>
+            </div>
           </div>
         </div>
+
         <q-btn
           @click="
             () => {
@@ -35,9 +43,7 @@
           icon="person_add"
           label="Enviar Invitación"
           class="btn-primary"
-        >
-          <q-icon name="add_circle" class="q-ml-xs" />
-        </q-btn>
+        />
       </div>
 
       <!-- Stats Cards con animación -->
@@ -607,7 +613,6 @@ $error: #ef4444;
 $border: rgba(255, 255, 255, 0.1);
 $border-hover: rgba(255, 255, 255, 0.2);
 .gestion-empleados-page {
-  background: $bg-dark;
   min-height: 100vh;
   padding: 24px;
   position: relative;
@@ -687,148 +692,132 @@ $border-hover: rgba(255, 255, 255, 0.2);
 .page-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.header-badge {
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 32px;
-  padding: 28px;
-  background: $bg-card;
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border: 1px solid $border;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+  color: white;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  span {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+  color: white;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  span {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-container {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: white;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  box-shadow: 0 14px 30px rgba(34, 211, 238, 0.18);
+}
+
+.header-text {
+  h1 {
+    margin: 0 0 8px 0;
+    color: #ffffff;
+    font-size: clamp(2rem, 3.8vw, 3rem);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+}
+
+.gradient-text {
+  color: var(--santoro)
+}
+
+.btn-primary {
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 16px;
+  font-weight: 800;
+  color: white;
+  text-transform: none;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 
   &:hover {
-    border-color: $border-hover;
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 20px 44px rgba(34, 211, 238, 0.22);
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, $primary, transparent);
-    animation: shimmer 3s infinite;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-
-    @media (max-width: 768px) {
-      flex-direction: column;
-      text-align: center;
-      gap: 1rem;
-    }
-  }
-
-  .icon-container {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, $primary, $primary-dark);
-    border-radius: 16px;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
-    animation: pulse 3s ease-in-out infinite;
-
-    .icon-glow {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle, rgba($primary-light, 0.3), transparent);
-      animation: rotate 10s linear infinite;
-    }
-
-    .q-icon {
-      color: white;
-      position: relative;
-      z-index: 1;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    }
+  .header-main {
+    align-items: flex-start;
   }
 
   .header-text {
     h1 {
-      margin: 0 0 6px 0;
-      font-size: 30px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-
-      .gradient-text {
-        background: linear-gradient(135deg, $primary-light, $secondary);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: gradient-shift 3s ease infinite;
-      }
-
-      @media (max-width: 768px) {
-        font-size: 20px;
-        margin: 0;
-      }
+      font-size: 2rem;
     }
 
     p {
-      margin: 0;
-      font-size: 15px;
-      color: $text-secondary;
+      font-size: 0.95rem;
     }
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, $primary, $primary-dark);
-    color: white;
-    padding: 0 28px;
-    height: 48px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s;
-    }
-
-    &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6);
-
-      &::before {
-        left: 100%;
-      }
-    }
-
-    &:active {
-      transform: translateY(-1px);
-    }
-
-    @media (max-width: 768px) {
-      font-size: small;
-    }
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
+    width: 100%;
   }
 }
 

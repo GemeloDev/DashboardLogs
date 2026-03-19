@@ -23,6 +23,12 @@ const routes = [
     component: () => import('pages/AcceptInvitation.vue'),
     meta: { hideLayout: true }
   },
+  {
+    path: '/new-password',
+    name: 'newPassword',
+    component: () => import('pages/ChangeTempPassword.vue'),
+    meta: { hideLayout: true }
+  },
 
   {
     path: '/',

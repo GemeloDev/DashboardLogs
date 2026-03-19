@@ -5,7 +5,7 @@
       <div class="container">
         <div class="text-center">
           <div class="escritorio-title text-h3 text-sm-h3 text-md-h3 text-weight-bold q-mb-sm">
-            Dashboard de Escritorio
+            <span class="color-orange-santoro">Dashboard</span> de Escritorio
           </div>
 
           <div

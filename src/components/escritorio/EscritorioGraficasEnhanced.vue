@@ -1201,7 +1201,7 @@ async function renderHttpRadarChart() {
       scales: {
         r: {
           beginAtZero: true,
-          ticks: { color: 'rgba(255,255,255,0.55)' },
+          ticks: { color: 'rgb(255,255,255)', backdropColor: 'transparent', backdropPadding: 0 },
           grid: { color: 'rgba(255,255,255,0.06)' },
           angleLines: { color: 'rgba(255,255,255,0.06)' },
           pointLabels: { color: 'rgba(255,255,255,0.75)' },

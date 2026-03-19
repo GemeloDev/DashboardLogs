@@ -111,8 +111,9 @@ export const useAuthService = () => {
             roles: data.data.authz.roles,
             systems: data.data.authz.systems,
           },
-          tenantId: data.data.tenantId || null,
+          organization: {...data.data.organization},
           loginTime: new Date().toISOString(),
+          mustChangePassword: data.data.mustChangePassword
         }
 
         const initialFlow = getAllowedFlow(userData)
@@ -158,7 +159,7 @@ export const useAuthService = () => {
           sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
         }
         console.log('✅ Login exitoso con roles guardados:', userData)
-        return { success: true, message: data.message || 'Login exitoso', user: userData }
+        return { success: true, message: data.message || 'Login exitoso', user: userData, mustChangePassword: userData.mustChangePassword }
       } else {
         return { success: false, message: data.message || 'Credenciales inválidas', user: null }
       }

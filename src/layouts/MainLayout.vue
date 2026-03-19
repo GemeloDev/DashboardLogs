@@ -14,7 +14,7 @@
         />
 
         <q-toolbar-title v-if="!$q.platform.is.mobile" class="text-weight-bold app-toolbar-title">
-          {{ isSantoroFlow ? 'Panel Santoro' : 'Consola Logs' }}
+          {{ isSantoroFlow ? 'Panel Santoro' : userInfo.organization }}
         </q-toolbar-title>
 
         <!-- Botones de herramientas rápidas -->
@@ -198,7 +198,10 @@
         transition-show="slide-down"
         transition-hide="slide-up"
       >
-        <div class="filters-dialog-wrap q-pa-sm">
+        <div
+          class="filters-dialog-wrap q-pa-sm"
+          style="width: min(1900px, 99vw); max-height: calc(100vh - 80px); overflow: auto"
+        >
           <DinamicFilters :auto-emit-on-mounted="false" @camposSeleccionados="onFiltrar" />
         </div>
       </q-dialog>
@@ -284,6 +287,20 @@
                 <span class="drawer-item-label">Gestión Empleados</span>
               </q-item-section>
             </q-item>
+
+            <q-footer elevated class="app-footer">
+              <q-toolbar class="app-footer-toolbar">
+                <q-space />
+                <q-btn
+                  unelevated
+                  rounded
+                  icon="help"
+                  label="Soporte"
+                  class="footer-btn"
+                  href="https://ticket.grupo-santoro.com.mx/login"
+                />
+              </q-toolbar>
+            </q-footer>
           </template>
 
           <template v-if="isSantoroFlow && isSantoroUser">
@@ -400,6 +417,7 @@ const filtros = ref({
 const userInfo = computed(() => ({
   nombre: authService.user?.name || 'Usuario',
   email: authService.user?.email || 'Sin email',
+  organization: authService.user?.organization?.name || 'Santoro',
   roles: authService.user?.authz?.roles || [],
 }))
 
@@ -813,7 +831,7 @@ onMounted(() => {
 }
 
 .filters-dialog-wrap {
-  max-width: min(1800px, 99vw);
+  max-width: min(2000px, 99vw);
   max-height: calc(100vh - 80px);
   overflow: auto;
 }
@@ -1067,10 +1085,31 @@ onMounted(() => {
   }
 }
 
+.q-dialog__inner--minimized > div {
+  max-width: 1000px;
+}
+
+.app-footer {
+  background: rgba(18, 24, 38, 0.85);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-footer-toolbar {
+  min-height: 52px;
+}
+
+.footer-btn {
+  color: white;
+  background: rgba(33, 150, 243, 0.25);
+  border: 1px solid rgba(33, 150, 243, 0.35);
+}
+
 /* SCROLLBAR GLOBAL */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
+  background-color: #070b14;
 }
 
 ::-webkit-scrollbar-track {

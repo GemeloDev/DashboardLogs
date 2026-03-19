@@ -38,6 +38,10 @@ export const API_ENDPOINTS = {
   QR: `/api/auth/qr-token`,
 }
 
+export const API_SANTORO_DASHBOARD = {
+  STATS: `${BASE_URL}/santoro/panel/stats`
+}
+
 export const API_KEYS = {
   MAIN: '/catalogs/api-keys'
 }

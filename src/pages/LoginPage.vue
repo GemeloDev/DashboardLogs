@@ -187,7 +187,7 @@
       </q-card>
 
       <div class="page-footer">
-        <p>© 2025 Dashboard Logs Inc. · Soporte</p>
+        <p>© 2025 Dashboard Logs Santoro</p>
       </div>
     </div>
   </div>
@@ -273,9 +273,12 @@ const onSubmit = async () => {
 
     const loginResult = await authService.login(credentials, formData.value.mantenerSesion)
 
+    console.log(loginResult)
+
     if (loginResult.success) {
+      if (loginResult.mustChangePassword) return router.push('/new-password')
       mensajeExito.value = loginResult.message || 'Acceso concedido. Redirigiendo...'
-      setTimeout(() => router.push('/dashboard'), 1500)
+      setTimeout(() => router.push('/'), 1500)
     } else {
       mensajeError.value = loginResult.message || 'Credenciales inválidas. Verifica tus datos.'
       cargando.value = false
@@ -560,7 +563,7 @@ $red: #ef4444;
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, $cyan-strong, $purple);
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
   box-shadow: 0 14px 36px rgba(34, 211, 238, 0.18);
 }
 
@@ -677,7 +680,7 @@ $red: #ef4444;
   font-weight: 800;
   text-transform: none;
   color: white;
-  background: linear-gradient(90deg, $cyan-strong 0%, $purple 55%, $pink 100%);
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
   box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
   transition:
     transform 0.16s ease,
@@ -729,7 +732,7 @@ $red: #ef4444;
 .qr-frame-outer {
   padding: 10px;
   border-radius: 18px;
-  border: 2px solid rgba(34, 211, 238, 0.7);
+  border: 2px solid var(--santoro);
   box-shadow:
     0 0 0 1px rgba(34, 211, 238, 0.1),
     0 0 24px rgba(34, 211, 238, 0.08);
