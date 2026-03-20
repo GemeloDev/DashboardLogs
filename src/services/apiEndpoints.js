@@ -39,7 +39,9 @@ export const API_ENDPOINTS = {
 }
 
 export const API_SANTORO_DASHBOARD = {
-  STATS: `${BASE_URL}/santoro/panel/stats`
+  STATS: `${BASE_URL}/santoro/panel/stats`,
+  EMPRESAS: `${BASE_URL}/santoro/panel/organizations`,
+  USUARIOS: `${BASE_URL}/santoro/panel/users`,
 }
 
 export const API_KEYS = {

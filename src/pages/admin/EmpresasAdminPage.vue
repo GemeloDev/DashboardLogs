@@ -10,8 +10,8 @@
           </h1>
 
           <p class="hero-subtitle">
-            Administra empresas, estado y datos operativos
-            desde un panel visual consistente con el dashboard.
+            Administra empresas, estado y datos operativos desde un panel visual consistente con el
+            dashboard.
           </p>
         </div>
 
@@ -81,45 +81,23 @@
         >
           <div class="empresa-top">
             <div class="empresa-avatar">
-              {{ getIniciales(empresa.nombre) }}
+              {{ getIniciales(empresa.name) }}
               <div
                 class="empresa-status-dot"
-                :class="empresa.activa ? 'is-active' : 'is-inactive'"
+                :class="empresa.status === 'active' ? 'is-active' : 'is-inactive'"
               ></div>
             </div>
 
             <div class="empresa-header-text">
-              <div class="empresa-title">{{ empresa.nombre }}</div>
+              <div class="empresa-title">{{ empresa.name }}</div>
               <div class="empresa-subtitle">
-                {{ empresa.razonSocial || 'Sin razón social definida' }}
+                {{ empresa.slug || 'Sin slug definido' }}
               </div>
             </div>
 
-            <q-btn
-              flat
-              round
-              dense
-              icon="more_vert"
-              class="empresa-menu-btn"
-            >
+            <q-btn flat round dense icon="more_vert" class="empresa-menu-btn">
               <q-menu class="glass-menu">
                 <q-list dense style="min-width: 180px">
-                  <q-item clickable v-close-popup @click="openEditDialog(empresa)">
-                    <q-item-section avatar>
-                      <q-icon name="edit" color="cyan" />
-                    </q-item-section>
-                    <q-item-section>Editar</q-item-section>
-                  </q-item>
-
-                  <q-item clickable v-close-popup @click="toggleActivo(empresa)">
-                    <q-item-section avatar>
-                      <q-icon :name="empresa.activa ? 'toggle_off' : 'toggle_on'" color="purple" />
-                    </q-item-section>
-                    <q-item-section>
-                      {{ empresa.activa ? 'Desactivar' : 'Activar' }}
-                    </q-item-section>
-                  </q-item>
-
                   <q-item clickable v-close-popup @click="confirmDelete(empresa)">
                     <q-item-section avatar>
                       <q-icon name="delete" color="negative" />
@@ -132,30 +110,69 @@
           </div>
 
           <div class="empresa-contact">
-            <div class="contact-row" v-if="empresa.email">
-              <q-icon name="mail" size="16px" />
-              <span>{{ empresa.email }}</span>
+            <div class="contact-row" v-if="empresa.domain">
+              <q-icon name="language" size="16px" />
+              <span>{{ empresa.domain }}</span>
             </div>
 
-            <div class="contact-row" v-if="empresa.telefono">
-              <q-icon name="call" size="16px" />
-              <span>{{ empresa.telefono }}</span>
-            </div>
-
-            <div class="contact-row" v-if="empresa.rfc">
+            <div class="contact-row" v-if="empresa.code">
               <q-icon name="badge" size="16px" />
-              <span>{{ empresa.rfc }}</span>
+              <span>{{ empresa.code }}</span>
+            </div>
+
+            <div class="contact-row" v-if="empresa.timezone">
+              <q-icon name="schedule" size="16px" />
+              <span>{{ empresa.timezone }}</span>
             </div>
           </div>
 
+          <div class="empresa-meta-grid">
+            <div class="meta-stat">
+              <div class="meta-stat__label">Usuarios</div>
+              <div class="meta-stat__value">{{ empresa.totalUsers ?? 0 }}</div>
+            </div>
+
+            <div class="meta-stat">
+              <div class="meta-stat__label">Activos</div>
+              <div class="meta-stat__value text-positive">{{ empresa.activeUsers ?? 0 }}</div>
+            </div>
+
+            <div class="meta-stat">
+              <div class="meta-stat__label">Inactivos</div>
+              <div class="meta-stat__value text-negative">{{ empresa.inactiveUsers ?? 0 }}</div>
+            </div>
+
+            <div class="meta-stat">
+              <div class="meta-stat__label">API Keys</div>
+              <div class="meta-stat__value">{{ empresa.totalApiKeys ?? 0 }}</div>
+            </div>
+
+            <div class="meta-stat">
+              <div class="meta-stat__label">Keys activas</div>
+              <div class="meta-stat__value text-cyan">{{ empresa.activeApiKeys ?? 0 }}</div>
+            </div>
+
+            <div class="meta-stat">
+              <div class="meta-stat__label">Revocadas/Exp.</div>
+              <div class="meta-stat__value text-orange">
+                {{ (empresa.revokedApiKeys ?? 0) + (empresa.expiredApiKeys ?? 0) }}
+              </div>
+            </div>
+          </div>
+
+          <div class="empresa-extra q-mb-md">
+            <div class="empresa-created">
+              <q-icon name="event" size="16px" class="q-mr-xs" />
+              <span>Creada: {{ formatearFecha(empresa.createdAt) }}</span>
+            </div>
+
+            <q-chip dense :class="empresa.status === 'active' ? 'chip-active' : 'chip-inactive'">
+              {{ empresa.status === 'active' ? 'Activa' : 'Inactiva' }}
+            </q-chip>
+          </div>
+
           <div class="empresa-footer">
-            <q-btn
-              flat
-              no-caps
-              icon="visibility"
-              label="Ver detalle"
-              class="ghost-btn"
-            />
+            <q-btn flat no-caps icon="visibility" label="Ver detalle" class="ghost-btn" />
 
             <q-btn
               unelevated
@@ -171,135 +188,13 @@
         <div v-if="!empresasFiltradas.length" class="empty-state">
           <q-icon name="domain_disabled" size="52px" color="grey-6" />
           <div class="empty-title">No se encontraron empresas</div>
-          <div class="empty-subtitle">
-            Ajusta los filtros o crea una nueva empresa.
-          </div>
+          <div class="empty-subtitle">Ajusta los filtros o crea una nueva empresa.</div>
         </div>
       </section>
     </div>
 
-    <!-- MODAL CREATE / EDIT -->
-    <q-dialog v-model="dialogEmpresa" persistent>
-      <q-card flat bordered class="empresa-dialog-card">
-        <div class="dialog-header">
-          <div class="dialog-icon-box">
-            <q-icon :name="modoEdicion ? 'edit' : 'add_business'" size="24px" color="white" />
-          </div>
-
-          <div>
-            <div class="dialog-title">
-              {{ modoEdicion ? 'Editar empresa' : 'Nueva empresa' }}
-            </div>
-            <div class="dialog-subtitle">
-              Completa la información principal de la empresa.
-            </div>
-          </div>
-        </div>
-
-        <q-card-section class="dialog-form">
-          <div class="dialog-grid">
-            <div class="field-span-2">
-              <label class="input-label">Nombre comercial</label>
-              <q-input
-                v-model="empresaForm.nombre"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Ej. Grupo Santoro"
-              />
-            </div>
-
-            <div class="field-span-2">
-              <label class="input-label">Razón social</label>
-              <q-input
-                v-model="empresaForm.razonSocial"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Ej. Grupo Santoro S.A. de C.V."
-              />
-            </div>
-
-            <div>
-              <label class="input-label">RFC</label>
-              <q-input
-                v-model="empresaForm.rfc"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="RFC"
-              />
-            </div>
-
-            <div>
-              <label class="input-label">Teléfono</label>
-              <q-input
-                v-model="empresaForm.telefono"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Teléfono"
-              />
-            </div>
-
-            <div class="field-span-2">
-              <label class="input-label">Correo</label>
-              <q-input
-                v-model="empresaForm.email"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="correo@empresa.com"
-              />
-            </div>
-
-            <div class="field-span-2">
-              <label class="input-label">Dirección</label>
-              <q-input
-                v-model="empresaForm.direccion"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Dirección fiscal o comercial"
-              />
-            </div>
-
-            <div class="field-span-2">
-              <label class="input-label">Descripción</label>
-              <q-input
-                v-model="empresaForm.descripcion"
-                outlined
-                dense
-                type="textarea"
-                autogrow
-                class="premium-input"
-                placeholder="Notas o descripción de la empresa"
-              />
-            </div>
-
-            <div class="field-span-2">
-              <q-toggle
-                v-model="empresaForm.activa"
-                color="cyan"
-                label="Empresa activa"
-                class="toggle-dark"
-              />
-            </div>
-          </div>
-        </q-card-section>
-
-        <div class="dialog-actions">
-          <q-btn flat no-caps label="Cancelar" class="cancel-btn" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            :label="modoEdicion ? 'Guardar cambios' : 'Crear empresa'"
-            class="save-btn"
-            @click="saveEmpresa"
-          />
-        </div>
-      </q-card>
-    </q-dialog>
+    <!-- Template -->
+    <CreateEmpresa v-model="dialogEmpresa" @created="onEmpresaCreada" />
 
     <!-- DIALOG DELETE -->
     <q-dialog v-model="dialogDelete">
@@ -311,8 +206,8 @@
         <div class="delete-title">Eliminar empresa</div>
         <div class="delete-text">
           ¿Deseas eliminar a
-          <strong>{{ empresaAEliminar?.nombre }}</strong>?
-          Esta acción no se puede deshacer.
+          <strong>{{ empresaAEliminar?.nombre }}</strong
+          >? Esta acción no se puede deshacer.
         </div>
 
         <div class="dialog-actions">
@@ -332,8 +227,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { DashboardSantoro } from 'src/services/dashboardSantoro'
+import { formatearFecha } from 'src/helpers'
+import CreateEmpresa from './modals/CreateEmpresa.vue'
 
 const $q = useQuasar()
 
@@ -343,70 +241,39 @@ const sortBy = ref('reciente')
 
 const dialogEmpresa = ref(false)
 const dialogDelete = ref(false)
-const modoEdicion = ref(false)
 const empresaAEliminar = ref(null)
 
-const empresas = ref([
-  {
-    id: 1,
-    nombre: 'Grupo Santoro',
-    razonSocial: 'Grupo Santoro S.A. de C.V.',
-    rfc: 'GSA250101ABC',
-    telefono: '722 123 4567',
-    email: 'contacto@gruposantoro.com',
-    direccion: 'Metepec, Estado de México',
-    descripcion: 'Empresa principal del grupo.',
-    activa: true,
-    proyectos: 12,
-    createdAt: '2026-02-04',
-  },
-  {
-    id: 2,
-    nombre: 'Santoro Tech',
-    razonSocial: 'Santoro Tech Solutions S.A. de C.V.',
-    rfc: 'STS250101XYZ',
-    telefono: '55 3456 7890',
-    email: 'admin@santorotech.com',
-    direccion: 'Ciudad de México',
-    descripcion: 'Unidad enfocada a desarrollo tecnológico.',
-    activa: true,
-    proyectos: 7,
-    createdAt: '2026-01-16',
-  },
-  {
-    id: 3,
-    nombre: 'Logística Santoro',
-    razonSocial: 'Logística Santoro Integral S.A. de C.V.',
-    rfc: 'LSI250101QWE',
-    telefono: '81 9876 5432',
-    email: 'operaciones@logisticasantoro.com',
-    direccion: 'Monterrey, Nuevo León',
-    descripcion: 'Operación y logística.',
-    activa: false,
-    proyectos: 3,
-    createdAt: '2026-02-10',
-  },
-])
+const empresas = ref([])
 
 const emptyForm = () => ({
   id: null,
-  nombre: '',
-  razonSocial: '',
-  rfc: '',
-  telefono: '',
-  email: '',
-  direccion: '',
-  descripcion: '',
-  activa: true,
-  proyectos: 0,
+  orgName: '',
+  orgDomain: '',
+  orgCode: '',
+  orgSlug: '',
+  timezone: 'America/Mexico_City',
+  retentionDays: 90,
+  adminName: '',
+  adminEmail: '',
+  temporaryPassword: '',
+  status: 'active',
   createdAt: null,
+  totalUsers: 0,
+  activeUsers: 0,
+  inactiveUsers: 0,
+  totalApiKeys: 0,
+  activeApiKeys: 0,
+  revokedApiKeys: 0,
+  expiredApiKeys: 0,
 })
 
 const empresaForm = ref(emptyForm())
 
-const totalActivas = computed(() => empresas.value.filter((e) => e.activa).length)
-const totalInactivas = computed(() => empresas.value.filter((e) => !e.activa).length)
-const totalConProyectos = computed(() => empresas.value.filter((e) => (e.proyectos || 0) > 0).length)
+const totalActivas = computed(() => empresas.value.filter((e) => e.status === 'active').length)
+const totalInactivas = computed(() => empresas.value.filter((e) => !e.activa !== 'active').length)
+const totalConProyectos = computed(
+  () => empresas.value.filter((e) => (e.proyectos || 0) > 0).length,
+)
 
 const empresasFiltradas = computed(() => {
   let rows = [...empresas.value]
@@ -415,7 +282,9 @@ const empresasFiltradas = computed(() => {
     const q = search.value.toLowerCase()
     rows = rows.filter((e) =>
       [e.nombre, e.razonSocial, e.rfc, e.email].some((v) =>
-        String(v || '').toLowerCase().includes(q),
+        String(v || '')
+          .toLowerCase()
+          .includes(q),
       ),
     )
   }
@@ -449,58 +318,13 @@ const getIniciales = (nombre) => {
 }
 
 const openCreateDialog = () => {
-  modoEdicion.value = false
   empresaForm.value = emptyForm()
   dialogEmpresa.value = true
 }
 
 const openEditDialog = (empresa) => {
-  modoEdicion.value = true
   empresaForm.value = { ...empresa }
   dialogEmpresa.value = true
-}
-
-const saveEmpresa = () => {
-  if (!empresaForm.value.nombre?.trim()) {
-    $q.notify({
-      type: 'negative',
-      message: 'El nombre de la empresa es requerido.',
-      position: 'top',
-    })
-    return
-  }
-
-  if (modoEdicion.value) {
-    const idx = empresas.value.findIndex((e) => e.id === empresaForm.value.id)
-    if (idx !== -1) empresas.value[idx] = { ...empresaForm.value }
-    $q.notify({
-      type: 'positive',
-      message: 'Empresa actualizada correctamente.',
-      position: 'top',
-    })
-  } else {
-    empresas.value.unshift({
-      ...empresaForm.value,
-      id: Date.now(),
-      createdAt: new Date().toISOString().slice(0, 10),
-    })
-    $q.notify({
-      type: 'positive',
-      message: 'Empresa creada correctamente.',
-      position: 'top',
-    })
-  }
-
-  dialogEmpresa.value = false
-}
-
-const toggleActivo = (empresa) => {
-  empresa.activa = !empresa.activa
-  $q.notify({
-    type: 'positive',
-    message: `Empresa ${empresa.activa ? 'activada' : 'desactivada'} correctamente.`,
-    position: 'top',
-  })
 }
 
 const confirmDelete = (empresa) => {
@@ -519,6 +343,23 @@ const deleteEmpresa = () => {
   })
   empresaAEliminar.value = null
 }
+
+const onEmpresaCreada = async (payload) => {
+  await DashboardSantoro.createEmpresa(payload)
+  // recargar lista...
+}
+
+onMounted(async () => {
+  //  Petición
+  const respuesta = await DashboardSantoro.getEmpresas()
+  empresas.value = respuesta.data.content
+
+  $q.notify({
+    message: 'Empresas obtenidas correctamente!',
+    type: 'positive',
+    position: 'top',
+  })
+})
 </script>
 
 <style lang="scss" scoped>
@@ -782,7 +623,6 @@ $gradient-warm: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
 
 .premium-input {
   :deep(.q-field__control) {
-    min-height: 58px;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1164,7 +1004,8 @@ $gradient-warm: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
 }
 
 @keyframes floatY {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -1231,6 +1072,72 @@ $gradient-warm: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
   .delete-btn,
   .cancel-btn {
     width: 100%;
+  }
+}
+
+.empresa-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.meta-stat {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.meta-stat__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.meta-stat__value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: white;
+}
+
+.empresa-extra {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.empresa-created {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.88rem;
+}
+
+.text-cyan {
+  color: #22d3ee;
+}
+
+.text-orange {
+  color: #ffb088;
+}
+
+@media (max-width: 700px) {
+  .empresa-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .empresa-extra {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

@@ -12,4 +12,37 @@ export class DashboardSantoro {
       return
     }
   }
+
+  //  Empresas / Organizations
+  static async getEmpresas() {
+    try {
+      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.EMPRESAS}`)
+      console.log('✅ Empresas obtenidas correctamente: ', response.data)
+      return response.data
+    } catch (error) {
+      return error.message
+    }
+  }
+
+  static async getEmpresasById(id) {
+    try {
+      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.EMPRESAS}/${id}`)
+      console.log('✅ Empresa obtenida correctamente: ', response.data)
+      return response.data
+    } catch (error) {
+      return error.message
+    }
+  }
+
+  static async createEmpresas(payload) {
+    try {
+      const response = await axiosInstance.post(`${API_SANTORO_DASHBOARD.EMPRESAS}`, {
+        payload
+      })
+
+      return response.data
+    } catch (error) {
+      return error.message
+    }
+  }
 }
