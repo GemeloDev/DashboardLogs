@@ -170,6 +170,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
+import { DashboardSantoro } from 'src/services/dashboardSantoro'
 
 // ─── Props & Emits ────────────────────────────────────────────────────────────
 const props = defineProps({
@@ -204,6 +205,7 @@ const form = ref(emptyForm())
 watch(
   () => props.modelValue,
   (val) => {
+    showModalCreate.value = val
     if (val) {
       form.value = emptyForm()
       showPassword.value = false
@@ -248,14 +250,22 @@ const handleSave = async () => {
     temporaryPassword: form.value.temporaryPassword,
   }
 
-  // Aquí iría el servicio real:
-  // await crearEmpresaApi(payload)
-
-  $q.notify({
-    type: 'positive',
-    message: 'Organización creada correctamente.',
-    position: 'top',
-  })
+  try {
+    // Servicio real:
+    const respuesta = await DashboardSantoro.createEmpresas(payload)
+    $q.notify({
+      type: 'positive',
+      message: respuesta.message || 'Organización creada correctamente.',
+      position: 'top',
+    })
+  } catch (error) {
+    console.error('❌ Error al generar empresa: ', error.message)
+    $q.notify({
+      type: 'negative',
+      message: error.message || '❌ Error al crear empresa.',
+      position: 'top',
+    })
+  }
 
   emit('created', payload)
   emit('update:modelValue', false)

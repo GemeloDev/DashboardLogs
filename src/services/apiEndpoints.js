@@ -15,7 +15,8 @@ export const AUTH_ENDPOINTS = {
   LOGOUT: `${BASE_URL}/auth/logout`,
   VERIFY_TOKEN: `${BASE_URL}/api/auth/verify`,
   REFRESH_TOKEN: `${BASE_URL}/api/auth/refresh`,
-  LOGIN_QR: `/api/auth/qr-login`
+  LOGIN_QR: `/api/auth/qr-login`,
+  RESET_PASSWORD: `${BASE_URL}/auth/change-password`
 }
 
 // Endpoints principales (para uso futuro)
@@ -42,6 +43,8 @@ export const API_SANTORO_DASHBOARD = {
   STATS: `${BASE_URL}/santoro/panel/stats`,
   EMPRESAS: `${BASE_URL}/santoro/panel/organizations`,
   USUARIOS: `${BASE_URL}/santoro/panel/users`,
+  APIKEYS: `${BASE_URL}/santoro/panel/api-keys`,
+  API_STATUS: `${BASE_URL}/santoro/panel/organizations`
 }
 
 export const API_KEYS = {
@@ -64,21 +67,9 @@ export const DEFAULT_CONFIG = {
   timeout: 30000 // 30 segundos
 }
 
-// Función helper para construir headers con autenticación
-export const getAuthHeaders = (token = null) => {
-  const headers = { ...DEFAULT_CONFIG.headers }
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  return headers
-}
-
 export default {
   AUTH_ENDPOINTS,
   API_ENDPOINTS,
   DEFAULT_CONFIG,
-  getAuthHeaders,
   BASE_URL
 }

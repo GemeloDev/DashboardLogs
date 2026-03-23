@@ -51,21 +51,21 @@
 
         <q-card flat bordered class="stat-card">
           <div class="stat-icon stat-icon--purple">
-            <q-icon name="folder_copy" size="24px" />
+            <q-icon name="account_circle" size="24px" />
           </div>
           <div class="stat-body">
-            <div class="stat-label">Con proyectos</div>
-            <div class="stat-value">{{ totalConProyectos }}</div>
+            <div class="stat-label">Usuarios</div>
+            <div class="stat-value">{{ totalUsuarios }}</div>
           </div>
         </q-card>
 
         <q-card flat bordered class="stat-card">
           <div class="stat-icon stat-icon--pink">
-            <q-icon name="toggle_off" size="24px" />
+            <q-icon name="key" size="24px" />
           </div>
           <div class="stat-body">
-            <div class="stat-label">Inactivas</div>
-            <div class="stat-value">{{ totalInactivas }}</div>
+            <div class="stat-label">API Keys</div>
+            <div class="stat-value">{{ totalApiKeysActivas }}</div>
           </div>
         </q-card>
       </section>
@@ -94,19 +94,6 @@
                 {{ empresa.slug || 'Sin slug definido' }}
               </div>
             </div>
-
-            <q-btn flat round dense icon="more_vert" class="empresa-menu-btn">
-              <q-menu class="glass-menu">
-                <q-list dense style="min-width: 180px">
-                  <q-item clickable v-close-popup @click="confirmDelete(empresa)">
-                    <q-item-section avatar>
-                      <q-icon name="delete" color="negative" />
-                    </q-item-section>
-                    <q-item-section>Eliminar</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-            </q-btn>
           </div>
 
           <div class="empresa-contact">
@@ -172,15 +159,13 @@
           </div>
 
           <div class="empresa-footer">
-            <q-btn flat no-caps icon="visibility" label="Ver detalle" class="ghost-btn" />
-
             <q-btn
               unelevated
               no-caps
-              icon="edit"
-              label="Editar"
+              :icon="empresa.status === 'active' ? 'toggle_off' : 'toggle_on'"
+              :label="empresa.status === 'active' ? 'Desactivar' : 'Activar'"
               class="mini-action-btn"
-              @click="openEditDialog(empresa)"
+              @click="toggleActivo(empresa)"
             />
           </div>
         </q-card>
@@ -195,34 +180,6 @@
 
     <!-- Template -->
     <CreateEmpresa v-model="dialogEmpresa" @created="onEmpresaCreada" />
-
-    <!-- DIALOG DELETE -->
-    <q-dialog v-model="dialogDelete">
-      <q-card flat bordered class="delete-dialog-card">
-        <div class="delete-icon-wrap">
-          <q-icon name="delete_forever" size="40px" color="negative" />
-        </div>
-
-        <div class="delete-title">Eliminar empresa</div>
-        <div class="delete-text">
-          ¿Deseas eliminar a
-          <strong>{{ empresaAEliminar?.nombre }}</strong
-          >? Esta acción no se puede deshacer.
-        </div>
-
-        <div class="dialog-actions">
-          <q-btn flat no-caps label="Cancelar" class="cancel-btn" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            label="Eliminar"
-            color="negative"
-            class="delete-btn"
-            @click="deleteEmpresa"
-          />
-        </div>
-      </q-card>
-    </q-dialog>
   </div>
 </template>
 
@@ -240,39 +197,16 @@ const filtroEstado = ref('todos')
 const sortBy = ref('reciente')
 
 const dialogEmpresa = ref(false)
-const dialogDelete = ref(false)
-const empresaAEliminar = ref(null)
 
 const empresas = ref([])
 
-const emptyForm = () => ({
-  id: null,
-  orgName: '',
-  orgDomain: '',
-  orgCode: '',
-  orgSlug: '',
-  timezone: 'America/Mexico_City',
-  retentionDays: 90,
-  adminName: '',
-  adminEmail: '',
-  temporaryPassword: '',
-  status: 'active',
-  createdAt: null,
-  totalUsers: 0,
-  activeUsers: 0,
-  inactiveUsers: 0,
-  totalApiKeys: 0,
-  activeApiKeys: 0,
-  revokedApiKeys: 0,
-  expiredApiKeys: 0,
-})
-
-const empresaForm = ref(emptyForm())
-
 const totalActivas = computed(() => empresas.value.filter((e) => e.status === 'active').length)
-const totalInactivas = computed(() => empresas.value.filter((e) => !e.activa !== 'active').length)
-const totalConProyectos = computed(
-  () => empresas.value.filter((e) => (e.proyectos || 0) > 0).length,
+const totalUsuarios = computed(() =>
+  empresas.value.reduce((acc, e) => acc + (e.totalUsers ?? 0), 0)
+)
+
+const totalApiKeysActivas = computed(() =>
+  empresas.value.reduce((acc, e) => acc + (e.activeApiKeys ?? 0), 0)
 )
 
 const empresasFiltradas = computed(() => {
@@ -317,39 +251,31 @@ const getIniciales = (nombre) => {
     .join('')
 }
 
+const toggleActivo = async (empresa) => {
+  const nuevoEstado = empresa.status === 'active' ? 'disabled' : 'active'
+
+  empresa.status = nuevoEstado
+
+  const response = await DashboardSantoro.statusEmpresa(empresa, empresa.status)
+
+  if (response.success) {
+    $q.notify({
+      type: 'positive',
+      message: `Empresa ${nuevoEstado === 'active' ? 'activada' : 'desactivada'} correctamente.`,
+      position: 'top',
+    })
+  }
+}
+
 const openCreateDialog = () => {
-  empresaForm.value = emptyForm()
   dialogEmpresa.value = true
 }
 
-const openEditDialog = (empresa) => {
-  empresaForm.value = { ...empresa }
-  dialogEmpresa.value = true
+const onEmpresaCreada = () => {
+  reloadEmpresas()
 }
 
-const confirmDelete = (empresa) => {
-  empresaAEliminar.value = empresa
-  dialogDelete.value = true
-}
-
-const deleteEmpresa = () => {
-  if (!empresaAEliminar.value) return
-  empresas.value = empresas.value.filter((e) => e.id !== empresaAEliminar.value.id)
-  dialogDelete.value = false
-  $q.notify({
-    type: 'positive',
-    message: 'Empresa eliminada correctamente.',
-    position: 'top',
-  })
-  empresaAEliminar.value = null
-}
-
-const onEmpresaCreada = async (payload) => {
-  await DashboardSantoro.createEmpresa(payload)
-  // recargar lista...
-}
-
-onMounted(async () => {
+async function reloadEmpresas() {
   //  Petición
   const respuesta = await DashboardSantoro.getEmpresas()
   empresas.value = respuesta.data.content
@@ -359,6 +285,10 @@ onMounted(async () => {
     type: 'positive',
     position: 'top',
   })
+}
+
+onMounted(async () => {
+  reloadEmpresas()
 })
 </script>
 
@@ -880,7 +810,6 @@ $gradient-warm: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
   font-size: 0.95rem;
 }
 
-.empresa-dialog-card,
 .delete-dialog-card {
   width: min(92vw, 760px);
   border-radius: 26px;
@@ -894,50 +823,6 @@ $gradient-warm: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
   width: min(92vw, 480px);
   padding: 28px 24px 22px;
   text-align: center;
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 24px 24px 10px;
-}
-
-.dialog-icon-box {
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, $cyan-strong, $purple);
-  box-shadow: 0 14px 30px rgba(34, 211, 238, 0.18);
-  flex-shrink: 0;
-}
-
-.dialog-title {
-  color: $text-main;
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-
-.dialog-subtitle {
-  color: $text-soft;
-  font-size: 0.94rem;
-}
-
-.dialog-form {
-  padding: 8px 24px 18px;
-}
-
-.dialog-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.field-span-2 {
-  grid-column: span 2;
 }
 
 .toggle-dark {
