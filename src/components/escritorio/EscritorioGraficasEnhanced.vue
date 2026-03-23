@@ -242,7 +242,7 @@
     </div>
   </div>
 
-  <!-- ✅ SOLO: Eventos por Día + Eventos por Semana (acumulado) -->
+  <!-- ✅ SOLO: Eventos por Día + Eventos por Semana -->
   <div v-if="!loading && timeChartDefs.length" class="row justify-center q-col-gutter-md q-mb-md">
     <div v-for="def in timeChartDefs" :key="def.id" class="col-sm-12 col-md-4">
       <DynamicChartCard :definition="def" :logs="logsFiltrados" />
@@ -1239,7 +1239,7 @@ const timeChartDefs = computed(() => {
     {
       id: 'eventsByDay',
       mode: 'timeseries',
-      title: 'Eventos por Día y Acumulado',
+      title: 'Eventos por Día',
       icon: 'timeline',
       timeKey: 'eventTime',
       timeBucket: 'day',
@@ -1247,7 +1247,7 @@ const timeChartDefs = computed(() => {
     {
       id: 'eventsByWeek',
       mode: 'timeseries',
-      title: 'Eventos por Semana y Acumulado',
+      title: 'Eventos por Semana',
       icon: 'date_range',
       timeKey: 'eventTime',
       timeBucket: 'week',
@@ -1255,7 +1255,7 @@ const timeChartDefs = computed(() => {
     {
       id: 'eventsByMonth',
       mode: 'timeseries',
-      title: 'Eventos por Mes y Acumulado',
+      title: 'Eventos por Mes',
       icon: 'calendar_month',
       timeKey: 'eventTime',
       timeBucket: 'month',
@@ -1266,7 +1266,7 @@ const timeChartDefs = computed(() => {
     defs.push({
       id: 'eventsByYear',
       mode: 'timeseries',
-      title: 'Eventos por Año y Acumulado',
+      title: 'Eventos por Año',
       icon: 'event',
       timeKey: 'eventTime',
       timeBucket: 'year',

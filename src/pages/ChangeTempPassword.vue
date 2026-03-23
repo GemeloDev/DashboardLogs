@@ -35,9 +35,40 @@
             <q-card-section v-if="!tokenInvalido" class="form-section">
               <q-form @submit="submit">
                 <div class="input-group">
-                  <label class="input-label">Contraseña</label>
+                  <label class="input-label">Contraseña actual:</label>
                   <q-input
-                    v-model="changePassword.password"
+                    v-model="changePasswordValues.currentPassword"
+                    :type="mostrarCurrentPassword ? 'text' : 'password'"
+                    outlined
+                    dense
+                    class="premium-input"
+                    placeholder="Mínimo 8 caracteres"
+                    :rules="[
+                      (val) => !!val || 'La contraseña es requerida',
+                      (val) => val.length >= 8 || 'Mínimo 8 caracteres',
+                    ]"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="lock" class="input-icon" />
+                    </template>
+                    <template v-slot:append>
+                      <q-btn
+                        :icon="mostrarCurrentPassword ? 'visibility_off' : 'visibility'"
+                        flat
+                        dense
+                        round
+                        size="sm"
+                        class="visibility-btn"
+                        @click="mostrarCurrentPassword = !mostrarCurrentPassword"
+                      />
+                    </template>
+                  </q-input>
+                </div>
+
+                <div class="input-group">
+                  <label class="input-label">Nueva contraseña: </label>
+                  <q-input
+                    v-model="changePasswordValues.password"
                     :type="mostrarPassword ? 'text' : 'password'"
                     outlined
                     dense
@@ -66,7 +97,7 @@
                   </q-input>
                 </div>
 
-                <div v-if="changePassword.password" class="password-strength-container">
+                <div v-if="changePasswordValues.password" class="password-strength-container">
                   <div class="strength-header">Seguridad de la contraseña</div>
 
                   <div class="strength-indicators">
@@ -101,9 +132,9 @@
                 </div>
 
                 <div class="input-group">
-                  <label class="input-label">Confirmar contraseña</label>
+                  <label class="input-label">Confirmar nueva contraseña</label>
                   <q-input
-                    v-model="changePassword.confirmarPassword"
+                    v-model="changePasswordValues.confirmarPassword"
                     :type="mostrarConfirmarPassword ? 'text' : 'password'"
                     outlined
                     dense
@@ -111,7 +142,7 @@
                     placeholder="Repite tu contraseña"
                     :rules="[
                       (val) => !!val || 'Confirmar contraseña es requerido',
-                      (val) => val === changePassword.password || 'Las contraseñas no coinciden',
+                      (val) => val === changePasswordValues.password || 'Las contraseñas no coinciden',
                     ]"
                   >
                     <template v-slot:prepend>
@@ -159,47 +190,26 @@
 </template>
 
 <script setup>
-import { acceptInvite } from 'src/services/acceptInviteService'
+import { changePassword } from 'src/services/acceptInviteService'
 // import authService from 'src/services/authService'
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-// import { generateAndDownloadTenantQR } from 'src/services/qrService'
-// import { storeJWTInCookie } from 'src/services/cookieService'
-
-const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
 
 const cargando = ref(false)
-const token = ref(route.query.token)
 const tokenInvalido = ref(false)
+const mostrarCurrentPassword = ref(false)
 const mostrarPassword = ref(false)
 const mostrarConfirmarPassword = ref(false)
 const mensajeExito = ref('')
 
-const changePassword = ref({
+const changePasswordValues = ref({
+  currentPassword: '',
   password: '',
-  confirmarPassword: '',
-  token: token.value,
+  confirmarPassword: ''
 })
-
-// Validar token al montar
-// onMounted(() => {
-//   if (!token.value) {
-//     tokenInvalido.value = true
-//     $q.notify({
-//       type: 'negative',
-//       message: '❌ Token de invitación inválido o caducado',
-//       position: 'top',
-//       timeout: 5000,
-//     })
-
-//     setTimeout(() => {
-//       router.push('/login')
-//     }, 3000)
-//   }
-// })
 
 // Password strength indicators
 const indicadores = ref({
@@ -210,7 +220,7 @@ const indicadores = ref({
 })
 
 const evaluarPassword = () => {
-  const { password } = changePassword.value
+  const { password } = changePasswordValues.value
 
   indicadores.value = {
     longitud: password.length >= 8,
@@ -222,11 +232,12 @@ const evaluarPassword = () => {
 
 const formularioValidado = computed(() => {
   return (
+    changePasswordValues.value.currentPassword &&
     indicadores.value.longitud &&
     indicadores.value.simbolos &&
     indicadores.value.mayuscula &&
     indicadores.value.numero &&
-    changePassword.value.password === changePassword.value.confirmarPassword
+    changePasswordValues.value.password === changePasswordValues.value.confirmarPassword
   )
 })
 
@@ -245,20 +256,18 @@ const submit = async () => {
   try {
     // Preparar payload con token de la URL
     const payload = {
-      token: token.value,
-      password: changePassword.value.password,
+      currentPassword: changePasswordValues.value.currentPassword,
+      newPassword: changePasswordValues.value.password,
     }
 
-    console.log('📤 Enviando invitación:', { token: payload.token, name: payload.name })
-
-    // Aceptar invitación
-    const response = await acceptInvite(payload)
+    // // Aceptar invitación
+    const response = await changePassword(payload)
 
     console.log('✅ Respuesta de aceptación:', response)
 
     // Verificar respuesta exitosa
     if (!response.ok || !response.data) {
-      throw new Error(response.message || 'Error al aceptar invitación')
+      throw new Error(response.message || 'Error al cambiar la contraseña, intente nuevamente')
     }
 
     // Mostrar mensaje de éxito
@@ -271,25 +280,17 @@ const submit = async () => {
       timeout: 3000,
     })
 
-    // Generar y descargar QR con tenantId
-    // try {
-    //   await generateAndDownloadTenantQR(tenantId)
-    //   console.log('✅ QR generado y descargado')
-    // } catch (qrError) {
-    //   console.warn('⚠️ Error al generar QR:', qrError)
-    //   // No bloquear el flujo si falla el QR
-    // }
-
     // Redirigir al escritorio
     setTimeout(() => {
-      router.push('/login')
+      router.push('/')
     }, 2000)
   } catch (error) {
     console.error('❌ Error al aceptar invitación:', error)
 
     // Limpiar formulario
-    changePassword.value.password = ''
-    changePassword.value.confirmarPassword = ''
+    changePasswordValues.value.currentPassword = ''
+    changePasswordValues.value.password = ''
+    changePasswordValues.value.confirmarPassword = ''
 
     // Mostrar error específico
     const errorMessage =
@@ -303,14 +304,6 @@ const submit = async () => {
       position: 'top',
       timeout: 5000,
     })
-
-    // Si el token es inválido, redirigir al login
-    if (error.response?.status === 401 || error.response?.status === 404) {
-      tokenInvalido.value = true
-      setTimeout(() => {
-        router.push('/login')
-      }, 3000)
-    }
   } finally {
     cargando.value = false
   }

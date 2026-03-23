@@ -12,4 +12,106 @@ export class DashboardSantoro {
       return
     }
   }
+
+  //  Empresas / Organizations
+  static async getEmpresas() {
+    try {
+      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.EMPRESAS}`)
+      console.log('✅ Empresas obtenidas correctamente: ', response.data)
+      return response.data
+    } catch (error) {
+      return error.message
+    }
+  }
+
+  static async getEmpresasById(id) {
+    try {
+      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.EMPRESAS}/${id}`)
+      console.log('✅ Empresa obtenida correctamente: ', response.data)
+      return response.data
+    } catch (error) {
+      return error.message
+    }
+  }
+
+  static async createEmpresas(payload) {
+    try {
+      const response = await axiosInstance.post(`${API_SANTORO_DASHBOARD.EMPRESAS}`, payload)
+
+      return response.data
+    } catch (error) {
+      console.error('❌ Error en createEmpresa()', error.message)
+      return error
+    }
+  }
+
+  static async statusEmpresa(empresa, status) {
+    const { id } = empresa
+
+    try {
+      const response = await axiosInstance.put(`${API_SANTORO_DASHBOARD.EMPRESAS}/${id}/status`, {
+        status,
+      })
+      return response.data
+    } catch (error) {
+      console.error('❌ Error en statusEmpresa()', error.message)
+      return error
+    }
+  }
+
+  static async getUsers() {
+    try {
+      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.USUARIOS}`)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error al obtener usuarios getUsers(): ', error)
+      return error
+    }
+  }
+
+  static async getAPIKeys() {
+    try {
+      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.APIKEYS}`)
+      return response.data
+    } catch (error) {
+      console.log('❌ Error al obtener api keys getAPIKeys(): ', error.message)
+      return error.message
+    }
+  }
+
+  static async changeStatusApiKey(empresa, apiKey, status) {
+    try {
+      const response = await axiosInstance.put(
+        `${API_SANTORO_DASHBOARD.API_STATUS}/${empresa}/api-keys/${apiKey}/status`,
+        { status },
+      )
+      return response.data
+    } catch (error) {
+      console.error('❌ Error al cambiar el estado de la API key: ', error.message)
+      return error
+    }
+  }
+
+  static async alertasAPIs() {
+    try {
+      const now = new Date()
+      const sevenDaysAgo = new Date(now - 7 * 86_400_000)
+      const sevenDaysLater = new Date(now.getTime() + 7 * 86_400_000)
+
+      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.APIKEYS}`)
+      const keys = response.data.data.content
+
+      return {
+        expiredKeys: keys.filter((k) => new Date(k.expiresAt) < now),
+        expiringKeys: keys.filter((k) => {
+          const exp = new Date(k.expiresAt)
+          return exp >= now && exp <= sevenDaysLater
+        }),
+        recentKeys: keys.filter((k) => new Date(k.createdAt) >= sevenDaysAgo),
+      }
+    } catch (error) {
+      console.error('❌ Error al crear alertas y seguimiento de API Keys: ', error.message)
+      return error
+    }
+  }
 }

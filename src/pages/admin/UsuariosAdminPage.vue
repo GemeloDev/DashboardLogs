@@ -17,17 +17,6 @@
             Alta, edición y eliminación de usuarios del sistema.
           </p>
         </div>
-
-        <div class="users-header__actions">
-          <q-btn
-            unelevated
-            no-caps
-            icon="person_add"
-            label="Nuevo usuario"
-            class="btn-primary"
-            @click="openCreateDialog"
-          />
-        </div>
       </section>
 
       <!-- Toolbar -->
@@ -47,6 +36,21 @@
           </q-input>
 
           <q-select
+            v-model="filtroEmpresa"
+            outlined
+            dense
+            emit-value
+            map-options
+            class="premium-input"
+            :options="opcionesEmpresa"
+            label="Empresa"
+          >
+            <template v-slot:prepend>
+              <q-icon name="apartment" class="input-icon" />
+            </template>
+          </q-select>
+
+          <q-select
             v-model="filtroEstado"
             outlined
             dense
@@ -56,7 +60,7 @@
             :options="[
               { label: 'Todos los estados', value: 'todos' },
               { label: 'Activos', value: 'activo' },
-              { label: 'Inactivos', value: 'inactivo' }
+              { label: 'Inactivos', value: 'inactivo' },
             ]"
             label="Estado"
           >
@@ -108,25 +112,22 @@
           <template v-slot:body-cell-empresa="props">
             <q-td :props="props">
               <q-chip dense class="chip-role">
-                {{ props.row.empresa || 'Sin empresa' }}
+                {{ props.row.orgName || 'Sin empresa' }}
               </q-chip>
             </q-td>
           </template>
 
           <template v-slot:body-cell-activo="props">
             <q-td :props="props">
-              <q-chip
-                dense
-                :class="props.row.activo ? 'chip-active' : 'chip-inactive'"
-              >
-                {{ props.row.activo ? 'Activo' : 'Inactivo' }}
+              <q-chip dense :class="props.row.status ? 'chip-active' : 'chip-inactive'">
+                {{ props.row.status ? 'Activo' : 'Inactivo' }}
               </q-chip>
             </q-td>
           </template>
 
           <template v-slot:body-cell-fechaCreacion="props">
             <q-td :props="props">
-              {{ formatDate(props.row.fechaCreacion) }}
+              {{ formatDate(props.row.createdAt) }}
             </q-td>
           </template>
 
@@ -137,22 +138,11 @@
                   flat
                   round
                   dense
-                  icon="edit"
+                  icon="info"
                   class="action-btn action-btn--edit"
-                  @click="openEditDialog(props.row)"
+                  @click="openDetailDialog(props.row)"
                 >
-                  <q-tooltip class="glass-tooltip">Editar</q-tooltip>
-                </q-btn>
-
-                <q-btn
-                  flat
-                  round
-                  dense
-                  icon="delete"
-                  class="action-btn action-btn--delete"
-                  @click="confirmDelete(props.row)"
-                >
-                  <q-tooltip class="glass-tooltip">Eliminar</q-tooltip>
+                  <q-tooltip class="glass-tooltip">Ver detalles</q-tooltip>
                 </q-btn>
               </div>
             </q-td>
@@ -161,126 +151,76 @@
       </section>
     </div>
 
-    <!-- Dialog crear / editar -->
-    <q-dialog v-model="dialogOpen" persistent>
+    <!-- Modal detalle de usuario -->
+    <q-dialog v-model="detailDialog">
       <q-card flat bordered class="dialog-card">
         <div class="dialog-header">
           <div class="dialog-icon">
-            <q-icon :name="isEdit ? 'edit' : 'person_add'" size="24px" color="white" />
+            <q-icon name="person" size="24px" color="white" />
           </div>
-
           <div>
-            <div class="dialog-title">
-              {{ isEdit ? 'Editar usuario' : 'Nuevo usuario' }}
-            </div>
-            <div class="dialog-subtitle">
-              Captura la información principal del usuario.
-            </div>
+            <div class="dialog-title">Detalle de usuario</div>
+            <div class="dialog-subtitle">Información completa del usuario seleccionado.</div>
           </div>
         </div>
 
-        <q-card-section class="dialog-body">
-          <div class="dialog-grid">
-            <div class="field-span-2">
-              <label class="input-label">Nombre</label>
-              <q-input
-                v-model="form.name"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Nombre completo"
+        <q-card-section class="dialog-body" v-if="selectedUser">
+          <!-- Avatar + nombre -->
+          <div class="detail-hero">
+            <div class="detail-avatar">
+              {{ getInitials(selectedUser.name) }}
+              <div
+                class="detail-status-dot"
+                :class="selectedUser.status ? 'is-active' : 'is-inactive'"
               />
             </div>
-
-            <div class="field-span-2">
-              <label class="input-label">Correo electrónico</label>
-              <q-input
-                v-model="form.email"
-                outlined
+            <div>
+              <div class="detail-name">{{ selectedUser.name }}</div>
+              <div class="detail-email">{{ selectedUser.email }}</div>
+              <q-chip
                 dense
-                type="email"
-                class="premium-input"
-                placeholder="correo@empresa.com"
-              />
-            </div>
-
-            <div class="field-span-2">
-              <label class="input-label">
-                {{ isEdit ? 'Nueva contraseña (opcional)' : 'Contraseña' }}
-              </label>
-              <q-input
-                v-model="form.password"
-                outlined
-                dense
-                :type="mostrarPassword ? 'text' : 'password'"
-                class="premium-input"
-                :placeholder="isEdit ? 'Deja vacío para no cambiarla' : 'Mínimo 8 caracteres'"
+                :class="selectedUser.status ? 'chip-active' : 'chip-inactive'"
+                class="q-mt-xs"
               >
-                <template v-slot:prepend>
-                  <q-icon name="lock" class="input-icon" />
-                </template>
+                {{ selectedUser.status ? 'Activo' : 'Inactivo' }}
+              </q-chip>
+            </div>
+          </div>
 
-                <template v-slot:append>
-                  <q-btn
-                    :icon="mostrarPassword ? 'visibility_off' : 'visibility'"
-                    flat
-                    dense
-                    round
-                    size="sm"
-                    class="visibility-btn"
-                    @click="mostrarPassword = !mostrarPassword"
-                  />
-                </template>
-              </q-input>
+          <!-- Grid de datos -->
+          <div class="detail-grid">
+            <div class="detail-field">
+              <div class="detail-field__label">
+                <q-icon name="apartment" size="14px" class="q-mr-xs" />Empresa
+              </div>
+              <div class="detail-field__value">{{ selectedUser.orgName || 'Sin empresa' }}</div>
             </div>
 
-            <div class="field-span-2">
-              <q-toggle
-                v-model="form.activo"
-                color="cyan"
-                label="Usuario activo"
-                class="toggle-dark"
-              />
+            <div class="detail-field">
+              <div class="detail-field__label">
+                <q-icon name="badge" size="14px" class="q-mr-xs" />ID
+              </div>
+              <div class="detail-field__value detail-field__value--mono">{{ selectedUser.id }}</div>
+            </div>
+
+            <div class="detail-field">
+              <div class="detail-field__label">
+                <q-icon name="event" size="14px" class="q-mr-xs" />Fecha de creación
+              </div>
+              <div class="detail-field__value">{{ formatDate(selectedUser.createdAt) }}</div>
+            </div>
+
+            <div class="detail-field">
+              <div class="detail-field__label">
+                <q-icon name="schedule" size="14px" class="q-mr-xs" />Zona horaria
+              </div>
+              <div class="detail-field__value">{{ selectedUser.timezone || '—' }}</div>
             </div>
           </div>
         </q-card-section>
 
         <div class="dialog-actions">
-          <q-btn flat no-caps label="Cancelar" class="btn-cancel" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            :label="isEdit ? 'Guardar cambios' : 'Crear usuario'"
-            class="btn-primary"
-            @click="saveUser"
-          />
-        </div>
-      </q-card>
-    </q-dialog>
-
-    <!-- Dialog eliminar -->
-    <q-dialog v-model="deleteDialog">
-      <q-card flat bordered class="delete-dialog">
-        <div class="delete-icon">
-          <q-icon name="delete_forever" size="40px" color="negative" />
-        </div>
-
-        <div class="delete-title">Eliminar usuario</div>
-        <div class="delete-text">
-          ¿Deseas eliminar a <strong>{{ selectedUser?.name }}</strong>?
-          Esta acción no se puede deshacer.
-        </div>
-
-        <div class="dialog-actions">
-          <q-btn flat no-caps label="Cancelar" class="btn-cancel" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            label="Eliminar"
-            color="negative"
-            class="btn-delete"
-            @click="deleteUser"
-          />
+          <q-btn flat no-caps label="Cerrar" class="btn-cancel" v-close-popup />
         </div>
       </q-card>
     </q-dialog>
@@ -288,109 +228,38 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { DashboardSantoro } from 'src/services/dashboardSantoro'
 
 const $q = useQuasar()
 
 const search = ref('')
 const filtroEstado = ref('todos')
-const dialogOpen = ref(false)
-const deleteDialog = ref(false)
-const isEdit = ref(false)
+const filtroEmpresa = ref('todas')
+const detailDialog = ref(false)
 const selectedUser = ref(null)
-const mostrarPassword = ref(false)
 
-const rows = ref([
-  {
-    id: 1,
-    name: 'Alan Ortega',
-    email: 'alan@admin.com',
-    empresa: 'Grupo Santoro',
-    activo: true,
-    fechaCreacion: '2026-02-04',
-  },
-  {
-    id: 2,
-    name: 'Ana López',
-    email: 'ana@empresa.com',
-    empresa: 'Santoro Tech',
-    activo: true,
-    fechaCreacion: '2026-02-10',
-  },
-  {
-    id: 3,
-    name: 'Carlos Méndez',
-    email: 'carlos@auditoria.com',
-    empresa: 'Logística Santoro',
-    activo: false,
-    fechaCreacion: '2026-01-28',
-  },
-  {
-    id: 4,
-    name: 'María Ruiz',
-    email: 'maria@cliente.com',
-    empresa: 'Grupo Santoro',
-    activo: true,
-    fechaCreacion: '2026-03-01',
-  },
-])
+const rows = ref([])
 
-const form = ref(emptyForm())
-
-function emptyForm() {
-  return {
-    id: null,
-    name: '',
-    email: '',
-    password: '',
-    activo: true,
-    empresa: '',
-    fechaCreacion: null,
-  }
-}
+// ─── Opciones dinámicas de empresa ───────────────────────────────────────────
+const opcionesEmpresa = computed(() => {
+  const empresas = [...new Set(rows.value.map((u) => u.orgName).filter(Boolean))]
+  return [
+    { label: 'Todas las empresas', value: 'todas' },
+    ...empresas.map((e) => ({ label: e, value: e })),
+  ]
+})
 
 const columns = [
-  {
-    name: 'name',
-    label: 'USUARIO',
-    field: 'name',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'empresa',
-    label: 'EMPRESA',
-    field: 'empresa',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'activo',
-    label: 'ESTADO',
-    field: 'activo',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'fechaCreacion',
-    label: 'FECHA CREACIÓN',
-    field: 'fechaCreacion',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'acciones',
-    label: 'ACCIONES',
-    field: 'acciones',
-    align: 'center',
-  },
+  { name: 'name', label: 'USUARIO', field: 'name', align: 'left', sortable: true },
+  { name: 'empresa', label: 'EMPRESA', field: 'empresa', align: 'left', sortable: true },
+  { name: 'activo', label: 'ESTADO', field: 'activo', align: 'left', sortable: true },
+  { name: 'fechaCreacion', label: 'FECHA CREACIÓN', field: 'fechaCreacion', align: 'left', sortable: true },
+  { name: 'acciones', label: 'ACCIONES', field: 'acciones', align: 'center' },
 ]
 
-const pagination = ref({
-  page: 1,
-  rowsPerPage: 10,
-})
+const pagination = ref({ page: 1, rowsPerPage: 10 })
 
 const rowsFiltrados = computed(() => {
   let result = [...rows.value]
@@ -398,21 +267,26 @@ const rowsFiltrados = computed(() => {
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     result = result.filter((item) =>
-      [item.name, item.email, item.empresa].some((v) =>
+      [item.name, item.email, item.orgName].some((v) =>
         String(v || '').toLowerCase().includes(q),
       ),
     )
   }
 
+  if (filtroEmpresa.value !== 'todas') {
+    result = result.filter((item) => item.orgName === filtroEmpresa.value)
+  }
+
   if (filtroEstado.value === 'activo') {
-    result = result.filter((item) => item.activo)
+    result = result.filter((item) => item.status)
   } else if (filtroEstado.value === 'inactivo') {
-    result = result.filter((item) => !item.activo)
+    result = result.filter((item) => !item.status)
   }
 
   return result
 })
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 const getInitials = (name) =>
   String(name || '')
     .split(' ')
@@ -430,130 +304,32 @@ const formatDate = (date) => {
   })
 }
 
-const openCreateDialog = () => {
-  isEdit.value = false
-  mostrarPassword.value = false
-  form.value = emptyForm()
-  dialogOpen.value = true
-}
-
-const openEditDialog = (row) => {
-  isEdit.value = true
-  mostrarPassword.value = false
-  form.value = {
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    password: '',
-    activo: row.activo,
-    empresa: row.empresa,
-    fechaCreacion: row.fechaCreacion,
-  }
-  dialogOpen.value = true
-}
-
-const saveUser = () => {
-  if (!form.value.name?.trim()) {
-    $q.notify({
-      type: 'negative',
-      message: 'El nombre es requerido.',
-      position: 'top',
-    })
-    return
-  }
-
-  if (!form.value.email?.trim()) {
-    $q.notify({
-      type: 'negative',
-      message: 'El email es requerido.',
-      position: 'top',
-    })
-    return
-  }
-
-  if (!isEdit.value && !form.value.password?.trim()) {
-    $q.notify({
-      type: 'negative',
-      message: 'La contraseña es requerida.',
-      position: 'top',
-    })
-    return
-  }
-
-  if (!isEdit.value && form.value.password.length < 8) {
-    $q.notify({
-      type: 'negative',
-      message: 'La contraseña debe tener al menos 8 caracteres.',
-      position: 'top',
-    })
-    return
-  }
-
-  if (isEdit.value && form.value.password && form.value.password.length < 8) {
-    $q.notify({
-      type: 'negative',
-      message: 'La nueva contraseña debe tener al menos 8 caracteres.',
-      position: 'top',
-    })
-    return
-  }
-
-  if (isEdit.value) {
-    const idx = rows.value.findIndex((r) => r.id === form.value.id)
-    if (idx !== -1) {
-      rows.value[idx] = {
-        ...rows.value[idx],
-        name: form.value.name,
-        email: form.value.email,
-        activo: form.value.activo,
-        // password solo la enviarías al backend, no la guardes en la tabla local
-      }
-    }
-
-    $q.notify({
-      type: 'positive',
-      message: 'Usuario actualizado correctamente.',
-      position: 'top',
-    })
-  } else {
-    rows.value.unshift({
-      id: Date.now(),
-      name: form.value.name,
-      email: form.value.email,
-      activo: form.value.activo,
-      empresa: 'Sin empresa',
-      fechaCreacion: new Date().toISOString().slice(0, 10),
-    })
-
-    $q.notify({
-      type: 'positive',
-      message: 'Usuario creado correctamente.',
-      position: 'top',
-    })
-  }
-
-  dialogOpen.value = false
-}
-
-const confirmDelete = (row) => {
+// ─── Dialog detalle ───────────────────────────────────────────────────────────
+const openDetailDialog = (row) => {
   selectedUser.value = row
-  deleteDialog.value = true
+  detailDialog.value = true
 }
 
-const deleteUser = () => {
-  if (!selectedUser.value) return
+// ─── Carga inicial ────────────────────────────────────────────────────────────
+async function loadUsers() {
+  const response = await DashboardSantoro.getUsers()
 
-  rows.value = rows.value.filter((r) => r.id !== selectedUser.value.id)
+  if (!response.ok) {
+    $q.notify({ type: 'negative', position: 'top', message: response.message })
+    return
+  }
 
-  deleteDialog.value = false
-  selectedUser.value = null
-
+  rows.value = response.data.content
   $q.notify({
     type: 'positive',
-    message: 'Usuario eliminado correctamente.',
     position: 'top',
+    message: response.message + ' obtenidos correctamente' || 'Usuarios obtenidos correctamente.',
   })
 }
+
+onMounted(() => {
+  loadUsers()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -610,11 +386,7 @@ const deleteUser = () => {
   line-height: 1.7;
 }
 
-.users-header__actions {
-  display: flex;
-  align-items: center;
-}
-
+// ─── Toolbar ─────────────────────────────────────────────────────────────────
 .users-toolbar {
   margin-bottom: 20px;
   padding: 18px;
@@ -626,17 +398,22 @@ const deleteUser = () => {
 
 .users-toolbar__grid {
   display: grid;
-  grid-template-columns: 1.4fr 0.5fr;
+  grid-template-columns: 1.6fr 0.7fr 0.5fr;
   gap: 16px;
 }
 
+// ─── Tabla ────────────────────────────────────────────────────────────────────
 .users-table-wrap {
   border-radius: 24px;
   overflow: hidden;
 }
 
 .users-table {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)) !important;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.045),
+    rgba(255, 255, 255, 0.02)
+  ) !important;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
   color: white;
@@ -735,13 +512,9 @@ const deleteUser = () => {
   color: #22d3ee;
 }
 
-.action-btn--delete {
-  color: #f87171;
-}
-
+// ─── Inputs ───────────────────────────────────────────────────────────────────
 .premium-input {
   :deep(.q-field__control) {
-    min-height: 56px;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -778,11 +551,11 @@ const deleteUser = () => {
   }
 }
 
-.input-icon,
-.visibility-btn {
+.input-icon {
   color: rgba(255, 255, 255, 0.58);
 }
 
+// ─── Chips ────────────────────────────────────────────────────────────────────
 .chip-role {
   background: rgba(124, 58, 237, 0.16);
   color: #d8b4fe;
@@ -801,31 +574,9 @@ const deleteUser = () => {
   border: 1px solid rgba(239, 68, 68, 0.24);
 }
 
-.btn-primary {
-  min-height: 52px;
-  padding: 0 20px;
-  border-radius: 16px;
-  font-weight: 800;
-  color: white;
-  text-transform: none;
-  background: linear-gradient(90deg, #06b6d4 0%, #7c3aed 55%, #ec4899 100%);
-  box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
-}
-
-.btn-cancel {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.btn-delete {
-  border-radius: 14px;
-  min-height: 46px;
-  padding: 0 18px;
-  text-transform: none;
-}
-
-.dialog-card,
-.delete-dialog {
-  width: min(92vw, 720px);
+// ─── Dialog ───────────────────────────────────────────────────────────────────
+.dialog-card {
+  width: min(92vw, 520px);
   border-radius: 26px;
   background: linear-gradient(160deg, rgba(15, 20, 32, 0.96), rgba(18, 25, 42, 0.94));
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -867,28 +618,6 @@ const deleteUser = () => {
   padding: 8px 24px 18px;
 }
 
-.dialog-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.field-span-2 {
-  grid-column: span 2;
-}
-
-.input-label {
-  display: block;
-  margin-bottom: 10px;
-  color: white;
-  font-size: 0.94rem;
-  font-weight: 700;
-}
-
-.toggle-dark {
-  color: white;
-}
-
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -896,37 +625,106 @@ const deleteUser = () => {
   padding: 0 24px 24px;
 }
 
-.delete-dialog {
-  width: min(92vw, 480px);
-  padding: 28px 24px 22px;
-  text-align: center;
+.btn-cancel {
+  color: rgba(255, 255, 255, 0.72);
 }
 
-.delete-icon {
-  width: 78px;
-  height: 78px;
-  border-radius: 22px;
+// ─── Detail modal ─────────────────────────────────────────────────────────────
+.detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 20px;
+}
+
+.detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
   display: grid;
   place-items: center;
-  margin: 0 auto 16px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.18);
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #06121f;
+  background: linear-gradient(135deg, #60a5fa, #2dd4bf);
+  box-shadow: 0 0 24px rgba(96, 165, 250, 0.2);
+  position: relative;
+  flex-shrink: 0;
 }
 
-.delete-title {
+.detail-status-dot {
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid #111827;
+}
+
+.is-active {
+  background: #22c55e;
+}
+
+.is-inactive {
+  background: #ef4444;
+}
+
+.detail-name {
   color: white;
-  font-size: 1.45rem;
+  font-size: 1.2rem;
   font-weight: 800;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
-.delete-text {
+.detail-email {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-field {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.detail-field__label {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.detail-field__value {
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.detail-field__value--mono {
+  font-family: monospace;
+  font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.72);
-  font-size: 0.98rem;
-  line-height: 1.65;
-  margin-bottom: 22px;
 }
 
+// ─── Tooltip ──────────────────────────────────────────────────────────────────
 .glass-tooltip {
   background: #121a2a !important;
   color: white !important;
@@ -934,18 +732,15 @@ const deleteUser = () => {
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
 }
 
+// ─── Responsive ───────────────────────────────────────────────────────────────
 @media (max-width: 900px) {
   .users-toolbar__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .users-header {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .users-header__actions {
-    justify-content: flex-start;
   }
 }
 
@@ -954,20 +749,18 @@ const deleteUser = () => {
     padding: 18px 14px 28px;
   }
 
-  .dialog-grid {
+  .users-toolbar__grid {
     grid-template-columns: 1fr;
   }
 
-  .field-span-2 {
-    grid-column: span 1;
+  .detail-grid {
+    grid-template-columns: 1fr;
   }
 
   .dialog-actions {
     flex-direction: column;
   }
 
-  .btn-primary,
-  .btn-delete,
   .btn-cancel {
     width: 100%;
   }
