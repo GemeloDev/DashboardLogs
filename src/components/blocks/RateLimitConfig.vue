@@ -1,5 +1,5 @@
 <template>
-  <q-dialog v-model="RateLimitModal" transition-show="scale" transition-hide="scale">
+  <q-dialog v-model="RateLimitModal" transition-show="scale" transition-hide="scale" class="text-black">
     <q-card class="q-pa-md shadow-4 rounded-borders" style="min-width: 600px">
       <!-- Body -->
       <q-card-section v-if="form">

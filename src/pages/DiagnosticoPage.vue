@@ -9,7 +9,7 @@
           <div class="col-12 col-md-8 diagnostic-header-left">
             <div class="text-white text-bold diagnostic-title-block">
               <span class="text-h4">🔬</span>
-              <div class="diagnostic-title-main">Centro de Diagnóstico Técnico</div>
+              <div class="diagnostic-title-main"><span style="color: var(--orange-accent);">Centro de Diagnóstico</span> Técnico</div>
 
               <div class="text-blue-3 diagnostic-subtitle">
                 🛡️ Sistema de Análisis de Errores y Sesiones | 📊 Reportes Avanzados

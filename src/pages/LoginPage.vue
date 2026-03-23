@@ -2,8 +2,6 @@
   <div class="login-page">
     <!-- Fondo -->
     <div class="login-bg">
-      <div class="bg-blur bg-blur--cyan"></div>
-      <div class="bg-blur bg-blur--purple"></div>
       <div class="bg-grid"></div>
       <div class="bg-orb orb-1"></div>
       <div class="bg-orb orb-2"></div>
@@ -187,7 +185,7 @@
       </q-card>
 
       <div class="page-footer">
-        <p>© 2025 Dashboard Logs Inc. · Soporte</p>
+        <p>© 2025 Dashboard Logs Santoro</p>
       </div>
     </div>
   </div>
@@ -273,9 +271,12 @@ const onSubmit = async () => {
 
     const loginResult = await authService.login(credentials, formData.value.mantenerSesion)
 
+    console.log(loginResult)
+
     if (loginResult.success) {
+      if (loginResult.mustChangePassword) return router.push('/new-password')
       mensajeExito.value = loginResult.message || 'Acceso concedido. Redirigiendo...'
-      setTimeout(() => router.push('/dashboard'), 1500)
+      setTimeout(() => router.push('/'), 1500)
     } else {
       mensajeError.value = loginResult.message || 'Credenciales inválidas. Verifica tus datos.'
       cargando.value = false
@@ -434,9 +435,10 @@ $red: #ef4444;
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.08), transparent 24%),
-    linear-gradient(135deg, $bg-1 0%, $bg-2 45%, $bg-3 100%);
+    radial-gradient(circle at top left, rgba(233, 114, 50, 0.329), transparent 20%),
+    radial-gradient(circle at bottom right, rgba(233, 114, 50, 0.24), transparent 18%),
+    linear-gradient(135deg, #000000 0%, #030303 50%, #090909 100%);
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -560,7 +562,7 @@ $red: #ef4444;
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, $cyan-strong, $purple);
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
   box-shadow: 0 14px 36px rgba(34, 211, 238, 0.18);
 }
 
@@ -677,7 +679,7 @@ $red: #ef4444;
   font-weight: 800;
   text-transform: none;
   color: white;
-  background: linear-gradient(90deg, $cyan-strong 0%, $purple 55%, $pink 100%);
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
   box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
   transition:
     transform 0.16s ease,
@@ -729,7 +731,7 @@ $red: #ef4444;
 .qr-frame-outer {
   padding: 10px;
   border-radius: 18px;
-  border: 2px solid rgba(34, 211, 238, 0.7);
+  border: 2px solid var(--santoro);
   box-shadow:
     0 0 0 1px rgba(34, 211, 238, 0.1),
     0 0 24px rgba(34, 211, 238, 0.08);

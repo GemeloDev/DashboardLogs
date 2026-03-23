@@ -20,10 +20,9 @@
 
     <style>
       :root {
-        --bg-1: #070b14;
-        --bg-2: #0b1220;
-        --bg-3: #111827;
-        --cyan: #22d3ee;
+        --bg-1: #000000;
+        --bg-2: #050505;
+        --bg-3: #0a0a0a;
         --purple: #7c3aed;
         --santoro: #e97132;
       }
@@ -42,9 +41,9 @@
 
       html {
         background:
-          radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 24%),
-          radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.08), transparent 24%),
-          linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 45%, var(--bg-3) 100%);
+          radial-gradient(circle at top left, rgba(233, 114, 50, 0.247), transparent 20%),
+          radial-gradient(circle at bottom right, rgba(233, 113, 50, 0.06), transparent 18%),
+          linear-gradient(135deg, #000000 0%, #030303 50%, #090909 100%);
         background-attachment: fixed;
       }
 
@@ -64,14 +63,14 @@
         pointer-events: none;
         z-index: 0;
         background-image:
-          linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+          linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
         background-size: 38px 38px;
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 95%);
-        -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 95%);
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.78), transparent 95%);
+        -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.78), transparent 95%);
       }
 
-      /* Glow cyan */
+      /* Glow naranja Santoro + apoyo púrpura */
       body::after {
         content: '';
         position: fixed;
@@ -79,9 +78,10 @@
         pointer-events: none;
         z-index: 0;
         background:
-          radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 18%),
-          radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.16), transparent 20%);
-        filter: blur(18px);
+          radial-gradient(circle at top left, rgba(233, 113, 50, 0.18), transparent 18%),
+          radial-gradient(circle at bottom right, rgba(233, 113, 50, 0.12), transparent 20%),
+          radial-gradient(circle at 85% 20%, rgba(124, 58, 237, 0.08), transparent 16%);
+        filter: blur(20px);
       }
 
       /* Quasar app root */

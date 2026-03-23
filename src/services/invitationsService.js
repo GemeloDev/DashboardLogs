@@ -12,6 +12,7 @@ import { SERVER_CONFIG } from '../config/serverConfig'
  * @param {string} inviteData.email - Email del invitado
  * @param {Array<string>} inviteData.roles - Roles asignados
  * @param {number} inviteData.ttlHours - Horas hasta expiración
+ * @param {Object} inviteData.logFilters - Valores por los que se filtraran los logs
  * @returns {Promise<Object>}
  */
 export const sendInvitation = async (inviteData) => {

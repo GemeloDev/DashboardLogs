@@ -17,7 +17,7 @@
               <q-chip
                 v-if="logs.length || rawLogs.length"
                 color="primary"
-                text-color="white"
+                text-color="color-orange-santoro"
                 size="md"
                 class="q-ml-md"
                 icon="format_list_numbered"

@@ -11,13 +11,13 @@
 
           <h1 class="hero-title">
             Centro de Control
-            <br>
+            <br />
             <span class="color-orange-santoro">Santoro</span>
           </h1>
 
           <p class="hero-subtitle">
-            Administra usuarios, empresas y API Keys desde una consola central con
-            visibilidad operativa y accesos rápidos.
+            Administra usuarios, empresas y API Keys desde una consola central con visibilidad
+            operativa y accesos rápidos.
           </p>
 
           <div class="hero-actions">
@@ -53,15 +53,15 @@
             <div class="hero-side-metrics">
               <div class="mini-metric">
                 <div class="mini-metric__label">Usuarios activos</div>
-                <div class="mini-metric__value">186</div>
+                <div class="mini-metric__value">{{ users.activeUsers }}</div>
               </div>
               <div class="mini-metric">
                 <div class="mini-metric__label">Empresas registradas</div>
-                <div class="mini-metric__value">24</div>
+                <div class="mini-metric__value">{{ organizations.totalOrganizations }}</div>
               </div>
               <div class="mini-metric">
                 <div class="mini-metric__label">API Keys vigentes</div>
-                <div class="mini-metric__value">71</div>
+                <div class="mini-metric__value">{{ apiKeys.totalApiKeys }}</div>
               </div>
             </div>
           </q-card>
@@ -76,7 +76,7 @@
           </div>
           <div class="stat-body">
             <div class="stat-label">Usuarios</div>
-            <div class="stat-value">186</div>
+            <div class="stat-value">{{ users.totalUsers }}</div>
             <div class="stat-foot text-positive">+12 este mes</div>
           </div>
         </q-card>
@@ -87,7 +87,7 @@
           </div>
           <div class="stat-body">
             <div class="stat-label">Empresas</div>
-            <div class="stat-value">24</div>
+            <div class="stat-value">{{ organizations.totalOrganizations }}</div>
             <div class="stat-foot">4 pendientes de revisión</div>
           </div>
         </q-card>
@@ -98,8 +98,8 @@
           </div>
           <div class="stat-body">
             <div class="stat-label">API Keys</div>
-            <div class="stat-value">71</div>
-            <div class="stat-foot">9 próximas a expirar</div>
+            <div class="stat-value">{{ apiKeys.totalApiKeys }}</div>
+            <div class="stat-foot">{{ apiKeys.expiringApiKeys }} por expirar</div>
           </div>
         </q-card>
       </section>
@@ -111,7 +111,14 @@
             <div class="module-icon module-icon--cyan">
               <q-icon name="group" size="24px" />
             </div>
-            <q-btn flat round dense icon="arrow_forward" class="module-arrow" />
+            <q-btn
+              flat
+              round
+              dense
+              icon="arrow_forward"
+              to="/santoro/usuarios"
+              class="module-arrow"
+            />
           </div>
 
           <div class="module-title">Usuarios</div>
@@ -120,12 +127,11 @@
           </div>
 
           <div class="module-chips">
-            <q-chip dense class="glass-chip chip-info">186 registrados</q-chip>
-            <q-chip dense class="glass-chip chip-active">174 activos</q-chip>
+            <q-chip dense class="glass-chip chip-info">{{ users.totalUsers }} registrados</q-chip>
+            <q-chip dense class="glass-chip chip-active">{{ users.activeUsers }} activos</q-chip>
           </div>
 
           <div class="module-actions">
-            <q-btn flat no-caps icon="visibility" label="Ver usuarios" class="ghost-btn" />
             <q-btn unelevated no-caps icon="add" label="Crear" class="mini-action-btn" />
           </div>
         </q-card>
@@ -135,7 +141,14 @@
             <div class="module-icon module-icon--warm">
               <q-icon name="business" size="24px" />
             </div>
-            <q-btn flat round dense icon="arrow_forward" class="module-arrow" />
+            <q-btn
+              flat
+              round
+              dense
+              icon="arrow_forward"
+              to="/santoro/empresas"
+              class="module-arrow"
+            />
           </div>
 
           <div class="module-title">Empresas</div>
@@ -144,13 +157,22 @@
           </div>
 
           <div class="module-chips">
-            <q-chip dense class="glass-chip chip-info">24 empresas</q-chip>
-            <q-chip dense class="glass-chip chip-pending">4 pendientes</q-chip>
+            <q-chip dense class="glass-chip chip-info"
+              >{{ organizations.totalOrganizations }} empresas</q-chip
+            >
+            <q-chip dense class="glass-chip chip-pending"
+              >{{ organizations.disabledOrganizations }} desactivadas</q-chip
+            >
           </div>
 
           <div class="module-actions">
-            <q-btn flat no-caps icon="visibility" label="Ver empresas" class="ghost-btn" />
-            <q-btn unelevated no-caps icon="add_business" label="Crear" class="mini-action-btn warm-btn" />
+            <q-btn
+              unelevated
+              no-caps
+              icon="add_business"
+              label="Crear"
+              class="mini-action-btn warm-btn"
+            />
           </div>
         </q-card>
 
@@ -159,7 +181,14 @@
             <div class="module-icon module-icon--purple">
               <q-icon name="vpn_key" size="24px" />
             </div>
-            <q-btn flat round dense icon="arrow_forward" class="module-arrow" />
+            <q-btn
+              flat
+              round
+              dense
+              icon="arrow_forward"
+              to="/santoro/api-keys"
+              class="module-arrow"
+            />
           </div>
 
           <div class="module-title">API Keys</div>
@@ -168,12 +197,13 @@
           </div>
 
           <div class="module-chips">
-            <q-chip dense class="glass-chip chip-info">71 activas</q-chip>
-            <q-chip dense class="glass-chip chip-inactive">9 por expirar</q-chip>
+            <q-chip dense class="glass-chip chip-info">{{ apiKeys.activeApiKeys }} activas</q-chip>
+            <q-chip dense class="glass-chip chip-inactive"
+              >{{ apiKeys.expiringApiKeys }} por expirar</q-chip
+            >
           </div>
 
           <div class="module-actions">
-            <q-btn flat no-caps icon="visibility" label="Ver API Keys" class="ghost-btn" />
             <q-btn unelevated no-caps icon="key" label="Generar" class="mini-action-btn" />
           </div>
         </q-card>
@@ -242,19 +272,40 @@
           <div class="distribution-list">
             <div class="dist-row">
               <div class="dist-label">Usuarios</div>
-              <q-linear-progress value="0.82" color="cyan" track-color="grey-9" rounded size="10px" class="dist-progress" />
+              <q-linear-progress
+                value="0.82"
+                color="cyan"
+                track-color="grey-9"
+                rounded
+                size="10px"
+                class="dist-progress"
+              />
               <div class="dist-value">82%</div>
             </div>
 
             <div class="dist-row">
               <div class="dist-label">Empresas</div>
-              <q-linear-progress value="0.48" color="orange" track-color="grey-9" rounded size="10px" class="dist-progress" />
+              <q-linear-progress
+                value="0.48"
+                color="orange"
+                track-color="grey-9"
+                rounded
+                size="10px"
+                class="dist-progress"
+              />
               <div class="dist-value">48%</div>
             </div>
 
             <div class="dist-row">
               <div class="dist-label">API Keys</div>
-              <q-linear-progress value="0.66" color="purple" track-color="grey-9" rounded size="10px" class="dist-progress" />
+              <q-linear-progress
+                value="0.66"
+                color="purple"
+                track-color="grey-9"
+                rounded
+                size="10px"
+                class="dist-progress"
+              />
               <div class="dist-value">66%</div>
             </div>
           </div>
@@ -269,9 +320,27 @@
           </div>
 
           <div class="quick-actions-grid">
-            <q-btn unelevated no-caps icon="person_add" label="Crear usuario" class="quick-action-btn" />
-            <q-btn unelevated no-caps icon="apartment" label="Registrar empresa" class="quick-action-btn warm-btn" />
-            <q-btn unelevated no-caps icon="vpn_key" label="Nueva API Key" class="quick-action-btn" />
+            <q-btn
+              unelevated
+              no-caps
+              icon="person_add"
+              label="Crear usuario"
+              class="quick-action-btn"
+            />
+            <q-btn
+              unelevated
+              no-caps
+              icon="apartment"
+              label="Registrar empresa"
+              class="quick-action-btn warm-btn"
+            />
+            <q-btn
+              unelevated
+              no-caps
+              icon="vpn_key"
+              label="Nueva API Key"
+              class="quick-action-btn"
+            />
           </div>
         </q-card>
       </section>
@@ -280,6 +349,70 @@
 </template>
 
 <script setup>
+import { useQuasar } from 'quasar'
+import { DashboardSantoro } from 'src/services/dashboardSantoro'
+import { onMounted, ref } from 'vue'
+
+const $q = useQuasar()
+
+const organizations = ref({
+  /**
+   * totalOrganizations,
+   * activeOrganizations,
+   * disabledOrganizations
+   */
+})
+const users = ref({
+  //  totalUsers,
+  //  activeUsers,
+  //  inactiveUsers,
+  //  invitedUsers,
+})
+const apiKeys = ref({
+  //  totalApiKeys,
+  //  activeApiKeys,
+  //  revokedApiKeys,
+  //  expiredApiKeys,
+  //  expiringApiKeys,
+})
+
+async function initializeStats() {
+  try {
+    const respuesta = await DashboardSantoro.getStats()
+    $q.notify({
+      message: `${respuesta.message} iniciados correctamente!`,
+      type: 'positive',
+      position: 'top',
+    })
+
+    organizations.value = {
+      totalOrganizations: respuesta.data.totalOrganizations,
+      activeOrganizations: respuesta.data.activeOrganizations,
+      disabledOrganizations: respuesta.data.disabledOrganizations,
+    }
+    users.value = {
+      totalUsers: respuesta.data.totalUsers,
+      activeUsers: respuesta.data.activeUsers,
+      inactiveUsers: respuesta.data.inactiveUsers,
+      invitedUsers: respuesta.data.invitedUsers,
+    }
+    apiKeys.value = {
+      totalApiKeys: respuesta.data.totalApiKeys,
+      activeApiKeys: respuesta.data.activeApiKeys,
+      revokedApiKeys: respuesta.data.revokedApiKeys,
+      expiredApiKeys: respuesta.data.expiredApiKeys,
+      expiringApiKeys: respuesta.data.expiringApiKeys,
+    }
+    console.log('✅ Respuesta recíbida: ', organizations.value, users.value, apiKeys.value)
+  } catch (error) {
+    console.error('❌ Error al iniciar las estadísticas: ', error.message)
+    $q.notify({
+      message: '❌ Error al iniciar estadísticas del panel!',
+      type: 'negative',
+    })
+  }
+}
+
 const recentActivity = [
   {
     id: 1,
@@ -310,6 +443,10 @@ const recentActivity = [
     colorClass: 'dot-pink',
   },
 ]
+
+onMounted(() => {
+  initializeStats()
+})
 </script>
 
 <style lang="scss" scoped>

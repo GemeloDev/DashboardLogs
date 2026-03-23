@@ -112,7 +112,7 @@ const currentAction = ref(null)
 const { streamMessage, isStreaming } = useEvaStream()
 
 onMounted(async () => {
-  await loadEvaSystems
+  await loadEvaSystems()
 })
 
 const workspaceOpen = computed({
@@ -321,7 +321,7 @@ async function handleQuickAction(action) {
       })
 
       eva.setContextPanel(
-        'alert', 
+        'alert',
         buildAlertsTitle(ctx),
         {
           ...payload,
@@ -429,7 +429,7 @@ async function handleQuickAction(action) {
         )
         await nextTick()
         scrollMessagesToBottom()
-        return 
+        return
       }
 
       const res = await EvaService.getMetricsSeries({
@@ -480,7 +480,7 @@ async function handleQuickAction(action) {
       })
 
       eva.setContextPanel(
-        'chart', 
+        'chart',
         buildChartTitle(ctx),
         {
           ...payload,
