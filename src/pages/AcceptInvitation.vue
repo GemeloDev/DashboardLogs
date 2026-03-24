@@ -211,7 +211,7 @@
 <script setup>
 import { acceptInvite } from 'src/services/acceptInviteService'
 // import authService from 'src/services/authService'
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 // import { generateAndDownloadTenantQR } from 'src/services/qrService'
@@ -246,23 +246,6 @@ const moverFoco = (event, index) => {
     nextTick(() => inputs.value[index - 1].focus())
   }
 }
-
-// Validar token al montar
-onMounted(() => {
-  if (!token.value) {
-    tokenInvalido.value = true
-    $q.notify({
-      type: 'negative',
-      message: '❌ Token de invitación inválido o caducado',
-      position: 'top',
-      timeout: 5000,
-    })
-
-    setTimeout(() => {
-      router.push('/login')
-    }, 3000)
-  }
-})
 
 // Password strength indicators
 const indicadores = ref({
@@ -310,16 +293,14 @@ const submit = async () => {
   try {
     // Preparar payload con token de la URL
     const payload = {
-      token: token.value,
       name: acceptInvitation.value.name,
       password: acceptInvitation.value.password,
-      otp: codigo.value.join(''),
+      token: codigo.value.join(''),
     }
 
     console.log('📤 Enviando invitación:', {
       token: payload.token,
       name: payload.name,
-      otp: codigo.value.join(''),
     })
 
     // Aceptar invitación
@@ -341,15 +322,6 @@ const submit = async () => {
       position: 'top',
       timeout: 3000,
     })
-
-    // Generar y descargar QR con tenantId
-    // try {
-    //   await generateAndDownloadTenantQR(tenantId)
-    //   console.log('✅ QR generado y descargado')
-    // } catch (qrError) {
-    //   console.warn('⚠️ Error al generar QR:', qrError)
-    //   // No bloquear el flujo si falla el QR
-    // }
 
     // Redirigir al escritorio
     setTimeout(() => {

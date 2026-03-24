@@ -123,7 +123,7 @@
               :key="log.id || index"
               class="col-xs-12 col-sm-12 col-auto width-responsive"
             >
-              <ConsoleCard :log="log" @click="mostrarDetalleLog" />
+              <ConsoleCard :log="log" @click="!authService.hasRole('VIEWER') ? mostrarDetalleLog(log) : ''" />
             </div>
           </div>
         </div>
@@ -173,6 +173,7 @@ import DetailDialog from '../blocks/DetailDialog.vue'
 import { ChartDataService } from 'src/services/chartDataService'
 import { useConsoleFiltersStore } from 'src/stores/consoleFilters.store'
 import ConsoleExportService from 'src/services/consoleExportService'
+import authService from 'src/services/authService'
 
 const $q = useQuasar()
 

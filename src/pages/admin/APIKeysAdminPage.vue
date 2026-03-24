@@ -17,17 +17,6 @@
             Alta, edición, rotación y eliminación de llaves de acceso del sistema.
           </p>
         </div>
-
-        <div class="apikeys-header__actions">
-          <q-btn
-            unelevated
-            no-caps
-            icon="add"
-            label="Nueva API Key"
-            class="btn-primary"
-            @click="openCreateDialog"
-          />
-        </div>
       </section>
 
       <!-- Toolbar -->
@@ -47,6 +36,21 @@
           </q-input>
 
           <q-select
+            v-model="filtroEmpresa"
+            outlined
+            dense
+            emit-value
+            map-options
+            class="premium-input"
+            :options="opcionesEmpresa"
+            label="Empresa"
+          >
+            <template v-slot:prepend>
+              <q-icon name="apartment" class="input-icon" />
+            </template>
+          </q-select>
+
+          <q-select
             v-model="filtroEstado"
             outlined
             dense
@@ -55,9 +59,8 @@
             class="premium-input"
             :options="[
               { label: 'Todos los estados', value: 'todos' },
-              { label: 'Activas', value: 'activa' },
-              { label: 'Revocadas', value: 'revocada' },
-              { label: 'Expiradas', value: 'expirada' }
+              { label: 'Activas', value: 'active' },
+              { label: 'Desactivadas', value: 'disabled' },
             ]"
             label="Estado"
           >
@@ -109,7 +112,7 @@
           <template v-slot:body-cell-empresa="props">
             <q-td :props="props">
               <q-chip dense class="chip-empresa">
-                {{ props.row.empresa }}
+                {{ props.row.orgName || 'Sin empresa' }}
               </q-chip>
             </q-td>
           </template>
@@ -117,7 +120,7 @@
           <template v-slot:body-cell-status="props">
             <q-td :props="props">
               <q-chip dense :class="getStatusChipClass(props.row.status)">
-                {{ props.row.status }}
+                {{ getStatusLabel(props.row.status) }}
               </q-chip>
             </q-td>
           </template>
@@ -134,281 +137,70 @@
             </q-td>
           </template>
 
-          <template v-slot:body-cell-acciones="props">
+          <template v-slot:body-cell-toggle="props">
             <q-td :props="props">
-              <div class="table-actions">
-                <q-btn
-                  flat
-                  round
-                  dense
-                  icon="edit"
-                  class="action-btn action-btn--edit"
-                  @click="openEditDialog(props.row)"
+              <div class="toggle-wrap">
+                <q-toggle
+                  :model-value="props.row.status === 'active'"
+                  :disable="props.row.status === 'expired'"
+                  color="cyan"
+                  keep-color
+                  class="key-toggle"
+                  @update:model-value="
+                    (val) => toggleStatus(props.row, val, props.row.tenantId, props.row.id)
+                  "
                 >
-                  <q-tooltip class="glass-tooltip">Editar</q-tooltip>
-                </q-btn>
-
-                <q-btn
-                  flat
-                  round
-                  dense
-                  icon="sync"
-                  class="action-btn action-btn--rotate"
-                  @click="rotateKey(props.row)"
-                >
-                  <q-tooltip class="glass-tooltip">Rotar</q-tooltip>
-                </q-btn>
-
-                <q-btn
-                  flat
-                  round
-                  dense
-                  icon="delete"
-                  class="action-btn action-btn--delete"
-                  @click="confirmDelete(props.row)"
-                >
-                  <q-tooltip class="glass-tooltip">Eliminar</q-tooltip>
-                </q-btn>
+                  <q-tooltip class="glass-tooltip">
+                    {{
+                      props.row.status === 'expired'
+                        ? 'Key expirada, no se puede activar'
+                        : props.row.status === 'active'
+                          ? 'Desactivar key'
+                          : 'Activar key'
+                    }}
+                  </q-tooltip>
+                </q-toggle>
               </div>
             </q-td>
           </template>
         </q-table>
       </section>
     </div>
-
-    <!-- Dialog crear / editar -->
-    <q-dialog v-model="dialogOpen" persistent>
-      <q-card flat bordered class="dialog-card">
-        <div class="dialog-header">
-          <div class="dialog-icon">
-            <q-icon :name="isEdit ? 'edit' : 'vpn_key'" size="24px" color="white" />
-          </div>
-
-          <div>
-            <div class="dialog-title">
-              {{ isEdit ? 'Editar API Key' : 'Nueva API Key' }}
-            </div>
-            <div class="dialog-subtitle">
-              Captura la información principal de la llave.
-            </div>
-          </div>
-        </div>
-
-        <q-card-section class="dialog-body">
-          <div class="dialog-grid">
-            <div class="field-span-2">
-              <label class="input-label">Nombre</label>
-              <q-input
-                v-model="form.name"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Nombre de la API Key"
-              />
-            </div>
-
-            <div>
-              <label class="input-label">Sistema</label>
-              <q-input
-                v-model="form.system"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Ej. Ticket-System"
-              />
-            </div>
-
-            <div>
-              <label class="input-label">Empresa</label>
-              <q-input
-                v-model="form.empresa"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Empresa relacionada"
-              />
-            </div>
-
-            <div>
-              <label class="input-label">Estado</label>
-              <q-select
-                v-model="form.status"
-                outlined
-                dense
-                class="premium-input"
-                :options="['Activa', 'Revocada', 'Expirada']"
-              />
-            </div>
-
-            <div>
-              <label class="input-label">Último uso</label>
-              <q-input
-                v-model="form.lastUse"
-                outlined
-                dense
-                class="premium-input"
-                placeholder="Ej. hace 2 horas"
-              />
-            </div>
-          </div>
-        </q-card-section>
-
-        <div class="dialog-actions">
-          <q-btn flat no-caps label="Cancelar" class="btn-cancel" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            :label="isEdit ? 'Guardar cambios' : 'Crear API Key'"
-            class="btn-primary"
-            @click="saveKey"
-          />
-        </div>
-      </q-card>
-    </q-dialog>
-
-    <!-- Dialog eliminar -->
-    <q-dialog v-model="deleteDialog">
-      <q-card flat bordered class="delete-dialog">
-        <div class="delete-icon">
-          <q-icon name="delete_forever" size="40px" color="negative" />
-        </div>
-
-        <div class="delete-title">Eliminar API Key</div>
-        <div class="delete-text">
-          ¿Deseas eliminar la llave <strong>{{ selectedKey?.name }}</strong>?
-          Esta acción no se puede deshacer.
-        </div>
-
-        <div class="dialog-actions">
-          <q-btn flat no-caps label="Cancelar" class="btn-cancel" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            label="Eliminar"
-            color="negative"
-            class="btn-delete"
-            @click="deleteKey"
-          />
-        </div>
-      </q-card>
-    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { DashboardSantoro } from 'src/services/dashboardSantoro'
 
 const $q = useQuasar()
 
 const search = ref('')
 const filtroEstado = ref('todos')
-const dialogOpen = ref(false)
-const deleteDialog = ref(false)
-const isEdit = ref(false)
-const selectedKey = ref(null)
+const filtroEmpresa = ref('todas')
 
-const rows = ref([
-  {
-    id: 1,
-    name: 'PRUEBA',
-    system: 'Auth-Service',
-    empresa: 'Grupo Santoro',
-    status: 'Activa',
-    createdAt: '2026-03-10',
-    lastUse: 'Nunca',
-  },
-  {
-    id: 2,
-    name: 'API_PRUEBA_JSON',
-    system: 'JSON-Service',
-    empresa: 'Santoro Tech',
-    status: 'Revocada',
-    createdAt: '2026-03-10',
-    lastUse: 'Nunca',
-  },
-  {
-    id: 3,
-    name: 'Ticket-System',
-    system: 'Tickets',
-    empresa: 'Grupo Santoro',
-    status: 'Activa',
-    createdAt: '2026-02-16',
-    lastUse: 'hace 22 horas',
-  },
-  {
-    id: 4,
-    name: 'TrustValue-ApiKey',
-    system: 'TrustValue',
-    empresa: 'Logística Santoro',
-    status: 'Expirada',
-    createdAt: '2026-02-09',
-    lastUse: 'el mes pasado',
-  },
-])
+const rows = ref([])
 
-const form = ref(emptyForm())
-
-function emptyForm() {
-  return {
-    id: null,
-    name: '',
-    system: '',
-    empresa: '',
-    status: 'Activa',
-    createdAt: null,
-    lastUse: 'Nunca',
-  }
-}
+// ─── Opciones dinámicas de empresa ───────────────────────────────────────────
+const opcionesEmpresa = computed(() => {
+  const empresas = [...new Set(rows.value.map((k) => k.orgName).filter(Boolean))]
+  return [
+    { label: 'Todas las empresas', value: 'todas' },
+    ...empresas.map((e) => ({ label: e, value: e })),
+  ]
+})
 
 const columns = [
-  {
-    name: 'name',
-    label: 'NOMBRE / APLICACIÓN',
-    field: 'name',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'empresa',
-    label: 'EMPRESA',
-    field: 'empresa',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'status',
-    label: 'ESTADO',
-    field: 'status',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'createdAt',
-    label: 'CREADO',
-    field: 'createdAt',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'lastUse',
-    label: 'ÚLTIMO USO',
-    field: 'lastUse',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'acciones',
-    label: 'ACCIONES',
-    field: 'acciones',
-    align: 'center',
-  },
+  { name: 'name', label: 'NOMBRE / APLICACIÓN', field: 'name', align: 'left', sortable: true },
+  { name: 'empresa', label: 'EMPRESA', field: 'empresa', align: 'left', sortable: true },
+  { name: 'status', label: 'ESTADO', field: 'status', align: 'left', sortable: true },
+  { name: 'createdAt', label: 'CREADO', field: 'createdAt', align: 'left', sortable: true },
+  { name: 'lastUse', label: 'ÚLTIMO USO', field: 'lastUse', align: 'left', sortable: true },
+  { name: 'toggle', label: 'ACTIVA', field: 'toggle', align: 'center' },
 ]
 
-const pagination = ref({
-  page: 1,
-  rowsPerPage: 10,
-})
+const pagination = ref({ page: 1, rowsPerPage: 10 })
 
 const rowsFiltrados = computed(() => {
   let result = [...rows.value]
@@ -416,23 +208,53 @@ const rowsFiltrados = computed(() => {
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     result = result.filter((item) =>
-      [item.name, item.system, item.empresa].some((v) =>
-        String(v || '').toLowerCase().includes(q),
+      [item.name, item.system, item.orgName].some((v) =>
+        String(v || '')
+          .toLowerCase()
+          .includes(q),
       ),
     )
   }
 
-  if (filtroEstado.value === 'activa') {
-    result = result.filter((item) => item.status === 'Activa')
-  } else if (filtroEstado.value === 'revocada') {
-    result = result.filter((item) => item.status === 'Revocada')
-  } else if (filtroEstado.value === 'expirada') {
-    result = result.filter((item) => item.status === 'Expirada')
+  if (filtroEmpresa.value !== 'todas') {
+    result = result.filter((item) => item.orgName === filtroEmpresa.value)
+  }
+
+  if (filtroEstado.value !== 'todos') {
+    result = result.filter((item) => item.status === filtroEstado.value)
   }
 
   return result
 })
 
+// ─── Toggle activo/inactivo ───────────────────────────────────────────────────
+const toggleStatus = async (row, isActive, tenant, id) => {
+  const nuevoEstado = isActive ? 'active' : 'revoked'
+  const idx = rows.value.findIndex((r) => r.id === row.id)
+  if (idx === -1) return
+
+  // Optimistic update
+  rows.value[idx] = { ...rows.value[idx], status: nuevoEstado }
+
+  // Servicio real:
+  const response = await DashboardSantoro.changeStatusApiKey(tenant, id, nuevoEstado)
+
+  if (!response.ok) {
+    $q.notify({
+      type: 'negative',
+      position: 'top',
+      message: `API Key "${row.name}" ${isActive ? 'activada' : 'desactivada'} correctamente.`,
+    })
+  }
+
+  $q.notify({
+    type: 'positive',
+    position: 'top',
+    message: `API Key "${row.name}" ${isActive ? 'activada' : 'desactivada'} correctamente.`,
+  })
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 const formatDate = (date) => {
   if (!date) return '—'
   return new Date(date).toLocaleDateString('es-MX', {
@@ -443,103 +265,37 @@ const formatDate = (date) => {
 }
 
 const getStatusChipClass = (status) => {
-  if (status === 'Activa') return 'chip-active'
-  if (status === 'Revocada') return 'chip-revoked'
+  if (status === 'active') return 'chip-active'
+  if (status === 'revoked') return 'chip-revoked'
   return 'chip-expired'
 }
 
-const openCreateDialog = () => {
-  isEdit.value = false
-  form.value = emptyForm()
-  dialogOpen.value = true
+const getStatusLabel = (status) => {
+  if (status === 'active') return 'Activa'
+  if (status === 'revoked') return 'Desactivada'
+  return 'Expirada'
 }
 
-const openEditDialog = (row) => {
-  isEdit.value = true
-  form.value = { ...row }
-  dialogOpen.value = true
-}
+// ─── Carga inicial ────────────────────────────────────────────────────────────
+const loadAPIKeys = async () => {
+  const response = await DashboardSantoro.getAPIKeys()
 
-const saveKey = () => {
-  if (!form.value.name?.trim()) {
-    $q.notify({
-      type: 'negative',
-      message: 'El nombre de la API Key es requerido.',
-      position: 'top',
-    })
+  if (!response.ok) {
+    $q.notify({ type: 'negative', position: 'top', message: response.message })
     return
   }
 
-  if (!form.value.system?.trim()) {
-    $q.notify({
-      type: 'negative',
-      message: 'El sistema es requerido.',
-      position: 'top',
-    })
-    return
-  }
-
-  if (!form.value.empresa?.trim()) {
-    $q.notify({
-      type: 'negative',
-      message: 'La empresa es requerida.',
-      position: 'top',
-    })
-    return
-  }
-
-  if (isEdit.value) {
-    const idx = rows.value.findIndex((r) => r.id === form.value.id)
-    if (idx !== -1) rows.value[idx] = { ...form.value }
-
-    $q.notify({
-      type: 'positive',
-      message: 'API Key actualizada correctamente.',
-      position: 'top',
-    })
-  } else {
-    rows.value.unshift({
-      ...form.value,
-      id: Date.now(),
-      createdAt: new Date().toISOString().slice(0, 10),
-    })
-
-    $q.notify({
-      type: 'positive',
-      message: 'API Key creada correctamente.',
-      position: 'top',
-    })
-  }
-
-  dialogOpen.value = false
-}
-
-const rotateKey = (row) => {
+  rows.value = response.data.content
   $q.notify({
     type: 'positive',
-    message: `La API Key "${row.name}" fue rotada correctamente.`,
     position: 'top',
+    message: response.message + ' obtenidas correctamente' || 'API Keys obtenidas correctamente.',
   })
 }
 
-const confirmDelete = (row) => {
-  selectedKey.value = row
-  deleteDialog.value = true
-}
-
-const deleteKey = () => {
-  if (!selectedKey.value) return
-
-  rows.value = rows.value.filter((r) => r.id !== selectedKey.value.id)
-  deleteDialog.value = false
-  selectedKey.value = null
-
-  $q.notify({
-    type: 'positive',
-    message: 'API Key eliminada correctamente.',
-    position: 'top',
-  })
-}
+onMounted(() => {
+  loadAPIKeys()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -597,11 +353,6 @@ const deleteKey = () => {
   line-height: 1.7;
 }
 
-.apikeys-header__actions {
-  display: flex;
-  align-items: center;
-}
-
 /* TOOLBAR */
 .apikeys-toolbar {
   margin-bottom: 20px;
@@ -614,7 +365,7 @@ const deleteKey = () => {
 
 .apikeys-toolbar__grid {
   display: grid;
-  grid-template-columns: 1.4fr 0.5fr;
+  grid-template-columns: 1.6fr 0.7fr 0.5fr;
   gap: 16px;
 }
 
@@ -625,7 +376,11 @@ const deleteKey = () => {
 }
 
 .apikeys-table {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)) !important;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.045),
+    rgba(255, 255, 255, 0.02)
+  ) !important;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
   color: white;
@@ -696,10 +451,10 @@ const deleteKey = () => {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  font-size: 0.95rem;
   color: #06121f;
   background: #e97132;
-  box-shadow: 0 0 24px rgba(96, 165, 250, 0.18);
+  box-shadow: 0 0 24px rgba(233, 113, 50, 0.22);
+  flex-shrink: 0;
 }
 
 .key-name {
@@ -713,28 +468,21 @@ const deleteKey = () => {
   font-size: 0.88rem;
 }
 
-.table-actions {
+/* TOGGLE */
+.toggle-wrap {
   display: flex;
   justify-content: center;
-  gap: 8px;
 }
 
-.action-btn--edit {
-  color: #22d3ee;
-}
-
-.action-btn--rotate {
-  color: #e97132;
-}
-
-.action-btn--delete {
-  color: #f87171;
+.key-toggle {
+  :deep(.q-toggle__track) {
+    opacity: 1;
+  }
 }
 
 /* INPUTS */
 .premium-input {
   :deep(.q-field__control) {
-    min-height: 56px;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -800,130 +548,6 @@ const deleteKey = () => {
   border: 1px solid rgba(156, 163, 175, 0.25);
 }
 
-/* BUTTONS */
-.btn-primary {
-  min-height: 52px;
-  padding: 0 20px;
-  border-radius: 16px;
-  font-weight: 800;
-  color: white;
-  text-transform: none;
-  background: linear-gradient(90deg, #06b6d4 0%, #7c3aed 55%, #ec4899 100%);
-  box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
-}
-
-.btn-cancel {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.btn-delete {
-  border-radius: 14px;
-  min-height: 46px;
-  padding: 0 18px;
-  text-transform: none;
-}
-
-/* DIALOG */
-.dialog-card,
-.delete-dialog {
-  width: min(92vw, 720px);
-  border-radius: 26px;
-  background: linear-gradient(160deg, rgba(15, 20, 32, 0.96), rgba(18, 25, 42, 0.94));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: white;
-  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.48);
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 24px 24px 10px;
-}
-
-.dialog-icon {
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #06b6d4, #7c3aed);
-  box-shadow: 0 14px 30px rgba(34, 211, 238, 0.18);
-  flex-shrink: 0;
-}
-
-.dialog-title {
-  color: white;
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-
-.dialog-subtitle {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.94rem;
-}
-
-.dialog-body {
-  padding: 8px 24px 18px;
-}
-
-.dialog-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.field-span-2 {
-  grid-column: span 2;
-}
-
-.input-label {
-  display: block;
-  margin-bottom: 10px;
-  color: white;
-  font-size: 0.94rem;
-  font-weight: 700;
-}
-
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 0 24px 24px;
-}
-
-.delete-dialog {
-  width: min(92vw, 480px);
-  padding: 28px 24px 22px;
-  text-align: center;
-}
-
-.delete-icon {
-  width: 78px;
-  height: 78px;
-  border-radius: 22px;
-  display: grid;
-  place-items: center;
-  margin: 0 auto 16px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.18);
-}
-
-.delete-title {
-  color: white;
-  font-size: 1.45rem;
-  font-weight: 800;
-  margin-bottom: 10px;
-}
-
-.delete-text {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.98rem;
-  line-height: 1.65;
-  margin-bottom: 22px;
-}
-
 /* TOOLTIPS */
 .glass-tooltip {
   background: #121a2a !important;
@@ -935,16 +559,12 @@ const deleteKey = () => {
 /* RESPONSIVE */
 @media (max-width: 900px) {
   .apikeys-toolbar__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .apikeys-header {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .apikeys-header__actions {
-    justify-content: flex-start;
   }
 }
 
@@ -953,22 +573,8 @@ const deleteKey = () => {
     padding: 18px 14px 28px;
   }
 
-  .dialog-grid {
+  .apikeys-toolbar__grid {
     grid-template-columns: 1fr;
-  }
-
-  .field-span-2 {
-    grid-column: span 1;
-  }
-
-  .dialog-actions {
-    flex-direction: column;
-  }
-
-  .btn-primary,
-  .btn-delete,
-  .btn-cancel {
-    width: 100%;
   }
 }
 </style>

@@ -24,16 +24,10 @@
             <q-btn
               unelevated
               no-caps
-              class="hero-btn hero-btn--primary"
-              icon="group_add"
-              label="Nuevo administrador"
-            />
-            <q-btn
-              unelevated
-              no-caps
               class="hero-btn hero-btn--secondary"
               icon="add_business"
               label="Nueva empresa"
+              @click="openEmpresaCreate"
             />
           </div>
         </div>
@@ -68,42 +62,6 @@
         </div>
       </section>
 
-      <!-- KPIs -->
-      <section class="stats-grid">
-        <q-card flat bordered class="stat-card">
-          <div class="stat-icon stat-icon--cyan">
-            <q-icon name="group" size="24px" />
-          </div>
-          <div class="stat-body">
-            <div class="stat-label">Usuarios</div>
-            <div class="stat-value">{{ users.totalUsers }}</div>
-            <div class="stat-foot text-positive">+12 este mes</div>
-          </div>
-        </q-card>
-
-        <q-card flat bordered class="stat-card">
-          <div class="stat-icon stat-icon--warm">
-            <q-icon name="apartment" size="24px" />
-          </div>
-          <div class="stat-body">
-            <div class="stat-label">Empresas</div>
-            <div class="stat-value">{{ organizations.totalOrganizations }}</div>
-            <div class="stat-foot">4 pendientes de revisión</div>
-          </div>
-        </q-card>
-
-        <q-card flat bordered class="stat-card">
-          <div class="stat-icon stat-icon--purple">
-            <q-icon name="vpn_key" size="24px" />
-          </div>
-          <div class="stat-body">
-            <div class="stat-label">API Keys</div>
-            <div class="stat-value">{{ apiKeys.totalApiKeys }}</div>
-            <div class="stat-foot">{{ apiKeys.expiringApiKeys }} por expirar</div>
-          </div>
-        </q-card>
-      </section>
-
       <!-- QUICK MODULES -->
       <section class="modules-grid">
         <q-card flat bordered class="module-card">
@@ -129,10 +87,6 @@
           <div class="module-chips">
             <q-chip dense class="glass-chip chip-info">{{ users.totalUsers }} registrados</q-chip>
             <q-chip dense class="glass-chip chip-active">{{ users.activeUsers }} activos</q-chip>
-          </div>
-
-          <div class="module-actions">
-            <q-btn unelevated no-caps icon="add" label="Crear" class="mini-action-btn" />
           </div>
         </q-card>
 
@@ -164,16 +118,6 @@
               >{{ organizations.disabledOrganizations }} desactivadas</q-chip
             >
           </div>
-
-          <div class="module-actions">
-            <q-btn
-              unelevated
-              no-caps
-              icon="add_business"
-              label="Crear"
-              class="mini-action-btn warm-btn"
-            />
-          </div>
         </q-card>
 
         <q-card flat bordered class="module-card">
@@ -202,40 +146,12 @@
               >{{ apiKeys.expiringApiKeys }} por expirar</q-chip
             >
           </div>
-
-          <div class="module-actions">
-            <q-btn unelevated no-caps icon="key" label="Generar" class="mini-action-btn" />
-          </div>
         </q-card>
       </section>
 
       <!-- MAIN CONTENT -->
       <section class="content-grid">
-        <!-- ACTIVIDAD RECIENTE -->
-        <q-card flat bordered class="panel-card">
-          <div class="panel-header">
-            <div>
-              <div class="panel-title">Actividad reciente</div>
-              <div class="panel-subtitle">Movimientos administrativos más recientes</div>
-            </div>
-            <q-btn flat no-caps label="Ver todo" class="panel-link-btn" />
-          </div>
-
-          <div class="timeline-list">
-            <div class="timeline-item" v-for="item in recentActivity" :key="item.id">
-              <div class="timeline-dot" :class="item.colorClass"></div>
-
-              <div class="timeline-content">
-                <div class="timeline-title">{{ item.title }}</div>
-                <div class="timeline-text">{{ item.description }}</div>
-              </div>
-
-              <div class="timeline-date">{{ item.time }}</div>
-            </div>
-          </div>
-        </q-card>
-
-        <!-- ALERTAS -->
+        <!-- ALERTAS Y SEGUIMIENTO -->
         <q-card flat bordered class="panel-card">
           <div class="panel-header">
             <div>
@@ -245,22 +161,74 @@
           </div>
 
           <div class="alerts-list">
-            <div class="alert-item">
+            <!-- Claves vencidas (status activo pero fecha pasada) -->
+            <div v-if="alerts.expiredKeys.length" class="alert-item">
+              <div class="alert-icon alert-icon--danger">
+                <q-icon name="cancel" size="18px" />
+              </div>
+              <div class="alert-body">
+                <div class="alert-title">API Keys vencidas</div>
+                <div class="alert-text">
+                  {{ alerts.expiredKeys.length }} clave{{
+                    alerts.expiredKeys.length > 1 ? 's han' : ' ha'
+                  }}
+                  expirado y sigue{{ alerts.expiredKeys.length > 1 ? 'n' : '' }} con estado activo.
+                </div>
+              </div>
+              <q-chip dense class="glass-chip chip-danger">Crítico</q-chip>
+            </div>
+
+            <!-- Claves por expirar en 7 días -->
+            <div v-if="alerts.expiringKeys.length" class="alert-item">
               <div class="alert-icon alert-icon--warm">
                 <q-icon name="warning_amber" size="18px" />
               </div>
               <div class="alert-body">
                 <div class="alert-title">API Keys por expirar</div>
-                <div class="alert-text">9 claves vencen en los próximos 7 días.</div>
+                <div class="alert-text">
+                  {{ alerts.expiringKeys.length }} clave{{
+                    alerts.expiringKeys.length > 1 ? 's vencen' : ' vence'
+                  }}
+                  en los próximos 7 días.
+                </div>
               </div>
               <q-chip dense class="glass-chip chip-pending">Urgente</q-chip>
             </div>
+
+            <!-- Claves creadas recientemente -->
+            <div v-if="alerts.recentKeys.length" class="alert-item">
+              <div class="alert-icon alert-icon--cyan">
+                <q-icon name="fiber_new" size="18px" />
+              </div>
+              <div class="alert-body">
+                <div class="alert-title">API Keys nuevas</div>
+                <div class="alert-text">
+                  {{ alerts.recentKeys.length }} clave{{
+                    alerts.recentKeys.length > 1 ? 's fueron creadas' : ' fue creada'
+                  }}
+                  en los últimos 7 días.
+                </div>
+              </div>
+              <q-chip dense class="glass-chip chip-info">Reciente</q-chip>
+            </div>
+
+            <!-- Sin alertas -->
+            <div
+              v-if="!alerts.expiredKeys.length && !alerts.expiringKeys.length && !alerts.recentKeys.length"
+              class="alert-item"
+            >
+              <div class="alert-icon alert-icon--success">
+                <q-icon name="check_circle" size="18px" />
+              </div>
+              <div class="alert-body">
+                <div class="alert-title">Sin alertas</div>
+                <div class="alert-text">Todas las claves están en orden.</div>
+              </div>
+            </div>
           </div>
         </q-card>
-      </section>
 
-      <!-- SIDE PANELS -->
-      <section class="bottom-grid">
+        <!-- ACTIVIDAD RECIENTE -->
         <q-card flat bordered class="panel-card">
           <div class="panel-header">
             <div>
@@ -273,87 +241,57 @@
             <div class="dist-row">
               <div class="dist-label">Usuarios</div>
               <q-linear-progress
-                value="0.82"
+                :value="distUsuarios"
                 color="cyan"
                 track-color="grey-9"
                 rounded
                 size="10px"
                 class="dist-progress"
               />
-              <div class="dist-value">82%</div>
+              <div class="dist-value">{{ Math.round(distUsuarios * 100) }}%</div>
             </div>
 
             <div class="dist-row">
               <div class="dist-label">Empresas</div>
               <q-linear-progress
-                value="0.48"
+                :value="distEmpresas"
                 color="orange"
                 track-color="grey-9"
                 rounded
                 size="10px"
                 class="dist-progress"
               />
-              <div class="dist-value">48%</div>
+              <div class="dist-value">{{ Math.round(distEmpresas * 100) }}%</div>
             </div>
 
             <div class="dist-row">
               <div class="dist-label">API Keys</div>
               <q-linear-progress
-                value="0.66"
+                :value="distApiKeys"
                 color="purple"
                 track-color="grey-9"
                 rounded
                 size="10px"
                 class="dist-progress"
               />
-              <div class="dist-value">66%</div>
+              <div class="dist-value">{{ Math.round(distApiKeys * 100) }}%</div>
             </div>
-          </div>
-        </q-card>
-
-        <q-card flat bordered class="panel-card">
-          <div class="panel-header">
-            <div>
-              <div class="panel-title">Acciones rápidas</div>
-              <div class="panel-subtitle">Operaciones frecuentes</div>
-            </div>
-          </div>
-
-          <div class="quick-actions-grid">
-            <q-btn
-              unelevated
-              no-caps
-              icon="person_add"
-              label="Crear usuario"
-              class="quick-action-btn"
-            />
-            <q-btn
-              unelevated
-              no-caps
-              icon="apartment"
-              label="Registrar empresa"
-              class="quick-action-btn warm-btn"
-            />
-            <q-btn
-              unelevated
-              no-caps
-              icon="vpn_key"
-              label="Nueva API Key"
-              class="quick-action-btn"
-            />
           </div>
         </q-card>
       </section>
     </div>
   </q-page>
+  <CreateEmpresa v-model="dialogEmpresa" @created="onEmpresaCreada" />
 </template>
 
 <script setup>
 import { useQuasar } from 'quasar'
 import { DashboardSantoro } from 'src/services/dashboardSantoro'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import CreateEmpresa from './modals/CreateEmpresa.vue'
 
 const $q = useQuasar()
+const dialogEmpresa = ref(false)
 
 const organizations = ref({
   /**
@@ -374,6 +312,27 @@ const apiKeys = ref({
   //  revokedApiKeys,
   //  expiredApiKeys,
   //  expiringApiKeys,
+})
+
+const alerts = ref({ expiredKeys: [], expiringKeys: [], recentKeys: [] })
+
+// — computed para distribución —
+const distUsuarios = computed(() => {
+  const { activeUsers, totalUsers } = users.value
+  if (!totalUsers) return 0
+  return +(activeUsers / totalUsers).toFixed(2)
+})
+
+const distEmpresas = computed(() => {
+  const { activeOrganizations, totalOrganizations } = organizations.value
+  if (!totalOrganizations) return 0
+  return +(activeOrganizations / totalOrganizations).toFixed(2)
+})
+
+const distApiKeys = computed(() => {
+  const { activeApiKeys, totalApiKeys } = apiKeys.value
+  if (!totalApiKeys) return 0
+  return +(activeApiKeys / totalApiKeys).toFixed(2)
 })
 
 async function initializeStats() {
@@ -403,7 +362,6 @@ async function initializeStats() {
       expiredApiKeys: respuesta.data.expiredApiKeys,
       expiringApiKeys: respuesta.data.expiringApiKeys,
     }
-    console.log('✅ Respuesta recíbida: ', organizations.value, users.value, apiKeys.value)
   } catch (error) {
     console.error('❌ Error al iniciar las estadísticas: ', error.message)
     $q.notify({
@@ -413,39 +371,17 @@ async function initializeStats() {
   }
 }
 
-const recentActivity = [
-  {
-    id: 1,
-    title: 'Usuario creado',
-    description: 'Se registró a "Ana López" en la empresa Santoro Tech.',
-    time: 'Hace 10 min',
-    colorClass: 'dot-cyan',
-  },
-  {
-    id: 2,
-    title: 'Empresa actualizada',
-    description: 'Se modificó la información fiscal de "Grupo Santoro".',
-    time: 'Hace 35 min',
-    colorClass: 'dot-warm',
-  },
-  {
-    id: 3,
-    title: 'API Key generada',
-    description: 'Se generó una nueva credencial para integración externa.',
-    time: 'Hace 1 hora',
-    colorClass: 'dot-purple',
-  },
-  {
-    id: 4,
-    title: 'Cambio de estado',
-    description: 'Se desactivó una empresa por inconsistencias administrativas.',
-    time: 'Hace 3 horas',
-    colorClass: 'dot-pink',
-  },
-]
+const openEmpresaCreate = () => {
+  dialogEmpresa.value = true
+}
 
-onMounted(() => {
+const onEmpresaCreada = () => {
   initializeStats()
+}
+
+onMounted(async () => {
+  initializeStats()
+  alerts.value = await DashboardSantoro.alertasAPIs()
 })
 </script>
 
@@ -756,6 +692,8 @@ onMounted(() => {
 .glass-chip {
   border-radius: 999px;
   font-weight: 700;
+  color: rgb(241, 106, 106);
+  background: rgba(237, 58, 58, 0.16);
 }
 
 .chip-active {
@@ -947,7 +885,7 @@ onMounted(() => {
 }
 
 .alert-icon--warm {
-  background: rgba(233, 113, 50, 0.18);
+  background: rgba(233, 190, 50, 0.363);
 }
 
 .alert-icon--cyan {
@@ -956,6 +894,10 @@ onMounted(() => {
 
 .alert-icon--purple {
   background: rgba(124, 58, 237, 0.16);
+}
+
+.alert-icon--danger {
+  background: rgba(237, 58, 58, 0.16);
 }
 
 .alert-body {
