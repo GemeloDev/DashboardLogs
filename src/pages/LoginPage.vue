@@ -42,7 +42,7 @@
               </div>
 
               <div class="input-group">
-                <label class="input-label">Email o Teléfono</label>
+                <label class="input-label">Email</label>
                 <q-input
                   v-model="formData.email"
                   outlined
@@ -63,9 +63,9 @@
 
               <div class="password-row">
                 <label class="input-label">Contraseña</label>
-                <a href="/login?#/olvide-password" class="forgot-link">
+                <!-- <a href="/login?#/olvide-password" class="forgot-link">
                   ¿Olvidaste tu contraseña?
-                </a>
+                </a> -->
               </div>
 
               <div class="input-group">
