@@ -138,6 +138,7 @@ watch(
   () => eva.loading,
   async () => {
     await nextTick()
+    await nextTick()
     scrollMessagesToBottom()
   }
 )
@@ -145,7 +146,10 @@ watch(
 function scrollMessagesToBottom() {
   const el = chatScrollRef.value
   if (!el) return
-  el.scrollTop = el.scrollHeight
+  // requestAnimationFrame garantiza que el DOM ya fue pintado
+  requestAnimationFrame(() => {
+    el.scrollTop = el.scrollHeight
+  })
 }
 
 
@@ -245,7 +249,8 @@ async function handleQuickAction(action) {
       const res = await EvaService.getDailyPretty({
         days: 1,
         tz: eva.selectedTz,
-        maxTickets: 5
+        maxTickets: 5,
+        system: eva.selectedSystem || undefined   // ← filtrar por sistema del usuario
       })
 
       const payload = res?.data?.data || res?.data || {}
@@ -278,14 +283,20 @@ async function handleQuickAction(action) {
         hours: null
       })
 
+      await nextTick()
+      scrollMessagesToBottom()
+
       return
     }
 
     if (action.key === 'open-alerts') {
+      const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       const res = await EvaService.getAlerts({
         page: 0,
-        size: 5,
+        size: 10,
+        state: 'OPEN',        // ← solo alertas abiertas
         granularity: 'daily',
+        from: last24h,        // ← últimas 24h
         tz: eva.selectedTz
       })
 
@@ -295,15 +306,16 @@ async function handleQuickAction(action) {
       const ctx = {
         system: eva.lastContext?.system || eva.selectedSystem || null,
         granularity: eva.lastContext?.granularity || 'daily',
-        days: eva.lastContext?.days || 30,
-        hours: eva.lastContext?.hours || null
+        days: 1,
+        hours: 24,
+        rangeLabel: '1 día'  // ← singular explícito para evitar "1 días"
       }
 
       const alertBullets = buildAlertsSummary(ctx)
 
       const text = !content.length
         ? 'No encontré alertas abiertas para este tenant.'
-        : `Encontré ${content.length} alertas recientes. La más nueva está en estado ${content[0].status}.`
+        : `Encontré ${content.length} ${content.length === 1 ? 'alerta reciente' : 'alertas recientes'}. La más nueva está en estado ${content[0].status}.`
 
       eva.addAssistantMessage(text, 'alert', {
         raw: payload,
@@ -342,7 +354,8 @@ async function handleQuickAction(action) {
     if (action.key === 'trends') {
       const res = await EvaService.getHourlyInsights({
         hours: 24,
-        tz: eva.selectedTz
+        tz: eva.selectedTz,
+        system: eva.selectedSystem || undefined   // ← filtrar por sistema del usuario
       })
 
       const payload = res?.data?.data || {}
