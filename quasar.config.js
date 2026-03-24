@@ -42,7 +42,7 @@ export default defineConfig((/* ctx */) => {
       // Configuración para producción
       env: {
         API_BASE_URL: process.env.NODE_ENV === 'production'
-          ? 'http://187.188.66.56:8040/api'
+          ? 'https://api-logs.grupo-santoro.com.mx/api'
           : '/api'
       },
       // vueRouterBase,
