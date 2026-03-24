@@ -139,7 +139,7 @@ async function sendMessage() {
 
   const command = parseEvaCommand(text, {
     availableSystems: eva.availableSystems,
-    lastContext: eva.lastContext 
+    lastContext: eva.lastContext
   })
 
   if (command) {
@@ -196,7 +196,8 @@ async function handleQuickAction(action) {
       const res = await EvaService.getDailyPretty({
         days: 1,
         tz: eva.selectedTz,
-        maxTickets: 5
+        maxTickets: 5,
+        system: eva.selectedSystem || undefined   // ← filtrar por sistema del usuario
       })
 
       const payload = res?.data?.data || res?.data || {}
@@ -225,10 +226,13 @@ async function handleQuickAction(action) {
     }
 
     if (action.key === 'open-alerts') {
+      const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       const res = await EvaService.getAlerts({
         page: 0,
-        size: 5,
+        size: 10,
+        state: 'OPEN',
         granularity: 'daily',
+        from: last24h,        // ← últimas 24h
         tz: eva.selectedTz
       })
 
@@ -238,15 +242,16 @@ async function handleQuickAction(action) {
       const ctx = {
         system: eva.lastContext?.system || eva.selectedSystem || null,
         granularity: eva.lastContext?.granularity || 'daily',
-        days: eva.lastContext?.days || 30,
-        hours: eva.lastContext?.hours || null
+        days: 1,
+        hours: 24,
+        rangeLabel: '1 día'  // ← singular explícito
       }
 
       const alertBullets = buildAlertsSummary(ctx)
 
       const text = !content.length
         ? 'No encontré alertas abiertas para este tenant.'
-        : `Encontré ${content.length} alertas recientes. La más nueva está en estado ${content[0].status}.`
+        : `Encontré ${content.length} ${content.length === 1 ? 'alerta reciente' : 'alertas recientes'}. La más nueva está en estado ${content[0].status}.`
 
       eva.addAssistantMessage(text, 'alert', {
         raw: payload,
@@ -261,7 +266,7 @@ async function handleQuickAction(action) {
       })
 
       eva.setContextPanel(
-        'alert', 
+        'alert',
         buildAlertsTitle(ctx),
         {
           ...payload,
@@ -291,7 +296,7 @@ async function handleQuickAction(action) {
         )
         await nextTick()
         scrollMessagesToBottom()
-        return 
+        return
       }
 
       const res = await EvaService.getMetricsSeries({
@@ -341,7 +346,7 @@ async function handleQuickAction(action) {
       })
 
       eva.setContextPanel(
-        'chart', 
+        'chart',
         buildChartTitle(ctx),
         {
           ...payload,

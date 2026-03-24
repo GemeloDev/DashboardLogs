@@ -106,7 +106,7 @@
             </div>
 
             <div class="text-caption q-mt-xs text-grey-5">
-              {{ item.windowFromLocal || 'Sin fecha' }}
+              {{ fmtDate(item.windowFromLocal) || fmtDate(item.bucketStartLocal) || 'Sin fecha' }}
             </div>
 
             <div class="text-caption q-mt-xs text-grey-4">
@@ -185,9 +185,10 @@
           <div class="eva-kpi-label">Range</div>
           <div class="eva-kpi-value">
             {{
-              evaContext.granularity === 'hourly'
+              evaContext.rangeLabel ||
+              (evaContext.granularity === 'hourly'
                 ? `${evaContext.hours || 24} horas`
-                : `${evaContext.days || 30} días`
+                : `${evaContext.days || 30} ${evaContext.days === 1 ? 'día' : 'días'}`)
             }}
           </div>
         </div>
@@ -270,7 +271,7 @@
             :key="point.bucketStart"
             class="eva-chart-detail-row"
           >
-            <div class="eva-chart-detail-date">{{ point.bucketStartLocal }}</div>
+            <div class="eva-chart-detail-date">{{ fmtDate(point.bucketStartLocal) }}</div>
             <div class="eva-chart-detail-metrics">
               <span>Error rate: {{ pct(point.errorRate) }}</span>
               <span>Error count: {{ point.errorCount ?? 0 }}</span>
@@ -444,16 +445,27 @@ function pct(v) {
   return `${(Number(v || 0) * 100).toFixed(2)}%`
 }
 
+// Formatea fecha ISO a formato legible: "23/Mar/2026 00:00"
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+function fmtDate(value) {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  const dia  = String(d.getDate()).padStart(2, '0')
+  const mes  = MESES[d.getMonth()]
+  const anio = d.getFullYear()
+  const hh   = String(d.getHours()).padStart(2, '0')
+  const mm   = String(d.getMinutes()).padStart(2, '0')
+  return `${dia}/${mes}/${anio} ${hh}:${mm}`
+}
+
 function shortLabel(value) {
   if (!value) return ''
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return value
-  return d.toLocaleString([], {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  const dia = String(d.getDate()).padStart(2, '0')
+  const mes = MESES[d.getMonth()]
+  return `${dia}/${mes}`
 }
 
 function alertColor(status) {
