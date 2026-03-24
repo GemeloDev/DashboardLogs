@@ -1,5 +1,5 @@
 
-export const API_BASE_URL = process.env.API_BASE_URL_DEV || '/api'
+export const API_BASE_URL = process.env.API_BASE_URL || '/api'
 
 // Configuración global de axios: sólo headers de petición válidos.
 // Nota: NO debemos enviar Access-Control-Allow-* desde el cliente — esos son headers
