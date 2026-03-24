@@ -314,10 +314,6 @@ $gradient-warm: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.08), transparent 24%),
-    linear-gradient(135deg, $bg-1 0%, $bg-2 45%, $bg-3 100%);
   padding: 28px 22px 34px;
 }
 
