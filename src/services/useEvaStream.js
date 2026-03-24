@@ -1,19 +1,11 @@
 /**
  * useEvaStream.js
  * Composable SSE para Eva usando fetch + ReadableStream.
- *
- * ¿Por qué fetch y no EventSource?
- * EventSource NO permite headers custom — el Bearer token nunca llegaría
- * al backend y Spring Security respondería 401. fetch sí los soporta.
- *
- * Uso:
- *   const { streamMessage, isStreaming, cancel } = useEvaStream()
- *   await streamMessage({ message: 'resumen diario', system: 'TICKETS' })
  */
 
 import { ref } from 'vue'
 import { useEvaStore } from 'src/stores/eva-store'
-import { useAuthStore } from 'src/stores/auth'   // ← ajusta al nombre real de tu auth store
+import { useAuthStore } from 'src/stores/auth'
 
 const API_BASE = '/api/ai/eva/stream'
 
@@ -22,21 +14,8 @@ export function useEvaStream() {
     const auth        = useAuthStore()
     const isStreaming = ref(false)
 
-    // AbortController para cancelar el fetch activo
     let controller = null
 
-    /**
-     * Inicia el streaming SSE con Bearer token en el header.
-     *
-     * @param {Object} params
-     * @param {string} params.message
-     * @param {string} [params.system]
-     * @param {string} [params.granularity]
-     * @param {number} [params.days]
-     * @param {number} [params.hours]
-     * @param {string} [params.tz]
-     * @param {string} [params.type]  - tipo de burbuja: 'text' | 'insight' | etc.
-     */
     async function streamMessage(params) {
         if (isStreaming.value) cancel()
 
@@ -50,7 +29,6 @@ export function useEvaStream() {
             type        = 'text'
         } = params
 
-        // Crear burbuja vacía en el store — se llenará con chunks
         const msgId = eva.addStreamingMessage(type)
 
         isStreaming.value = true
@@ -60,13 +38,6 @@ export function useEvaStream() {
 
         const url = buildUrl(API_BASE, { message, system, granularity, days, hours, tz })
 
-        // ── Token Bearer ──────────────────────────────────────────────────────
-        // Ajusta según cómo guardas el token en tu auth store.
-        // Opciones comunes:
-        //   auth.accessToken
-        //   auth.token
-        //   auth.user?.accessToken
-        //   localStorage.getItem('accessToken')
         const token = auth.accessToken ?? auth.token ?? null
 
         try {
@@ -87,12 +58,11 @@ export function useEvaStream() {
                 throw new Error(msg)
             }
 
-            // ── Leer el stream línea a línea ──────────────────────────────────
             await readSseStream(response.body, msgId)
 
         } catch (err) {
             if (err.name === 'AbortError') {
-                // Cancelación manual — no es un error
+                // Cancelación manual
             } else {
                 console.error('[useEvaStream] error:', err)
                 eva.appendStreamingChunk(msgId, `\n\n_${err.message}_`)
@@ -103,10 +73,6 @@ export function useEvaStream() {
         }
     }
 
-    /**
-     * Lee el ReadableStream del body SSE y despacha cada evento al store.
-     * Protocolo SSE: líneas "event: X\ndata: Y\n\n"
-     */
     async function readSseStream(body, msgId) {
         const reader  = body.getReader()
         const decoder = new TextDecoder()
@@ -118,9 +84,8 @@ export function useEvaStream() {
 
             buffer += decoder.decode(value, { stream: true })
 
-            // Procesar bloques completos separados por \n\n
             const blocks = buffer.split('\n\n')
-            buffer = blocks.pop() ?? ''   // el último puede estar incompleto
+            buffer = blocks.pop() ?? ''
 
             for (const block of blocks) {
                 const event = parseSseBlock(block)
@@ -129,7 +94,7 @@ export function useEvaStream() {
                 if (event.name === 'chunk') {
                     eva.appendStreamingChunk(msgId, event.data)
                 } else if (event.name === 'done') {
-                    return   // fin limpio
+                    return
                 } else if (event.name === 'error') {
                     throw new Error(event.data || 'Error del servidor.')
                 }
@@ -138,24 +103,26 @@ export function useEvaStream() {
     }
 
     /**
-     * Parsea un bloque SSE en { name, data }.
-     * Formato esperado:
-     *   event: chunk
-     *   data: texto parcial
+     * Parsea un bloque SSE acumulando TODAS las líneas data:.
+     * Esto soporta texto con saltos de línea correctamente.
+     * El spec SSE dice que múltiples data: se unen con \n.
      */
     function parseSseBlock(block) {
-        let name = 'message'
-        let data = ''
+        let name      = 'message'
+        let dataLines = []
 
         for (const line of block.split('\n')) {
             if (line.startsWith('event:')) {
                 name = line.slice('event:'.length).trim()
             } else if (line.startsWith('data:')) {
-                data = line.slice('data:'.length).trim()
+                // Quitar solo el espacio inmediato tras "data:" — NO .trim() completo
+                const raw = line.slice('data:'.length)
+                dataLines.push(raw.startsWith(' ') ? raw.slice(1) : raw)
             }
         }
 
-        return data ? { name, data } : null
+        const data = dataLines.join('\n')
+        return data.length > 0 ? { name, data } : null
     }
 
     function cancel() {
@@ -172,8 +139,6 @@ export function useEvaStream() {
 
     return { streamMessage, isStreaming, cancel }
 }
-
-// ── helper URL ────────────────────────────────────────────────────────────────
 
 function buildUrl(base, params) {
     const q = new URLSearchParams()

@@ -3,7 +3,7 @@
     <!-- TEXTO SIMPLE -->
     <template v-if="messageType === 'text'">
       <div class="eva-message-text">
-        <span v-html="renderMarkdown(message.content)" />
+        <span v-html="formattedContent"></span>
       </div>
     </template>
 
@@ -13,7 +13,7 @@
         <div class="eva-block-title">Resumen ejecutivo</div>
 
         <div class="eva-message-text">
-          <span v-html="renderMarkdown(message.content)" />
+          <span v-html="formattedContent"></span>
         </div>
 
         <div
@@ -77,7 +77,7 @@
         </div>
 
         <div class="eva-message-text">
-          <span v-html="renderMarkdown(message.content)" />
+          <span v-html="formattedContent"></span>
         </div>
 
         <div
@@ -145,7 +145,7 @@
         </div>
 
         <div class="eva-message-text">
-          <span v-html="renderMarkdown(message.content)" />
+          <span v-html="formattedContent"></span>
         </div>
 
         <div
@@ -209,7 +209,7 @@
         </div>
 
         <div class="eva-message-text q-mt-sm">
-          <span v-html="renderMarkdown(message.content)" />
+          <span v-html="formattedContent"></span>
         </div>
 
         <div
@@ -234,7 +234,7 @@
     <!-- FALLBACK -->
     <template v-else>
       <div class="eva-message-text">
-        <span v-html="renderMarkdown(message.content)" />
+        <span v-html="formattedContent"></span>
       </div>
 
       <div
@@ -271,28 +271,22 @@ const emit = defineEmits(['action'])
 
 const messageType = computed(() => props.message?.type || 'text')
 
-// ── Markdown renderer ligero (sin dependencias externas) ──────────────────────
-// Soporta: **negrita**, _cursiva_, `código`, saltos de línea, listas con -
-function renderMarkdown(text) {
-  if (!text) return ''
-
-  return text
-    // Escapar HTML primero para evitar XSS
+// Renderiza contenido con markdown básico y saltos de línea
+const formattedContent = computed(() => {
+  let text = props.message?.content || ''
+  // Escapar HTML
+  text = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    // **negrita**
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // _cursiva_ o *cursiva*
-    .replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
-    .replace(/_(.*?)_/g, '<em>$1</em>')
-    // `código inline`
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // Líneas que empiezan con "- " → bullet
-    .replace(/^- (.+)$/gm, '<span class="eva-md-bullet">•&nbsp;$1</span>')
-    // Saltos de línea
-    .replace(/\n/g, '<br>')
-}
+  // Markdown básico
+  text = text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
+  // Saltos de línea
+  text = text.replace(/\n/g, '<br>')
+  return text
+})
 
 function safeArray(value) {
   return Array.isArray(value) ? value : []
@@ -320,7 +314,7 @@ function statusColor(value) {
 }
 
 .eva-message-text {
-  white-space: pre-line;
+  white-space: normal;
   word-break: break-word;
   line-height: 1.55;
   color: #eaf0ff;
@@ -432,22 +426,4 @@ function statusColor(value) {
   gap: 8px;
   margin-top: 2px;
 }
-
-/* Markdown inline styles */
-.eva-message-text :deep(strong) { font-weight: 700; color: #ffffff; }
-.eva-message-text :deep(em)     { font-style: italic; color: rgba(234,240,255,0.85); }
-.eva-message-text :deep(code)   {
-  font-family: monospace;
-  font-size: 12px;
-  background: rgba(255,255,255,0.1);
-  padding: 1px 5px;
-  border-radius: 4px;
-  color: #7dd3fc;
-}
-.eva-message-text :deep(.eva-md-bullet) {
-  display: block;
-  padding-left: 4px;
-  margin: 2px 0;
-}
-
 </style>
