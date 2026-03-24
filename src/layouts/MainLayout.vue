@@ -217,8 +217,8 @@
     >
       <q-scroll-area class="fit">
         <div class="drawer-brand-block">
-          <q-avatar size="200px" class="drawer-logo-avatar q-avatar-santoro">
-            <img src="/src/assets/logo-grupo-santoro.png" alt="Santoro" class="drawer-logo-img" />
+          <q-avatar size="68px" class="stat-icon--warm">
+            <q-icon name="hive" size="34px" color="white" />
           </q-avatar>
 
           <div class="drawer-brand-title">
