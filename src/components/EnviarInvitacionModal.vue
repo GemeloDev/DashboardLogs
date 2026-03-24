@@ -96,9 +96,9 @@
               Sistemas *
             </label>
             <q-select
-              v-model="formData.systems"
+              v-model="sistemasModel"
               :options="systemOptions"
-              multiple
+              :multiple="formData.roles === 'SYSTEM_MANAGER'"
               outlined
               class="premium-input"
               placeholder="Selecciona uno o más sistemas"
@@ -126,7 +126,10 @@
           </div>
 
           <!-- Viewer: filtros -->
-          <div v-if="formData.roles === 'VIEWER'" class="row q-col-gutter-md">
+          <div
+            v-if="formData.roles === 'VIEWER' && formData.systems.length"
+            class="row q-col-gutter-md"
+          >
             <div class="col-12 col-md-6">
               <div class="form-field">
                 <label class="field-label">
@@ -204,7 +207,10 @@
             </div>
           </div>
 
-          <div v-if="formData.roles === 'VIEWER'" class="row q-col-gutter-md">
+          <div
+            v-if="formData.roles === 'VIEWER' && formData.systems.length"
+            class="row q-col-gutter-md"
+          >
             <div class="col-12 col-md-6">
               <div class="form-field">
                 <label class="field-label">
@@ -348,7 +354,10 @@
                 </div>
               </div>
 
-              <div v-if="formData.roles === 'SYSTEM_MANAGER' || formData.roles === 'VIEWER'" class="preview-row">
+              <div
+                v-if="formData.roles === 'SYSTEM_MANAGER' || formData.roles === 'VIEWER'"
+                class="preview-row"
+              >
                 <strong>Sistema(s):</strong>
                 <div class="preview-roles">
                   <q-badge
@@ -535,6 +544,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { sendInvitation } from '../services/invitationsService.js'
 import { editUser } from 'src/services/usersService.js'
+import { getDashboardStatsValues } from 'src/services/santoroFiltersController.js'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -554,10 +564,10 @@ const systemOptions = ref(
   JSON.parse(localStorage.getItem('dashboardLogsSession'))?.user?.authz?.systems || [],
 )
 
-const outcomesValues = ref(['SUCCESS', 'APPROVED'])
-const statusValues = ref(['OK'])
-const severityValues = ref(['INFO'])
-const eventTypesValues = ref(['INE', 'PASSPORT', 'SESSION'])
+const outcomesValues = ref([])
+const statusValues = ref([])
+const severityValues = ref([])
+const eventTypesValues = ref([])
 
 const bodyInvite = () => ({
   email: '',
@@ -591,6 +601,25 @@ const dialogModel = computed({
 })
 
 const roleOptions = computed(() => props.availableRoles)
+
+// Normaliza sistemas: VIEWER → valor único, SYSTEM_MANAGER → array
+const sistemasModel = computed({
+  get() {
+    if (formData.value.roles === 'VIEWER') {
+      return formData.value.systems[0] ?? null
+    }
+    return formData.value.systems
+  },
+  set(val) {
+    if (!val) {
+      formData.value.systems = []
+    } else if (Array.isArray(val)) {
+      formData.value.systems = val
+    } else {
+      formData.value.systems = [val]
+    }
+  },
+})
 
 // Methods
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '')
@@ -695,10 +724,10 @@ const enviarInvitacion = async () => {
 
   console.log('📤 Datos a envíar para la invitación:', {
     email: formData.value.email,
-    roles: formData.value.roles,
+    roles: [formData.value.roles],
     systems: formData.value.systems,
     ttlHours: formData.value.ttlHours,
-    logFilters: formData.value.logFilters
+    logFilters: formData.value.logFilters,
   })
 
   try {
@@ -708,7 +737,7 @@ const enviarInvitacion = async () => {
       roles: [formData.value.roles],
       systems: formData.value.systems,
       ttlHours: formData.value.ttlHours,
-      logFilters: formData.value.logFilters
+      logFilters: formData.value.logFilters,
     })
 
     if (response.invitationLink) invitationLink.value = response.invitationLink
@@ -787,6 +816,58 @@ const resetForm = () => {
 const closeModal = () => {
   if (!sending.value) emit('update:modelValue', false)
 }
+
+async function getFieldsData(system) {
+  try {
+    console.log(system)
+    const values = await getDashboardStatsValues(system)
+    outcomesValues.value = values.outcomes
+    statusValues.value = values.statuses
+    severityValues.value = values.severities
+    eventTypesValues.value = values.topEventTypes
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+watch(
+  () => formData.value.systems,
+  async (value) => {
+    // Limpia los filtros al cambiar el sistema
+    outcomesValues.value = []
+    statusValues.value = []
+    severityValues.value = []
+    eventTypesValues.value = []
+    formData.value.logFilters = {
+      allowedOutcomes: [],
+      allowedStatuses: [],
+      allowedSeverities: [],
+      allowedEventTypes: [],
+    }
+
+    if (value?.length) {
+      getFieldsData(value[0]) // VIEWER solo tiene uno; SYSTEM_MANAGER usa el primero como referencia
+    }
+  },
+  { deep: true },
+)
+
+watch(
+  () => formData.value.roles,
+  () => {
+    formData.value.systems = []
+    outcomesValues.value = []
+    statusValues.value = []
+    severityValues.value = []
+    eventTypesValues.value = []
+    formData.value.logFilters = {
+      allowedOutcomes: [],
+      allowedStatuses: [],
+      allowedSeverities: [],
+      allowedEventTypes: [],
+    }
+  },
+)
 
 // Watchers
 watch(

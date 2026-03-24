@@ -830,6 +830,7 @@ onMounted(() => {
   :deep(.q-field__native),
   :deep(.q-field__input),
   :deep(.q-field__label),
+  :deep(.q-field__bottom),
   :deep(.q-select__dropdown-icon) {
     color: white;
   }

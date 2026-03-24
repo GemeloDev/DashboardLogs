@@ -139,7 +139,7 @@ const accentColor = computed(() => BUCKET_COLORS[bucket.value] || '#22d3ee')
 const timeKey = computed(() => props.definition?.timeKey || 'eventTime')
 const bucket = computed(() => props.definition?.timeBucket || 'day')
 
-const title = computed(() => props.definition?.title || 'Eventos por tiempo y acumulado')
+const title = computed(() => props.definition?.title || 'Eventos por tiempo')
 const iconName = computed(() => props.definition?.icon || 'timeline')
 
 const timeLabel = computed(() => {

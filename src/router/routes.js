@@ -11,12 +11,12 @@ const routes = [
     component: () => import('pages/VerificarCuentaPage.vue'),
     meta: { hideLayout: true }
   },
-  {
-    path: '/olvide-password',
-    name: 'olvidePassword',
-    component: () => import('pages/PasswordOlvidadoPage.vue'),
-    meta: { hideLayout: true }
-  },
+  // {
+  //   path: '/olvide-password',
+  //   name: 'olvidePassword',
+  //   component: () => import('pages/PasswordOlvidadoPage.vue'),
+  //   meta: { hideLayout: true }
+  // },
   {
     path: '/accept-invite',
     name: 'acceptInvite',
