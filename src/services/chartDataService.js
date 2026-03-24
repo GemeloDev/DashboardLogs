@@ -1,5 +1,5 @@
 import { axiosInstance } from './axiosConfig'
-import { endpoints } from './endpoints'
+import { LOGS } from './endpoints'
 
 // Servicio para gráficas mejoradas según especificaciones técnicas
 export class ChartDataService {
@@ -38,7 +38,7 @@ export class ChartDataService {
   static async getAll(filtros = {}, additionalParams = {}) {
     const params = this.buildFilterParams(filtros, additionalParams)
 
-    const { data } = await axiosInstance.get(`${endpoints.logs}`, { params })
+    const { data } = await axiosInstance.get(`${LOGS.EVENTS}`, { params })
     return data // <-- devuelve el body completo { ok, data:{items...} }
   }
 
@@ -47,7 +47,7 @@ export class ChartDataService {
     page = 1,
     size = 500
   } = {}) {
-    const { data } = await axiosInstance.get(`${endpoints.events}`, {
+    const { data } = await axiosInstance.get(`${LOGS.EVENTS_RAW}`, {
       params: { system, page, size }
     })
 

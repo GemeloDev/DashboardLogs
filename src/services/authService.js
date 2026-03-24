@@ -4,7 +4,7 @@
 
 import axios from 'axios'
 import { ref, computed } from 'vue'
-import { AUTH_ENDPOINTS, DEFAULT_CONFIG } from './apiEndpoints.js'
+import { AUTH, REQUEST_CONFIG } from './endpoints.js'
 import { storeJWTInCookie, deleteJWTFromCookie } from './cookieService.js'
 import { axiosInstance } from './axiosConfig.js'
 
@@ -55,9 +55,9 @@ export const useAuthService = () => {
   const register = async (userData) => {
     try {
       console.log(' Iniciando registro:', { name: userData.name, email: userData.email })
-      const response = await fetch(AUTH_ENDPOINTS.REGISTER, {
+      const response = await fetch(AUTH.REGISTER, {
         method: 'POST',
-        headers: DEFAULT_CONFIG.headers,
+        headers: REQUEST_CONFIG.headers,
         body: JSON.stringify({
           name: userData.name,
           email: userData.email,
@@ -87,10 +87,10 @@ export const useAuthService = () => {
     try {
       // Crear headers con X-Tenant
       const headers = {
-        ...DEFAULT_CONFIG.headers,
+        ...REQUEST_CONFIG.headers,
       }
 
-      const response = await fetch(AUTH_ENDPOINTS.LOGIN, {
+      const response = await fetch(AUTH.LOGIN, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
@@ -180,7 +180,7 @@ export const useAuthService = () => {
       console.log('AccessToken del usuario:', token.accessToken)
       console.log('Token del QR:', credentials.qrToken)
 
-      const response = await axiosInstance.post(AUTH_ENDPOINTS.LOGIN_QR, {
+      const response = await axiosInstance.post(AUTH.LOGIN_QR, {
         qrToken: credentials.qrToken,
       })
 
@@ -320,7 +320,7 @@ export const useAuthService = () => {
 
   const refreshAuthToken = (accessToken) => {
     try {
-      const responseRefresh = axios.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {
+      const responseRefresh = axios.post(AUTH.REFRESH_TOKEN, {
         refreshToken: accessToken,
       })
 

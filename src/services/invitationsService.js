@@ -4,7 +4,7 @@
  */
 
 import { axiosInstance } from './axiosConfig'
-import { SERVER_CONFIG } from '../config/serverConfig'
+import { ADMIN } from './endpoints'
 
 /**
  * Envía una invitación a un nuevo usuario
@@ -18,7 +18,7 @@ import { SERVER_CONFIG } from '../config/serverConfig'
 export const sendInvitation = async (inviteData) => {
     try {
         const response = await axiosInstance.post(
-            `${SERVER_CONFIG.BASE_URL}/admin/invites`,
+            `${ADMIN.INVITES}`,
             inviteData
         )
 
