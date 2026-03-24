@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
   //  Dashboard
   EVENTS: '/api/dashboard/passports/events',
   SUMMARY: '/api/dashboard/passports/summary',
+  LOGS_STATS: `${BASE_URL}/logs/dashboard/stats`,
 
   // Estadísticas
   STATS: `${BASE_URL}/api/stats`,

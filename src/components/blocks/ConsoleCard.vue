@@ -368,7 +368,7 @@ const deviceLabel = computed(() => {
           padding: 1px 4px;
           border-radius: 3px;
           flex: 1;
-          font-size: 0.8rem;
+          font-size: 0.9rem;
         }
 
         .q-icon {

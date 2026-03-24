@@ -213,7 +213,7 @@
       show-if-above
       :width="290"
       :breakpoint="1800"
-      class="app-drawer desktop-drawer"
+      class="app-drawer"
     >
       <q-scroll-area class="fit">
         <div class="drawer-brand-block">
@@ -286,20 +286,6 @@
                 <span class="drawer-item-label">Gestión Empleados</span>
               </q-item-section>
             </q-item>
-
-            <q-footer elevated class="app-footer">
-              <q-toolbar class="app-footer-toolbar">
-                <q-space />
-                <q-btn
-                  unelevated
-                  rounded
-                  icon="help"
-                  label="Soporte"
-                  class="footer-btn"
-                  href="https://ticket.grupo-santoro.com.mx/login"
-                />
-              </q-toolbar>
-            </q-footer>
           </template>
 
           <template v-if="isSantoroFlow && isSantoroUser">
@@ -341,6 +327,17 @@
           </template>
         </q-list>
       </q-scroll-area>
+
+      <div class="drawer-footer">
+        <q-btn
+          unelevated
+          rounded
+          icon="help"
+          label="Soporte"
+          class="footer-btn"
+          href="https://ticket.grupo-santoro.com.mx/login"
+        />
+      </div>
     </q-drawer>
 
     <!-- CONTENIDO -->
@@ -762,7 +759,7 @@ onMounted(() => {
     linear-gradient(180deg, #120904 0%, #0c0503 100%) !important;
   color: white;
   backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(233, 114, 50, 0.479) !important;;
+  border-bottom: 1px solid rgba(233, 114, 50, 0.479) !important;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
 }
 
@@ -896,6 +893,8 @@ onMounted(() => {
 
 /* DRAWER */
 .app-drawer {
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(circle at top left, rgba(233, 113, 50, 0.16), transparent 24%),
     radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.08), transparent 20%),
@@ -903,6 +902,11 @@ onMounted(() => {
   color: white;
   border-right: 1px solid rgba(233, 113, 50, 0.14) !important;
   box-shadow: 10px 0 32px rgba(0, 0, 0, 0.28);
+}
+
+.app-drawer .q-list {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .drawer-brand-block {
@@ -1073,6 +1077,17 @@ onMounted(() => {
 
 .footer-btn:hover {
   background: rgba(233, 113, 50, 0.24);
+}
+
+/* Footer pegado al fondo del drawer */
+.drawer-footer {
+  margin-top: auto;
+  padding: 10px 12px;
+  background: rgba(24, 10, 7, 0.88);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(233, 113, 50, 0.12);
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Animaciones */
