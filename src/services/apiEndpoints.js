@@ -2,7 +2,7 @@
  * Configuración de endpoints de API
  * Centraliza todas las URLs de los servicios backend
  */
-import { API_BASE_URL } from "./apiConfig"
+import { API_BASE_URL } from './apiConfig'
 
 // Base URL del servidor
 const BASE_URL = API_BASE_URL
@@ -16,7 +16,7 @@ export const AUTH_ENDPOINTS = {
   VERIFY_TOKEN: `${BASE_URL}/api/auth/verify`,
   REFRESH_TOKEN: `${BASE_URL}/api/auth/refresh`,
   LOGIN_QR: `${BASE_URL}/api/auth/qr-login`,
-  RESET_PASSWORD: `${BASE_URL}/auth/change-password`
+  RESET_PASSWORD: `${BASE_URL}/auth/change-password`,
 }
 
 // Endpoints principales (para uso futuro)
@@ -45,32 +45,32 @@ export const API_SANTORO_DASHBOARD = {
   EMPRESAS: `${BASE_URL}/santoro/panel/organizations`,
   USUARIOS: `${BASE_URL}/santoro/panel/users`,
   APIKEYS: `${BASE_URL}/santoro/panel/api-keys`,
-  API_STATUS: `${BASE_URL}/santoro/panel/organizations`
+  API_STATUS: `${BASE_URL}/santoro/panel/organizations`,
 }
 
 export const API_KEYS = {
-  MAIN: '/catalogs/api-keys'
+  MAIN: '/catalogs/api-keys',
 }
 
 //  URL (local) del server socket
 export const SOCKET = {
   // LOGIN_QR : `https://${SOCKET_IP}:3000`
-  URL : `187.188.66.56:8040/ws`,
-  TOPIC : `/topic/qr-login`
+  URL: `187.188.66.56:8040/ws`,
+  TOPIC: `/topic/qr-login`,
 }
 
 // Configuración por defecto para las peticiones
 export const DEFAULT_CONFIG = {
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
-  timeout: 30000 // 30 segundos
+  timeout: 30000, // 30 segundos
 }
 
 export default {
   AUTH_ENDPOINTS,
   API_ENDPOINTS,
   DEFAULT_CONFIG,
-  BASE_URL
+  BASE_URL,
 }
