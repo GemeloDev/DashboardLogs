@@ -1,0 +1,115 @@
+# ═══════════════════════════════════════════════════════════════
+# GitLab CI/CD Pipeline - Deploy to Santoro FTP
+# ═══════════════════════════════════════════════════════════════
+# 
+# Se ejecuta automáticamente cuando haces push a la rama 'development'
+# 
+# Fases:
+#   1. build  - Instala dependencias y genera el build de producción
+#   2. deploy - Sube los archivos al servidor FTP
+#
+# Variables requeridas (Settings > CI/CD > Variables):
+#   - FTP_SERVER   : Dirección del servidor FTP
+#   - FTP_USERNAME : Usuario FTP
+#   - FTP_PASSWORD : Contraseña FTP (marcada como "masked")
+#
+# ═══════════════════════════════════════════════════════════════
+
+# Definir las etapas del pipeline
+stages:
+  - build
+  - deploy
+
+# Configuración global de caché para node_modules
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules/
+
+# ───────────────────────────────────────────────────────────────
+# STAGE 1: BUILD
+# ───────────────────────────────────────────────────────────────
+build:
+  stage: build
+  image: node:18
+  
+  # Solo ejecutar en la rama development
+  only:
+    - development
+  
+  before_script:
+    - echo "📦 Checkout de código"
+    - node --version
+    - npm --version
+  
+  script:
+    - echo "🔧 Instalar dependencias"
+    - npm ci
+    
+    - echo "🏗️ Build de producción"
+    - npm run build
+    
+    - echo "✅ Build completado exitosamente"
+    - ls -la dist/spa/
+  
+  artifacts:
+    name: "dashboard-logs-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - dist/spa/
+    expire_in: 1 hour
+
+# ───────────────────────────────────────────────────────────────
+# STAGE 2: DEPLOY
+# ───────────────────────────────────────────────────────────────
+deploy:
+  stage: deploy
+  image: alpine:latest
+  
+  # Solo ejecutar en la rama development
+  only:
+    - development
+  
+  dependencies:
+    - build
+  
+  before_script:
+    - echo "📡 Preparando despliegue FTP"
+    - apk add --no-cache lftp curl
+  
+  script:
+    - echo "🗑️ Eliminar xd.txt remoto (si existe)"
+    - |
+      curl -v --ftp-ssl -k -u "$FTP_USERNAME:$FTP_PASSWORD" \
+        "ftp://$FTP_SERVER/xd.txt" -Q "DELE xd.txt" || echo "xd.txt no existe o ya fue eliminado"
+    
+    - echo "🚀 Subida de archivos por FTP"
+    - echo "📍 Servidor: $FTP_SERVER"
+    - echo "👤 Usuario: $FTP_USERNAME"
+    - echo "📁 Directorio local: dist/spa/"
+    - echo "🎯 Directorio remoto: /"
+    
+    # Usar lftp para subir archivos (equivalente a FTP-Deploy-Action)
+    - |
+      lftp -c "
+        set ssl:verify-certificate no;
+        set ftp:ssl-allow no;
+        open -u $FTP_USERNAME,$FTP_PASSWORD ftp://$FTP_SERVER:21;
+        mirror --reverse --verbose --delete \
+          --exclude .htaccess \
+          --exclude web.config \
+          --exclude .ftpquota \
+          --exclude certs/ \
+          --exclude .git/ \
+          dist/spa/ /;
+        bye
+      "
+    
+    - echo "✅ Despliegue completado exitosamente"
+  
+  environment:
+    name: production
+    url: https://dashboard.grupo-santoro.com.mx
+  
+  allow_failure: false
