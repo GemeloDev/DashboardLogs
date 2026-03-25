@@ -14,7 +14,7 @@ export const axiosInstance = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
-  }
+  },
 })
 
 //  Estado para evitar múltiples llamadas de refresco simultáneas
@@ -27,7 +27,7 @@ let failedQueue = []
  * @param {token|null} token - valor del token que accedió al eventox
  */
 const proccessQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error)
     } else {
@@ -46,11 +46,11 @@ axiosInstance.interceptors.request.use(
 
     // Si la petición no es la de refresco, se añade el token
     if (config.url !== AUTH.REFRESH_TOKEN) {
-      const authStore = useAuthStore();
-      const token = authStore.getAccessToken;
+      const authStore = useAuthStore()
+      const token = authStore.getAccessToken
 
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        config.headers.Authorization = `Bearer ${token}`
       }
     }
 
@@ -79,7 +79,7 @@ axiosInstance.interceptors.request.use(
   (error) => {
     console.error('❌ Error en request interceptor:', error)
     return Promise.reject(error)
-  }
+  },
 )
 
 // Response Interceptor - Maneja errores globalmente
@@ -89,7 +89,7 @@ axiosInstance.interceptors.response.use(
     console.log('✅ Respuesta recibida:', {
       url: response.config.url,
       status: response.status,
-      data: response.data
+      data: response.data,
     })
 
     return response
@@ -105,7 +105,7 @@ axiosInstance.interceptors.response.use(
       console.warn('⚠️ AccessToken Invalido:', {
         url: error.config?.url,
         status: error.response?.status,
-        message: error.response?.data?.message || error.message
+        message: error.response?.data?.message || error.message,
       })
       console.log('Refrescando token...')
       if (isRefreshing) {
@@ -113,23 +113,23 @@ axiosInstance.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
         })
-          .then(token => {
+          .then((token) => {
             //  Reintentar la petición original con el nuevo token
             originalRequest.headers['Auhthorization'] = `Bearer ${token}`
 
             return axiosInstance(originalRequest)
           })
-          .catch(err => {
+          .catch((err) => {
             return Promise.reject(err)
           })
       }
 
-      isRefreshing = true;
+      isRefreshing = true
       const authStore = useAuthStore()
 
       try {
         //  1. Llamar al endpoint de refresco
-        const refreshToken = authStore.getRefreshToken; //  Obtiene el token de refresco
+        const refreshToken = authStore.getRefreshToken //  Obtiene el token de refresco
 
         if (!refreshToken) {
           authStore.logout()
@@ -149,28 +149,26 @@ axiosInstance.interceptors.response.use(
 
         //  4. Procesar la cola y resolver
         proccessQueue(null, newAccessToken)
-        isRefreshing = false;
+        isRefreshing = false
 
         //  5. Reintentar la solicitud original fallida
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
         return axiosInstance(originalRequest)
-
       } catch (refreshError) {
         // El refresco falló (ej. el Refresh Token expiró o fue revocado)
         proccessQueue(refreshError)
         authStore.logout()
-        isRefreshing = false;
+        isRefreshing = false
 
-        return Promise.reject(refreshError);
+        return Promise.reject(refreshError)
       }
     }
 
     return Promise.reject(error)
-  }
+  },
 )
 
 export default boot(({ app }) => {
   // Configura $axiosInstance globalmente
-  app.config.globalProperties.$axiosInstance = axiosInstance;
+  app.config.globalProperties.$axiosInstance = axiosInstance
 })
-
