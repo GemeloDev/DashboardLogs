@@ -19,7 +19,7 @@
 // Define API_BASE_URL en .env.development / .env.production según el ambiente.
 // En Quasar, usar process.env para variables definidas en build.env
 
-export const BASE_URL = process.env.API_BASE_URL ?? ''
+export const BASE_URL = process.env.API_BASE_URL ?? 'api-logs.grupo-santoro.com.mx'
 
 // ─── Configuración global de peticiones ──────────────────────────────────────
 
