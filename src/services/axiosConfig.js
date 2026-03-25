@@ -7,6 +7,7 @@ import axios from 'axios'
 import { boot } from 'quasar/wrappers'
 import { getJWTFromCookie } from './cookieService'
 import { useAuthStore } from 'src/stores/auth'
+import { AUTH } from './endpoints'
 
 // Crear instancia de axios
 export const axiosInstance = axios.create({
@@ -44,7 +45,7 @@ axiosInstance.interceptors.request.use(
     const token = getJWTFromCookie()
 
     // Si la petición no es la de refresco, se añade el token
-    if (config.url !== '/api/auth/refresh') {
+    if (config.url !== AUTH.REFRESH_TOKEN) {
       const authStore = useAuthStore();
       const token = authStore.getAccessToken;
 
@@ -135,7 +136,7 @@ axiosInstance.interceptors.response.use(
           return Promise.reject(error)
         }
 
-        const response = await axios.post('/api/auth/refresh', { refreshToken })
+        const response = await axios.post(AUTH.REFRESH_TOKEN, { refreshToken })
 
         const newAccessToken = response.data.data.accessToken
         const newRefreshToken = response.data.data.refreshToken

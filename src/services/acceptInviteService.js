@@ -10,12 +10,12 @@ import { AUTH } from './endpoints'
 export const acceptInvite = async (payload) => {
   try {
     console.log('📤 Enviando petición de aceptación:', {
-      url: `${AUTH.BASE_URL}/auth/accept-invite`,
+      url: AUTH.ACCEPT_INVITE,
       token: payload.token?.substring(0, 20) + '...',
       name: payload.name,
     })
 
-    const { data } = await axios.post(`${AUTH.BASE_URL}/auth/accept-invite`, payload)
+    const { data } = await axios.post(AUTH.ACCEPT_INVITE, payload)
 
     console.log('✅ Respuesta de aceptación:', data)
     return data

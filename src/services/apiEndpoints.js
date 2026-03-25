@@ -10,34 +10,34 @@ const BASE_URL = API_BASE_URL
 
 // Endpoints de autenticación
 export const AUTH_ENDPOINTS = {
-  REGISTER: `${BASE_URL}/api/auth/register`,
+  REGISTER: `${BASE_URL}/auth/register`,
   LOGIN: `${BASE_URL}/auth/login`,
   LOGOUT: `${BASE_URL}/auth/logout`,
-  VERIFY_TOKEN: `${BASE_URL}/api/auth/verify`,
-  REFRESH_TOKEN: `${BASE_URL}/api/auth/refresh`,
-  LOGIN_QR: `${BASE_URL}/api/auth/qr-login`,
+  VERIFY_TOKEN: `${BASE_URL}/auth/verify`,
+  REFRESH_TOKEN: `${BASE_URL}/auth/refresh`,
+  LOGIN_QR: `${BASE_URL}/auth/qr-login`,
   RESET_PASSWORD: `${BASE_URL}/auth/change-password`,
 }
 
 // Endpoints principales (para uso futuro)
 export const API_ENDPOINTS = {
   //  Dashboard
-  EVENTS: `${BASE_URL}/api/dashboard/passports/events`,
-  SUMMARY: `${BASE_URL}/api/dashboard/passports/summary`,
+  EVENTS: `${BASE_URL}/dashboard/passports/events`,
+  SUMMARY: `${BASE_URL}/dashboard/passports/summary`,
   LOGS_STATS: `${BASE_URL}/logs/dashboard/stats`,
 
   // Estadísticas
-  STATS: `${BASE_URL}/api/stats`,
-  CHARTS: `${BASE_URL}/api/charts`,
+  STATS: `${BASE_URL}/stats`,
+  CHARTS: `${BASE_URL}/charts`,
 
   // Diagnósticos
   SESSION_ID: `${BASE_URL}/logs/timeline`,
 
   // Configuración
-  CONFIG: `${BASE_URL}/api/config`,
+  CONFIG: `${BASE_URL}/config`,
 
   //  QR
-  QR: `${BASE_URL}/api/auth/qr-token`,
+  QR: `${BASE_URL}/auth/qr-token`,
 }
 
 export const API_SANTORO_DASHBOARD = {

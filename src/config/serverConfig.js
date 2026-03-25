@@ -17,15 +17,15 @@ export const getApiUrl = (endpoint) => {
 }
 
 export const getAuthUrl = (endpoint) => {
-    return `${SERVER_CONFIG.BASE_URL}/api/auth${endpoint}`
+    return `${SERVER_CONFIG.BASE_URL}/auth${endpoint}`
 }
 
 export const getCoreUrl = (endpoint) => {
-    return `${SERVER_CONFIG.BASE_URL}/api/core${endpoint}`
+    return `${SERVER_CONFIG.BASE_URL}/core${endpoint}`
 }
 
 export const getAdminUrl = (endpoint) => {
-    return `${SERVER_CONFIG.BASE_URL}/api/admin${endpoint}`
+    return `${SERVER_CONFIG.BASE_URL}/admin${endpoint}`
 }
 
 export default SERVER_CONFIG
