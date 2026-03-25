@@ -79,22 +79,13 @@ deploy:
     - apk add --no-cache lftp curl
 
   script:
-    - echo "🗑️ Eliminar xd.txt remoto (si existe)"
-    - curl -v --ftp-ssl -k -u "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER/xd.txt" -Q "DELE xd.txt" || echo "xd.txt no existe o ya fue eliminado"
+    - echo "🗑️ Eliminar xd.txt remoto si existe"
+    - curl -v --ftp-ssl -k -u "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER/xd.txt" -Q "DELE xd.txt" || true
     - echo "🚀 Subida de archivos por FTP"
-    - echo "📍 Servidor: $FTP_SERVER"
-    - echo "👤 Usuario: $FTP_USERNAME"
-    - echo "📁 Directorio local: dist/spa/"
-    - echo "🎯 Directorio remoto: /"
-    - |
-      lftp -c "
-        set ssl:verify-certificate no;
-        set ftp:ssl-allow no;
-        open -u $FTP_USERNAME,$FTP_PASSWORD ftp://$FTP_SERVER:21;
-        mirror --reverse --verbose --delete --exclude .htaccess --exclude web.config --exclude .ftpquota --exclude certs/ --exclude .git/ dist/spa/ /;
-        bye
-      "
-    - echo "✅ Despliegue completado exitosamente"
+    - echo "📍 Servidor $FTP_SERVER"
+    - echo "👤 Usuario $FTP_USERNAME"
+    - lftp -c "set ssl:verify-certificate no; set ftp:ssl-allow no; open -u $FTP_USERNAME,$FTP_PASSWORD ftp://$FTP_SERVER:21; mirror --reverse --verbose --delete --exclude .htaccess --exclude web.config --exclude .ftpquota --exclude certs/ --exclude .git/ dist/spa/ /; bye"
+    - echo "✅ Despliegue completado"
 
   environment:
     name: production
