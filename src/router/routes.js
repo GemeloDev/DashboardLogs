@@ -96,18 +96,6 @@ const routes = [
         component: () => import('pages/admin/GestionEmpleadosSantoroPage.vue'),
         meta: { flow: 'santoro', requiresAdmin: true }
       },
-      {
-        path: 'santoro/demo',
-        name: 'santoroDemo',
-        component: () => import('pages/SantoroDemoPage.vue'),
-        meta: { flow: 'santoro', requiresAdmin: true }
-      },
-      {
-        path: 'santoro/config',
-        name: 'santoroConfig',
-        component: () => import('pages/SantoroConfigPage.vue'),
-        meta: { flow: 'santoro', requiresAdmin: true }
-      },
     ],
   },
 

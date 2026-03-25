@@ -1,5 +1,5 @@
-import { API_ENDPOINTS } from "./apiEndpoints";
 import { axiosInstance } from "./axiosConfig";
+import { LOGS } from "./endpoints";
 
 
 const STAT_FIELDS = [
@@ -20,7 +20,7 @@ const STAT_FIELDS = [
  */
 async function getDashboardStatsValues(system) {
 
-  const response = await axiosInstance.get(`${API_ENDPOINTS.LOGS_STATS}?system=${system}`);
+  const response = await axiosInstance.get(`${LOGS.STATS}?system=${system}`);
 
   const { data } = response;
 

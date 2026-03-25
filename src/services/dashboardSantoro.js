@@ -1,10 +1,10 @@
-import { API_SANTORO_DASHBOARD } from './apiEndpoints'
 import { axiosInstance } from './axiosConfig'
+import { SANTORO } from './endpoints'
 
 export class DashboardSantoro {
   static async getStats() {
     try {
-      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.STATS}`)
+      const response = await axiosInstance.get(`${SANTORO.STATS}`)
       console.log('ℹ️ Estadísticas consultadas: ', response.data)
       return response.data
     } catch (error) {
@@ -16,7 +16,7 @@ export class DashboardSantoro {
   //  Empresas / Organizations
   static async getEmpresas() {
     try {
-      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.EMPRESAS}`)
+      const response = await axiosInstance.get(`${SANTORO.EMPRESAS}`)
       console.log('✅ Empresas obtenidas correctamente: ', response.data)
       return response.data
     } catch (error) {
@@ -26,7 +26,7 @@ export class DashboardSantoro {
 
   static async getEmpresasById(id) {
     try {
-      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.EMPRESAS}/${id}`)
+      const response = await axiosInstance.get(`${SANTORO.EMPRESAS}/${id}`)
       console.log('✅ Empresa obtenida correctamente: ', response.data)
       return response.data
     } catch (error) {
@@ -36,7 +36,7 @@ export class DashboardSantoro {
 
   static async createEmpresas(payload) {
     try {
-      const response = await axiosInstance.post(`${API_SANTORO_DASHBOARD.EMPRESAS}`, payload)
+      const response = await axiosInstance.post(`${SANTORO.EMPRESAS}`, payload)
 
       return response.data
     } catch (error) {
@@ -49,7 +49,7 @@ export class DashboardSantoro {
     const { id } = empresa
 
     try {
-      const response = await axiosInstance.put(`${API_SANTORO_DASHBOARD.EMPRESAS}/${id}/status`, {
+      const response = await axiosInstance.put(`${SANTORO.EMPRESAS}/${id}/status`, {
         status,
       })
       return response.data
@@ -61,7 +61,7 @@ export class DashboardSantoro {
 
   static async getUsers() {
     try {
-      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.USUARIOS}`)
+      const response = await axiosInstance.get(`${SANTORO.USUARIOS}`)
       return response.data
     } catch (error) {
       console.error('❌ Error al obtener usuarios getUsers(): ', error)
@@ -71,7 +71,7 @@ export class DashboardSantoro {
 
   static async getAPIKeys() {
     try {
-      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.APIKEYS}`)
+      const response = await axiosInstance.get(`${SANTORO.API_KEYS}`)
       return response.data
     } catch (error) {
       console.log('❌ Error al obtener api keys getAPIKeys(): ', error.message)
@@ -82,7 +82,7 @@ export class DashboardSantoro {
   static async changeStatusApiKey(empresa, apiKey, status) {
     try {
       const response = await axiosInstance.put(
-        `${API_SANTORO_DASHBOARD.API_STATUS}/${empresa}/api-keys/${apiKey}/status`,
+        `${SANTORO.EMPRESAS}/${empresa}/api-keys/${apiKey}/status`,
         { status },
       )
       return response.data
@@ -98,7 +98,7 @@ export class DashboardSantoro {
       const sevenDaysAgo = new Date(now - 7 * 86_400_000)
       const sevenDaysLater = new Date(now.getTime() + 7 * 86_400_000)
 
-      const response = await axiosInstance.get(`${API_SANTORO_DASHBOARD.APIKEYS}`)
+      const response = await axiosInstance.get(`${SANTORO.API_KEYS}`)
       const keys = response.data.data.content
 
       return {

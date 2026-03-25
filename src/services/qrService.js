@@ -4,7 +4,7 @@
  */
 
 import axios from "axios"
-import { API_ENDPOINTS, AUTH_ENDPOINTS } from "./apiEndpoints"
+import { AUTH } from "./endpoints"
 
 // Cargar librería QRCode dinámicamente
 let QRCodeLib = null
@@ -155,15 +155,15 @@ export const generateMultipleQRs = async (tenantIds) => {
 
 export const generateNewContent = async () => {
   try{
-    const response = await axios.get(API_ENDPOINTS.QR)
+    const response = await axios.get(AUTH.QR_TOKEN)
     return {
-      url: `${AUTH_ENDPOINTS.LOGIN_QR}/${response.data.data.qrToken}`,
+      url: `${AUTH.LOGIN_QR}/${response.data.data.qrToken}`,
       expireTime: response.data.data.expiresInSeconds ?? ''
     }
   }catch( error ){
     console.log('🧱 Algo ocurrió durante la petición del QR', error)
     return {
-      url: `${AUTH_ENDPOINTS.LOGIN_QR}/token`,
+      url: `${AUTH.LOGIN_QR}`,
       expireTime: 120
     }
   }
