@@ -15,15 +15,15 @@ export const AUTH_ENDPOINTS = {
   LOGOUT: `${BASE_URL}/auth/logout`,
   VERIFY_TOKEN: `${BASE_URL}/api/auth/verify`,
   REFRESH_TOKEN: `${BASE_URL}/api/auth/refresh`,
-  LOGIN_QR: `/api/auth/qr-login`,
+  LOGIN_QR: `${BASE_URL}/api/auth/qr-login`,
   RESET_PASSWORD: `${BASE_URL}/auth/change-password`
 }
 
 // Endpoints principales (para uso futuro)
 export const API_ENDPOINTS = {
   //  Dashboard
-  EVENTS: '/api/dashboard/passports/events',
-  SUMMARY: '/api/dashboard/passports/summary',
+  EVENTS: `${BASE_URL}/api/dashboard/passports/events`,
+  SUMMARY: `${BASE_URL}/api/dashboard/passports/summary`,
   LOGS_STATS: `${BASE_URL}/logs/dashboard/stats`,
 
   // Estadísticas
@@ -37,7 +37,7 @@ export const API_ENDPOINTS = {
   CONFIG: `${BASE_URL}/api/config`,
 
   //  QR
-  QR: `/api/auth/qr-token`,
+  QR: `${BASE_URL}/api/auth/qr-token`,
 }
 
 export const API_SANTORO_DASHBOARD = {

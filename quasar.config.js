@@ -39,12 +39,13 @@ export default defineConfig((/* ctx */) => {
       },
 
       vueRouterMode: 'hash', // available values: 'hash', 'history'
-      // Configuración para producción
+
+      // Configuración de variables de entorno
       env: {
-        API_BASE_URL: process.env.NODE_ENV === 'production'
-          ? 'https://api-logs.grupo-santoro.com.mx/api'
-          : '/api'
+        // Esta variable se inyecta en el código del cliente
+        API_BASE_URL: 'https://api-logs.grupo-santoro.com.mx/api',
       },
+
       // vueRouterBase,
       // vueDevtools,
       // vueOptionsAPI: false,
@@ -88,27 +89,33 @@ export default defineConfig((/* ctx */) => {
           secure: false,
           logLevel: 'debug',
           onProxyReq: (proxyReq, req) => {
-            console.log('🔄 Proxy request:', req.method, req.url, '-> ', proxyReq.host + proxyReq.path)
+            console.log(
+              '🔄 Proxy request:',
+              req.method,
+              req.url,
+              '-> ',
+              proxyReq.host + proxyReq.path,
+            )
           },
           onProxyRes: (proxyRes, req) => {
             console.log('✅ Proxy response:', proxyRes.statusCode, req.url)
           },
           onError: (err, req) => {
             console.error('❌ Proxy error:', err.message, req.url)
-          }
+          },
         },
         // 🚨 NUEVA REGLA PARA SOCKET.IO
         '/ws': {
           target: 'http://187.188.66.56:8040', // Apunta al servidor
           ws: true, // 🚨 Habilitar soporte para WebSockets
           changeOrigin: true,
-          secure: false // Ignora problemas de SSL en el backend si los hubiera
-        }
+          secure: false, // Ignora problemas de SSL en el backend si los hubiera
+        },
       },
       https: {
         key: fs.readFileSync('certs/cpanel/clave.key'),
         cert: fs.readFileSync('certs/cpanel/cert.crt'),
-        ca: fs.readFileSync('certs/cpanel/csb.cabundle')
+        ca: fs.readFileSync('certs/cpanel/csb.cabundle'),
       },
       host: '0.0.0.0', // Acepta conexiones desde cualquier IP (PC y celular)
       port: 9000,

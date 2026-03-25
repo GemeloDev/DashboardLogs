@@ -4,12 +4,12 @@ name: Deploy to Santoro FTP
 on:
   push:
     branches:
-      - development  # Se dispara cuando haces push a la rama development
+      - development # Se dispara cuando haces push a la rama development
 
 jobs:
   deploy-job:
     name: Subida de archivos por FTP
-    runs-on: ubuntu-latest  # Usamos la máquina Linux más eficiente y gratuita
+    runs-on: ubuntu-latest # Usamos la máquina Linux más eficiente y gratuita
 
     steps:
       # 1. Obtener el código del repositorio
@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'  # Node.js 18 LTS
+          node-version: '18' # Node.js 18 LTS
           cache: 'npm'
 
       # 3. Instalar dependencias

@@ -1,26 +1,44 @@
 // stompSocketService.js
-import { Client } from "@stomp/stompjs";
-import { getJWTData } from "./cookieService";
-// import { SOCKET } from "./apiEndpoints";
+import { Client } from '@stomp/stompjs'
+import { getJWTData } from './cookieService'
+import { API_BASE_URL } from './apiConfig'
 
-let stompClient = null;
-let connected = false;
+let stompClient = null
+let connected = false
 
-// 1. Detectar si estamos en HTTPS o HTTP para usar wss o ws
-const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+// Construir URL del WebSocket desde la configuración del API
+function getWebSocketURL() {
+  // Si API_BASE_URL es una ruta relativa (desarrollo), usar el host actual
+  if (API_BASE_URL.startsWith('/')) {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const host = window.location.host
+    return `${protocol}://${host}/ws`
+  }
 
-// 2. Obtener la IP y Puerto del navegador (ej: 192.168.100.30:9000)
-const host = window.location.host;
+  // Si es una URL absoluta (producción), extraer el host y usar wss
+  try {
+    const apiUrl = new URL(API_BASE_URL)
+    // Convertir https://api-logs.grupo-santoro.com.mx/api -> wss://api-logs.grupo-santoro.com.mx/ws
+    const protocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws'
+    return `${protocol}://${apiUrl.host}/ws`
+  } catch (e) {
+    console.error('Error al construir WebSocket URL:', e)
+    // Fallback
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const host = window.location.host
+    return `${protocol}://${host}/ws`
+  }
+}
 
-// 3. Construir la URL completa apuntando al Proxy de Quasar
-// Asegúrate de que '/ws-endpoint' coincida con lo que pusiste en quasar.config.js
-const brokerURL = `${protocol}://${host}/ws`;
+const brokerURL = getWebSocketURL()
+
+console.log('🔌 WebSocket URL configurada:', brokerURL)
 
 /**
  * Convierte un "eventName" en un destino STOMP para suscribirse
  */
 function eventToDestination(eventName) {
-  return `/topic/${eventName}`;
+  return `/topic/${eventName}`
 }
 
 /**
@@ -28,53 +46,49 @@ function eventToDestination(eventName) {
  */
 export function initializeSocket(
   subscribeTopic = 'qr-login/',
-  onMessageReceived = () => { },
-  {
-    endpoint = brokerURL,
-    debug = false,
-    reconnectDelay = 3000
-  } = {}
+  onMessageReceived = () => {},
+  { endpoint = brokerURL, debug = false, reconnectDelay = 3000 } = {},
 ) {
-  if (stompClient && connected) return stompClient;
+  if (stompClient && connected) return stompClient
 
   stompClient = new Client({
     brokerURL: endpoint,
     reconnectDelay,
-    debug: msg => {
-      if (debug) console.log("[STOMP DEBUG]", msg);
+    debug: (msg) => {
+      if (debug) console.log('[STOMP DEBUG]', msg)
     },
     onConnect: () => {
-      connected = true;
-      console.log("✅ STOMP conectado exitosamente.");
+      connected = true
+      console.log('✅ STOMP conectado exitosamente.')
 
-      const topic = eventToDestination(subscribeTopic);
+      const topic = eventToDestination(subscribeTopic)
       console.log('Suscribiéndose a:', topic)
 
-      stompClient.subscribe(topic, message => {
+      stompClient.subscribe(topic, (message) => {
         console.log(`Received:`, JSON.parse(message.body))
-        const payload = JSON.parse(message.body);
+        const payload = JSON.parse(message.body)
         const data = getJWTData(payload.accessToken)
         onMessageReceived({
           payload,
-          data
+          data,
         })
-      });
+      })
     },
-    onStompError: frame => {
-      console.error("🚨 Error STOMP:", frame.headers["message"]);
-      console.error("Detalles:", frame.body);
+    onStompError: (frame) => {
+      console.error('🚨 Error STOMP:', frame.headers['message'])
+      console.error('Detalles:', frame.body)
     },
-    onWebSocketClose: evt => {
-      connected = false;
-      console.warn("❌ STOMP desconectado:", evt.reason || "Conexión cerrada");
+    onWebSocketClose: (evt) => {
+      connected = false
+      console.warn('❌ STOMP desconectado:', evt.reason || 'Conexión cerrada')
     },
-    onWebSocketError: err => {
-      console.error("🚨 Error WebSocket:", err);
-    }
-  });
+    onWebSocketError: (err) => {
+      console.error('🚨 Error WebSocket:', err)
+    },
+  })
 
-  stompClient.activate();
-  return stompClient;
+  stompClient.activate()
+  return stompClient
 }
 
 /**
@@ -82,10 +96,10 @@ export function initializeSocket(
  */
 export function disconnectSocket() {
   if (stompClient) {
-    stompClient.deactivate();
-    stompClient = null;
-    connected = false;
-    console.log("🔌 STOMP desconectado manualmente");
+    stompClient.deactivate()
+    stompClient = null
+    connected = false
+    console.log('🔌 STOMP desconectado manualmente')
   }
 }
 
@@ -93,5 +107,5 @@ export function disconnectSocket() {
  * Obtener el cliente STOMP directamente (para usos avanzados)
  */
 export function getSocket() {
-  return stompClient;
+  return stompClient
 }

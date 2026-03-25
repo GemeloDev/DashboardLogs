@@ -1,4 +1,4 @@
-
+// En Quasar, las variables de build.env se acceden con process.env
 export const API_BASE_URL = process.env.API_BASE_URL || '/api'
 
 // Configuración global de axios: sólo headers de petición válidos.
@@ -8,8 +8,8 @@ export const API_CONFIG = {
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+    Accept: 'application/json',
+  },
 }
 
 // Helper: construir configuración de petición para axios
