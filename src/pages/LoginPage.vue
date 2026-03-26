@@ -424,6 +424,7 @@ $text-main: #ffffff;
 $text-soft: rgba(255, 255, 255, 0.72);
 $text-muted: rgba(255, 255, 255, 0.5);
 $cyan: #22d3ee;
+$cyan-light: #3fd4ff;
 $cyan-strong: #06b6d4;
 $purple: #a855f7;
 $pink: #ec4899;
@@ -624,7 +625,7 @@ $red: #ef4444;
   font-weight: 600;
 
   &:hover {
-    color: lighten($cyan, 8%);
+    color: $cyan-light
   }
 }
 

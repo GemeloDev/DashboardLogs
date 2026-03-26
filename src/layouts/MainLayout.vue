@@ -380,6 +380,7 @@ import DinamicFilters from 'src/components/blocks/DinamicFilters.vue'
 import { ApiKeyService } from 'src/services/apiKeys'
 import { ChartDataService } from 'src/services/chartDataService'
 import EvaWorkspace from 'src/components/ai/EvaWorkspace.vue'
+import { CatalogService } from 'src/services/catalogService'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -395,7 +396,7 @@ const consolaRef = ref(null)
 const apiKeysPorExpirar = ref([])
 const prefs = authService.loadPrefs()
 
-const systems = ref(authService.user?.authz?.systems || [])
+const systems = ref()
 const selectedSystem = ref(prefs.system || systems.value?.[0] || 'DASHBOARD')
 
 const logsGlobales = ref([])
@@ -689,7 +690,7 @@ watch(
   { immediate: true },
 )
 
-onMounted(() => {
+onMounted(async () => {
   const defaultFlow = authService.getAllowedFlow()
   const defaultRoute = defaultFlow === 'santoro' ? '/santoro/empresas' : '/client/escritorio'
 
@@ -701,6 +702,10 @@ onMounted(() => {
     window.addEventListener('santoro-abrir-consola', (e) => openConsole(e?.detail || null))
     window.addEventListener('santoro-mostrar-filtros', () => (showDinamicFilters.value = true))
     checkApiKeysExpirations()
+
+    // Cargar sistemas desde la API
+    const catalogs = await CatalogService.fetchCatalogs()
+    systems.value = catalogs.sistemasSimple
   }
 })
 </script>

@@ -545,6 +545,8 @@ import { useQuasar } from 'quasar'
 import { sendInvitation } from '../services/invitationsService.js'
 import { editUser } from 'src/services/usersService.js'
 import { getDashboardStatsValues } from 'src/services/santoroFiltersController.js'
+import { CatalogService } from 'src/services/catalogService.js'
+import { formatArrayWithUnderscores } from 'src/helpers/index.js'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -560,9 +562,7 @@ const sending = ref(false)
 const invitationSent = ref(false)
 const invitationLink = ref('')
 
-const systemOptions = ref(
-  JSON.parse(localStorage.getItem('dashboardLogsSession'))?.user?.authz?.systems || [],
-)
+const systemOptions = ref([])
 
 const outcomesValues = ref([])
 const statusValues = ref([])
@@ -722,10 +722,12 @@ const enviarInvitacion = async () => {
     return
   }
 
+  console.log('🔍 Tipo de systems:', typeof formData.value.systems, formData.value.systems)
+
   console.log('📤 Datos a envíar para la invitación:', {
     email: formData.value.email,
     roles: [formData.value.roles],
-    systems: formData.value.systems,
+    systems: formatArrayWithUnderscores(formData.value.systems),
     ttlHours: formData.value.ttlHours,
     logFilters: formData.value.logFilters,
   })
@@ -735,7 +737,7 @@ const enviarInvitacion = async () => {
     const response = await sendInvitation({
       email: formData.value.email,
       roles: [formData.value.roles],
-      systems: formData.value.systems,
+      systems: formatArrayWithUnderscores(formData.value.systems),
       ttlHours: formData.value.ttlHours,
       logFilters: formData.value.logFilters,
     })
@@ -819,7 +821,6 @@ const closeModal = () => {
 
 async function getFieldsData(system) {
   try {
-    console.log(system)
     const values = await getDashboardStatsValues(system)
     outcomesValues.value = values.outcomes
     statusValues.value = values.statuses
@@ -854,7 +855,7 @@ watch(
 
 watch(
   () => formData.value.roles,
-  () => {
+  async (value) => {
     formData.value.systems = []
     outcomesValues.value = []
     statusValues.value = []
@@ -865,6 +866,11 @@ watch(
       allowedStatuses: [],
       allowedSeverities: [],
       allowedEventTypes: [],
+    }
+
+    if (value === 'VIEWER' || value === 'SYSTEM_MANAGER') {
+      const respuesta = await CatalogService.fetchCatalogs()
+      systemOptions.value = respuesta.sistemasSimple
     }
   },
 )
