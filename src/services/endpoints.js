@@ -1,30 +1,28 @@
 /**
- * endpoints.js
- * ─────────────────────────────────────────────────────────────
- * Fuente única de verdad para TODAS las URLs del backend.
+ * ════════════════════════════════════════════════════════════════
+ * ENDPOINTS - Fuente única de verdad para URLs del backend
+ * ════════════════════════════════════════════════════════════════
  *
- * Reemplaza:
- *   - src/services/apiConfig.js
- *   - src/services/apiEndpoints.js
- *   - src/services/endpoints.js
- *   - src/config/serverConfig.js
+ * Todos los endpoints de la API centralizados en un solo lugar.
+ *
+ * IMPORTANTE: No hardcodear URLs. Todas las URLs se construyen
+ * dinámicamente desde la configuración de entorno.
  *
  * Uso:
- *   import { BASE_URL, AUTH, CORE, ADMIN, AI, SANTORO, SOCKET } from 'src/services/endpoints'
- *   import { buildUrl, buildApiConfig } from 'src/services/endpoints'
+ *   import { AUTH, CORE, ADMIN, LOGS, EVA } from 'src/services/endpoints'
+ *   axios.get(AUTH.LOGIN)
+ * ════════════════════════════════════════════════════════════════
  */
 
-// ─── Base URL ────────────────────────────────────────────────────────────────
-// Se resuelve SOLO desde variables de entorno. Sin fallback hardcodeado.
-// Define API_BASE_URL en .env.development / .env.production según el ambiente.
-// En Quasar, usar process.env para variables definidas en build.env
+import { API_BASE_URL, API_TIMEOUT } from 'src/config/env'
 
-export const BASE_URL = process.env.API_BASE_URL ?? 'api-logs.grupo-santoro.com.mx'
+// ─── Base URL ────────────────────────────────────────────────────
+// Importada desde configuración central
+export const BASE_URL = API_BASE_URL
 
-// ─── Configuración global de peticiones ──────────────────────────────────────
-
+// ─── Configuración global de peticiones ──────────────────────────
 export const REQUEST_CONFIG = {
-  timeout: 30_000,
+  timeout: API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -33,7 +31,6 @@ export const REQUEST_CONFIG = {
 
 /**
  * Construye la configuración para axios incluyendo el Bearer token opcional.
- * @param {{ token?: string, withCredentials?: boolean }} opts
  */
 export function buildApiConfig({ token = null, withCredentials = false } = {}) {
   const headers = { ...REQUEST_CONFIG.headers }
@@ -43,9 +40,6 @@ export function buildApiConfig({ token = null, withCredentials = false } = {}) {
 
 /**
  * Construye una URL con query params, ignorando valores nulos/vacíos.
- * @param {string} base
- * @param {Record<string, any>} params
- * @returns {string}
  */
 export function buildUrl(base, params = {}) {
   const q = new URLSearchParams()
@@ -56,9 +50,7 @@ export function buildUrl(base, params = {}) {
   return qs ? `${base}?${qs}` : base
 }
 
-// ─── Helpers de prefijo ───────────────────────────────────────────────────────
-// Útiles cuando un servicio construye URLs dinámicamente.
-
+// ─── Helpers de prefijo ───────────────────────────────────────────
 export const url = {
   api: (path) => `${BASE_URL}${path}`,
   auth: (path) => `${BASE_URL}/auth${path}`,

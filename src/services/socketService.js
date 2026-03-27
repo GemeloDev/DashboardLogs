@@ -1,38 +1,27 @@
-// stompSocketService.js
+/**
+ * ════════════════════════════════════════════════════════════════
+ * SERVICIO DE WEBSOCKET CON STOMP
+ * ════════════════════════════════════════════════════════════════
+ *
+ * Maneja conexiones WebSocket usando el protocolo STOMP.
+ * La URL del WebSocket se obtiene de la configuración central.
+ *
+ * ════════════════════════════════════════════════════════════════
+ */
+
 import { Client } from '@stomp/stompjs'
 import { getJWTData } from './cookieService'
-import { API_BASE_URL } from './apiConfig'
+import { WS_BASE_URL, isDebug } from 'src/config/env'
 
 let stompClient = null
 let connected = false
 
-// Construir URL del WebSocket desde la configuración del API
-function getWebSocketURL() {
-  // Si API_BASE_URL es una ruta relativa (desarrollo), usar el host actual
-  if (API_BASE_URL.startsWith('/')) {
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const host = window.location.host
-    return `${protocol}://${host}/ws`
-  }
+// URL del WebSocket desde configuración central
+const brokerURL = WS_BASE_URL
 
-  // Si es una URL absoluta (producción), extraer el host y usar wss
-  try {
-    const apiUrl = new URL(API_BASE_URL)
-    // Convertir https://api-logs.grupo-santoro.com.mx/api -> wss://api-logs.grupo-santoro.com.mx/ws
-    const protocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws'
-    return `${protocol}://${apiUrl.host}/ws`
-  } catch (e) {
-    console.error('Error al construir WebSocket URL:', e)
-    // Fallback
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const host = window.location.host
-    return `${protocol}://${host}/ws`
-  }
+if (isDebug) {
+  console.log('🔌 WebSocket URL configurada:', brokerURL)
 }
-
-const brokerURL = getWebSocketURL()
-
-console.log('🔌 WebSocket URL configurada:', brokerURL)
 
 /**
  * Convierte un "eventName" en un destino STOMP para suscribirse
@@ -47,7 +36,7 @@ function eventToDestination(eventName) {
 export function initializeSocket(
   subscribeTopic = 'qr-login/',
   onMessageReceived = () => {},
-  { endpoint = brokerURL, debug = false, reconnectDelay = 3000 } = {},
+  { endpoint = brokerURL, debug = isDebug, reconnectDelay = 3000 } = {},
 ) {
   if (stompClient && connected) return stompClient
 
