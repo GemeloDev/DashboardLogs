@@ -40,10 +40,25 @@ export default defineConfig((/* ctx */) => {
 
       vueRouterMode: 'hash', // available values: 'hash', 'history'
 
-      // Configuración de variables de entorno
+      // ═══════════════════════════════════════════════════════════════
+      // INYECCIÓN DE VARIABLES DE ENTORNO
+      // ═══════════════════════════════════════════════════════════════
+      // Quasar lee automáticamente archivos .env según el modo:
+      //   - quasar dev   → lee .env + .env.development
+      //   - quasar build → lee .env + .env.production
+      //
+      // Aquí re-exponemos las variables para que estén disponibles
+      // en el código del cliente vía process.env
+      // ═══════════════════════════════════════════════════════════════
       env: {
-        // Esta variable se inyecta en el código del cliente
-        API_BASE_URL: 'https://api-logs.grupo-santoro.com.mx/api',
+        API_BASE_URL: process.env.API_BASE_URL,
+        WS_BASE_URL: process.env.WS_BASE_URL,
+        NODE_ENV: process.env.NODE_ENV,
+        DEBUG_MODE: process.env.DEBUG_MODE,
+        APP_NAME: process.env.APP_NAME,
+        APP_VERSION: process.env.APP_VERSION,
+        API_TIMEOUT: process.env.API_TIMEOUT,
+        SOCKET_TOPIC: process.env.SOCKET_TOPIC,
       },
 
       // vueRouterBase,

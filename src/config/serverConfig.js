@@ -1,14 +1,22 @@
 /**
- * Configuración Central del Servidor
- * Punto único de configuración para todas las URLs del backend
+ * ════════════════════════════════════════════════════════════════
+ * CONFIGURACIÓN DEL SERVIDOR - DEPRECATED
+ * ════════════════════════════════════════════════════════════════
+ *
+ * NOTA: Este archivo se mantiene por compatibilidad con código legacy.
+ *
+ * NUEVOS DESARROLLOS DEBEN USAR:
+ *   import { API_BASE_URL, API_TIMEOUT, config } from 'src/config/env'
+ *
+ * ════════════════════════════════════════════════════════════════
  */
 
-import { API_BASE_URL } from 'src/services/apiConfig'
+import { API_BASE_URL, API_TIMEOUT } from 'src/config/env'
 
 export const SERVER_CONFIG = {
-  BASE_URL: API_BASE_URL || 'https://api-logs.grupo-santoro.com.mx',
+  BASE_URL: API_BASE_URL,
   API_VERSION: 'v1',
-  TIMEOUT: 30000, // 30 segundos
+  TIMEOUT: API_TIMEOUT,
 }
 
 // Helper functions para construir URLs
