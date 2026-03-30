@@ -65,3 +65,4 @@ deploy:
     url: https://dashboard.grupo-santoro.com.mx
 
   allow_failure: false
+# Pipeline trigger - lu., 30 de mar. de 2026 14:57:52
