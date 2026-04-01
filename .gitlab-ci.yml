@@ -29,11 +29,24 @@ build:
     - npm --version
 
   script:
-    - echo "Instalando TODAS las dependencias (incluyendo devDependencies)"
-    - npm install --include=dev
-    - echo "Verificando instalacion"
+    - echo "=== DIAGNÓSTICO COMPLETO ==="
+    - echo "Contenido de package.json (devDependencies):"
+    - cat package.json | grep -A 15 "devDependencies"
+    - echo ""
+    - echo "=== INSTALANDO DEPENDENCIAS ==="
+    - npm install --include=dev --verbose 2>&1 | tee npm-install.log
+    - echo ""
+    - echo "=== VERIFICANDO NODE_MODULES ==="
+    - ls -la node_modules/ | grep quasar || echo "No hay paquetes quasar"
+    - echo ""
+    - echo "=== NPM LIST COMPLETO ==="
+    - npm list --depth=0
+    - echo ""
+    - echo "=== VERIFICANDO @quasar/app-vite ==="
     - npm list @quasar/app-vite
-    - echo "Build de produccion"
+    - test -d node_modules/@quasar/app-vite && echo "✅ Directorio existe" || echo "❌ Directorio NO existe"
+    - echo ""
+    - echo "=== BUILD ==="
     - npm run build
     - echo "Build completado exitosamente"
     - ls -la dist/spa/
