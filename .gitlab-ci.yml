@@ -18,7 +18,7 @@ cache:
 
 build:
   stage: build
-  image: node:18
+  image: node:20
   only:
     - development
 
@@ -29,7 +29,7 @@ build:
 
   script:
     - echo "Instalando dependencias"
-    - npm ci
+    - npm install --ignore-scripts
     - echo "Build de produccion"
     - npm run build
     - echo "Build completado exitosamente"
@@ -65,5 +65,3 @@ deploy:
     url: https://dashboard.grupo-santoro.com.mx
 
   allow_failure: false
-# Pipeline trigger - lu., 30 de mar. de 2026 14:57:52
-# Pipeline trigger - lu., 30 de mar. de 2026 14:57:59
