@@ -11,8 +11,8 @@
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
-    "build": "npx quasar build",
-    "build:prod": "npx quasar build",
+    "build": "node node_modules/@quasar/app-vite/bin/quasar build",
+    "build:prod": "node node_modules/@quasar/app-vite/bin/quasar build",
     "start": "quasar dev",
     "prepare": "echo 'No prepare needed'"
   },
@@ -42,7 +42,7 @@
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@quasar/app-vite": "^2.1.0",
-"@quasar/cli": "^2.0.0",
+    "@quasar/cli": "^2.0.0",
     "@vue/eslint-config-prettier": "^10.1.0",
     "autoprefixer": "^10.4.2",
     "eslint": "^9.14.0",
