@@ -29,9 +29,9 @@ build:
 
   script:
     - echo "Instalando dependencias"
-    - npm install --ignore-scripts
+    - npm install
     - echo "Build de produccion"
-    - npm run build
+    - npx quasar build
     - echo "Build completado exitosamente"
     - ls -la dist/spa/
 
