@@ -30,10 +30,8 @@ build:
   script:
     - echo "Instalando dependencias (sin postinstall)"
     - npm install --ignore-scripts
-    - echo "Instalando quasar CLI globalmente"
-    - npm install -g @quasar/cli
     - echo "Build de produccion"
-    - quasar build
+    - ./node_modules/.bin/quasar build
     - echo "Build completado exitosamente"
     - ls -la dist/spa/
 
