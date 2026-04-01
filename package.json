@@ -14,7 +14,7 @@
     "build": "quasar build",
     "build:prod": "quasar build",
     "start": "quasar dev",
-    "postinstall": "quasar prepare"
+    "prepare": "echo 'No prepare needed'"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",

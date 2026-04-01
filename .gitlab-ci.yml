@@ -28,10 +28,10 @@ build:
     - npm --version
 
   script:
-    - echo "Instalando dependencias (sin postinstall)"
-    - npm install --ignore-scripts
+    - echo "Instalando dependencias"
+    - npm install
     - echo "Build de produccion"
-    - ./node_modules/.bin/quasar build
+    - npm run build
     - echo "Build completado exitosamente"
     - ls -la dist/spa/
 
