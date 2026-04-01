@@ -28,12 +28,13 @@ build:
     - npm --version
 
   script:
-    - echo "Instalando dependencias (npm ci para CI/CD)"
-    - npm ci --prefer-offline --no-audit
+    - echo "Instalando dependencias"
+    - npm install --legacy-peer-deps
     - echo "Verificando instalacion de Quasar"
-    - ls -la node_modules/.bin/ | grep quasar || echo "Quasar no encontrado en .bin"
+    - ls -la node_modules/.bin/ | grep quasar || echo "Buscando binario de quasar..."
+    - find node_modules -name "quasar" -type f 2>/dev/null | head -5
     - echo "Build de produccion"
-    - ./node_modules/.bin/quasar build
+    - npm run build
     - echo "Build completado exitosamente"
     - ls -la dist/spa/
 
