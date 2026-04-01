@@ -33,7 +33,7 @@ build:
 
 deploy:
   stage: deploy
-  image: amazon/aws-cli:latest
+  image: amazon/aws-cli:2.0.30
   only:
     - development
   dependencies:
@@ -44,7 +44,7 @@ deploy:
     - aws s3 sync dist/spa/ s3://$S3_FRONTEND_BUCKET/ --delete --region $AWS_DEFAULT_REGION
     - echo "Archivos subidos exitosamente"
     - echo "Invalidando cache de CloudFront"
-    - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*" --region us-east-1
+    - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
     - echo "Cache invalidado - cambios visibles en ~1-2 minutos"
 
   environment:
