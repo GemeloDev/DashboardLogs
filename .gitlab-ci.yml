@@ -28,12 +28,16 @@ build:
     - npm --version
 
   script:
+    - echo "Limpiando cache de npm"
+    - npm cache clean --force
     - echo "Instalando dependencias"
-    - npm install --legacy-peer-deps
-    - echo "Listando contenido de node_modules/.bin/"
-    - ls -lah node_modules/.bin/ || echo "Directorio .bin no existe"
-    - echo "Build de produccion con npx"
-    - npx --package=@quasar/app-vite quasar build
+    - npm install
+    - echo "Verificando @quasar/app-vite"
+    - npm list @quasar/app-vite
+    - echo "Contenido de node_modules/.bin/"
+    - ls -lah node_modules/.bin/ | head -20
+    - echo "Build de produccion"
+    - npm run build
     - echo "Build completado exitosamente"
     - ls -la dist/spa/
 
