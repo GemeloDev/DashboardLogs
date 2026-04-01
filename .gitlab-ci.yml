@@ -9,12 +9,13 @@ stages:
 variables:
   NODE_ENV: "production"
 
-cache:
-  key:
-    files:
-      - package-lock.json
-  paths:
-    - node_modules/
+# Cache desactivado temporalmente para forzar instalación limpia
+# cache:
+#   key:
+#     files:
+#       - package-lock.json
+#   paths:
+#     - node_modules/
 
 build:
   stage: build
@@ -28,14 +29,11 @@ build:
     - npm --version
 
   script:
-    - echo "Limpiando cache de npm"
-    - npm cache clean --force
-    - echo "Instalando dependencias"
+    - echo "Instalando dependencias (sin cache)"
     - npm install
-    - echo "Verificando @quasar/app-vite"
+    - echo "Verificando instalacion"
     - npm list @quasar/app-vite
-    - echo "Contenido de node_modules/.bin/"
-    - ls -lah node_modules/.bin/ | head -20
+    - npm list @quasar/cli
     - echo "Build de produccion"
     - npm run build
     - echo "Build completado exitosamente"
