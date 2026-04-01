@@ -26,8 +26,6 @@ build:
     - echo "Checkout de codigo"
     - node --version
     - npm --version
-    - echo "Instalando Quasar CLI globalmente"
-    - npm install -g @quasar/cli
 
   script:
     - echo "Instalando dependencias"
