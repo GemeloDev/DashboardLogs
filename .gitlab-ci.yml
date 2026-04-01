@@ -33,7 +33,7 @@ build:
 
 deploy:
   stage: deploy
-  image: amazon/aws-cli:2.0.30
+  image: amazon/aws-cli:2.15.0
   only:
     - development
   dependencies:
