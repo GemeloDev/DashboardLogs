@@ -6,18 +6,6 @@ stages:
   - build
   - deploy
 
-# NO definir NODE_ENV aquí - lo configuramos por comando
-# variables:
-#   NODE_ENV: "production"
-
-# Cache desactivado temporalmente para forzar instalación limpia
-# cache:
-#   key:
-#     files:
-#       - package-lock.json
-#   paths:
-#     - node_modules/
-
 build:
   stage: build
   image: node:20
@@ -30,10 +18,8 @@ build:
     - npm --version
 
   script:
-    - echo "Instalando dependencias (incluyendo dev)"
+    - echo "Instalando dependencias"
     - npm install
-    - echo "Verificando @quasar/app-vite"
-    - npm list @quasar/app-vite
     - echo "Build de produccion"
     - NODE_ENV=production npm run build
     - echo "Build completado exitosamente"
@@ -53,15 +39,12 @@ deploy:
   dependencies:
     - build
 
-  before_script:
-    - echo "Preparando despliegue a S3"
-
   script:
     - echo "Subiendo archivos a S3"
-    - aws s3 sync dist/spa/ "s3://$S3_FRONTEND_BUCKET/" --delete --region $AWS_DEFAULT_REGION
+    - aws s3 sync dist/spa/ s3://$S3_FRONTEND_BUCKET/ --delete --region $AWS_DEFAULT_REGION
     - echo "Archivos subidos exitosamente"
     - echo "Invalidando cache de CloudFront"
-    - aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" --paths "/*" --region us-east-1
+    - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*" --region us-east-1
     - echo "Cache invalidado - cambios visibles en ~1-2 minutos"
 
   environment:
