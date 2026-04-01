@@ -29,11 +29,10 @@ build:
     - npm --version
 
   script:
-    - echo "Instalando dependencias (sin cache)"
-    - npm install
+    - echo "Instalando TODAS las dependencias (incluyendo devDependencies)"
+    - npm install --include=dev
     - echo "Verificando instalacion"
     - npm list @quasar/app-vite
-    - npm list @quasar/cli
     - echo "Build de produccion"
     - npm run build
     - echo "Build completado exitosamente"
