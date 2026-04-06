@@ -22,7 +22,7 @@
                 class="q-ml-md"
                 icon="format_list_numbered"
               >
-                {{ logs.length }} / {{ rawLogs.length }} eventos
+                {{ logs.length }} / {{ serverTotalElements }} eventos
               </q-chip>
             </div>
             <div class="text-subtitle2 text-grey-4 q-mt-sm">
@@ -133,8 +133,8 @@
           <div class="col-12 col-sm-6 col-md-4">
             <div class="pagination-info text-caption text-grey-4">
               Mostrando {{ (paginaActual - 1) * registrosPorPagina + 1 }} -
-              {{ Math.min(paginaActual * registrosPorPagina, logs.length) }}
-              de {{ logs.length }} registros
+              {{ Math.min(paginaActual * registrosPorPagina, serverTotalElements) }}
+              de {{ serverTotalElements }} registros
             </div>
 
             <div v-if="loadingMore" class="text-caption text-grey-5 q-mt-xs">
@@ -179,7 +179,13 @@ const $q = useQuasar()
 
 const filtrosGlobales = inject('filtrosGlobales', ref(null))
 
-// --- ESTADO ---
+// ─── CONSTANTES ───────────────────────────────────────────────────────────────
+// Claves que el backend acepta como query params (filtros server-side).
+// Todo lo que DinamicFilters emita con estas claves se envía al backend;
+// el resto se filtra client-side.
+const SERVER_FILTER_KEYS = new Set(['eventType', 'status', 'severity', 'outcome'])
+
+// ─── ESTADO ───────────────────────────────────────────────────────────────────
 const consoleStore = useConsoleFiltersStore()
 const loading = ref(false)
 const filtrosToggle = ref(true)
@@ -187,23 +193,34 @@ const modalDetalle = ref(false)
 const logSeleccionado = ref(null)
 const filtroRef = ref(null)
 
-// --- DATOS ---
-const baseLogs = ref([]) // ✅ fuente de verdad: lo que regresa el backend (ya filtrado por system) - acumulador (lo que ya descargaste del backend)
-const rawLogs = ref([]) // fuente para DinamicFilters (ya con rango aplicado)
-const logs = ref([]) // vista final
-const lastPayload = ref(null)
+// ─── DATOS ────────────────────────────────────────────────────────────────────
+const baseLogs = ref([])       // lo que regresa el backend (ya filtrado por server params)
+const rawLogs = ref([])        // fuente para DinamicFilters (= baseLogs, ya no se filtra rango en cliente)
+const logs = ref([])           // vista final tras filtros client-side
+const lastPayload = ref(null)  // último payload de DinamicFilters
 
-// --- PAGINACIÓN ---
+// Filtros server-side activos (para detectar cambios y decidir re-fetch)
+const activeServerParams = ref({
+  fromDate: '',
+  toDate: '',
+  eventType: '',
+  status: '',
+  severity: '',
+  outcome: '',
+  sortDir: 'DESC',
+})
+
+// ─── PAGINACIÓN ───────────────────────────────────────────────────────────────
 const paginaActual = ref(1)
 const registrosPorPagina = ref(25)
-const serverPage = ref(-1) // última page cargada (0-based). -1 = ninguna
+const serverPage = ref(-1)
 const serverTotalPages = ref(1)
 const serverTotalElements = ref(0)
-const pageSize = ref(500) // tamaño recomendado (200/300/500)
+const pageSize = ref(500)
 const loadingMore = ref(false)
-const isChartDataMode = ref(false) // si abres con dataGrafica, no paginamos backend
+const isChartDataMode = ref(false)
 
-// --- COMPUTED ---
+// ─── COMPUTED ─────────────────────────────────────────────────────────────────
 const logsPaginados = computed(() => {
   const inicio = (paginaActual.value - 1) * registrosPorPagina.value
   const fin = inicio + registrosPorPagina.value
@@ -218,12 +235,11 @@ const hasMore = computed(() => serverPage.value + 1 < serverTotalPages.value)
 
 const currentSystem = computed(() => filtrosGlobales?.value?.system || '')
 
-const globalRange = computed(() => filtrosGlobales?.value?.rangoFechas || { from: '', to: '' })
-
 const logsToExport = computed(() => {
   return Array.isArray(logs.value) ? logs.value : []
 })
 
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
 
 function mergeUniqueById(target, incoming) {
@@ -235,36 +251,44 @@ function mergeUniqueById(target, incoming) {
   return Array.from(map.values())
 }
 
-function toMs(val) {
-  if (val == null) return NaN
-  if (typeof val === 'number') return val
-  if (val instanceof Date) return val.getTime()
-  return new Date(String(val)).getTime()
-}
-
-function aplicarFiltroRango(items, range = { from: '', to: '' }) {
-  const { startMs, endMs } = rangeToMsLocal(range)
-  if (startMs === -Infinity && endMs === Infinity) return Array.isArray(items) ? items : []
-
-  return (Array.isArray(items) ? items : []).filter((e) => {
-    const t = toMs(e?.eventTime || e?.fechaHoraDia)
-    if (!Number.isFinite(t)) return false
-    return t >= startMs && t <= endMs
-  })
-}
-
-function aplicarPayloadLocal(items, payload) {
-  if (!payload) return items || []
+/**
+ * Extrae los parámetros server-side desde el payload de DinamicFilters.
+ * Retorna { serverParams, clientPayload }.
+ */
+function splitPayload(payload) {
+  if (!payload) return { serverParams: {}, clientPayload: null }
 
   const { busqueda = '', rangoFechas, _visibleFields, ...values } = payload
 
-  console.log('✅ Payload para el filtrado de datos: ', {
-    busqueda,
-    rangoFechas,
-    _visibleFields,
-    values,
-  })
+  const serverParams = {}
+  const clientValues = {}
 
+  for (const [k, v] of Object.entries(values)) {
+    if (SERVER_FILTER_KEYS.has(k) && v != null && v !== '') {
+      serverParams[k] = v
+    } else {
+      clientValues[k] = v
+    }
+  }
+
+  // Rango de fechas → server-side
+  const from = rangoFechas?.from || ''
+  const to = rangoFechas?.to || ''
+  if (from) serverParams.fromDate = from
+  if (to) serverParams.toDate = to
+
+  const clientPayload = { busqueda, _visibleFields, ...clientValues }
+
+  return { serverParams, clientPayload }
+}
+
+/**
+ * Filtra items SOLO con las claves que el backend NO maneja.
+ */
+function aplicarFiltrosClientSide(items, payload) {
+  if (!payload) return items || []
+
+  const { busqueda = '', _visibleFields, ...values } = payload
   const search = (busqueda || '').trim().toLowerCase()
 
   let out = Array.isArray(items) ? items : []
@@ -272,6 +296,7 @@ function aplicarPayloadLocal(items, payload) {
   out = out.filter((log) => {
     for (const [k, v] of Object.entries(values)) {
       if (!v) continue
+      if (SERVER_FILTER_KEYS.has(k)) continue
 
       const actual = getDeep(log, k)
 
@@ -283,20 +308,21 @@ function aplicarPayloadLocal(items, payload) {
 
       if (String(actual) !== String(v)) return false
     }
-
     return true
   })
 
-  //  Busqueda
   if (search) out = out.filter((l) => JSON.stringify(l).toLowerCase().includes(search))
 
+  console.log('Filtrado client-side:', { payload, total: items?.length ?? 0, filtrados: out.length, _visibleFields })
   return out
 }
 
+// ─── VISTA ────────────────────────────────────────────────────────────────────
 function recomputarVista({ resetPage = true } = {}) {
-  const rango = lastPayload.value?.rangoFechas || globalRange.value
-  rawLogs.value = aplicarFiltroRango(baseLogs.value, rango)
-  logs.value = aplicarPayloadLocal(rawLogs.value, lastPayload.value)
+  rawLogs.value = baseLogs.value
+
+  const { clientPayload } = splitPayload(lastPayload.value)
+  logs.value = aplicarFiltrosClientSide(rawLogs.value, clientPayload)
 
   if (resetPage) paginaActual.value = 1
 }
@@ -308,110 +334,45 @@ function resetServerPaging() {
   serverTotalElements.value = 0
 }
 
-function rangeToMsLocal(range) {
-  const from = String(range?.from || '').trim()
-  const to = String(range?.to || '').trim()
-  if (!from && !to) return { startMs: -Infinity, endMs: Infinity }
+// ─── COMUNICACIÓN CON BACKEND ─────────────────────────────────────────────────
+function buildFetchParams(page) {
+  const params = {
+    system: currentSystem.value,
+    page,
+    size: pageSize.value,
+  }
 
-  const startStr = from || to
-  const endStr = to || from
+  const sp = activeServerParams.value
+  if (sp.fromDate)  params.fromDate  = sp.fromDate
+  if (sp.toDate)    params.toDate    = sp.toDate
+  if (sp.sortDir)   params.sortDir   = sp.sortDir
+  if (sp.eventType) params.eventType = sp.eventType
+  if (sp.status)    params.status    = sp.status
+  if (sp.severity)  params.severity  = sp.severity
+  if (sp.outcome)   params.outcome   = sp.outcome
 
-  const startMs = new Date(`${startStr}T00:00:00`).getTime()
-  const endMs = new Date(`${endStr}T23:59:59.999`).getTime()
-  return { startMs, endMs }
+  return params
 }
 
-// ✅ descarga páginas hasta que ya tenemos eventos con eventTime <= startMs (o hasta límites)
-async function cargarHastaRango(range) {
-  const { startMs } = rangeToMsLocal(range)
+async function fetchPage(page, { resetPage = false } = {}) {
+  const params = buildFetchParams(page)
+  const resp = await ChartDataService.getLogsEvents(params)
 
-  resetServerPaging()
-  baseLogs.value = []
+  serverPage.value        = Number(resp?.page ?? resp?.currentPage ?? page)
+  serverTotalPages.value  = Number(resp?.totalPages ?? 1)
+  serverTotalElements.value = Number(resp?.totalElements ?? resp?.totalItems ?? 0)
 
-  let page = 0
-  let oldestFetched = Infinity
+  const items = Array.isArray(resp?.items) ? resp.items : []
+  baseLogs.value = mergeUniqueById(baseLogs.value, items)
 
-  // límites para no matar el navegador (ajusta a gusto)
-  const MAX_PAGES = 40
-  const MAX_ITEMS = 10000
-
-  while (page < MAX_PAGES && baseLogs.value.length < MAX_ITEMS) {
-    const resp = await ChartDataService.getLogsEvents({
-      system: currentSystem.value,
-      page,
-      size: pageSize.value,
-    })
-
-    serverPage.value = Number(resp?.page ?? page)
-    serverTotalPages.value = Number(resp?.totalPages ?? 1)
-    serverTotalElements.value = Number(resp?.totalElements ?? 0)
-
-    const items = Array.isArray(resp?.items) ? resp.items : []
-    if (!items.length) break
-
-    baseLogs.value = mergeUniqueById(baseLogs.value, items)
-
-    // oldest de ESTA página
-    let pageOldest = Infinity
-    for (const it of items) {
-      const t = toMs(it?.eventTime || it?.fechaHoraDia)
-      if (Number.isFinite(t) && t < pageOldest) pageOldest = t
-    }
-    if (Number.isFinite(pageOldest) && pageOldest < oldestFetched) oldestFetched = pageOldest
-
-    // ✅ si ya llegamos a eventos tan viejos como el inicio del rango, podemos parar
-    if (oldestFetched <= startMs) break
-
-    // si ya no hay más páginas
-    if (page + 1 >= serverTotalPages.value) break
-
-    page += 1
-  }
-}
-
-function getOldestLoadedMs() {
-  let oldest = Infinity
-  for (const it of baseLogs.value || []) {
-    const t = toMs(it?.eventTime || it?.fechaHoraDia)
-    if (Number.isFinite(t) && t < oldest) oldest = t
-  }
-  return oldest
-}
-
-async function ensureCoverageForRange(range) {
-  const { startMs } = rangeToMsLocal(range)
-  if (!Number.isFinite(startMs)) return
-
-  // Asegura que exista al menos la primera página
-  if (!baseLogs.value.length) {
-    await cargarPaginaInicial()
-  }
-
-  // Si ya tenemos data suficientemente vieja, no hacemos nada
-  let oldest = getOldestLoadedMs()
-  if (!Number.isFinite(oldest) || oldest <= startMs) return
-
-  // Cargar más páginas hasta cubrir el inicio del rango (con límites)
-  const MAX_EXTRA_PAGES = 30
-  let guards = 0
-
-  loadingMore.value = true
-  try {
-    while (oldest > startMs && hasMore.value && guards < MAX_EXTRA_PAGES) {
-      await fetchPage(serverPage.value + 1, { resetPage: false })
-      oldest = getOldestLoadedMs()
-      guards++
-    }
-  } finally {
-    loadingMore.value = false
-  }
+  recomputarVista({ resetPage })
 }
 
 async function cargarPaginaInicial() {
   loading.value = true
   try {
     resetServerPaging()
-    await fetchPage(0, { resetPage: true }) // ✅ reset a la página 1
+    await fetchPage(0, { resetPage: true })
   } finally {
     loading.value = false
   }
@@ -421,20 +382,45 @@ async function cargarMas() {
   if (!hasMore.value || loadingMore.value || isChartDataMode.value) return
   loadingMore.value = true
   try {
-    await fetchPage(serverPage.value + 1, { resetPage: false }) // ✅ NO reset
+    await fetchPage(serverPage.value + 1, { resetPage: false })
   } finally {
     loadingMore.value = false
   }
 }
 
-// --- FUNCIONES PRINCIPALES ---
 /**
- * Abre la consola y decide qué datos cargar
- * @param {Array|null} dataGrafica - Datos opcionales si vienen de un click en gráfica
+ * Detecta si los parámetros server-side cambiaron.
+ * Si cambiaron, actualiza activeServerParams y retorna true → necesita re-fetch.
  */
+function applyServerParams(newParams) {
+  const prev = activeServerParams.value
+  let changed = false
+
+  for (const key of ['fromDate', 'toDate', 'eventType', 'status', 'severity', 'outcome']) {
+    if ((newParams[key] || '') !== (prev[key] || '')) {
+      changed = true
+      break
+    }
+  }
+
+  if (changed) {
+    activeServerParams.value = {
+      ...prev,
+      fromDate:  newParams.fromDate  || '',
+      toDate:    newParams.toDate    || '',
+      eventType: newParams.eventType || '',
+      status:    newParams.status    || '',
+      severity:  newParams.severity  || '',
+      outcome:   newParams.outcome   || '',
+    }
+  }
+
+  return changed
+}
+
+// ─── FUNCIONES PRINCIPALES (expuestas) ────────────────────────────────────────
 const abrirConsola = async (dataGrafica = null) => {
   if (Array.isArray(dataGrafica) && dataGrafica.length > 0) {
-    // ✅ Modo "desde gráfica": no hay paginación backend
     isChartDataMode.value = true
     baseLogs.value = [...dataGrafica]
     serverTotalElements.value = dataGrafica.length
@@ -443,7 +429,6 @@ const abrirConsola = async (dataGrafica = null) => {
     lastPayload.value = null
     recomputarVista()
   } else {
-    // ✅ Modo "backend paginado"
     isChartDataMode.value = false
     await cargarPaginaInicial()
   }
@@ -452,9 +437,7 @@ const abrirConsola = async (dataGrafica = null) => {
   filtrosToggle.value = true
   paginaActual.value = 1
 
-  setTimeout(() => {
-    filtrosToggle.value = false
-  }, 600)
+  setTimeout(() => { filtrosToggle.value = false }, 600)
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -469,7 +452,6 @@ async function ensureDinamicFiltersReady() {
 }
 
 const abrirConsolaConFiltros = async (selections = []) => {
-  // separa rango y otros filtros
   let range = null
   const other = []
 
@@ -481,26 +463,26 @@ const abrirConsolaConFiltros = async (selections = []) => {
 
   isChartDataMode.value = false
 
+  // Pre-aplicar server params antes de la primera carga
+  const preServerParams = { ...activeServerParams.value }
+  if (range?.from) preServerParams.fromDate = range.from
+  if (range?.to)   preServerParams.toDate   = range.to
+
+  for (const sel of other) {
+    if (SERVER_FILTER_KEYS.has(sel.fieldKey)) {
+      preServerParams[sel.fieldKey] = sel.value
+    }
+  }
+
+  applyServerParams(preServerParams)
+
   loading.value = true
   try {
-    // ✅ si viene rango desde gráfica: descarga páginas hasta cubrir rango
-    if (range?.from || range?.to) {
-      await cargarHastaRango(range)
-      // deja el rango listo en payload
-      lastPayload.value = {
-        ...(lastPayload.value || {}),
-        rangoFechas: { from: range.from || '', to: range.to || '' },
-      }
-      recomputarVista({ resetPage: true })
-    } else {
-      // modo normal
-      await cargarPaginaInicial()
-    }
+    await cargarPaginaInicial()
   } finally {
     loading.value = false
   }
 
-  // ✅ abrir consola siempre
   consoleStore.consoleOpen = true
   filtrosToggle.value = true
   paginaActual.value = 1
@@ -509,30 +491,29 @@ const abrirConsolaConFiltros = async (selections = []) => {
   const ok = await ensureDinamicFiltersReady()
   if (!ok) return
 
-  // ✅ refleja rango en UI
   if (range?.from || range?.to) {
     filtroRef.value?.setRangoFechas?.({ from: range.from || '', to: range.to || '' })
   }
 
-  // ✅ aplica otros filtros (status/eventType/outcome/etc.)
   for (const sel of other) {
     filtroRef.value.applyChartFilter(sel.fieldKey, sel.value)
   }
 }
 
-// ✅ Abre consola (si hace falta) y aplica el filtro en DinamicFilters
 const abrirConsolaConFiltro = async (fieldKey, value) => {
-  // 1) Abre consola y asegura data
+  // Si el filtro es server-side, pre-aplicarlo antes de cargar
+  if (SERVER_FILTER_KEYS.has(fieldKey)) {
+    applyServerParams({ ...activeServerParams.value, [fieldKey]: value })
+  }
+
   if (!consoleStore.consoleOpen) {
     await abrirConsola()
   } else {
-    // si ya está abierta pero no hay data, asegúrate de tener al menos la primera página
     if (!baseLogs.value.length && !isChartDataMode.value) {
       await cargarPaginaInicial()
     }
   }
 
-  // 2) Abre panel filtros y espera a que el ref exista
   filtrosToggle.value = true
   await nextTick()
 
@@ -542,25 +523,17 @@ const abrirConsolaConFiltro = async (fieldKey, value) => {
     return
   }
 
-  // 3) Aplica filtro en DinamicFilters (esto debe refrescar logs)
   filtroRef.value.applyChartFilter(fieldKey, value)
-
-  // 4) (Opcional) cerrar panel filtros tras aplicar
-  // setTimeout(() => (filtrosToggle.value = false), 500)
 }
 
 const abrirConsolaConDataYFiltros = async (dataGrafica = [], selections = []) => {
-  // 1) abre en modo gráfica (isChartDataMode = true)
   await abrirConsola(dataGrafica)
 
-  // 2) abre panel filtros y espera a que DinamicFilters esté listo
   filtrosToggle.value = true
   await nextTick()
   const ok = await ensureDinamicFiltersReady()
   if (!ok) return
 
-  // 3) aplica selections en DinamicFilters para que el UI refleje valores
-  //    (si viene rangoFechas, primero setRangoFechas para que el payload lo incluya)
   const rangeSel = selections.find((s) => s?.fieldKey === 'rangoFechas')
   if (rangeSel?.value) {
     filtroRef.value?.setRangoFechas?.(rangeSel.value)
@@ -573,44 +546,51 @@ const abrirConsolaConDataYFiltros = async (dataGrafica = [], selections = []) =>
   }
 }
 
-//  fetchPage anteriormente cargarLogsDesdeApi
-async function fetchPage(page, { resetPage = false } = {}) {
-  const resp = await ChartDataService.getLogsEvents({
-    system: currentSystem.value,
-    page,
-    size: pageSize.value,
-  })
-
-  serverPage.value = Number(resp?.page ?? page)
-  serverTotalPages.value = Number(resp?.totalPages ?? 1)
-  serverTotalElements.value = Number(resp?.totalElements ?? 0)
-
-  const items = Array.isArray(resp?.items) ? resp.items : []
-  baseLogs.value = mergeUniqueById(baseLogs.value, items)
-
-  // ✅ si es carga inicial -> resetPage true, si es “cargar más” -> false
-  recomputarVista({ resetPage })
-}
-
+// ─── HANDLER FILTROS DESDE DinamicFilters ─────────────────────────────────────
 const onFiltrosPayload = async (payload) => {
   lastPayload.value = payload
 
-  const r = payload?.rangoFechas
-  if (!isChartDataMode.value && (r?.from || r?.to)) {
-    await ensureCoverageForRange(r)
+  // Modo gráfica: solo filtrar client-side
+  if (isChartDataMode.value) {
+    recomputarVista({ resetPage: true })
+    return
   }
 
-  recomputarVista({ resetPage: true })
+  // Separar parámetros server vs client
+  const { serverParams } = splitPayload(payload)
+  const needsRefetch = applyServerParams(serverParams)
+
+  if (needsRefetch) {
+    // Server params cambiaron → re-fetch desde página 0
+    await cargarPaginaInicial()
+  } else {
+    // Solo cambiaron filtros client-side → recomputar localmente
+    recomputarVista({ resetPage: true })
+  }
 }
 
+// ─── PAGINACIÓN UI ────────────────────────────────────────────────────────────
+const onPageChanged = async () => {
+  scrollArriba()
+
+  if (!consoleStore.consoleOpen) return
+  if (isChartDataMode.value) return
+
+  const atLastPage = paginaActual.value >= totalPaginas.value
+  if (atLastPage && hasMore.value && !loadingMore.value) {
+    await cargarMas()
+  }
+}
+
+// ─── EXPORTACIÓN ──────────────────────────────────────────────────────────────
 function exportLogs(format) {
   try {
-    const items = logsToExport.value // <-- tus logs visibles/filtrados en consola
+    const items = logsToExport.value
     const base = `logs-${currentSystem.value || 'all'}`
 
     if (format === 'excel') return ConsoleExportService.exportExcel(items, base)
-    if (format === 'json') return ConsoleExportService.exportJSON(items, base)
-    if (format === 'txt') return ConsoleExportService.exportTXT(items, base)
+    if (format === 'json')  return ConsoleExportService.exportJSON(items, base)
+    if (format === 'txt')   return ConsoleExportService.exportTXT(items, base)
 
     throw new Error('Formato no soportado')
   } catch (e) {
@@ -619,6 +599,7 @@ function exportLogs(format) {
   }
 }
 
+// ─── MISC ─────────────────────────────────────────────────────────────────────
 const cerrarConsola = () => {
   consoleStore.consoleOpen = false
   logs.value = []
@@ -627,6 +608,10 @@ const cerrarConsola = () => {
   lastPayload.value = null
   isChartDataMode.value = false
   resetServerPaging()
+  activeServerParams.value = {
+    fromDate: '', toDate: '', eventType: '', status: '',
+    severity: '', outcome: '', sortDir: 'DESC',
+  }
 }
 
 const mostrarDetalleLog = (log) => {
@@ -639,24 +624,7 @@ const scrollArriba = () => {
   if (container) container.scrollTop = 0
 }
 
-const onPageChanged = async () => {
-  scrollArriba()
-
-  // si no está abierta o es modo gráfica, no autocargamos
-  if (!consoleStore.consoleOpen) return
-  if (isChartDataMode.value) return
-
-  // ✅ si el usuario llegó a la última página visible
-  const atLastPage = paginaActual.value >= totalPaginas.value
-
-  if (atLastPage && hasMore.value && !loadingMore.value) {
-    await cargarMas()
-    // Nota: NO avanzamos automáticamente de página,
-    // el usuario verá que ahora hay más páginas disponibles.
-  }
-}
-
-//  Si campbia el system global mientras la consola está abierta, re-aplica system y re-aplica payload
+// ─── WATCHERS ─────────────────────────────────────────────────────────────────
 watch(currentSystem, async () => {
   if (!consoleStore.consoleOpen) return
   if (isChartDataMode.value) return
@@ -668,25 +636,22 @@ watch(
   async (sel) => {
     if (!sel) return
 
-    // 1) Abre consola
     consoleStore.openConsole?.()
 
-    //  2) asegura data cargada
     if (!baseLogs.value.length && !isChartDataMode.value) {
       await cargarPaginaInicial()
     }
 
-    //  3) abre panel filtros y aplica filtro DynamicFilters
     filtrosToggle.value = true
     await nextTick()
     filtroRef.value?.applyChartFilter?.(sel.fieldKey, sel.value)
 
-    //  4) limpia pending
     consoleStore.clearPending()
   },
   { immediate: true, flush: 'post' },
 )
 
+// ─── EXPOSE ───────────────────────────────────────────────────────────────────
 defineExpose({
   abrirConsola,
   abrirConsolaConFiltro,

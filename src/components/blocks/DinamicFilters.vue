@@ -223,7 +223,7 @@ const loading = ref(false)
 const logsGlobales = inject('logsGlobales', ref([]))
 const configFiltros = ref([])
 const hydratedOnce = ref(false)
-const camposVisibles = ref(['status', 'severity', 'location.name', 'eventType'])
+const camposVisibles = ref(['status', 'severity', 'outcome', 'eventType'])
 
 const filtrosSeleccionados = ref({
   busqueda: '',

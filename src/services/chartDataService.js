@@ -42,20 +42,45 @@ export class ChartDataService {
     return data // <-- devuelve el body completo { ok, data:{items...} }
   }
 
+  /**
+   * Consulta paginada de eventos con filtros server-side.
+   *
+   * @param {Object} opts
+   * @param {string}  opts.system    - Sistema (requerido)
+   * @param {number}  opts.page      - Página 0-based (default 0)
+   * @param {number}  opts.size      - Registros por página (default 500)
+   * @param {string}  opts.fromDate  - Fecha inicio YYYY-MM-DD
+   * @param {string}  opts.toDate    - Fecha fin    YYYY-MM-DD
+   * @param {string}  opts.sortDir   - ASC | DESC
+   * @param {string}  opts.eventType - Filtro por tipo de evento
+   * @param {string}  opts.status    - Filtro por status
+   * @param {string}  opts.severity  - Filtro por severidad
+   * @param {string}  opts.outcome   - Filtro por outcome
+   */
   static async getLogsEvents({
     system,
-    page = 1,
-    size = 500
+    page = 0,
+    size = 500,
+    fromDate,
+    toDate,
+    sortDir,
+    eventType,
+    status,
+    severity,
+    outcome,
   } = {}) {
-    const { data } = await axiosInstance.get(`${LOGS.EVENTS_RAW}`, {
-      params: { system, page, size }
-    })
+    // Construir solo los params con valor real (evita enviar undefined/null/'')
+    const raw = { system, page, size, fromDate, toDate, sortDir, eventType, status, severity, outcome }
+    const params = Object.fromEntries(
+      Object.entries(raw).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+    )
+
+    const { data } = await axiosInstance.get(LOGS.EVENTS, { params })
 
     if (!data.ok) {
       throw new Error(data?.message || 'Error al obtener los eventos del sistema')
     }
 
-    // Retorna el objeto de paginación + items
     // { ok: true, data: { items: [...], totalItems, totalPages, currentPage } }
     return data.data
   }

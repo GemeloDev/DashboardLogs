@@ -96,12 +96,10 @@ export const LOGS = {
 }
 
 export const DASHBOARD = {
-  SUMMARY: `${BASE_URL}/dashboard/passports/summary`,
-  EVENTS: `${BASE_URL}/dashboard/passports/events`,
-  BY_OFFICE: `${BASE_URL}/dashboard/passports/by-office`,
-  BY_TYPE: `${BASE_URL}/dashboard/passports/by-type`,
-  STATS: `${BASE_URL}/stats`,
-  CHARTS: `${BASE_URL}/charts`,
+  STATS: `${BASE_URL}/logs/dashboard/stats`,
+  SERIES: `${BASE_URL}/logs/dashboard/series`,
+  HTTP: `${BASE_URL}/logs/dashboard/http`,
+  GEO: `${BASE_URL}/logs/dashboard/geo`,
 }
 
 // ─── Catálogos ────────────────────────────────────────────────────────────────

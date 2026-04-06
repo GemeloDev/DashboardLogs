@@ -1,356 +1,285 @@
 <template>
   <q-dialog v-model="isOpen" transition-show="scale" transition-hide="scale">
-    <q-card
-      style="width: 100%; max-width: 800px; min-width: min(600px, 95vw)"
-      class="bg-more-info-card no-scroll-visual text-white"
-    >
-      <q-card-section class="row items-center q-pb-none grey-9">
-        <div class="text-h6 row items-center">
-          <q-icon name="info" class="q-mx-sm text-primary" />
-          Ficha técnica de log
+    <q-card class="log-detail-modal no-scroll-visual">
+
+      <!-- Header -->
+      <q-card-section class="modal-header">
+        <div class="header-content">
+          <div class="dialog-icon">
+            <q-icon name="manage_search" size="24px" color="white" />
+          </div>
+          <div>
+            <h2>Ficha técnica de log</h2>
+            <p>Detalle completo del evento de acceso</p>
+          </div>
         </div>
-        <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
+        <q-btn icon="close" flat round dense class="dialog-close-btn" v-close-popup />
       </q-card-section>
 
-      <!-- Espacio para los campos que no tienen un cuerpo definido e incluso pueden ir nulos -->
-      <q-card-section class="q-pa-md scroll">
-        <div v-if="log" class="row">
-          <!-- Datos del Usuario & Estados -->
-          <div class="col-xs-12 col-sm-12 col-md-6 q-gutter-y-md q-px-sm">
-            <div class="col-12">
-              <div class="row items-center">
-                <q-icon name="account_circle" size="xs" class="q-mx-xs text-blue" />
-                <div class="text-caption text-blue text-weight-bold text-uppercase">
-                  Usuario | Actor
+      <q-separator class="modal-separator" />
+
+      <!-- Body -->
+      <q-card-section class="modal-body scroll">
+        <div v-if="log" class="row q-col-gutter-md">
+
+          <!-- Columna izquierda: Usuario & Estados -->
+          <div class="col-xs-12 col-md-6 q-gutter-y-md">
+
+            <!-- Actor -->
+            <div class="form-field">
+              <label class="field-label">
+                <q-icon name="account_circle" size="18px" class="field-icon--blue" />
+                Usuario | Actor
+              </label>
+              <div v-if="log.actor" class="info-card">
+                <div class="info-row">
+                  <q-icon name="badge" size="15px" class="tint--blue" />
+                  <span class="info-primary">{{ log?.actor?.id ?? 'Sin dato' }}</span>
+                </div>
+                <div class="info-secondary">{{ log?.actor?.fullName ?? 'Sin dato' }}</div>
+                <div class="info-caption">👤 {{ log?.actor?.username || 'Sin dato' }}</div>
+                <div class="info-row q-mt-xs">
+                  <span class="info-caption">Tipo:</span>
+                  <span class="status-chip status-chip--cyan">{{ log?.actor?.type }}</span>
                 </div>
               </div>
-              <div v-if="log.actor" class="mini-card q-pa-md q-my-sm rounded-borders">
-                <div class="row items-center text-white text-weight-bold q-mb-sm ellipsis">
-                  <q-icon name="badge" size="xs" class="q-mx-xs text-blue" />
-                  {{ log?.actor?.id ?? 'Sin dato' }}
-                </div>
-                <span class="text-grey-6 ellipsis">
-                  {{ log?.actor?.fullName ?? 'Sin dato' }}
-                </span>
-                <br />
-                <span class="text-caption text-grey-6"
-                  >👤 {{ log?.actor?.username || 'Sin dato' }}</span
-                >
-                <div class="row items-center q-mt-xs">
-                  <div class="text-caption text-grey-5 q-mr-sm">
-                    Tipo:
-                    <q-chip dense color="cyan-8" text-color="white" size="sm" class="log-id-chip">
-                      {{ log?.actor?.type }}
-                    </q-chip>
-                  </div>
-                </div>
-              </div>
-              <div
-                v-else
-                class="mini-card flex justify-center q-pa-md q-my-sm rounded-borders"
-                style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace"
-              >
+              <div v-else class="info-card info-card--empty">
                 SIN DATOS DEL ACTOR
               </div>
             </div>
-            <div class="col-xs-12 col-sm-12 col-md-6">
-              <div class="row items-center">
-                <q-icon name="rule" size="xs" class="q-mx-xs text-red" />
-                <span class="text-caption text-red text-weight-bold text-uppercase"> Estados </span>
-              </div>
-              <div class="mini-card q-pa-md q-my-sm rounded-borders">
-                <q-chip
-                  v-if="log.status"
-                  :color="getColor(log.status)"
-                  text-color="white"
-                  icon="flag"
-                  class="text-weight-bold"
-                >
-                  {{ log.status }}
-                </q-chip>
 
-                <q-chip
-                  v-if="log.outcome"
-                  :color="getOutcomeColor(log.outcome)"
-                  text-color="white"
-                  size="sm"
-                >
-                  {{ log?.outcome || 'Sin dato' }}
-                </q-chip>
-
-                <q-chip
-                  v-if="log.severity && log.severity !== 'INFO'"
-                  :icon="getSeverityIcon(log.severity)"
-                  class="bg-grey-9 text-white"
-                  size="sm"
-                >
-                  {{ log?.severity || 'Sin dato' }}
-                </q-chip>
-
-                <q-chip
-                  v-if="log.environment"
-                  outline
-                  color="grey-5"
-                  size="sm"
-                  class="text-uppercase"
-                >
-                  ENV: {{ log?.environment || 'Sin dato' }}
-                </q-chip>
-
-                <q-chip
-                  v-if="log.http?.statusCode"
-                  :color="getHttpColor(log.http?.statusCode || '000')"
-                  text-color="white"
-                  size="sm"
-                  icon="http"
-                >
-                  {{ log.http?.statusCode || 'Sin dato' }}
-                </q-chip>
-
-                <q-chip
-                  v-if="log.reason?.code"
-                  color="deep-orange"
-                  text-color="white"
-                  size="sm"
-                  icon="warning"
-                >
-                  {{ log.reason?.code || 'Sin dato' }}
-                </q-chip>
-
-                <template v-if="log.tags && log.tags.length">
+            <!-- Estados -->
+            <div class="form-field">
+              <label class="field-label">
+                <q-icon name="rule" size="18px" class="field-icon--red" />
+                Estados
+              </label>
+              <div class="info-card">
+                <div class="chips-row">
                   <q-chip
-                    v-for="tag in log.tags"
-                    :key="tag"
-                    dense
-                    outline
-                    color="primary"
-                    size="sm"
-                    class="q-px-sm"
+                    v-if="log.status"
+                    :color="getColor(log.status)"
+                    text-color="white"
+                    icon="flag"
+                    class="text-weight-bold"
                   >
-                    #{{ tag }}
+                    {{ log.status }}
                   </q-chip>
-                </template>
+                  <q-chip
+                    v-if="log.outcome"
+                    :color="getOutcomeColor(log.outcome)"
+                    text-color="white"
+                    size="sm"
+                  >
+                    {{ log?.outcome || 'Sin dato' }}
+                  </q-chip>
+                  <q-chip
+                    v-if="log.severity && log.severity !== 'INFO'"
+                    :icon="getSeverityIcon(log.severity)"
+                    class="bg-grey-9 text-white"
+                    size="sm"
+                  >
+                    {{ log?.severity || 'Sin dato' }}
+                  </q-chip>
+                  <span v-if="log.environment" class="status-chip status-chip--outline">
+                    ENV: {{ log?.environment || 'Sin dato' }}
+                  </span>
+                  <q-chip
+                    v-if="log.http?.statusCode"
+                    :color="getHttpColor(log.http?.statusCode || '000')"
+                    text-color="white"
+                    size="sm"
+                    icon="http"
+                  >
+                    {{ log.http?.statusCode || 'Sin dato' }}
+                  </q-chip>
+                  <q-chip
+                    v-if="log.reason?.code"
+                    color="deep-orange"
+                    text-color="white"
+                    size="sm"
+                    icon="warning"
+                  >
+                    {{ log.reason?.code || 'Sin dato' }}
+                  </q-chip>
+                  <template v-if="log.tags && log.tags.length">
+                    <span
+                      v-for="tag in log.tags"
+                      :key="tag"
+                      class="status-chip status-chip--purple"
+                    >
+                      #{{ tag }}
+                    </span>
+                  </template>
+                </div>
               </div>
             </div>
+
           </div>
 
-          <!-- Datos del Sistema -->
-          <div class="col-xs-12 col-sm-12 col-md-6 row q-pa-sm">
-            <div class="row items-center q-mb-xs">
-              <q-icon name="computer" size="xs" class="q-mx-xs text-orange" />
-              <span class="text-caption text-orange text-weight-bold text-uppercase">
+          <!-- Columna derecha: Sistema -->
+          <div class="col-xs-12 col-md-6">
+            <div class="form-field">
+              <label class="field-label">
+                <q-icon name="computer" size="18px" class="field-icon--orange" />
                 Sistema
-              </span>
-            </div>
-            <div class="mini-card q-pa-md rounded-borders">
-              <div class="flex justify-between items-center">
-                <q-chip color="green-9" text-color="white" size="md" class="text-weight-bold">
-                  {{ log.system || 'SYSTEM' }}
-                </q-chip>
-                <small class="text-grey-6 q-mr-sm ellipsis">
-                  {{ log?.environment ?? 'Sin dato' }}
-                </small>
-              </div>
-              <div class="row justify-between">
-                <div class="col-12 q-mt-md">
-                  <span>Software</span>
+              </label>
+              <div class="info-card">
+
+                <div class="info-row info-row--between">
+                  <span class="status-chip status-chip--green text-weight-bold">
+                    {{ log.system || 'SYSTEM' }}
+                  </span>
+                  <span class="info-caption">{{ log?.environment ?? 'Sin dato' }}</span>
                 </div>
-                <div class="col-4">
-                  <small class="">App:</small>
-                  <q-chip
-                    color="cyan-9"
-                    text-color="white"
-                    size="sm"
-                    class="text-weight-bold text-center"
-                  >
-                    {{ log?.meta?.sourceApp || 'Sin dato' }}
-                  </q-chip>
+
+                <div class="section-divider">Software</div>
+                <div class="info-row info-row--wrap">
+                  <div class="kv-pair">
+                    <span class="kv-key">App</span>
+                    <span class="status-chip status-chip--cyan">{{ log?.meta?.sourceApp || 'Sin dato' }}</span>
+                  </div>
+                  <div class="kv-pair">
+                    <span class="kv-key">Versión</span>
+                    <span class="status-chip status-chip--cyan">{{ log.meta?.build || 'Sin dato' }}</span>
+                  </div>
+                  <div class="kv-pair">
+                    <span class="kv-key">Schema</span>
+                    <span class="status-chip status-chip--cyan">v{{ log?.schemaVersion || 'Sin dato' }}</span>
+                  </div>
                 </div>
-                <div class="col-4">
-                  <small class="">Versión:</small>
-                  <q-chip
-                    color="cyan-9"
-                    text-color="white"
-                    size="sm"
-                    class="text-weight-bold text-center"
-                  >
-                    {{ log.meta?.build || 'Sin dato' }}
-                  </q-chip>
+
+                <div class="section-divider">Hardware & Red</div>
+                <div class="info-row info-row--wrap">
+                  <div class="device-chip">
+                    <span class="device-chip__key">Dispositivo</span>
+                    <span class="device-chip__val">{{ log.meta?.deviceId || 'Sin dispositivo' }}</span>
+                  </div>
+                  <div class="device-chip">
+                    <span class="device-chip__key">IP</span>
+                    <span class="device-chip__val device-chip__val--muted">{{ log.meta?.ip || 'Sin IP registrada' }}</span>
+                  </div>
                 </div>
-                <div class="col-4">
-                  <small class="">Schema:</small>
-                  <q-chip
-                    color="cyan-9"
-                    text-color="white"
-                    size="sm"
-                    class="text-weight-bold text-center"
-                  >
-                    v{{ log?.schemaVersion || 'Sin dato' }}
-                  </q-chip>
-                </div>
-              </div>
-              <div class="col-12 q-mt-md">
-                <span>Hardware & Red</span>
-              </div>
-              <div class="col-auto">
-                <q-chip outline class="custom-chip" color="white" text-color="white">
-                  <span class="text-weight-bold q-mr-xs">Dispositivo</span>
-                  <span class="text-orange">{{ log.meta?.deviceId || 'Sin dispositivo' }}</span>
-                </q-chip>
-                <q-chip outline class="custom-chip" color="white" text-color="white">
-                  <span class="text-weight-bold q-mr-xs">IP</span>
-                  <span class="text-grey-5">{{ log.meta?.ip || 'Sin IP registrada' }}</span>
-                </q-chip>
-              </div>
-              <div class="col-12 q-mt-md">
-                <span>Salud | API</span>
-              </div>
-              <div class="col-auto">
-                <div v-if="log.http" class="http-mini-card q-pa-sm q-my-sm rounded-borders">
-                  <div class="row items-center q-mb-xs">
-                    <q-icon name="dns" size="xs" class="q-mr-xs text-blue-3" />
-                    <div class="text-caption text-blue-3 text-weight-bold text-uppercase">
-                      {{ log.http?.method || 'Sin metodo registrado' }}
+
+                <template v-if="log.http">
+                  <div class="section-divider">Salud | API</div>
+                  <div class="http-card">
+                    <div class="http-card__method">
+                      <q-icon name="dns" size="14px" class="tint--blue" />
+                      <span class="http-card__verb">{{ log.http?.method || 'Sin método' }}</span>
                     </div>
-                  </div>
-
-                  <div
-                    class="text-body2 text-white text-weight-bold ellipsis"
-                    :title="log.http?.path || 'Sin url'"
-                  >
-                    {{ log.http?.path || 'Endpoint no localizado' }}
-                  </div>
-
-                  <div class="row items-center q-mt-xs">
-                    <div class="text-caption text-grey-5 q-mr-sm">
-                      Status:
-                      <span :class="getHttpColorClass(log.http?.statusCode || '000')">
-                        {{ log.http?.statusCode || '###' }}
+                    <div class="http-card__path" :title="log.http?.path || 'Sin url'">
+                      {{ log.http?.path || 'Endpoint no localizado' }}
+                    </div>
+                    <div class="http-card__meta">
+                      <span class="info-caption">
+                        Status:
+                        <span :class="getHttpColorClass(log.http?.statusCode || '000')">
+                          {{ log.http?.statusCode || '###' }}
+                        </span>
                       </span>
-                    </div>
-                    <div class="text-caption text-grey-6">
-                      ⏱ {{ log.http?.latencyMs || '0' }}ms
+                      <span class="info-caption">⏱ {{ log.http?.latencyMs || '0' }}ms</span>
                     </div>
                   </div>
-                </div>
+                </template>
+
               </div>
             </div>
           </div>
         </div>
-        <div v-if="log" class="row q-col-gutter-sm items-stretch q-mt-sm">
-          <div class="col-12 col-md-6 flex column">
-            <div class="http-mini-card q-pa-sm rounded-borders col flex column">
-              <div class="row items-center q-mb-xs">
-                <q-icon name="notes" size="xs" class="q-mr-xs text-blue-3" />
-                <div class="text-caption text-blue-3 text-weight-bold text-uppercase">PAYLOAD</div>
-              </div>
 
-              <div class="json-wrapper relative-position col flex column">
+        <!-- Bloques JSON -->
+        <div v-if="log" class="row q-col-gutter-md q-mt-xs">
+
+          <!-- Payload -->
+          <div v-if="log.payload" class="col-12 col-md-6 flex column">
+            <div class="json-section col flex column">
+              <div class="json-section__header">
+                <q-icon name="notes" size="15px" class="tint--blue" />
+                <span class="json-label json-label--blue">PAYLOAD</span>
+              </div>
+              <div class="json-wrapper col flex column">
                 <q-btn
                   icon="content_copy"
-                  flat
-                  round
-                  dense
-                  size="sm"
-                  color="grey-5"
+                  flat round dense size="sm"
                   class="copy-btn"
                   @click="copiarPayload(log.payload)"
                 >
-                  <q-tooltip>Copiar JSON</q-tooltip>
+                  <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
                 </q-btn>
-                <pre class="json-content fit scroll">{{
-                  JSON.stringify(log.payload, null, 2)
-                }}</pre>
+                <pre class="json-content fit scroll">{{ JSON.stringify(log.payload, null, 2) }}</pre>
               </div>
             </div>
           </div>
 
-          <div class="col-12 col-md-6 flex column q-gutter-y-md">
-            <div class="col-auto">
-              <div class="http-mini-card q-pa-sm rounded-borders">
-                <div class="row items-center q-mb-xs">
-                  <q-icon name="notes" size="xs" class="q-mr-xs text-green" />
-                  <div class="text-caption text-green-4 text-weight-bold text-uppercase">META</div>
-                </div>
-                <div class="json-wrapper relative-position">
-                  <q-btn
-                    v-if="log.meta"
-                    icon="content_copy"
-                    flat
-                    round
-                    dense
-                    size="sm"
-                    color="grey-5"
-                    class="copy-btn"
-                    @click="copiarPayload(log.meta)"
-                  >
-                    <q-tooltip>Copiar JSON</q-tooltip>
-                  </q-btn>
-                  <pre class="json-content">{{ JSON.stringify(log.meta, null, 2) }}</pre>
-                </div>
+          <!-- Meta + Correlación -->
+          <div class="col-12 col-md-6 q-gutter-y-md">
+            <div v-if="log.meta" class="json-section">
+              <div class="json-section__header">
+                <q-icon name="notes" size="15px" class="tint--green" />
+                <span class="json-label json-label--green">META</span>
+              </div>
+              <div class="json-wrapper">
+                <q-btn
+                  v-if="log.meta"
+                  icon="content_copy"
+                  flat round dense size="sm"
+                  class="copy-btn"
+                  @click="copiarPayload(log.meta)"
+                >
+                  <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+                </q-btn>
+                <pre class="json-content">{{ JSON.stringify(log.meta, null, 2) }}</pre>
               </div>
             </div>
 
-            <div class="col-auto">
-              <div class="http-mini-card q-pa-sm rounded-borders">
-                <div class="row items-center q-mb-xs">
-                  <q-icon name="notes" size="xs" class="q-mr-xs text-pink-4" />
-                  <div class="text-caption text-pink-4 text-weight-bold text-uppercase">
-                    CORRELACION
-                  </div>
-                </div>
-                <div class="json-wrapper relative-position">
-                  <q-btn
-                    v-if="log.correlation"
-                    icon="content_copy"
-                    flat
-                    round
-                    dense
-                    size="sm"
-                    color="grey-5"
-                    class="copy-btn"
-                    @click="copiarPayload(log.correlation)"
-                  >
-                    <q-tooltip>Copiar JSON</q-tooltip>
-                  </q-btn>
-                  <pre class="json-content">{{ JSON.stringify(log.correlation, null, 2) }}</pre>
-                </div>
+            <div v-if="log.correlation" class="json-section">
+              <div class="json-section__header">
+                <q-icon name="notes" size="15px" class="tint--pink" />
+                <span class="json-label json-label--pink">CORRELACIÓN</span>
+              </div>
+              <div class="json-wrapper">
+                <q-btn
+                  v-if="log.correlation"
+                  icon="content_copy"
+                  flat round dense size="sm"
+                  class="copy-btn"
+                  @click="copiarPayload(log.correlation)"
+                >
+                  <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+                </q-btn>
+                <pre class="json-content">{{ JSON.stringify(log.correlation, null, 2) }}</pre>
               </div>
             </div>
           </div>
 
+          <!-- Objeto completo -->
           <div class="col-12">
-            <div class="http-mini-card q-pa-sm rounded-borders">
-              <div class="row items-center q-mb-xs">
-                <q-icon name="data_object" size="xs" class="q-mr-xs text-white" />
-                <div class="text-caption text-white text-weight-bold text-uppercase">
-                  Objeto Completo
-                </div>
+            <div class="json-section">
+              <div class="json-section__header">
+                <q-icon name="data_object" size="15px" style="color: rgba(255,255,255,0.58)" />
+                <span class="json-label json-label--white">Objeto Completo</span>
               </div>
-              <div class="json-wrapper relative-position">
+              <div class="json-wrapper">
                 <q-btn
                   v-if="log"
                   icon="content_copy"
-                  flat
-                  round
-                  dense
-                  size="sm"
-                  color="grey-5"
+                  flat round dense size="sm"
                   class="copy-btn"
                   @click="copiarPayload(log)"
                 >
-                  <q-tooltip>Copiar JSON</q-tooltip>
+                  <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
                 </q-btn>
-                <pre class="json-content" style="max-height: 200px">{{
-                  JSON.stringify(log, null, 2)
-                }}</pre>
+                <pre class="json-content" style="max-height: 300px">{{ JSON.stringify(log, null, 2) }}</pre>
               </div>
             </div>
           </div>
+
         </div>
-        <div v-else class="text-center text-grey">No hay datos seleccionados</div>
+
+        <div v-else class="empty-state">No hay datos seleccionados</div>
       </q-card-section>
+
     </q-card>
   </q-dialog>
 </template>
@@ -381,11 +310,9 @@ const isOpen = computed({
 
 const copiarPayload = async (datos) => {
   if (!datos) return
-
   try {
     const texto = JSON.stringify(datos, null, 2)
     await navigator.clipboard.writeText(texto)
-
     $q.notify({
       type: 'positive',
       message: 'JSON copiado al portapapeles',
@@ -403,20 +330,18 @@ const copiarPayload = async (datos) => {
 }
 
 const getHttpColorClass = (code) => {
-  if (code >= 200 && code < 300) return 'text-green-4'
-  if (code >= 300 && code < 400) return 'text-cyan-4'
-  if (code >= 400) return 'text-red-4'
-  return 'text-grey-4'
+  if (code >= 200 && code < 300) return 'http-ok'
+  if (code >= 300 && code < 400) return 'http-redirect'
+  if (code >= 400) return 'http-error'
+  return 'http-unknown'
 }
-
-// --- Helpers de Color ---
 
 const getColor = (val) => {
   const v = (val || '').toUpperCase()
-  if (['APPROVED', 'SUCCESS', 'COMPLETED', 'VALIDATED'].includes(v)) return 'positive' // Verde
-  if (['REJECTED', 'FAILURE', 'FAILED', 'BLOCKED', 'ERROR'].includes(v)) return 'negative' // Rojo
-  if (['IN_PROGRESS', 'PENDING'].includes(v)) return 'primary' // Azul
-  if (['WARNING', 'WARN'].includes(v)) return 'warning' // Naranja
+  if (['APPROVED', 'SUCCESS', 'COMPLETED', 'VALIDATED'].includes(v)) return 'positive'
+  if (['REJECTED', 'FAILURE', 'FAILED', 'BLOCKED', 'ERROR'].includes(v)) return 'negative'
+  if (['IN_PROGRESS', 'PENDING'].includes(v)) return 'primary'
+  if (['WARNING', 'WARN'].includes(v)) return 'warning'
   return 'grey-7'
 }
 
@@ -441,101 +366,385 @@ const getSeverityIcon = (val) => {
 </script>
 
 <style lang="scss" scoped>
-.bg-more-info-card {
-  background-color: #2b2b3d;
-  border-radius: 12px;
-}
+/* ─── MODAL SHELL ─── */
+.log-detail-modal {
+  width: 100%;
+  max-width: 800px;
+  min-width: min(600px, 95vw);
+  border-radius: 26px;
+  background: linear-gradient(160deg, rgba(15, 20, 32, 0.96), rgba(18, 25, 42, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.48);
 
-.mini-card {
-  background-color: #0f162a;
-  border-radius: 12px;
-  transition: background-color 0.2 ease;
-
-  .ellipsis {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+  @media (max-width: 768px) {
+    min-width: 94vw;
+    max-width: 94vw;
   }
 }
 
-.payload-container {
-  // Asegura que el contenedor no se desborde
-  max-width: 100%;
+/* ─── HEADER ─── */
+.modal-header {
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  h2 {
+    margin: 0 0 4px 0;
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.68);
+    line-height: 1.5;
+  }
+}
+
+.dialog-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  box-shadow: 0 14px 30px rgba(124, 58, 237, 0.2);
+  flex-shrink: 0;
+}
+
+.dialog-close-btn {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.modal-separator {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ─── BODY ─── */
+.modal-body {
+  padding: 24px;
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+/* ─── FIELD LABELS ─── */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.field-icon--blue  { color: #7dd3fc; }
+.field-icon--red   { color: #fca5a5; }
+.field-icon--orange { color: #ffb088; }
+
+/* tint helpers for icons inside cards */
+.tint--blue  { color: #7dd3fc; }
+.tint--green { color: #86efac; }
+.tint--pink  { color: #f9a8d4; }
+
+/* ─── INFO CARDS (like preview-card) ─── */
+.info-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 16px;
+
+  &--empty {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 56px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+
+  &--between { justify-content: space-between; }
+  &--wrap    { flex-wrap: wrap; }
+}
+
+.info-primary {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-secondary {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.52);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-caption {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* ─── SECTION DIVIDERS (inside cards) ─── */
+.section-divider {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.38);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin: 14px 0 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ─── STATUS CHIPS (rgba pill pattern) ─── */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.6;
+
+  &--cyan {
+    background: rgba(34, 211, 238, 0.14);
+    color: #a5f3fc;
+    border: 1px solid rgba(34, 211, 238, 0.24);
+  }
+
+  &--purple {
+    background: rgba(124, 58, 237, 0.16);
+    color: #d8b4fe;
+    border: 1px solid rgba(124, 58, 237, 0.26);
+  }
+
+  &--green {
+    background: rgba(34, 197, 94, 0.16);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.26);
+  }
+
+  &--orange {
+    background: rgba(233, 113, 50, 0.14);
+    color: #ffb088;
+    border: 1px solid rgba(233, 113, 50, 0.25);
+  }
+
+  &--outline {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}
+
+.chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ─── KV PAIRS ─── */
+.kv-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.kv-key {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* ─── DEVICE / IP CHIPS ─── */
+.device-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 4px 12px;
+  margin: 3px;
+}
+
+.device-chip__key {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.device-chip__val {
+  font-size: 0.78rem;
+  color: #ffb088;
+
+  &--muted { color: rgba(255, 255, 255, 0.42); }
+}
+
+/* ─── HTTP MINI CARD ─── */
+.http-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.http-card__method {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.http-card__verb {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7dd3fc;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.http-card__path {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+
+.http-card__meta {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+/* HTTP status color classes */
+.http-ok       { color: #86efac; font-weight: 700; }
+.http-redirect { color: #a5f3fc; font-weight: 700; }
+.http-error    { color: #fca5a5; font-weight: 700; }
+.http-unknown  { color: rgba(255,255,255,0.42); }
+
+/* ─── JSON SECTIONS ─── */
+.json-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.json-section__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.json-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+
+  &--blue  { color: #7dd3fc; }
+  &--green { color: #86efac; }
+  &--pink  { color: #f9a8d4; }
+  &--white { color: rgba(255, 255, 255, 0.62); }
 }
 
 .json-wrapper {
-  background: rgba(0, 0, 0, 0.3); // Fondo oscuro para el bloque de código
-  border-radius: 8px;
+  position: relative;
+  background: rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: hidden; // Para que el botón no se salga en las esquinas redondeadas
+  border-radius: 12px;
+  overflow: hidden;
 
-  &:hover {
-    .copy-btn {
-      opacity: 1; // Mostrar botón al hacer hover
-    }
+  &:hover .copy-btn {
+    opacity: 1;
   }
 }
 
 .json-content {
   margin: 0;
   padding: 16px;
-  color: #e0e0e0; // Texto claro
+  color: rgba(255, 255, 255, 0.78);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 0.85rem;
-  white-space: pre-wrap; // Mantiene formato pero permite saltos
-  word-wrap: break-word; // Rompe palabras largas
-  overflow-x: auto; // Scroll horizontal si es necesario
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
 }
 
 .copy-btn {
   position: absolute;
   top: 8px;
   right: 8px;
-  opacity: 0; // Oculto por defecto
-  transition:
-    opacity 0.2s ease,
-    background-color 0.2s ease;
-  z-index: 1; // Asegura que esté sobre el texto
+  opacity: 0;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.42) !important;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1); // Fondo al hacer hover en el botón
+    background-color: rgba(255, 255, 255, 0.08);
   }
 }
 
-// En dispositivos táctiles, mostrar siempre el botón
 @media (hover: none) {
-  .copy-btn {
-    opacity: 1;
-  }
+  .copy-btn { opacity: 1; }
 }
 
-.http-mini-card {
-  border-radius: 8px;
-  transition: background-color 0.2 ease;
-
-  .ellipsis {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
+/* ─── GLASS TOOLTIP ─── */
+.glass-tooltip {
+  background: #121a2a !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
 }
 
-/* Estilos personalizados para el chip */
-.custom-chip.q-chip--outline {
-  background-color: #2e3045 !important; /* Fondo oscuro del chip */
-  border-color: #43455c !important; /* Color del borde */
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  text-align: center;
+  padding: 32px 0;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.92rem;
 }
 
+/* ─── SCROLLBAR HIDDEN ─── */
 .no-scroll-visual {
-  /* Ocultar en Chrome, Safari y Opera */
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Ocultar en Firefox, IE y Edge */
-  -ms-overflow-style: none;  /* IE y Edge */
-  scrollbar-width: none;  /* Firefox */
+  &::-webkit-scrollbar { display: none; }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>
