@@ -31,6 +31,36 @@ function eventToDestination(eventName) {
 }
 
 /**
+ * Conecta el STOMP sin suscribirse a ningún topic específico.
+ * Útil para inicializar la conexión en el dashboard.
+ */
+export function connectSocket({ endpoint = brokerURL, debug = isDebug, reconnectDelay = 3000 } = {}) {
+  if (stompClient && connected) return // ya conectado
+
+  stompClient = new Client({
+    brokerURL: endpoint,
+    reconnectDelay,
+    debug: (msg) => { if (debug) console.log('[STOMP DEBUG]', msg) },
+    onConnect: () => {
+      connected = true
+      console.log('✅ STOMP dashboard conectado.')
+    },
+    onStompError: (frame) => {
+      console.error('🚨 Error STOMP:', frame.headers['message'])
+    },
+    onWebSocketClose: (evt) => {
+      connected = false
+      console.warn('❌ STOMP desconectado:', evt.reason || 'Conexión cerrada')
+    },
+    onWebSocketError: (err) => {
+      console.error('🚨 Error WebSocket:', err)
+    },
+  })
+
+  stompClient.activate()
+}
+
+/**
  * Inicializa STOMP sobre WebSocket
  */
 export function initializeSocket(
@@ -78,6 +108,56 @@ export function initializeSocket(
 
   stompClient.activate()
   return stompClient
+}
+
+// Suscribirse a alertas de un tenant especifico
+export function subscribeToAlerts(tenantId, onAlert = () => {}) {
+  if (!stompClient || !connected) {
+    // Reintentar cuando se conecte
+    setTimeout(() => subscribeToAlerts(tenantId, onAlert), 2000)
+    return
+  }
+
+  const topic = `/topic/alerts/${tenantId}`
+  console.log('[STOMP] Suscribiéndose a alertas:', topic)
+
+  stompClient.subscribe(topic, (message) => {
+    try {
+      const payload = JSON.parse(message.body)
+      if (payload.type === 'ALERT_CRIT') {
+        onAlert(payload)
+      }
+    } catch (e) {
+      console.error('[STOMP] Error parseando alerta:', e)
+    }
+  })
+}
+
+/**
+ * Suscribirse a nuevos logs de un sistema específico.
+ * El backend envía mensajes a este topic cuando llegan logs nuevos.
+ */
+export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}) {
+  if (!stompClient || !connected) {
+    setTimeout(() => subscribeToNewLogs(tenantId, system, onNewLogs), 2000)
+    return null
+  }
+
+  const topic = `/topic/dashboard/${tenantId}/${system}`
+  console.log('[STOMP] Suscribiéndose a nuevos logs:', topic)
+
+  const subscription = stompClient.subscribe(topic, (message) => {
+    try {
+      const payload = JSON.parse(message.body)
+      if (payload.type === 'NEW_LOGS') {
+        onNewLogs(payload)
+      }
+    } catch (e) {
+      console.error('[STOMP] Error parseando mensaje de logs:', e)
+    }
+  })
+
+  return subscription // guardar para poder desuscribirse al cambiar de sistema
 }
 
 /**

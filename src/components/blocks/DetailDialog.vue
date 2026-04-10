@@ -20,10 +20,10 @@
 
       <!-- Body -->
       <q-card-section class="modal-body scroll">
-        <div v-if="log" class="row q-col-gutter-md">
+        <div v-if="log" class="row q-col-gutter-md items-stretch">
 
           <!-- Columna izquierda: Usuario & Estados -->
-          <div class="col-xs-12 col-md-6 q-gutter-y-md">
+          <div class="col-xs-12 col-md-6 col-left-stretch">
 
             <!-- Actor -->
             <div class="form-field">
@@ -188,90 +188,93 @@
           </div>
         </div>
 
-        <!-- Bloques JSON -->
-        <div v-if="log" class="row q-col-gutter-md q-mt-xs">
+        <!-- ✅ DESPUÉS — todos col-12, alineados uniformemente -->
+        <div v-if="log" class="q-mt-md q-gutter-y-md">
 
-          <!-- Payload -->
-          <div v-if="log.payload" class="col-12 col-md-6 flex column">
-            <div class="json-section col flex column">
-              <div class="json-section__header">
-                <q-icon name="notes" size="15px" class="tint--blue" />
-                <span class="json-label json-label--blue">PAYLOAD</span>
+          <!-- Payload — ancho completo -->
+          <div v-if="log.payload" class="json-section">
+            <div class="json-section__header">
+              <q-icon name="notes" size="15px" class="tint--blue" />
+              <span class="json-label json-label--blue">PAYLOAD</span>
+            </div>
+            <div class="json-wrapper">
+              <q-btn
+                icon="content_copy"
+                flat round dense size="sm"
+                class="copy-btn"
+                @click="copiarPayload(log.payload)"
+              >
+                <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+              </q-btn>
+              <pre class="json-content json-content--limited">{{ JSON.stringify(log.payload, null, 2) }}</pre>
+            </div>
+          </div>
+
+          <!-- DESPUÉS — META izquierda, CORRELACIÓN derecha -->
+          <div
+            v-if="log.meta || log.correlation"
+            class="row q-col-gutter-md q-mt-sm"
+          >
+            <!-- META -->
+            <div :class="[log.meta && log.correlation ? 'col-12 col-md-6' : 'col-12', 'flex column']">
+              <div v-if="log.meta" class="json-section json-section--stretch">
+                <div class="json-section__header">
+                  <q-icon name="notes" size="15px" class="tint--green" />
+                  <span class="json-label json-label--green">META</span>
+                </div>
+                <div class="json-wrapper">
+                  <q-btn
+                    icon="content_copy"
+                    flat round dense size="sm"
+                    class="copy-btn"
+                    @click="copiarPayload(log.meta)"
+                  >
+                    <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+                  </q-btn>
+                  <pre class="json-content json-content--limited">{{ JSON.stringify(log.meta, null, 2) }}</pre>
+                </div>
               </div>
-              <div class="json-wrapper col flex column">
-                <q-btn
-                  icon="content_copy"
-                  flat round dense size="sm"
-                  class="copy-btn"
-                  @click="copiarPayload(log.payload)"
-                >
-                  <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
-                </q-btn>
-                <pre class="json-content fit scroll">{{ JSON.stringify(log.payload, null, 2) }}</pre>
+            </div>
+
+            <!-- CORRELACIÓN -->
+            <div :class="[log.meta && log.correlation ? 'col-12 col-md-6' : 'col-12', 'flex column']">
+              <div v-if="log.correlation" class="json-section json-section--stretch">
+                <div class="json-section__header">
+                  <q-icon name="notes" size="15px" class="tint--pink" />
+                  <span class="json-label json-label--pink">CORRELACIÓN</span>
+                </div>
+                <div class="json-wrapper">
+                  <q-btn
+                    icon="content_copy"
+                    flat round dense size="sm"
+                    class="copy-btn"
+                    @click="copiarPayload(log.correlation)"
+                  >
+                    <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+                  </q-btn>
+                  <pre class="json-content json-content--limited">{{ JSON.stringify(log.correlation, null, 2) }}</pre>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Meta + Correlación -->
-          <div class="col-12 col-md-6 q-gutter-y-md">
-            <div v-if="log.meta" class="json-section">
-              <div class="json-section__header">
-                <q-icon name="notes" size="15px" class="tint--green" />
-                <span class="json-label json-label--green">META</span>
-              </div>
-              <div class="json-wrapper">
-                <q-btn
-                  v-if="log.meta"
-                  icon="content_copy"
-                  flat round dense size="sm"
-                  class="copy-btn"
-                  @click="copiarPayload(log.meta)"
-                >
-                  <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
-                </q-btn>
-                <pre class="json-content">{{ JSON.stringify(log.meta, null, 2) }}</pre>
-              </div>
+          <!-- Objeto Completo — ancho completo -->
+          <div class="json-section">
+            <div class="json-section__header">
+              <q-icon name="data_object" size="15px" style="color: rgba(255,255,255,0.58)" />
+              <span class="json-label json-label--white">Objeto Completo</span>
             </div>
-
-            <div v-if="log.correlation" class="json-section">
-              <div class="json-section__header">
-                <q-icon name="notes" size="15px" class="tint--pink" />
-                <span class="json-label json-label--pink">CORRELACIÓN</span>
-              </div>
-              <div class="json-wrapper">
-                <q-btn
-                  v-if="log.correlation"
-                  icon="content_copy"
-                  flat round dense size="sm"
-                  class="copy-btn"
-                  @click="copiarPayload(log.correlation)"
-                >
-                  <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
-                </q-btn>
-                <pre class="json-content">{{ JSON.stringify(log.correlation, null, 2) }}</pre>
-              </div>
-            </div>
-          </div>
-
-          <!-- Objeto completo -->
-          <div class="col-12">
-            <div class="json-section">
-              <div class="json-section__header">
-                <q-icon name="data_object" size="15px" style="color: rgba(255,255,255,0.58)" />
-                <span class="json-label json-label--white">Objeto Completo</span>
-              </div>
-              <div class="json-wrapper">
-                <q-btn
-                  v-if="log"
-                  icon="content_copy"
-                  flat round dense size="sm"
-                  class="copy-btn"
-                  @click="copiarPayload(log)"
-                >
-                  <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
-                </q-btn>
-                <pre class="json-content" style="max-height: 300px">{{ JSON.stringify(log, null, 2) }}</pre>
-              </div>
+            <div class="json-wrapper">
+              <q-btn
+                v-if="log"
+                icon="content_copy"
+                flat round dense size="sm"
+                class="copy-btn"
+                @click="copiarPayload(log)"
+              >
+                <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+              </q-btn>
+              <pre class="json-content json-content--limited">{{ JSON.stringify(log, null, 2) }}</pre>
             </div>
           </div>
 
@@ -526,6 +529,23 @@ const getSeverityIcon = (val) => {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* ─── Columna izquierda alineada con columna derecha ─── */
+.col-left-stretch {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+/* ← NUEVO: Actor se estira, Estados queda abajo */
+.col-left-stretch .form-field:first-child {
+  flex: 1;
+}
+
+.col-left-stretch .form-field:first-child .info-card {
+  height: 100%;
+}
+
 /* ─── STATUS CHIPS (rgba pill pattern) ─── */
 .status-chip {
   display: inline-flex;
@@ -705,6 +725,27 @@ const getSeverityIcon = (val) => {
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-x: auto;
+}
+
+/* ─── JSON content con altura máxima uniforme ─── */
+.json-content--limited {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/* ← NUEVO al final del style */
+.json-section--stretch {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.json-section--stretch .json-wrapper {
+  flex: 1;
+}
+
+.json-section--stretch .json-content--limited {
+  height: 100%;
 }
 
 .copy-btn {

@@ -1,4 +1,5 @@
 <template>
+
   <!-- ✅ Funcionalidades más usadas -->
   <div v-if="!loading" class="q-mb-lg">
     <q-card flat bordered class="func-wrap text-white q-pa-lg">
@@ -60,6 +61,9 @@
       </div>
     </q-card>
   </div>
+
+  <!-- ✅ Widget Actividad de Hoy -->
+  <ActivityTodayWidget ref="activityWidgetRef" />
 
   <!-- ✅ Locaciones + Etiquetas + Outcomes -->
   <div
@@ -247,6 +251,9 @@ import { ref, computed, inject, watch, /* onMounted, */ nextTick, onBeforeUnmoun
 import ConsoleGeoMap from '../blocks/ConsoleGeoMap.vue'
 import Chart from 'chart.js/auto'
 import DashboardService from 'src/services/dashboardService'
+import ActivityTodayWidget from './ActivityTodayWidget.vue'
+import { subscribeToNewLogs } from 'src/services/socketService'
+import authService from 'src/services/authService'
 
 // ─── Injects ──────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
@@ -260,6 +267,13 @@ const statsData  = ref(null)
 const seriesData = ref(null)
 const httpData   = ref(null)
 const geoData    = ref(null)
+
+// ── Auto-refresh por WebSocket ────────────────────────────────────────────────
+let wsSubscription    = null   // suscripción activa al topic
+let refreshDebounce   = null   // timer para evitar múltiples refreshes seguidos
+//let pendingRefresh    = false  // indica que hay datos nuevos pero aún no se refrescó
+const newLogsCount    = ref(0) // cuántos logs nuevos llegaron sin refrescar
+const activityWidgetRef = ref(null)  // ← referencia al widget
 
 // ─── Concurrencia: solo la última petición aplica ─────────────────────────────
 // Cada llamada a fetchAll incrementa `fetchSeq`. Al resolver Promise.allSettled,
@@ -797,9 +811,46 @@ async function redrawCharts() {
   if (hasHttpData.value) renderHttpRadar()
 }
 
+// ── Suscribirse al WebSocket del sistema seleccionado ─────────────────────────
+function subscribeSystem(system) {
+  // Cancelar suscripción anterior
+  if (wsSubscription) {
+    try { wsSubscription.unsubscribe()
+
+    } catch (e) {
+      console.error('[EscritorioGraficasEnhanced] Error al cancelar suscripción:', e)
+    }
+    wsSubscription = null
+  }
+  newLogsCount.value = 0
+
+  const tenantId = authService.user?.tenantId
+                || authService.user?.authz?.tenantId
+                || authService.user?.organization?.id
+  if (!tenantId || !system) return
+
+  wsSubscription = subscribeToNewLogs(tenantId, system, (payload) => {
+    newLogsCount.value += payload.count || 1
+
+    // Debounce: esperar 3 segundos de inactividad antes de refrescar
+    // Evita múltiples fetchAll() si llegan muchos logs seguidos
+    if (refreshDebounce) clearTimeout(refreshDebounce)
+    refreshDebounce = setTimeout(() => {
+  newLogsCount.value = 0
+  fetchAll()
+  activityWidgetRef.value?.fetchToday()  // ← refrescar widget también
+}, 3000)
+  })
+}
+
 // ─── Watch único: cualquier cambio en sistema o rango dispara fetchAll ─────────
 watch(queryKey, (val, old) => {
-  if (val !== old) fetchAll()
+  if (val !== old) {
+    fetchAll()
+    // Re-suscribir al nuevo sistema cuando cambia
+    const sys = String(filtrosGlobales.value?.system || '').trim()
+    if (sys) subscribeSystem(sys)
+  }
 }, { immediate: true })
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
@@ -810,6 +861,16 @@ onBeforeUnmount(() => {
   eventsDayChart?.destroy()
   eventsWeekChart?.destroy()
   eventsMonthChart?.destroy()
+
+  // ── Limpieza de WebSocket ─────────────────────────────────────────────────
+  if (wsSubscription) {
+    try { wsSubscription.unsubscribe()
+
+    } catch (e) {
+      console.error('[EscritorioGraficasEnhanced] Error al cancelar suscripción:', e)
+    }
+  }
+  if (refreshDebounce) clearTimeout(refreshDebounce)
 })
 </script>
 

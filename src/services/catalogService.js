@@ -3,53 +3,62 @@ import { EVA } from './endpoints'
 
 export class CatalogService {
 
-  // --- 1. MÉTODO PRINCIPAL DE CARGA (Una sola consulta) ---
-  /**
-   * Realiza la petición al catálogo de sistemas una sola vez
-   * y distribuye la data para generar todos los catálogos derivados.
-   */
   static async fetchCatalogs() {
     try {
-      const response = await axiosInstance.get(EVA.CATALOGS_SYSTEMS)
+      // Cargar sistemas y salud en paralelo
+      const [catalogResponse, healthResponse] = await Promise.allSettled([
+        axiosInstance.get(EVA.CATALOGS_SYSTEMS),
+        axiosInstance.get('/api/logs/dashboard/systems-health'),
+      ])
 
-      const items = response.data?.data || []
+      // Debug temporal
+      // console.log('[CatalogService] catalog status:', catalogResponse.status)
+      // console.log('[CatalogService] health status:', healthResponse.status)
+      // if (healthResponse.status === 'fulfilled') {
+      //   console.log('[CatalogService] health data:', healthResponse.value.data)
+      // } else {
+      //   console.error('[CatalogService] health error:', healthResponse.reason?.response?.status, healthResponse.reason?.message)
+      // }
 
-      console.log(`ℹ️ Catálogo cargado: ${items.length} sistemas.`)
+      const items = catalogResponse.status === 'fulfilled'
+              ? (catalogResponse.value.data?.data || []) : []
+
+      const healthList = healthResponse.status === 'fulfilled'
+              ? (healthResponse.value.data?.data || []) : []
+
+      // Crear mapa de salud por sistema
+      const healthMap = {}
+      healthList.forEach(h => {
+        if (h?.system) healthMap[h.system] = h
+      })
+
+      console.log('[CatalogService] healthMap:', healthMap)
+      console.log(`[CatalogService] Catalogo cargado: ${items.length} sistemas.`)
 
       return {
-        sistemas: this._extractSistemas(items),
+        sistemas:       this._extractSistemas(items, healthMap),
         sistemasSimple: this._extractNombresSimples(items),
+        healthMap,
       }
 
     } catch (error) {
-      console.error('❌ Error crítico cargando catálogos:', error.message)
-      return {
-        sistemas: [],
-        sistemasSimple: [],
-      }
+      console.error('[CatalogService] Error critico:', error.message)
+      return { sistemas: [], sistemasSimple: [], healthMap: {} }
     }
   }
 
-  // --- 2. MÉTODOS EXTRACTORES (Lógica pura, sin llamadas API) ---
-
-  /**
-   * Extrae sistemas en formato { value, label } para usar en selects/filtros.
-   * Fuente: campo "name" de cada elemento del array data[].
-   */
-  static _extractSistemas(items) {
+  static _extractSistemas(items, healthMap = {}) {
     return items
       .map(item => item.name)
       .filter(Boolean)
       .map(name => ({
-        value: name,
-        label: name,
+        value:     name,
+        label:     name,
+        status:    healthMap[name]?.status    || 'INACTIVE',
+        errorRate: healthMap[name]?.errorRate || 0,
       }))
   }
 
-  /**
-   * Extrae los nombres de sistemas como array de strings planos.
-   * Útil cuando solo se necesita la lista de nombres sin envoltura value/label.
-   */
   static _extractNombresSimples(items) {
     return items.map(item => item.name).filter(Boolean)
   }

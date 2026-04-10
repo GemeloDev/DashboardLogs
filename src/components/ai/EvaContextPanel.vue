@@ -55,18 +55,68 @@
         </q-card-section>
       </q-card>
 
-      <q-card flat bordered class="eva-panel-card q-mt-md" v-if="insightActions.length">
+      <!-- ── ANÁLISIS GENERADO POR IA ──────────────────────────────────── -->
+      <q-card
+        v-if="aiDeepAnalysis"
+        flat
+        bordered
+        class="eva-panel-card q-mt-md eva-ai-card"
+      >
         <q-card-section>
-          <div class="eva-section-title">Acciones sugeridas</div>
-          <div
-            v-for="item in insightActions"
-            :key="item"
-            class="eva-list-item"
-          >
-            • {{ item }}
+
+          <!-- Header con badge IA -->
+          <div class="row items-center q-mb-sm">
+            <q-icon name="auto_awesome" color="purple-3" size="18px" class="q-mr-xs" />
+            <span class="eva-section-title" style="color: #c084fc; margin-bottom: 0">
+              Análisis generado por IA
+            </span>
+            <q-badge
+              color="purple-9"
+              text-color="purple-2"
+              label="GPT-4o mini"
+              class="q-ml-sm"
+              style="font-size: 10px"
+            />
           </div>
+
+          <!-- Evento dominante -->
+          <div class="row items-center q-mb-md">
+            <span class="text-caption text-grey-5">Evento dominante:</span>
+            <q-chip
+              dense
+              color="indigo-9"
+              text-color="indigo-2"
+              size="sm"
+              class="q-ml-sm"
+            >
+              {{ aiDeepAnalysis.dominantEventType }}
+            </q-chip>
+            <span class="text-caption text-grey-5 q-ml-sm">
+              {{ aiDeepAnalysis.dominantCount?.toLocaleString() }} ocurrencias
+            </span>
+          </div>
+
+          <!-- ¿Qué está pasando? -->
+          <div v-if="aiDeepSummary">
+            <div class="eva-ai-label">🔍 ¿Qué está pasando?</div>
+            <div class="eva-ai-text q-mt-xs">{{ aiDeepSummary }}</div>
+          </div>
+
+          <!-- Sugerencias específicas -->
+          <div v-if="aiDeepSuggestions.length" class="q-mt-md">
+            <div class="eva-ai-label">⚡ Acciones específicas</div>
+            <div
+              v-for="(sug, i) in aiDeepSuggestions"
+              :key="i"
+              class="eva-ai-suggestion q-mt-xs"
+            >
+              {{ sug }}
+            </div>
+          </div>
+
         </q-card-section>
       </q-card>
+      <!-- ─────────────────────────────────────────────────────────────────── -->
     </div>
 
     <!-- ALERT -->
@@ -323,8 +373,18 @@ const insightBullets = computed(() => {
   )
 })
 
-const insightActions = computed(() => {
-  return payloadData.value?.base?.actions || []
+
+
+const aiDeepAnalysis = computed(() => {
+  return payloadData.value?.base?.aiDeepAnalysis || null
+})
+
+const aiDeepSummary = computed(() => aiDeepAnalysis.value?.aiSummary || null)
+
+const aiDeepSuggestions = computed(() => {
+  const raw = aiDeepAnalysis.value?.aiSuggestions
+  if (!raw) return []
+  return raw.split(/\n/).map(s => s.trim()).filter(s => s.length > 0)
 })
 
 // ALERT
@@ -547,6 +607,7 @@ async function reloadChart() {
 .eva-panel-body {
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 120px);
 }
 
 .eva-panel-card {
@@ -642,6 +703,37 @@ async function reloadChart() {
   font-size: 12px;
   color: rgba(234,240,255,0.78);
 }
+
+/* ── Análisis IA ──────────────────────────────────────────────────────── */
+.eva-ai-card {
+  border: 1px solid rgba(192, 132, 252, 0.25) !important;
+  background: rgba(139, 92, 246, 0.06) !important;
+}
+
+.eva-ai-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c084fc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.eva-ai-text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: rgba(234, 240, 255, 0.9);
+  white-space: pre-line;
+}
+
+.eva-ai-suggestion {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(234, 240, 255, 0.85);
+  margin-top: 6px;
+  padding-left: 8px;
+  border-left: 2px solid rgba(192, 132, 252, 0.4);
+}
+/* ───────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
   .eva-kpi-row {

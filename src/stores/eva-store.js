@@ -32,7 +32,7 @@ export const useEvaStore = defineStore('eva', {
         conversations: [
             {
                 id: 'conv-welcome',
-                title: 'Bienvenida Eva', 
+                title: 'Bienvenida Eva',
                 createdAt: new Date().toISOString(),
                 system: null,
                 range: null,
@@ -41,8 +41,8 @@ export const useEvaStore = defineStore('eva', {
                         id: uid(),
                         role: 'assistant',
                         type: 'text',
-                        content: 
-                            'Hola, soy Eva. Estoy lista para ayudarte con alertas, insights, tendencias, métricas y borradores de tickets.',
+                        content:
+                            'Hola, soy Eva. Estoy lista para ayudarte con alertas, gráficas, tendencias, métricas y resumenes diarios de los sistemas.',
                         createdAt: new Date().toISOString()
                     }
                 ]
@@ -82,11 +82,11 @@ export const useEvaStore = defineStore('eva', {
 
         openWidget() {
             this.isWidgetOpen = true
-        }, 
+        },
 
         closeWidget() {
             this.isWidgetOpen = false
-        }, 
+        },
 
         openWorkspace() {
             this.isWorkspaceOpen = true
@@ -220,7 +220,7 @@ export const useEvaStore = defineStore('eva', {
                     createdAt: new Date().toISOString()
                 }
             ]
-        }, 
+        },
 
         addAssistantMessage(content, type = 'text', extra = {}) {
             if (!this.currentConversationId) {

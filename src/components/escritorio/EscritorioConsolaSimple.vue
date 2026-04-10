@@ -48,6 +48,12 @@
                   </q-item-section>
                 </q-item>
 
+                <q-item clickable v-close-popup @click="exportLogs('csv')">
+                  <q-item-section>
+                    <q-item-label>CSV (.csv)</q-item-label>
+                  </q-item-section>
+                </q-item>
+
                 <q-item clickable v-close-popup @click="exportLogs('txt')">
                   <q-item-section>
                     <q-item-label>Texto (.txt)</q-item-label>
@@ -589,8 +595,9 @@ function exportLogs(format) {
     const base = `logs-${currentSystem.value || 'all'}`
 
     if (format === 'excel') return ConsoleExportService.exportExcel(items, base)
-    if (format === 'json')  return ConsoleExportService.exportJSON(items, base)
-    if (format === 'txt')   return ConsoleExportService.exportTXT(items, base)
+if (format === 'csv')   return ConsoleExportService.exportCSV(items, base)
+if (format === 'json')  return ConsoleExportService.exportJSON(items, base)
+if (format === 'txt')   return ConsoleExportService.exportTXT(items, base)
 
     throw new Error('Formato no soportado')
   } catch (e) {

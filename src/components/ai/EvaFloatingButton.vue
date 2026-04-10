@@ -6,7 +6,7 @@
             size="lg"
             icon="auto_awesome"
             class="eva-fab"
-            @click="eva.toggleWidget()"
+            @click="eva.openWorkspace()"
         >
             <q-badge
                 v-if="alertCount > 0"
@@ -23,7 +23,7 @@
 import { computed } from 'vue';
 import { useEvaStore } from 'src/stores/eva-store';
 
-const eva = useEvaStore(); 
+const eva = useEvaStore();
 
 const alertCount = computed(() => 2)
 </script>
@@ -41,8 +41,8 @@ const alertCount = computed(() => 2)
     height: 60px;
     background: linear-gradient(135deg, #7c4dff, #00d4ff);
     color: white;
-    box-shadow: 
+    box-shadow:
         0 10px 30px rgba(124, 77, 255, 0.35),
-        0 0 24px rgba(0, 212, 255, 0.18); 
+        0 0 24px rgba(0, 212, 255, 0.18);
 }
 </style>
