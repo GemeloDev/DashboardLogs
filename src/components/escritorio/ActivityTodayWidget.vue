@@ -1,19 +1,18 @@
 <template>
   <div v-if="system" class="q-mb-lg">
     <q-card flat bordered class="today-card text-white q-pa-lg">
-
       <!-- Header -->
       <div class="row items-center q-mb-md">
         <div class="today-pulse q-mr-sm" :class="hasActivity ? 'today-pulse--active' : ''" />
         <div class="col">
           <div class="today-title">Actividad de hoy</div>
-          <div class="today-subtitle text-grey-5">
-            Últimas 24 horas · {{ system }}
-          </div>
+          <div class="today-subtitle text-grey-5">Últimas 24 horas · {{ system }}</div>
         </div>
         <div class="col-auto">
           <q-btn
-            flat dense round
+            flat
+            dense
+            round
             icon="refresh"
             color="grey-5"
             size="sm"
@@ -23,7 +22,8 @@
             <q-tooltip>Actualizar</q-tooltip>
           </q-btn>
           <q-btn
-            flat dense
+            flat
+            dense
             label="Ver todos"
             color="cyan"
             size="sm"
@@ -62,12 +62,10 @@
       </div>
 
       <!-- Feed de logs recientes -->
-      <div v-if="recentLogs.length" class="today-feed">
-        <div class="today-feed__title q-mb-sm text-grey-5 text-caption">
-          Logs más recientes
-        </div>
+      <div v-if="filteredRecentLogs.length" class="today-feed">
+        <div class="today-feed__title q-mb-sm text-grey-5 text-caption">Logs más recientes</div>
         <div
-          v-for="log in recentLogs"
+          v-for="log in filteredRecentLogs"
           :key="log.id"
           class="today-feed__row"
           @click="openLogInConsole(log)"
@@ -90,7 +88,8 @@
               </q-chip>
               <q-chip
                 v-if="log.outcome && log.outcome !== 'N/A'"
-                dense size="xs"
+                dense
+                size="xs"
                 :color="outcomeColor(log.outcome)"
                 text-color="white"
                 class="q-ml-xs"
@@ -117,11 +116,10 @@
       </div>
 
       <!-- Loading -->
-      <div v-if="loading && !recentLogs.length" class="today-empty">
+      <div v-if="loading && !filteredRecentLogs.length" class="today-empty">
         <q-spinner color="cyan" size="20px" class="q-mr-sm" />
         <span class="text-grey-5">Cargando actividad...</span>
       </div>
-
     </q-card>
   </div>
 </template>
@@ -129,21 +127,25 @@
 <script setup>
 import { ref, computed, inject, watch, onMounted, onBeforeUnmount } from 'vue'
 import { axiosInstance } from 'src/services/axiosConfig'
+import { LOGS } from 'src/services/endpoints'
 
 // ── Injects ───────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
-const openConsole     = inject('openConsole', null)
+const openConsole = inject('openConsole', null)
 
 // ── Estado ────────────────────────────────────────────────────────────────────
-const loading    = ref(false)
+const loading = ref(false)
 const recentLogs = ref([])
-const total      = ref(0)
-const failures   = ref(0)
-const successes  = ref(0)
+const total = ref(0)
+const failures = ref(0)
+const successes = ref(0)
 
-const system = computed(() =>
-  String(filtrosGlobales.value?.system || '').trim()
-)
+const system = computed(() => String(filtrosGlobales.value?.system || '').trim())
+const activeLogFilters = computed(() => ({
+  eventType: String(filtrosGlobales.value?.values?.eventType || '').trim(),
+  status: String(filtrosGlobales.value?.values?.status || '').trim(),
+  outcome: String(filtrosGlobales.value?.values?.outcome || '').trim(),
+}))
 
 // ── Auto-refresh cada 2 minutos ───────────────────────────────────────────────
 let refreshTimer = null
@@ -162,18 +164,18 @@ async function fetchToday() {
 
   loading.value = true
   try {
-    const now  = new Date()
+    const now = new Date()
     const from = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-    const to   = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const to = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
-    const response = await axiosInstance.get('/api/logs/events', {
+    const response = await axiosInstance.get(LOGS.EVENTS_RAW, {
       params: {
-        system:  system.value,
+        system: system.value,
         fromDate: from,
-        toDate:   to,
-        page:    0,
-        size:    8,
-        sortBy:  'eventTime',
+        toDate: to,
+        page: 0,
+        size: 8,
+        sortBy: 'eventTime',
         sortDir: 'DESC',
       },
     })
@@ -183,17 +185,14 @@ async function fetchToday() {
 
     // Calcular KPIs desde los items
     const allItems = recentLogs.value
-    total.value    = data.totalElements || allItems.length
-    failures.value = allItems.filter(l =>
-      l.outcome === 'FAILURE' || l.status === 'ERROR').length
-    successes.value = allItems.filter(l =>
-      l.outcome === 'SUCCESS' || l.status === 'OK').length
+    total.value = data.totalElements || allItems.length
+    failures.value = allItems.filter((l) => l.outcome === 'FAILURE' || l.status === 'ERROR').length
+    successes.value = allItems.filter((l) => l.outcome === 'SUCCESS' || l.status === 'OK').length
 
     // Para el error rate real pedimos el total con más items
     if (data.totalElements > 0) {
       await fetchKpis(from, to)
     }
-
   } catch (e) {
     console.error('[ActivityWidget] Error:', e.message)
   } finally {
@@ -203,25 +202,23 @@ async function fetchToday() {
 
 async function fetchKpis(from, to) {
   try {
-    const response = await axiosInstance.get('/api/logs/events', {
+    const response = await axiosInstance.get(LOGS.EVENTS_RAW, {
       params: {
-        system:   system.value,
+        system: system.value,
         fromDate: from,
-        toDate:   to,
-        page:     0,
-        size:     1000,
-        sortBy:   'eventTime',
-        sortDir:  'DESC',
+        toDate: to,
+        page: 0,
+        size: 1000,
+        sortBy: 'eventTime',
+        sortDir: 'DESC',
       },
     })
-    const data  = response?.data?.data || {}
+    const data = response?.data?.data || {}
     const items = data.items || []
 
-    total.value    = data.totalElements || items.length
-    failures.value = items.filter(l =>
-      l.outcome === 'FAILURE' || l.status === 'ERROR').length
-    successes.value = items.filter(l =>
-      l.outcome === 'SUCCESS' || l.status === 'OK').length
+    total.value = data.totalElements || items.length
+    failures.value = items.filter((l) => l.outcome === 'FAILURE' || l.status === 'ERROR').length
+    successes.value = items.filter((l) => l.outcome === 'SUCCESS' || l.status === 'OK').length
   } catch (e) {
     // silencioso — los KPIs del primer fetch son suficientes
     console.error('[ActivityWidget] Error:', e.message)
@@ -229,20 +226,31 @@ async function fetchKpis(from, to) {
 }
 
 // ── Watch: refetch cuando cambia el sistema ───────────────────────────────────
-watch(system, (val, old) => {
-  if (val && val !== old) fetchToday()
-}, { immediate: true })
+watch(
+  system,
+  (val, old) => {
+    if (val && val !== old) fetchToday()
+  },
+  { immediate: true },
+)
 
 // ── Computed ──────────────────────────────────────────────────────────────────
+const filteredRecentLogs = computed(() => {
+  const { eventType, status, outcome } = activeLogFilters.value
+
+  return (Array.isArray(recentLogs.value) ? recentLogs.value : []).filter((log) => {
+    if (eventType && String(log?.eventType || '').trim() !== eventType) return false
+    if (status && String(log?.status || '').trim() !== status) return false
+    if (outcome && String(log?.outcome || '').trim() !== outcome) return false
+    return true
+  })
+})
+
 const hasActivity = computed(() => total.value > 0)
 
-const errorRate = computed(() =>
-  total.value > 0 ? failures.value / total.value : 0
-)
+const errorRate = computed(() => (total.value > 0 ? failures.value / total.value : 0))
 
-const errorRatePct = computed(() =>
-  `${(errorRate.value * 100).toFixed(1)}%`
-)
+const errorRatePct = computed(() => `${(errorRate.value * 100).toFixed(1)}%`)
 
 const errorRateColor = computed(() => {
   const r = errorRate.value
@@ -253,16 +261,16 @@ const errorRateColor = computed(() => {
 
 // ── Helpers de UI ─────────────────────────────────────────────────────────────
 function dotClass(status) {
-  if (status === 'ERROR')   return 'today-feed__dot--red'
-  if (status === 'WARN')    return 'today-feed__dot--orange'
-  if (status === 'OK')      return 'today-feed__dot--green'
+  if (status === 'ERROR') return 'today-feed__dot--red'
+  if (status === 'WARN') return 'today-feed__dot--orange'
+  if (status === 'OK') return 'today-feed__dot--green'
   return 'today-feed__dot--grey'
 }
 
 function statusColor(status) {
-  if (status === 'ERROR')   return 'red-8'
-  if (status === 'WARN')    return 'orange-8'
-  if (status === 'OK')      return 'green-8'
+  if (status === 'ERROR') return 'red-8'
+  if (status === 'WARN') return 'orange-8'
+  if (status === 'OK') return 'green-8'
   return 'grey-7'
 }
 
@@ -280,27 +288,31 @@ function truncate(str, max) {
 function timeAgo(isoDate) {
   if (!isoDate) return ''
   const diff = Date.now() - new Date(isoDate).getTime()
-  const mins  = Math.floor(diff / 60000)
-  if (mins < 1)  return 'ahora'
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'ahora'
   if (mins < 60) return `${mins}m`
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24)  return `${hrs}h`
+  if (hrs < 24) return `${hrs}h`
   return `${Math.floor(hrs / 24)}d`
 }
 
 function openConsoleToday() {
-  const now  = new Date()
+  const now = new Date()
   const from = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-  const to   = now.toISOString().slice(0, 10)
-  openConsole?.({ fieldKey: 'rangoFechas', value: { from, to } })
+  const to = now.toISOString().slice(0, 10)
+  openConsole?.([{ fieldKey: 'rangoFechas', value: { from, to } }])
 }
 
 function openLogInConsole(log) {
-  openConsole?.({ fieldKey: 'eventType', value: log.eventType })
+  openConsole?.([
+    { fieldKey: 'status', value: log.status },
+    { fieldKey: 'eventType', value: log.eventType },
+    { fieldKey: 'outcome', value: log.outcome },
+    { fieldKey: 'busqueda', value: log.id },
+  ])
 }
 
 defineExpose({ fetchToday })
-
 </script>
 
 <style lang="scss" scoped>
@@ -337,9 +349,15 @@ defineExpose({ fetchToday })
 }
 
 @keyframes pulse-dot {
-  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
-  70%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
 }
 
 // KPIs
@@ -396,10 +414,18 @@ defineExpose({ fetchToday })
     margin-top: 5px;
     flex-shrink: 0;
 
-    &--red    { background: #ef4444; }
-    &--orange { background: #f97316; }
-    &--green  { background: #22c55e; }
-    &--grey   { background: #6b7280; }
+    &--red {
+      background: #ef4444;
+    }
+    &--orange {
+      background: #f97316;
+    }
+    &--green {
+      background: #22c55e;
+    }
+    &--grey {
+      background: #6b7280;
+    }
   }
 
   &__type {

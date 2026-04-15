@@ -1,65 +1,94 @@
 <template>
-
-  <!-- ✅ Funcionalidades más usadas -->
+  <!-- ✅ Hero superior -->
   <div v-if="!loading" class="q-mb-lg">
-    <q-card flat bordered class="func-wrap text-white q-pa-lg">
-      <div class="flex items-center q-col-gutter-md">
-        <div class="col-auto">
-          <div class="donut" :style="donutStyle">
-            <div class="donut-inner">
-              <div class="donut-pct">{{ donutCenterPct }}</div>
-              <div class="donut-sub text-grey-5">{{ donutCenterLabel }}</div>
+    <section class="dashboard-hero">
+      <div class="dashboard-hero__left">
+        <q-card flat bordered class="dashboard-hero__events-card text-white">
+          <div class="dashboard-hero__section-head">
+            <div>
+              <div class="hero-side-title">Funcionalidades más usadas</div>
+              <div class="hero-side-subtitle">
+                {{ funcUsage.items.length }} eventos con mayor actividad
+              </div>
+            </div>
+
+            <div class="hero-total-pill">
+              <div class="hero-total-pill__label">Total procesados</div>
+              <div class="hero-total-pill__value">{{ funcUsage.total }}</div>
             </div>
           </div>
-        </div>
 
-        <div class="col">
-          <div
-            class="text-subtitle1 text-grey-4"
-            :class="$q.platform.is.mobile ? 'text-subtitle2' : ''"
-          >
-            Funcionalidades más usadas
-          </div>
-          <div class="text-caption text-grey-5">
-            <span v-if="funcUsage.topName">
-              Top: <span class="text-white">{{ funcUsage.topName }}</span> ({{ funcUsage.topPct }}%)
-            </span>
-            <span v-else>Sin datos</span>
-          </div>
-        </div>
+          <div class="dashboard-hero__events-grid">
+            <q-card
+              v-for="it in funcUsage.items"
+              :key="it.name"
+              flat
+              bordered
+              class="func-subcard func-clickable"
+              clickable
+              v-ripple
+              :class="{ 'func-subcard--active': selectedEventType === it.name }"
+              @click="onEventTypeCardClick(it.name)"
+            >
+              <div class="func-subcard__head">
+                <span class="func-dot" :style="{ background: it.color }"></span>
+                <div class="func-subcard__title ellipsis">{{ it.name }}</div>
+                <div class="func-subcard__count">{{ it.count }}</div>
+              </div>
 
-        <div class="col-auto text-right">
-          <div class="text-caption text-grey-5 q-mt-md">Total procesados</div>
-          <div class="text-h3 text-weight-bold" :class="$q.platform.is.mobile ? 'text-h4' : ''">
-            {{ funcUsage.total }}
+              <q-linear-progress
+                :value="it.ratio"
+                :color="it.qColor"
+                track-color="grey-9"
+                rounded
+                size="9px"
+              />
+
+              <div class="func-subcard__meta">
+                <span>{{ it.pct }}% del total</span>
+                <span>{{ it.count }}/{{ funcUsage.total }}</span>
+              </div>
+            </q-card>
           </div>
-        </div>
+        </q-card>
       </div>
 
-      <div class="row justify-center q-col-gutter-md">
-        <div v-for="it in funcUsage.items" :key="it.name" class="col-12 col-md-2">
-          <q-card
-            flat bordered
-            class="func-subcard q-pa-md func-clickable"
-            clickable v-ripple
-            :class="{ 'func-subcard--active': selectedEventType === it.name }"
-            @click="onEventTypeCardClick(it.name)"
-          >
-            <div class="flex items-center q-mb-sm">
-              <span class="func-dot q-mr-sm" :style="{ background: it.color }"></span>
-              <div class="text-subtitle2 ellipsis" style="max-width: 70%">{{ it.name }}</div>
-              <q-space />
-              <div class="text-h6 text-weight-bold">{{ it.count }}</div>
-            </div>
-            <q-linear-progress :value="it.ratio" :color="it.qColor" track-color="grey-9" rounded size="10px" />
-            <div class="row justify-between q-mt-xs text-caption text-grey-5">
-              <div>{{ it.pct }}% del total</div>
-              <div>{{ it.count }}/{{ funcUsage.total }}</div>
-            </div>
-          </q-card>
+      <q-card flat bordered class="dashboard-hero__donut-card text-white">
+        <div class="hero-side-top">
+          <div class="hero-side-icon">
+            <q-icon name="donut_large" size="24px" />
+          </div>
+          <div>
+            <div class="hero-side-title">Cobertura de funcionalidades</div>
+            <div class="hero-side-subtitle">Distribución de eventos más usados</div>
+          </div>
         </div>
-      </div>
-    </q-card>
+
+        <div class="dashboard-hero__donut-wrap">
+          <div class="dashboard-hero__donut-visual">
+            <canvas ref="coverageDonutCanvas"></canvas>
+            <div class="donut-center-overlay">
+              <div class="donut-pct donut-pct--hero">{{ donutCenterPct }}</div>
+              <div class="donut-sub donut-sub--hero">{{ donutCenterLabel }}</div>
+            </div>
+          </div>
+
+          <div class="dashboard-hero__donut-summary">
+            <div class="mini-metric--compact">
+              <div class="mini-metric__label">Evento más activo</div>
+              <div class="mini-metric__value dashboard-hero__top-name">
+                {{ funcUsage.topName || 'Sin datos' }}
+              </div>
+            </div>
+
+            <div class="mini-metric--compact">
+              <div class="mini-metric__label">Participación principal</div>
+              <div class="mini-metric__value">{{ funcUsage.topPct }}%</div>
+            </div>
+          </div>
+        </div>
+      </q-card>
+    </section>
   </div>
 
   <!-- ✅ Widget Actividad de Hoy -->
@@ -80,15 +109,25 @@
           </div>
         </div>
         <div
-          v-for="it in topOffices.items" :key="it.label"
-          class="q-mb-md toplist-row" clickable v-ripple
+          v-for="it in topOffices.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
           @click="openConsoleWithFilter('location.name', it.label)"
         >
           <div class="row items-center">
             <div class="col text-subtitle2">{{ it.label }}</div>
             <div class="col-auto text-grey-5">{{ it.count }}</div>
           </div>
-          <q-linear-progress :value="it.ratioToMax" color="cyan" track-color="grey-9" rounded size="8px" class="q-mt-xs" />
+          <q-linear-progress
+            :value="it.ratioToMax"
+            color="cyan"
+            track-color="grey-9"
+            rounded
+            size="8px"
+            class="q-mt-xs"
+          />
         </div>
       </q-card>
     </div>
@@ -103,15 +142,25 @@
           </div>
         </div>
         <div
-          v-for="it in topTags.items" :key="it.label"
-          class="q-mb-md toplist-row" clickable v-ripple
+          v-for="it in topTags.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
           @click="openConsoleWithFilter('tags', it.label)"
         >
           <div class="row items-center">
             <div class="col text-subtitle2">{{ it.label }}</div>
             <div class="col-auto text-grey-5">{{ it.count }}</div>
           </div>
-          <q-linear-progress :value="it.ratioToMax" color="purple" track-color="grey-9" rounded size="8px" class="q-mt-xs" />
+          <q-linear-progress
+            :value="it.ratioToMax"
+            color="purple"
+            track-color="grey-9"
+            rounded
+            size="8px"
+            class="q-mt-xs"
+          />
         </div>
       </q-card>
     </div>
@@ -126,15 +175,25 @@
           </div>
         </div>
         <div
-          v-for="it in topOutcomes.items" :key="it.label"
-          class="q-mb-md toplist-row" clickable v-ripple
+          v-for="it in topOutcomes.items"
+          :key="it.label"
+          class="q-mb-md toplist-row"
+          clickable
+          v-ripple
           @click="openConsoleWithFilter('outcome', it.label)"
         >
           <div class="row items-center">
             <div class="col text-subtitle2">{{ it.label }}</div>
             <div class="col-auto text-grey-5">{{ it.count }}</div>
           </div>
-          <q-linear-progress :value="it.ratioToMax" color="pink" track-color="grey-9" rounded size="8px" class="q-mt-xs" />
+          <q-linear-progress
+            :value="it.ratioToMax"
+            color="pink"
+            track-color="grey-9"
+            rounded
+            size="8px"
+            class="q-mt-xs"
+          />
         </div>
       </q-card>
     </div>
@@ -181,7 +240,9 @@
           <q-icon name="http" color="cyan" size="18px" class="q-mr-sm" />
           <div>
             <div class="toplist-title">HTTP</div>
-            <div class="toplist-subtitle text-grey-5">Latencia p95 (ms) por statusCode, separado por método</div>
+            <div class="toplist-subtitle text-grey-5">
+              Latencia p95 (ms) por statusCode, separado por método
+            </div>
           </div>
         </div>
         <div class="http-radar-wrap">
@@ -250,114 +311,38 @@
 import { ref, computed, inject, watch, /* onMounted, */ nextTick, onBeforeUnmount } from 'vue'
 import ConsoleGeoMap from '../blocks/ConsoleGeoMap.vue'
 import Chart from 'chart.js/auto'
-import DashboardService from 'src/services/dashboardService'
 import ActivityTodayWidget from './ActivityTodayWidget.vue'
-import { subscribeToNewLogs } from 'src/services/socketService'
-import authService from 'src/services/authService'
 
 // ─── Injects ──────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
-const openConsole     = inject('openConsole', null)
+const openConsole = inject('openConsole', null)
 
 // ─── Estado único de carga ────────────────────────────────────────────────────
-const loading = ref(false)
+const loading = inject('dashboardLoading', ref(false))
 
 // ─── Datos de los 4 endpoints ────────────────────────────────────────────────
-const statsData  = ref(null)
-const seriesData = ref(null)
-const httpData   = ref(null)
-const geoData    = ref(null)
+const statsData = inject('dashboardStatsData', ref(null))
+const seriesData = inject('dashboardSeriesData', ref(null))
+const httpData = inject('dashboardHttpData', ref(null))
+const geoData = inject('dashboardGeoData', ref(null))
 
-// ── Auto-refresh por WebSocket ────────────────────────────────────────────────
-let wsSubscription    = null   // suscripción activa al topic
-let refreshDebounce   = null   // timer para evitar múltiples refreshes seguidos
-//let pendingRefresh    = false  // indica que hay datos nuevos pero aún no se refrescó
-const newLogsCount    = ref(0) // cuántos logs nuevos llegaron sin refrescar
-const activityWidgetRef = ref(null)  // ← referencia al widget
-
-// ─── Concurrencia: solo la última petición aplica ─────────────────────────────
-// Cada llamada a fetchAll incrementa `fetchSeq`. Al resolver Promise.allSettled,
-// si el número ya no coincide con el actual se descarta la respuesta (stale).
-let fetchSeq = 0
-
-// ─── Helpers de fecha ─────────────────────────────────────────────────────────
-const toIsoStart = (value) => {
-  const raw = String(value || '').trim()
-  if (!raw) return ''
-  return raw.includes('T') ? raw : `${raw}T00:00:00Z`
-}
-const toIsoEnd = (value) => {
-  const raw = String(value || '').trim()
-  if (!raw) return ''
-  return raw.includes('T') ? raw : `${raw}T23:59:59Z`
-}
-
-// ─── Query key unificado ──────────────────────────────────────────────────────
-// Un solo computed agrupa los tres parámetros relevantes.
-// El watch sobre este string es la única fuente que dispara fetchAll.
-const queryKey = computed(() => {
-  const sys  = String(filtrosGlobales.value?.system || '').trim()
-  const from = filtrosGlobales.value?.rangoFechas?.from || ''
-  const to   = filtrosGlobales.value?.rangoFechas?.to   || ''
-  return `${sys}|${from}|${to}`
-})
-
-// ─── fetchAll: orquesta los 4 endpoints en paralelo ───────────────────────────
-async function fetchAll() {
-  const sys  = String(filtrosGlobales.value?.system || '').trim()
-  const from = toIsoStart(filtrosGlobales.value?.rangoFechas?.from || '')
-  const to   = toIsoEnd(filtrosGlobales.value?.rangoFechas?.to   || '')
-
-  if (!sys) return
-
-  // Tomar número de secuencia para esta invocación
-  const seq = ++fetchSeq
-
-  loading.value = true
-  // Limpiar datos anteriores para evitar mostrar stale UI mientras carga
-  statsData.value  = null
-  seriesData.value = null
-  httpData.value   = null
-  geoData.value    = null
-
-  try {
-    const [rStats, rSeries, rHttp, rGeo] = await Promise.allSettled([
-      DashboardService.getStats({ system: sys, from, to }),
-      DashboardService.getSeries({ system: sys }),
-      DashboardService.getHttp({ system: sys }),
-      DashboardService.getGeo({ system: sys }),
-    ])
-
-    // Descartar si una petición más reciente ya inició
-    if (seq !== fetchSeq) return
-
-    statsData.value  = rStats.status  === 'fulfilled' ? (rStats.value  ?? null) : null
-    seriesData.value = rSeries.status === 'fulfilled' ? (rSeries.value ?? null) : null
-    httpData.value   = rHttp.status   === 'fulfilled' ? (rHttp.value   ?? null) : null
-    geoData.value    = rGeo.status    === 'fulfilled' ? (rGeo.value    ?? null) : null
-
-  } catch (err) {
-    if (seq !== fetchSeq) return
-    console.error('❌ Dashboard fetchAll error:', err.message)
-  } finally {
-    if (seq === fetchSeq) {
-      loading.value = false
-      await nextTick()
-      redrawCharts()
-    }
-  }
-}
+const activityWidgetRef = ref(null) // ← referencia al widget
 
 // ─── Flags derivados de la API ────────────────────────────────────────────────
-const hasHttpData = computed(() => !!(httpData.value?.latencyByStatusAndMethod?.length))
-const hasGeoData  = computed(() => !!(geoData.value?.points?.length))
+const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
+const hasGeoData = computed(() => !!geoData.value?.points?.length)
 
 // ─── Helpers de consola ───────────────────────────────────────────────────────
 const selectedEventType = computed(() => filtrosGlobales.value?.values?.eventType || '')
 
 function onEventTypeCardClick(eventType) {
-  if (typeof openConsole === 'function') return openConsole({ fieldKey: 'eventType', value: eventType })
-  window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail: { fieldKey: 'eventType', value: eventType } }))
+  if (typeof openConsole === 'function')
+    return openConsole({ fieldKey: 'eventType', value: eventType })
+  window.dispatchEvent(
+    new CustomEvent('santoro-abrir-consola', {
+      detail: { fieldKey: 'eventType', value: eventType },
+    }),
+  )
 }
 
 function openConsoleWithFilter(fieldKey, value) {
@@ -369,7 +354,7 @@ function openConsoleWithFilter(fieldKey, value) {
 // Transformación directa: {lat, lon, count} → {lat, lon, weight}
 // Sin agregación en frontend, tal como devuelve el endpoint /geo.
 const geoPoints = computed(() =>
-  (geoData.value?.points || []).map(p => ({ lat: p.lat, lon: p.lon, weight: p.count }))
+  (geoData.value?.points || []).map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
 )
 
 function onGeoClick({ lat, lon }) {
@@ -378,18 +363,91 @@ function onGeoClick({ lat, lon }) {
 
 // ─── Dashboard stats helpers ──────────────────────────────────────────────────
 const FUNC_COLORS = [
-  { q: 'teal',   hex: '#29d3c2' }, { q: 'pink',   hex: '#ff5c8a' },
-  { q: 'orange', hex: '#ff9f43' }, { q: 'cyan',   hex: '#22d3ee' },
-  { q: 'purple', hex: '#a78bfa' }, { q: 'amber',  hex: '#fbbf24' },
-  { q: 'green',  hex: '#22c55e' }, { q: 'red',    hex: '#ef4444' },
+  { q: 'teal', hex: '#29d3c2' },
+  { q: 'pink', hex: '#ff5c8a' },
+  { q: 'orange', hex: '#ff9f43' },
+  { q: 'cyan', hex: '#22d3ee' },
+  { q: 'purple', hex: '#a78bfa' },
+  { q: 'amber', hex: '#fbbf24' },
+  { q: 'green', hex: '#22c55e' },
+  { q: 'red', hex: '#ef4444' },
 ]
 
 const normalizeStatRows = (rows) =>
   (Array.isArray(rows) ? rows : []).map((row) => ({
     label: String(row?.value ?? row?.label ?? 'N/A'),
     count: Number(row?.count || 0),
-    pct:   Number(row?.pct   || 0),
+    pct: Number(row?.pct || 0),
   }))
+
+const normalizeFilterValue = (value) => String(value ?? '').trim().toUpperCase()
+
+const activeValueFilters = computed(() => filtrosGlobales.value?.values || {})
+
+function filterStatRowsByKey(rows, key) {
+  const selected = normalizeFilterValue(activeValueFilters.value?.[key])
+  const list = normalizeStatRows(rows)
+  if (!selected) return list
+  return list.filter((row) => normalizeFilterValue(row.label) === selected)
+}
+
+const filteredStatusOverTime = computed(() => {
+  const selectedStatus = normalizeFilterValue(activeValueFilters.value?.status)
+  const items = Array.isArray(seriesData.value?.statusOverTime) ? seriesData.value.statusOverTime : []
+  if (!selectedStatus) return items
+  return items.filter((row) => normalizeFilterValue(row?.status) === selectedStatus)
+})
+
+function aggregateStatusRowsByPeriod(rows, mode) {
+  const map = new Map()
+
+  const getIsoWeekLabel = (dateStr) => {
+    const date = new Date(`${dateStr}T00:00:00`)
+    if (Number.isNaN(date.getTime())) return dateStr
+
+    const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    const dayNum = utc.getUTCDay() || 7
+    utc.setUTCDate(utc.getUTCDate() + 4 - dayNum)
+    const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1))
+    const weekNo = Math.ceil((((utc - yearStart) / 86400000) + 1) / 7)
+    return `Semana ${weekNo}-${utc.getUTCFullYear()}`
+  }
+
+  for (const row of rows) {
+    const date = String(row?.date || '').trim()
+    const count = Number(row?.count || 0)
+    if (!date || !count) continue
+
+    let key = date
+    if (mode === 'week') key = getIsoWeekLabel(date)
+    if (mode === 'month') key = `${date.slice(5, 7)}-${date.slice(0, 4)}`
+
+    map.set(key, (map.get(key) || 0) + count)
+  }
+
+  return Array.from(map.entries()).map(([date, count]) => ({ date, count }))
+}
+
+const filteredByDay = computed(() => {
+  if (activeValueFilters.value?.status) {
+    return aggregateStatusRowsByPeriod(filteredStatusOverTime.value, 'day')
+  }
+  return Array.isArray(seriesData.value?.byDay) ? seriesData.value.byDay : []
+})
+
+const filteredByWeek = computed(() => {
+  if (activeValueFilters.value?.status) {
+    return aggregateStatusRowsByPeriod(filteredStatusOverTime.value, 'week')
+  }
+  return Array.isArray(seriesData.value?.byWeek) ? seriesData.value.byWeek : []
+})
+
+const filteredByMonth = computed(() => {
+  if (activeValueFilters.value?.status) {
+    return aggregateStatusRowsByPeriod(filteredStatusOverTime.value, 'month')
+  }
+  return Array.isArray(seriesData.value?.byMonth) ? seriesData.value.byMonth : []
+})
 
 const toApiTopList = (rows, { topN = 4 } = {}) => {
   const list = normalizeStatRows(rows).slice(0, topN)
@@ -397,9 +455,9 @@ const toApiTopList = (rows, { topN = 4 } = {}) => {
   const max = Math.max(...list.map((x) => x.count || 0), 1)
   return {
     items: list.map((x) => ({
-      label:      x.label,
-      count:      x.count,
-      pct:        x.pct,
+      label: x.label,
+      count: x.count,
+      pct: x.pct,
       ratioToMax: (x.count || 0) / max,
     })),
   }
@@ -407,86 +465,147 @@ const toApiTopList = (rows, { topN = 4 } = {}) => {
 
 // ─── funcUsage ────────────────────────────────────────────────────────────────
 const funcUsage = computed(() => {
-  const total  = Number(statsData.value?.total || 0)
-  const source = normalizeStatRows(statsData.value?.topEventTypes)
+  const totalFromApi = Number(statsData.value?.total || 0)
+  const source = filterStatRowsByKey(statsData.value?.topEventTypes, 'eventType')
+  const hasEventTypeFilter = !!normalizeFilterValue(activeValueFilters.value?.eventType)
+  const total = hasEventTypeFilter
+    ? source.reduce((sum, item) => sum + Number(item.count || 0), 0)
+    : totalFromApi
 
   if (!total || !source.length)
     return { total: 0, items: [], donutSegments: [], coveragePct: 0, topName: '', topPct: 0 }
 
-  const topN    = 6
-  const top     = source.slice(0, topN)
-  const topSum  = top.reduce((s, x) => s + x.count, 0)
-  const rest    = Math.max(0, total - topSum)
+  const topN = 12
+  const top = source.slice(0, topN)
+  const topSum = top.reduce((s, x) => s + x.count, 0)
+  const rest = Math.max(0, total - topSum)
 
   const topItems = top.map((item, idx) => {
     const color = FUNC_COLORS[idx % FUNC_COLORS.length]
     const ratio = total ? item.count / total : 0
     return {
-      name:   item.label,
-      count:  item.count,
+      name: item.label,
+      count: item.count,
       ratio,
-      pct:    Number(item.pct || Math.round(ratio * 1000) / 10),
+      pct: Number(item.pct || Math.round(ratio * 1000) / 10),
       qColor: color.q,
-      color:  color.hex,
+      color: color.hex,
     }
   })
 
   const donutSegments = [...topItems]
   if (rest > 0) {
     donutSegments.push({
-      name: 'Otros', count: rest,
-      ratio:  total ? rest / total : 0,
-      pct:    Math.round((rest / total || 0) * 1000) / 10,
-      qColor: 'grey', color: '#6b7280',
+      name: 'Otros',
+      count: rest,
+      ratio: total ? rest / total : 0,
+      pct: Math.round((rest / total || 0) * 1000) / 10,
+      qColor: 'grey',
+      color: '#6b7280',
     })
   }
 
   const topOne = topItems[0]
   return {
-    total, items: topItems, donutSegments,
+    total,
+    items: topItems,
+    donutSegments,
     coveragePct: Math.round((topSum / total || 0) * 1000) / 10,
     topName: topOne?.name || '',
-    topPct:  topOne?.pct  || 0,
+    topPct: topOne?.pct || 0,
   }
 })
 
-const donutCenterPct   = computed(() => `${Math.round(Number(funcUsage.value?.coveragePct || 0))}%`)
+const donutCenterPct = computed(() => `${Math.round(Number(funcUsage.value?.coveragePct || 0))}%`)
 const donutCenterLabel = computed(() => {
   const segs = funcUsage.value?.donutSegments || []
   if (!segs.length) return 'Top'
   return segs.some((s) => s.name === 'Otros') ? 'Cobertura' : 'Distribución'
 })
-const donutStyle = computed(() => {
-  const segs = funcUsage.value?.donutSegments || []
-  if (!segs.length) return { background: 'conic-gradient(rgba(255,255,255,0.10) 0 100%)' }
-  let acc = 0
-  const stops = []
-  for (const s of segs) {
-    const start = acc
-    const delta = (Number(s.ratio) || 0) * 100
-    acc = start + delta
-    stops.push(`${s.color} ${start}% ${acc}%`)
-  }
-  if (acc < 100) stops.push(`rgba(255,255,255,0.10) ${acc}% 100%`)
-  return { background: `conic-gradient(${stops.join(', ')})` }
-})
 
-const topOffices  = computed(() => toApiTopList(statsData.value?.topLocations, { topN: 4 }))
-const topTags     = computed(() => toApiTopList(statsData.value?.topTags,      { topN: 3 }))
-const topOutcomes = computed(() => toApiTopList(statsData.value?.outcomes,     { topN: 3 }))
+const coverageDonutCanvas = ref(null)
+let coverageDonutChart = null
+
+async function renderCoverageDonutChart() {
+  await nextTick()
+  const el = coverageDonutCanvas.value
+  if (!el) return
+
+  if (coverageDonutChart) {
+    coverageDonutChart.destroy()
+    coverageDonutChart = null
+  }
+
+  const segments = funcUsage.value?.donutSegments || []
+  if (!segments.length) return
+
+  coverageDonutChart = new Chart(el.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: segments.map((segment) => segment.name),
+      datasets: [
+        {
+          data: segments.map((segment) => Number(segment.count || 0)),
+          backgroundColor: segments.map((segment) => segment.color),
+          borderColor: 'rgba(15,20,32,0.92)',
+          borderWidth: 1,
+          hoverBorderWidth: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      onHover: (event, activeEls) => {
+        const target = event?.native?.target
+        if (target) target.style.cursor = activeEls?.length ? 'pointer' : 'default'
+      },
+      onClick: (_, activeEls) => {
+        if (!activeEls?.length) return
+        const segment = segments[activeEls[0].index]
+        if (!segment?.name || segment.name === 'Otros') return
+        onEventTypeCardClick(segment.name)
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          callbacks: {
+            label: (ctx) => {
+              const segment = segments[ctx.dataIndex]
+              return `${segment?.name || ''}: ${segment?.count || 0} (${segment?.pct || 0}%)`
+            },
+          },
+        },
+      },
+    },
+  })
+}
+
+const topOffices = computed(() => toApiTopList(statsData.value?.topLocations, { topN: 4 }))
+const topTags = computed(() => toApiTopList(statsData.value?.topTags, { topN: 3 }))
+const topOutcomes = computed(() => toApiTopList(filterStatRowsByKey(statsData.value?.outcomes, 'outcome'), { topN: 3 }))
 
 // ─── Severity pie (Chart.js) ──────────────────────────────────────────────────
 const severityPieCanvas = ref(null)
-let   severityPieChart  = null
+let severityPieChart = null
 
-const SEVERITY_ORDER  = ['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL', 'CRITICAL', 'N/A']
+const SEVERITY_ORDER = ['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL', 'CRITICAL', 'N/A']
 const SEVERITY_COLORS = {
-  DEBUG: '#94a3b8', INFO: '#22d3ee', WARN: '#ff9f43', WARNING: '#ff9f43',
-  ERROR: '#ef4444', FATAL: '#ff5c8a', CRITICAL: '#a78bfa', 'N/A': '#6b7280',
+  DEBUG: '#94a3b8',
+  INFO: '#22d3ee',
+  WARN: '#ff9f43',
+  WARNING: '#ff9f43',
+  ERROR: '#ef4444',
+  FATAL: '#ff5c8a',
+  CRITICAL: '#a78bfa',
+  'N/A': '#6b7280',
 }
 
 function getSeverityRows() {
-  return normalizeStatRows(statsData.value?.severities)
+  return filterStatRowsByKey(statsData.value?.severities, 'severity')
     .map((row) => ({ label: String(row.label || 'N/A').toUpperCase(), count: row.count }))
     .sort((a, b) => {
       const ia = SEVERITY_ORDER.indexOf(a.label)
@@ -502,21 +621,30 @@ async function renderSeverityPieChart() {
   const el = severityPieCanvas.value
   if (!el) return
 
-  if (severityPieChart) { severityPieChart.destroy(); severityPieChart = null }
+  if (severityPieChart) {
+    severityPieChart.destroy()
+    severityPieChart = null
+  }
 
   const rows = getSeverityRows()
   if (!rows.length) return
 
   const labels = rows.map((r) => r.label)
-  const data   = rows.map((r) => r.count)
+  const data = rows.map((r) => r.count)
   const colors = labels.map((l) => SEVERITY_COLORS[l] || '#29d3c2')
-  const total  = data.reduce((s, x) => s + x, 0) || 1
+  const total = data.reduce((s, x) => s + x, 0) || 1
 
   severityPieChart = new Chart(el.getContext('2d'), {
     type: 'pie',
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: 'rgba(15,20,32,0.85)', borderWidth: 2 }] },
+    data: {
+      labels,
+      datasets: [
+        { data, backgroundColor: colors, borderColor: 'rgba(15,20,32,0.85)', borderWidth: 2 },
+      ],
+    },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
       onHover: (event, activeEls) => {
         const t = event?.native?.target
         if (t) t.style.cursor = activeEls?.length ? 'pointer' : 'default'
@@ -527,10 +655,14 @@ async function renderSeverityPieChart() {
         if (severity) openConsoleWithFilter('severity', severity)
       },
       plugins: {
-        legend:  { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
+        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
         tooltip: {
-          titleColor: '#fff', bodyColor: '#fff',
-          callbacks: { label: (ctx) => `${ctx.label}: ${Number(ctx.parsed || 0)} (${Math.round((ctx.parsed / total) * 1000) / 10}%)` },
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          callbacks: {
+            label: (ctx) =>
+              `${ctx.label}: ${Number(ctx.parsed || 0)} (${Math.round((ctx.parsed / total) * 1000) / 10}%)`,
+          },
         },
       },
     },
@@ -539,16 +671,19 @@ async function renderSeverityPieChart() {
 
 // ─── HTTP Radar (Chart.js) ────────────────────────────────────────────────────
 const httpRadarCanvas = ref(null)
-let   httpRadarChart  = null
+let httpRadarChart = null
 
 const HTTP_METHOD_COLORS = {
-  GET: '#22d3ee', POST: '#a78bfa', PUT: '#ff5c8a', DELETE: '#fbbf24',
+  GET: '#22d3ee',
+  POST: '#a78bfa',
+  PUT: '#ff5c8a',
+  DELETE: '#fbbf24',
 }
 
 function buildHttpRadarFromApi(items = []) {
   const statusSet = new Set()
   const methodSet = new Set()
-  const map       = {}
+  const map = {}
 
   items.forEach(({ statusCode, method, p95Ms }) => {
     statusSet.add(statusCode)
@@ -557,11 +692,11 @@ function buildHttpRadarFromApi(items = []) {
     map[method][statusCode] = p95Ms
   })
 
-  const labels   = Array.from(statusSet).sort()
+  const labels = Array.from(statusSet).sort()
   const datasets = Array.from(methodSet).map((method) => ({
-    label:           method,
-    data:            labels.map((code) => map[method]?.[code] || 0),
-    borderColor:     HTTP_METHOD_COLORS[method] || '#999',
+    label: method,
+    data: labels.map((code) => map[method]?.[code] || 0),
+    borderColor: HTTP_METHOD_COLORS[method] || '#999',
     backgroundColor: (HTTP_METHOD_COLORS[method] || '#999') + '33',
   }))
 
@@ -573,7 +708,10 @@ async function renderHttpRadar() {
   const el = httpRadarCanvas.value
   if (!el) return
 
-  if (httpRadarChart) { httpRadarChart.destroy(); httpRadarChart = null }
+  if (httpRadarChart) {
+    httpRadarChart.destroy()
+    httpRadarChart = null
+  }
 
   if (!httpData.value?.latencyByStatusAndMethod?.length) return
 
@@ -581,30 +719,32 @@ async function renderHttpRadar() {
     type: 'radar',
     data: buildHttpRadarFromApi(httpData.value.latencyByStatusAndMethod),
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
       onClick: (_, elements) => {
         if (!elements.length) return
-        const el   = elements[0]
-        const ds   = httpRadarChart.data.datasets[el.datasetIndex]
+        const el = elements[0]
+        const ds = httpRadarChart.data.datasets[el.datasetIndex]
         const code = httpRadarChart.data.labels[el.index]
         openConsole?.([
-          { fieldKey: 'http.method',     value: ds.label },
+          { fieldKey: 'http.method', value: ds.label },
           { fieldKey: 'http.statusCode', value: code },
         ])
       },
       plugins: {
-        legend:  { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
+        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
         tooltip: {
-          titleColor: '#fff', bodyColor: '#fff',
+          titleColor: '#fff',
+          bodyColor: '#fff',
           callbacks: { label: (ctx) => `${ctx.dataset.label}: p95 ${ctx.parsed.r} ms` },
         },
       },
       scales: {
         r: {
           beginAtZero: true,
-          ticks:       { color: 'rgb(255,255,255)', backdropColor: 'transparent', backdropPadding: 0 },
-          grid:        { color: 'rgba(255,255,255,0.06)' },
-          angleLines:  { color: 'rgba(255,255,255,0.06)' },
+          ticks: { color: 'rgb(255,255,255)', backdropColor: 'transparent', backdropPadding: 0 },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          angleLines: { color: 'rgba(255,255,255,0.06)' },
           pointLabels: { color: 'rgba(255,255,255,0.75)' },
         },
       },
@@ -614,11 +754,11 @@ async function renderHttpRadar() {
 
 // ─── Status over time (Chart.js line) ────────────────────────────────────────
 const statusLineCanvas = ref(null)
-let   statusLineChart  = null
+let statusLineChart = null
 
 function buildStatusSeriesFromApi(items = []) {
-  const map      = {}
-  const dates    = new Set()
+  const map = {}
+  const dates = new Set()
   const statuses = new Set()
 
   items.forEach(({ date, status, count }) => {
@@ -628,13 +768,13 @@ function buildStatusSeriesFromApi(items = []) {
     map[status][date] = count
   })
 
-  const labels   = Array.from(dates).sort()
+  const labels = Array.from(dates).sort()
   const datasets = Array.from(statuses).map((status) => ({
     label: status,
-    data:  labels.map((d) => map[status]?.[d] || 0),
+    data: labels.map((d) => map[status]?.[d] || 0),
     tension: 0.35,
-    fill:    false,
-    pointRadius:      3,
+    fill: false,
+    pointRadius: 3,
     pointHoverRadius: 5,
   }))
 
@@ -646,30 +786,35 @@ async function renderStatusLine() {
   const el = statusLineCanvas.value
   if (!el) return
 
-  if (statusLineChart) { statusLineChart.destroy(); statusLineChart = null }
+  if (statusLineChart) {
+    statusLineChart.destroy()
+    statusLineChart = null
+  }
 
-  if (!seriesData.value?.statusOverTime?.length) return
+  if (!filteredStatusOverTime.value?.length) return
 
   statusLineChart = new Chart(el, {
     type: 'line',
-    data: buildStatusSeriesFromApi(seriesData.value.statusOverTime),
+    data: buildStatusSeriesFromApi(filteredStatusOverTime.value),
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend:  { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
+        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
         tooltip: {
-          titleColor: '#fff', bodyColor: '#fff',
+          titleColor: '#fff',
+          bodyColor: '#fff',
           callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} eventos` },
         },
       },
       onClick: (_, elements) => {
         if (!elements.length) return
-        const el     = elements[0]
-        const ds     = statusLineChart.data.datasets[el.datasetIndex]
-        const date   = statusLineChart.data.labels[el.index]
+        const el = elements[0]
+        const ds = statusLineChart.data.datasets[el.datasetIndex]
+        const date = statusLineChart.data.labels[el.index]
         openConsole?.([
-          { fieldKey: 'status',    value: ds.label },
+          { fieldKey: 'status', value: ds.label },
           { fieldKey: 'rangoFechas', value: { from: date, to: date } },
         ])
       },
@@ -682,12 +827,12 @@ async function renderStatusLine() {
 }
 
 // ─── Series temporales: día / semana / mes ────────────────────────────────────
-const eventsDayCanvas   = ref(null)
-const eventsWeekCanvas  = ref(null)
+const eventsDayCanvas = ref(null)
+const eventsWeekCanvas = ref(null)
 const eventsMonthCanvas = ref(null)
-let   eventsDayChart    = null
-let   eventsWeekChart   = null
-let   eventsMonthChart  = null
+let eventsDayChart = null
+let eventsWeekChart = null
+let eventsMonthChart = null
 
 const SERIES_COLORS = { day: '#22d3ee', week: '#a78bfa', month: '#ff5c8a', year: '#fbbf24' }
 
@@ -699,16 +844,18 @@ const LINE_SCALE_OPTS = {
 function buildSimpleSeries(items = [], color = '#22d3ee') {
   return {
     labels: items.map((i) => i.date),
-    datasets: [{
-      label:           'Eventos',
-      data:            items.map((i) => i.count),
-      borderColor:     color,
-      backgroundColor: color + '33',
-      tension:         0.35,
-      fill:            false,
-      pointRadius:      3,
-      pointHoverRadius: 5,
-    }],
+    datasets: [
+      {
+        label: 'Eventos',
+        data: items.map((i) => i.count),
+        borderColor: color,
+        backgroundColor: color + '33',
+        tension: 0.35,
+        fill: false,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+      },
+    ],
   }
 }
 
@@ -726,8 +873,8 @@ function weekRange(dateStr) {
     const week = parseInt(match[1])
     const year = parseInt(match[2])
     // El 4 de enero siempre cae en la semana 1 ISO
-    const jan4     = new Date(year, 0, 4)
-    const dow      = jan4.getDay() || 7       // 1=Lun … 7=Dom
+    const jan4 = new Date(year, 0, 4)
+    const dow = jan4.getDay() || 7 // 1=Lun … 7=Dom
     const week1Mon = new Date(jan4)
     week1Mon.setDate(jan4.getDate() - (dow - 1))
     const start = new Date(week1Mon)
@@ -747,11 +894,11 @@ function weekRange(dateStr) {
 
 function monthRange(dateStr) {
   const parts = dateStr.split('-')
-  const year  = parseInt(parts[1])
+  const year = parseInt(parts[1])
   const month = parseInt(parts[0]) - 1
-  const mm    = String(month + 1).padStart(2, '0')
-  const from  = `${parts[1]}-${mm}-01`
-  const to    = `${parts[1]}-${mm}-${String(new Date(year, month + 1, 0).getDate()).padStart(2, '0')}`
+  const mm = String(month + 1).padStart(2, '0')
+  const from = `${parts[1]}-${mm}-01`
+  const to = `${parts[1]}-${mm}-${String(new Date(year, month + 1, 0).getDate()).padStart(2, '0')}`
   return { from, to }
 }
 
@@ -759,7 +906,9 @@ async function renderSimpleLineChart(canvasRef, existingChart, rows, color, onCl
   await nextTick()
   const el = canvasRef.value
   if (!el) return null
-  if (existingChart) { existingChart.destroy() }
+  if (existingChart) {
+    existingChart.destroy()
+  }
   if (!rows?.length) return null
 
   const clickOpts = onClickFn
@@ -780,7 +929,8 @@ async function renderSimpleLineChart(canvasRef, existingChart, rows, color, onCl
     type: 'line',
     data: buildSimpleSeries(rows, color),
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: LINE_SCALE_OPTS,
       ...clickOpts,
@@ -789,103 +939,245 @@ async function renderSimpleLineChart(canvasRef, existingChart, rows, color, onCl
 }
 
 async function renderSeriesCharts() {
-  eventsDayChart   = await renderSimpleLineChart(
-    eventsDayCanvas,   eventsDayChart,   seriesData.value?.byDay,   SERIES_COLORS.day,
+  eventsDayChart = await renderSimpleLineChart(
+    eventsDayCanvas,
+    eventsDayChart,
+    filteredByDay.value,
+    SERIES_COLORS.day,
     (date) => openConsole?.([{ fieldKey: 'rangoFechas', value: dayRange(date) }]),
   )
-  eventsWeekChart  = await renderSimpleLineChart(
-    eventsWeekCanvas,  eventsWeekChart,  seriesData.value?.byWeek,  SERIES_COLORS.week,
+  eventsWeekChart = await renderSimpleLineChart(
+    eventsWeekCanvas,
+    eventsWeekChart,
+    filteredByWeek.value,
+    SERIES_COLORS.week,
     (date) => openConsole?.([{ fieldKey: 'rangoFechas', value: weekRange(date) }]),
   )
   eventsMonthChart = await renderSimpleLineChart(
-    eventsMonthCanvas, eventsMonthChart, seriesData.value?.byMonth, SERIES_COLORS.month,
+    eventsMonthCanvas,
+    eventsMonthChart,
+    filteredByMonth.value,
+    SERIES_COLORS.month,
     (date) => openConsole?.([{ fieldKey: 'rangoFechas', value: monthRange(date) }]),
   )
 }
 
 // ─── redrawCharts: punto único de re-render ───────────────────────────────────
 async function redrawCharts() {
+  renderCoverageDonutChart()
   renderSeverityPieChart()
   renderStatusLine()
   renderSeriesCharts()
   if (hasHttpData.value) renderHttpRadar()
 }
 
-// ── Suscribirse al WebSocket del sistema seleccionado ─────────────────────────
-function subscribeSystem(system) {
-  // Cancelar suscripción anterior
-  if (wsSubscription) {
-    try { wsSubscription.unsubscribe()
+const redrawKey = computed(() =>
+  JSON.stringify({
+    stats: !!statsData.value,
+    series: !!seriesData.value,
+    http: !!httpData.value,
+    geo: !!geoData.value,
+    values: activeValueFilters.value || {},
+  }),
+)
 
-    } catch (e) {
-      console.error('[EscritorioGraficasEnhanced] Error al cancelar suscripción:', e)
-    }
-    wsSubscription = null
-  }
-  newLogsCount.value = 0
+watch(
+  redrawKey,
+  async () => {
+    await nextTick()
+    redrawCharts()
+  },
+  { immediate: true },
+)
 
-  const tenantId = authService.user?.tenantId
-                || authService.user?.authz?.tenantId
-                || authService.user?.organization?.id
-  if (!tenantId || !system) return
-
-  wsSubscription = subscribeToNewLogs(tenantId, system, (payload) => {
-    newLogsCount.value += payload.count || 1
-
-    // Debounce: esperar 3 segundos de inactividad antes de refrescar
-    // Evita múltiples fetchAll() si llegan muchos logs seguidos
-    if (refreshDebounce) clearTimeout(refreshDebounce)
-    refreshDebounce = setTimeout(() => {
-  newLogsCount.value = 0
-  fetchAll()
-  activityWidgetRef.value?.fetchToday()  // ← refrescar widget también
-}, 3000)
-  })
-}
-
-// ─── Watch único: cualquier cambio en sistema o rango dispara fetchAll ─────────
-watch(queryKey, (val, old) => {
-  if (val !== old) {
-    fetchAll()
-    // Re-suscribir al nuevo sistema cuando cambia
-    const sys = String(filtrosGlobales.value?.system || '').trim()
-    if (sys) subscribeSystem(sys)
-  }
-}, { immediate: true })
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 onBeforeUnmount(() => {
+  coverageDonutChart?.destroy()
   severityPieChart?.destroy()
   statusLineChart?.destroy()
   httpRadarChart?.destroy()
   eventsDayChart?.destroy()
   eventsWeekChart?.destroy()
   eventsMonthChart?.destroy()
-
-  // ── Limpieza de WebSocket ─────────────────────────────────────────────────
-  if (wsSubscription) {
-    try { wsSubscription.unsubscribe()
-
-    } catch (e) {
-      console.error('[EscritorioGraficasEnhanced] Error al cancelar suscripción:', e)
-    }
-  }
-  if (refreshDebounce) clearTimeout(refreshDebounce)
 })
 </script>
 
 <style lang="scss" scoped>
-.func-wrap {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
-  border-radius: 18px;
-  box-shadow: 0 8px 26px rgba(255, 125, 50, 0.45);
+.dashboard-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.dashboard-hero__left {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.dashboard-hero__title-card,
+.dashboard-hero__events-card,
+.dashboard-hero__donut-card,
+.toplist-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
   border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+}
+
+.dashboard-hero__title-card {
+  border-radius: 26px;
+  padding: 30px 30px 6px;
+}
+
+.dashboard-hero__events-card {
+  border-radius: 26px;
+  padding: 24px;
+}
+
+.dashboard-hero__donut-card {
+  border-radius: 26px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+  color: white;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-badge span {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.hero-title {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 1.03;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.hero-title--accent {
+  background: linear-gradient(90deg, #22d3ee 0%, #7c3aed 55%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1rem;
+  line-height: 1.75;
+  max-width: 760px;
+}
+
+.hero-side-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.hero-side-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.95), rgba(124, 58, 237, 0.88));
+}
+
+.hero-side-title {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.hero-side-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+.dashboard-hero__section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.hero-total-pill__label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.hero-total-pill__value {
+  color: #fff;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-weight: 900;
+  line-height: 1.05;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.dashboard-hero__events-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .func-subcard {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 14px;
+}
+
+.func-subcard__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.func-subcard__title {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.func-subcard__count {
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.func-subcard__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.78rem;
 }
 
 .func-dot {
@@ -895,43 +1187,108 @@ onBeforeUnmount(() => {
   display: inline-block;
 }
 
-.donut {
-  width: 78px;
-  height: 78px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+.dashboard-hero__donut-wrap {
+  flex: 1;
+  // min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 0 0;
 }
 
-.donut-inner {
-  width: 62px;
-  height: 62px;
-  border-radius: 999px;
-  background: #0f1420;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  display: grid;
-  place-items: center;
+.dashboard-hero__donut-visual {
+  position: relative;
+  width: min(250px, 56vw);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.dashboard-hero__donut-visual canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.donut-center-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
   text-align: center;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  padding: 0 18%;
 }
 
 .donut-pct {
   font-size: 16px;
   font-weight: 800;
   line-height: 1;
-  margin-top: 5px;
+  margin-top: 0;
+}
+
+.donut-pct--hero {
+  font-size: clamp(2rem, 4vw, 3rem);
 }
 
 .donut-sub {
   font-size: 10px;
-  margin-top: -20px;
+  margin-top: 0;
+}
+
+.donut-sub--hero {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.1;
+}
+
+.dashboard-hero__donut-summary {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 14px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.mini-metric {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mini-metric--compact {
+  min-width: 190px;
+  max-width: 240px;
+  text-align: center;
+}
+
+.mini-metric__label {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.82rem;
+  margin-bottom: 6px;
+}
+
+.mini-metric__value {
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.dashboard-hero__top-name {
+  word-break: break-word;
 }
 
 .toplist-card {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
   border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
 }
 
 .toplist-title {
@@ -958,7 +1315,10 @@ onBeforeUnmount(() => {
 .toplist-row {
   cursor: pointer;
   border-radius: 12px;
-  transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
+  transition:
+    background 120ms ease,
+    transform 120ms ease,
+    border-color 120ms ease;
   border: 1px solid transparent;
 }
 
@@ -974,7 +1334,10 @@ onBeforeUnmount(() => {
 
 .func-clickable {
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
 }
 
 .func-clickable:hover {
@@ -1029,5 +1392,75 @@ onBeforeUnmount(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+@media (max-width: 1240px) {
+  .dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-hero__events-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-hero__donut-wrap {
+    min-height: 0;
+  }
+
+  .dashboard-hero__donut-card {
+    order: -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-hero__title-card,
+  .dashboard-hero__events-card,
+  .dashboard-hero__donut-card {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .dashboard-hero__section-head {
+    flex-direction: column;
+  }
+
+  .hero-total-pill {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-hero__events-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-hero__donut-wrap {
+    min-height: 0;
+  }
+
+  .dashboard-hero__donut-visual {
+    width: min(220px, 68vw);
+  }
+
+  .donut-center-overlay {
+    gap: 2px;
+    padding: 0 20%;
+  }
+
+  .donut-pct--hero {
+    font-size: clamp(1.7rem, 8vw, 2.4rem);
+  }
+
+  .donut-sub--hero {
+    font-size: 0.82rem;
+  }
+
+  .mini-metric--compact {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .hero-total-pill__value {
+    text-align: center;
+  }
 }
 </style>

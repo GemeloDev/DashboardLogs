@@ -32,7 +32,7 @@
           </q-btn>
 
           <q-btn
-            v-if="isClientFlow"
+            v-if="isClientDashboard"
             flat
             dense
             round
@@ -127,14 +127,18 @@
 
           <q-btn-dropdown
             v-if="isClientFlow"
-            no-caps unelevated
+            no-caps
+            unelevated
             class="system-dropdown"
             dropdown-icon="expand_more"
           >
             <!-- Label con indicador de salud del sistema seleccionado -->
             <template #label>
-              <span class="system-dot"
-                :class="'system-dot--' + (healthMap[selectedSystem]?.status || 'inactive').toLowerCase()"
+              <span
+                class="system-dot"
+                :class="
+                  'system-dot--' + (healthMap[selectedSystem]?.status || 'inactive').toLowerCase()
+                "
               />
               <span class="q-ml-sm">{{ selectedSystem }}</span>
             </template>
@@ -143,12 +147,14 @@
               <q-item
                 v-for="sys in systems"
                 :key="sys.value"
-                clickable v-close-popup
+                clickable
+                v-close-popup
                 class="glass-menu-item"
                 @click="selectedSystem = sys.value"
               >
-                <q-item-section avatar style="min-width:24px;">
-                  <span class="system-dot"
+                <q-item-section avatar style="min-width: 24px">
+                  <span
+                    class="system-dot"
                     :class="'system-dot--' + (sys.status || 'inactive').toLowerCase()"
                   />
                 </q-item-section>
@@ -156,9 +162,12 @@
                   <q-item-label class="text-white">{{ sys.label }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
-                  <span style="font-size:10px;" :class="errorRateTextClass(sys.status)">
-                    {{ !sys.status || sys.status === 'INACTIVE' ? 'Sin actividad'
-                        : (sys.errorRate * 100).toFixed(1) + '% err' }}
+                  <span style="font-size: 10px" :class="errorRateTextClass(sys.status)">
+                    {{
+                      !sys.status || sys.status === 'INACTIVE'
+                        ? 'Sin actividad'
+                        : (sys.errorRate * 100).toFixed(1) + '% err'
+                    }}
                   </span>
                 </q-item-section>
               </q-item>
@@ -218,7 +227,7 @@
           class="filters-dialog-wrap q-pa-sm"
           style="width: min(1900px, 99vw); max-height: calc(100vh - 80px); overflow: auto"
         >
-          <DinamicFilters :auto-emit-on-mounted="false" @camposSeleccionados="onFiltrar" />
+          <ChartDrivenFilters />
         </div>
       </q-dialog>
     </q-header>
@@ -395,11 +404,13 @@ import { subscribeToAlerts, connectSocket } from 'src/services/socketService'
 import authService from '../services/authService.js'
 
 import QRScannerModal from 'src/components/QRScannerModal.vue'
-import DinamicFilters from 'src/components/blocks/DinamicFilters.vue'
 import { ApiKeyService } from 'src/services/apiKeys'
 import { ChartDataService } from 'src/services/chartDataService'
 import EvaWorkspace from 'src/components/ai/EvaWorkspace.vue'
 import { CatalogService } from 'src/services/catalogService'
+
+import { useDashboardData } from 'src/services/useDashboardData'
+import ChartDrivenFilters from 'src/components/blocks/ChartDrivenFilters.vue'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -441,6 +452,22 @@ const userInfo = computed(() => ({
 
 const eventosRaw = ref([]) // lo que llega del backend (ya filtrado por system)
 const loadingLogs = ref(false) // puedes mantener el mismo nombre
+
+const {
+  loading: dashboardLoading,
+  statsData,
+  seriesData,
+  httpData,
+  geoData,
+  fetchAll,
+} = useDashboardData()
+
+provide('dashboardLoading', dashboardLoading)
+provide('dashboardStatsData', statsData)
+provide('dashboardSeriesData', seriesData)
+provide('dashboardHttpData', httpData)
+provide('dashboardGeoData', geoData)
+
 
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
@@ -498,6 +525,9 @@ const isSantoroUser = computed(() => authService.canAccessSantoroFlow())
 const currentFlow = computed(() => route.meta?.flow || authService.getAllowedFlow())
 const isSantoroFlow = computed(() => currentFlow.value === 'santoro')
 const isClientFlow = computed(() => currentFlow.value === 'client')
+const isClientDashboard = computed(() =>
+  isClientFlow.value && route.path === '/client/escritorio'
+)
 
 const diffDias = (fechaISO, hoy) => {
   if (!fechaISO) return null
@@ -600,34 +630,6 @@ function toggleDinamicFilters() {
   showDinamicFilters.value = !showDinamicFilters.value
 }
 
-async function onFiltrar(payload) {
-  loadingLogs.value = true
-  const {
-    _visibleFields = [],
-    busqueda = '',
-    rangoFechas = { from: '', to: '' },
-    ...rest
-  } = payload
-
-  filtros.value = {
-    ...filtros.value,
-    busqueda,
-    rangoFechas,
-    visibleFields: _visibleFields,
-    values: rest,
-  }
-
-  $q.notify({
-    message: '🔍 Filtros aplicados correctamente',
-    color: 'positive',
-    icon: 'filter_list',
-    position: $q.platform.is.mobile ? 'bottom' : 'top',
-  })
-
-  showDinamicFilters.value = false
-  loadingLogs.value = false
-}
-
 function openConsole(selection = null) {
   if (!consolaRef.value?.abrirConsola) {
     $q.notify({ message: '❌ Error al abrir consola', color: 'negative' })
@@ -693,6 +695,13 @@ function logout() {
   }
 }
 
+const dashboardQueryKey = computed(() => {
+  const sys = String(filtros.value?.system || '').trim()
+  const from = filtros.value?.rangoFechas?.from || ''
+  const to = filtros.value?.rangoFechas?.to || ''
+  return `${sys}|${from}|${to}`
+})
+
 // 1) Cuando cambia system: NO pega al backend, solo refiltra logsRango
 watch(
   selectedSystem,
@@ -718,6 +727,15 @@ watch(
   { immediate: true },
 )
 
+watch(
+  dashboardQueryKey,
+  () => {
+    fetchAll(filtros.value)
+  },
+  { immediate: true },
+)
+
+
 // ── Notificaciones del browser para alertas CRIT ──────────────────────────────
 async function requestNotificationPermission() {
   if (!('Notification' in window)) return false
@@ -728,15 +746,15 @@ async function requestNotificationPermission() {
 }
 
 function showBrowserNotification(alert) {
-  const title  = `🚨 Alerta CRÍTICA — ${alert.system}`
-  const body   = alert.message || `Error rate elevado en ${alert.system}`
+  const title = `🚨 Alerta CRÍTICA — ${alert.system}`
+  const body = alert.message || `Error rate elevado en ${alert.system}`
   const options = {
     body,
-    icon:    '/icons/favicon-32x32.png',
-    badge:   '/icons/favicon-32x32.png',
-    tag:     `crit-${alert.system}`,        // evita duplicados del mismo sistema
+    icon: '/icons/favicon-32x32.png',
+    badge: '/icons/favicon-32x32.png',
+    tag: `crit-${alert.system}`, // evita duplicados del mismo sistema
     renotify: true,
-    requireInteraction: true,               // no se cierra sola hasta que el usuario la vea
+    requireInteraction: true, // no se cierra sola hasta que el usuario la vea
   }
 
   // Notificación del browser (funciona aunque la app esté en segundo plano)
@@ -750,13 +768,13 @@ function showBrowserNotification(alert) {
 
   // Notificación dentro de la app (Quasar notify)
   $q.notify({
-    type:     'negative',
-    icon:     'warning',
-    message:  title,
-    caption:  body,
+    type: 'negative',
+    icon: 'warning',
+    message: title,
+    caption: body,
     position: 'top-right',
-    timeout:  8000,
-    actions:  [{ label: 'Ver', color: 'white', handler: () => openConsole(null) }],
+    timeout: 8000,
+    actions: [{ label: 'Ver', color: 'white', handler: () => openConsole(null) }],
   })
 }
 
@@ -786,13 +804,14 @@ onMounted(async () => {
     connectSocket()
 
     // Esperar un momento para que la conexión se establezca
-  await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
-  await requestNotificationPermission()
+    await requestNotificationPermission()
 
-  const tenantId = authService.user?.tenantId
-                || authService.user?.authz?.tenantId
-                || authService.user?.organization?.id
+    const tenantId =
+      authService.user?.tenantId ||
+      authService.user?.authz?.tenantId ||
+      authService.user?.organization?.id
 
     if (tenantId) {
       subscribeToAlerts(tenantId, handleCritAlert)
@@ -1288,12 +1307,20 @@ onMounted(async () => {
   vertical-align: middle;
 }
 
-.system-dot--healthy  { background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); }
-.system-dot--warn     { background: #f97316;
-  box-shadow: 0 0 6px rgba(249, 115, 22, 0.6); }
-.system-dot--crit     { background: #ef4444;
+.system-dot--healthy {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+.system-dot--warn {
+  background: #f97316;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.6);
+}
+.system-dot--crit {
+  background: #ef4444;
   box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
-  animation: pulse-dot 1.5s infinite; }
-.system-dot--inactive { background: #6b7280; }
+  animation: pulse-dot 1.5s infinite;
+}
+.system-dot--inactive {
+  background: #6b7280;
+}
 </style>

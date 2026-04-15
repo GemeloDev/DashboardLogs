@@ -14,10 +14,9 @@ export class ChartDataService {
   static buildFilterParams(filtros = {}, additionalParams = {}) {
     const params = new URLSearchParams(additionalParams)
 
-    // Defaults: últimos 30 días (evita quedarte “atorado” en 2025)
+    // Defaults: días transcurridos en el año actual (desde 01-01-2026 hasta hoy)
     const end = new Date()
-    const start = new Date()
-    start.setDate(start.getDate() - 30)
+    const start = new Date(end.getFullYear(), 0, 1) // 01-01 del año actual
 
     const defaultStart = this.toYMD(start)
     const defaultEnd = this.toYMD(end)
@@ -70,7 +69,18 @@ export class ChartDataService {
     outcome,
   } = {}) {
     // Construir solo los params con valor real (evita enviar undefined/null/'')
-    const raw = { system, page, size, fromDate, toDate, sortDir, eventType, status, severity, outcome }
+    const raw = {
+      system,
+      page,
+      size,
+      fromDate,
+      toDate,
+      sortDir,
+      eventType,
+      status,
+      severity,
+      outcome,
+    }
     const params = Object.fromEntries(
       Object.entries(raw).filter(([, v]) => v !== undefined && v !== null && v !== ''),
     )
