@@ -1,6 +1,10 @@
 <template>
   <q-page class="admin-home-page">
-    <div class="admin-home-wrap">
+    <q-inner-loading :showing="loading">
+      <q-spinner-gears size="48px" color="orange-9" />
+    </q-inner-loading>
+
+    <div v-if="!loading" class="admin-home-wrap">
       <!-- HERO -->
       <section class="hero-block">
         <div class="hero-left">
@@ -214,7 +218,11 @@
 
             <!-- Sin alertas -->
             <div
-              v-if="!alerts.expiredKeys.length && !alerts.expiringKeys.length && !alerts.recentKeys.length"
+              v-if="
+                !alerts.expiredKeys.length &&
+                !alerts.expiringKeys.length &&
+                !alerts.recentKeys.length
+              "
               class="alert-item"
             >
               <div class="alert-icon alert-icon--success">
@@ -292,26 +300,27 @@ import CreateEmpresa from './modals/CreateEmpresa.vue'
 
 const $q = useQuasar()
 const dialogEmpresa = ref(false)
+const loading = ref(false)
 
 const organizations = ref({
-  /**
-   * totalOrganizations,
-   * activeOrganizations,
-   * disabledOrganizations
-   */
+  totalOrganizations: 0,
+  activeOrganizations: 0,
+  disabledOrganizations: 0,
 })
+
 const users = ref({
-  //  totalUsers,
-  //  activeUsers,
-  //  inactiveUsers,
-  //  invitedUsers,
+  totalUsers: 0,
+  activeUsers: 0,
+  inactiveUsers: 0,
+  invitedUsers: 0,
 })
+
 const apiKeys = ref({
-  //  totalApiKeys,
-  //  activeApiKeys,
-  //  revokedApiKeys,
-  //  expiredApiKeys,
-  //  expiringApiKeys,
+  totalApiKeys: 0,
+  activeApiKeys: 0,
+  revokedApiKeys: 0,
+  expiredApiKeys: 0,
+  expiringApiKeys: 0,
 })
 
 const alerts = ref({ expiredKeys: [], expiringKeys: [], recentKeys: [] })
@@ -336,6 +345,8 @@ const distApiKeys = computed(() => {
 })
 
 async function initializeStats() {
+  loading.value = true
+
   try {
     const respuesta = await DashboardSantoro.getStats()
     $q.notify({
@@ -368,6 +379,8 @@ async function initializeStats() {
       message: '❌ Error al iniciar estadísticas del panel!',
       type: 'negative',
     })
+  } finally {
+    loading.value = false
   }
 }
 
@@ -380,8 +393,14 @@ const onEmpresaCreada = () => {
 }
 
 onMounted(async () => {
-  initializeStats()
-  alerts.value = await DashboardSantoro.alertasAPIs()
+  const [/* statsResult */, alertsResult] = await Promise.allSettled([
+    initializeStats(),
+    DashboardSantoro.alertasAPIs(),
+  ])
+
+  if (alertsResult.status === 'fulfilled') {
+    alerts.value = alertsResult.value || { expiredKeys: [], expiringKeys: [], recentKeys: [] }
+  }
 })
 </script>
 

@@ -8,13 +8,13 @@
           dense
           round
           icon="menu"
-          aria-label="Menu"
+          :aria-label="t('layout.menuAria')"
           class="toolbar-icon-btn"
           @click="toggleLeftDrawer"
         />
 
         <q-toolbar-title v-if="!$q.platform.is.mobile" class="text-weight-bold app-toolbar-title">
-          {{ isSantoroFlow ? 'Panel Santoro' : userInfo.organization }}
+          {{ isSantoroFlow ? t('layout.santoroPanel') : userInfo.organization }}
         </q-toolbar-title>
 
         <!-- Botones de herramientas rápidas -->
@@ -28,11 +28,11 @@
             class="toolbar-icon-btn toolbar-icon-btn--success"
             @click="toogleStartSession"
           >
-            <q-tooltip class="glass-tooltip">Sesiones</q-tooltip>
+            <q-tooltip class="glass-tooltip">{{ t('layout.sessions') }}</q-tooltip>
           </q-btn>
 
           <q-btn
-            v-if="isClientFlow"
+            v-if="isClientDashboard"
             flat
             dense
             round
@@ -40,7 +40,7 @@
             class="toolbar-icon-btn toolbar-icon-btn--success"
             @click="toggleDinamicFilters"
           >
-            <q-tooltip class="glass-tooltip">Filtros Avanzados</q-tooltip>
+            <q-tooltip class="glass-tooltip">{{ t('layout.quickFilters') }}</q-tooltip>
           </q-btn>
 
           <q-btn
@@ -52,7 +52,7 @@
             class="toolbar-icon-btn toolbar-icon-btn--purple"
             @click="openConsole"
           >
-            <q-tooltip class="glass-tooltip">Consola de Logs</q-tooltip>
+            <q-tooltip class="glass-tooltip">{{ t('layout.logConsole') }}</q-tooltip>
           </q-btn>
 
           <!-- Notificaciones API Keys -->
@@ -75,16 +75,16 @@
               anchor="bottom left"
               self="top left"
               class="glass-menu"
-              style="max-width: 350px"
+              style="max-width: 350px;"
             >
               <q-list style="min-width: 300px">
-                <q-item-label header class="menu-header-label"> Alertas de API Keys </q-item-label>
+                <q-item-label header class="menu-header-label"> {{ t('layout.APIalerts') }} </q-item-label>
 
                 <q-separator class="menu-separator" />
 
                 <div v-if="apiKeysPorExpirar.length === 0" class="q-pa-md text-center text-grey-5">
                   <q-icon name="check_circle" color="positive" size="md" />
-                  <div class="q-mt-xs">Todo en orden</div>
+                  <div class="q-mt-xs">{{ t('layout.APIalertsState') }}</div>
                 </div>
 
                 <q-item
@@ -108,16 +108,18 @@
                     </q-item-label>
                     <q-item-label caption class="text-grey-5">
                       <template v-if="key.tipoAlerta === 'ROTA'">
-                        {{ key.diasParaRotar }} día(s) para renovar.
+                        {{ formatApiKeyRotationText(key.diasParaRotar) }}
                       </template>
-                      <template v-else> Expira en {{ key.diasParaExpirar }} días </template>
+                      <template v-else>
+                        {{ formatApiKeyExpiryText(key.diasParaExpirar) }}
+                      </template>
                     </q-item-label>
                   </q-item-section>
 
                   <q-item-section side top>
                     <q-badge
                       :color="key.tipoAlerta === 'ROTA' ? 'orange' : 'negative'"
-                      :label="key.tipoAlerta === 'ROTA' ? 'Renovar' : 'Expira'"
+                      :label="key.tipoAlerta === 'ROTA' ? t('apiKeys.rennovateKey') : t('apiKeys.expiringSoon')"
                     />
                   </q-item-section>
                 </q-item>
@@ -125,16 +127,63 @@
             </q-menu>
           </q-btn>
 
+          <!-- Selector de idioma -->
           <q-btn-dropdown
             v-if="isClientFlow"
-            no-caps unelevated
+            flat
+            dense
+            round
+            icon="language"
+            class="toolbar-icon-btn"
+            dropdown-icon=""
+            style="padding: 8px"
+          >
+            <q-list class="language-dropdown-menu" style="min-width: 180px">
+              <q-item-label header class="menu-header-label">{{ t('common.language') }}</q-item-label>
+
+              <q-separator class="menu-separator" />
+
+              <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('es')">
+                <q-item-section avatar style="min-width: 32px">
+                  <span style="font-size: 20px">🇲🇽</span>
+                </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white">{{ t('layout.languageSpanish') }}</q-item-label>
+                  </q-item-section>
+                <q-item-section side top v-if="locale === 'es'">
+                  <q-icon name="check" color="positive" />
+                </q-item-section>
+              </q-item>
+
+              <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('en')">
+                <q-item-section avatar style="min-width: 32px">
+                  <span style="font-size: 20px">🇺🇸</span>
+                </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white">{{ t('layout.languageEnglish') }}</q-item-label>
+                  </q-item-section>
+                <q-item-section side top v-if="locale === 'en'">
+                  <q-icon name="check" color="positive" />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+
+          <!-- Sistemas en línea -->
+          <q-btn-dropdown
+            v-if="isClientFlow"
+            no-caps
+            unelevated
             class="system-dropdown"
             dropdown-icon="expand_more"
           >
             <!-- Label con indicador de salud del sistema seleccionado -->
             <template #label>
-              <span class="system-dot"
-                :class="'system-dot--' + (healthMap[selectedSystem]?.status || 'inactive').toLowerCase()"
+              <span
+                class="system-dot"
+                :class="
+                  'system-dot--' + (healthMap[selectedSystem]?.status || 'inactive').toLowerCase()
+                "
               />
               <span class="q-ml-sm">{{ selectedSystem }}</span>
             </template>
@@ -143,12 +192,14 @@
               <q-item
                 v-for="sys in systems"
                 :key="sys.value"
-                clickable v-close-popup
+                clickable
+                v-close-popup
                 class="glass-menu-item"
                 @click="selectedSystem = sys.value"
               >
-                <q-item-section avatar style="min-width:24px;">
-                  <span class="system-dot"
+                <q-item-section avatar style="min-width: 24px">
+                  <span
+                    class="system-dot"
                     :class="'system-dot--' + (sys.status || 'inactive').toLowerCase()"
                   />
                 </q-item-section>
@@ -156,9 +207,12 @@
                   <q-item-label class="text-white">{{ sys.label }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
-                  <span style="font-size:10px;" :class="errorRateTextClass(sys.status)">
-                    {{ !sys.status || sys.status === 'INACTIVE' ? 'Sin actividad'
-                        : (sys.errorRate * 100).toFixed(1) + '% err' }}
+                  <span style="font-size: 10px" :class="errorRateTextClass(sys.status)">
+                    {{
+                      !sys.status || sys.status === 'INACTIVE'
+                        ? t('layout.noActivity')
+                        : formatSystemErrorRate(sys.errorRate)
+                    }}
                   </span>
                 </q-item-section>
               </q-item>
@@ -194,7 +248,7 @@
                   <q-icon name="logout" color="negative" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label class="text-white">Cerrar Sesión</q-item-label>
+                  <q-item-label class="text-white">{{ t('layout.logout') }}</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -218,7 +272,7 @@
           class="filters-dialog-wrap q-pa-sm"
           style="width: min(1900px, 99vw); max-height: calc(100vh - 80px); overflow: auto"
         >
-          <DinamicFilters :auto-emit-on-mounted="false" @camposSeleccionados="onFiltrar" />
+          <ChartDrivenFilters />
         </div>
       </q-dialog>
     </q-header>
@@ -238,11 +292,11 @@
           </q-avatar>
 
           <div class="drawer-brand-title">
-            {{ isSantoroFlow ? 'Panel Santoro' : 'Consola Logs' }}
+            {{ isSantoroFlow ? t('layout.santoroPanel') : t('layout.consoleLogs') }}
           </div>
 
           <div class="drawer-brand-subtitle">
-            Panel avanzado para gestión de logs, eventos y administración.
+            {{ t('layout.systemSubtitle') }}
           </div>
         </div>
 
@@ -255,19 +309,19 @@
                 <q-icon name="dashboard" class="item-icon item-icon--cyan" />
               </q-item-section>
               <q-item-section>
-                <span class="drawer-item-label">Dashboard</span>
+                <span class="drawer-item-label">{{ t('layout.dashboard') }}</span>
               </q-item-section>
             </q-item>
 
             <q-separator dark spaced class="drawer-separator" />
-            <q-item-label header class="drawer-section-label">Herramientas</q-item-label>
+            <q-item-label header class="drawer-section-label">{{ t('layout.toolsSection') }}</q-item-label>
 
             <q-item clickable v-ripple to="/client/diagnostico" class="drawer-item">
               <q-item-section avatar>
                 <q-icon name="bug_report" class="item-icon item-icon--red" />
               </q-item-section>
               <q-item-section>
-                <span class="drawer-item-label">Diagnóstico</span>
+                <span class="drawer-item-label">{{ t('layout.diagnostic') }}</span>
               </q-item-section>
             </q-item>
 
@@ -283,7 +337,7 @@
                 <q-icon name="key" class="item-icon item-icon--cyan" />
               </q-item-section>
               <q-item-section>
-                <span class="drawer-item-label">Mis API Key's</span>
+                <span class="drawer-item-label">{{ t('common.myAPIkeys') }}</span>
               </q-item-section>
             </q-item>
 
@@ -299,7 +353,7 @@
                 <q-icon name="badge" class="item-icon item-icon--warm" />
               </q-item-section>
               <q-item-section>
-                <span class="drawer-item-label">Gestión Empleados</span>
+                <span class="drawer-item-label">{{ t('layout.userManagement') }}</span>
               </q-item-section>
             </q-item>
           </template>
@@ -310,7 +364,7 @@
                 <q-icon name="home" class="item-icon color-orange-santoro" />
               </q-item-section>
               <q-item-section>
-                <span class="drawer-item-label">Inicio</span>
+                <span class="drawer-item-label">{{ t('layout.home') }}</span>
               </q-item-section>
             </q-item>
 
@@ -319,7 +373,7 @@
                 <q-icon name="apartment" class="item-icon item-icon--cyan" />
               </q-item-section>
               <q-item-section>
-                <span class="drawer-item-label">Empresas</span>
+                <span class="drawer-item-label">{{ t('layout.enterprises') }}</span>
               </q-item-section>
             </q-item>
 
@@ -328,7 +382,7 @@
                 <q-icon name="group" class="item-icon item-icon--amber" />
               </q-item-section>
               <q-item-section>
-                <span class="drawer-item-label">Usuarios</span>
+                <span class="drawer-item-label">{{ t('layout.users') }}</span>
               </q-item-section>
             </q-item>
 
@@ -337,7 +391,7 @@
                 <q-icon name="vpn_key" class="item-icon item-icon--purple" />
               </q-item-section>
               <q-item-section>
-                <span class="drawer-item-label">API Keys</span>
+                <span class="drawer-item-label">{{ t('layout.apiKeys') }}</span>
               </q-item-section>
             </q-item>
           </template>
@@ -349,7 +403,7 @@
           unelevated
           rounded
           icon="help"
-          label="Soporte"
+          :label="t('layout.support')"
           class="footer-btn"
           href="https://ticket.grupo-santoro.com.mx/login"
         />
@@ -395,18 +449,15 @@ import { subscribeToAlerts, connectSocket } from 'src/services/socketService'
 import authService from '../services/authService.js'
 
 import QRScannerModal from 'src/components/QRScannerModal.vue'
-import DinamicFilters from 'src/components/blocks/DinamicFilters.vue'
 import { ApiKeyService } from 'src/services/apiKeys'
 import { ChartDataService } from 'src/services/chartDataService'
 import EvaWorkspace from 'src/components/ai/EvaWorkspace.vue'
 import { CatalogService } from 'src/services/catalogService'
 
-import { requestFcmToken, onForegroundMessage } from 'src/services/firebaseService'
-import { axiosInstance } from 'src/services/axiosConfig'
-
 const $q = useQuasar()
 const router = useRouter()
 const route = useRoute()
+const { t, locale } = useI18n()
 
 const leftDrawerOpen = ref(false)
 const modalVisible = ref(false)
@@ -436,14 +487,30 @@ const filtros = ref({
 
 // Info usuario
 const userInfo = computed(() => ({
-  nombre: authService.user?.name || 'Usuario',
-  email: authService.user?.email || 'Sin email',
-  organization: authService.user?.organization?.name || 'Santoro',
+  nombre: authService.user?.name || t('layout.users'),
+  email: authService.user?.email || t('common.unknown'),
+  organization: authService.user?.organization?.name || t('layout.santoroPanel'),
   roles: authService.user?.authz?.roles || [],
 }))
 
 const eventosRaw = ref([]) // lo que llega del backend (ya filtrado por system)
 const loadingLogs = ref(false) // puedes mantener el mismo nombre
+
+const {
+  loading: dashboardLoading,
+  statsData,
+  seriesData,
+  httpData,
+  geoData,
+  fetchAll,
+} = useDashboardData()
+
+provide('dashboardLoading', dashboardLoading)
+provide('dashboardStatsData', statsData)
+provide('dashboardSeriesData', seriesData)
+provide('dashboardHttpData', httpData)
+provide('dashboardGeoData', geoData)
+
 
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
@@ -501,6 +568,9 @@ const isSantoroUser = computed(() => authService.canAccessSantoroFlow())
 const currentFlow = computed(() => route.meta?.flow || authService.getAllowedFlow())
 const isSantoroFlow = computed(() => currentFlow.value === 'santoro')
 const isClientFlow = computed(() => currentFlow.value === 'client')
+const isClientDashboard = computed(() =>
+  isClientFlow.value && route.path === '/client/escritorio'
+)
 
 const diffDias = (fechaISO, hoy) => {
   if (!fechaISO) return null
@@ -563,7 +633,7 @@ const checkApiKeysExpirations = async () => {
 
     if (apiKeysPorExpirar.value.length) {
       $q.notify({
-        message: '🚨 Tienes notificaciones nuevas sobre tus API Keys!',
+        message: t('notifications.apiNotify'),
         color: 'yellow',
         textColor: 'black',
         position: $q.platform.is.mobile ? 'bottom' : 'top',
@@ -578,7 +648,7 @@ const handleQRScanned = (payload) => {
   console.log('📷 QR Scanned:', payload)
   showSessionQR.value = false
   $q.notify({
-    message: '✅ Inicio de Sesión por QR realizado!',
+    message: t('notifications.qrScanned'),
     position: 'bottom',
     color: 'green',
   })
@@ -589,6 +659,22 @@ function errorRateTextClass(status) {
   if (status === 'WARN') return 'text-orange-4'
   if (status === 'HEALTHY') return 'text-green-4'
   return 'text-grey-5'
+}
+
+function formatSystemErrorRate(rate) {
+  return `${((rate || 0) * 100).toFixed(1)}${t('layout.errorRateShort')}`
+}
+
+function formatApiKeyRotationText(days) {
+  return days === 1
+    ? t('apiKeys.daysToRenewSingular', { days })
+    : t('apiKeys.daysToRenewPlural', { days })
+}
+
+function formatApiKeyExpiryText(days) {
+  return days === 1
+    ? t('apiKeys.expiresInSingular', { days })
+    : t('apiKeys.expiresInPlural', { days })
 }
 
 function toggleLeftDrawer() {
@@ -603,37 +689,9 @@ function toggleDinamicFilters() {
   showDinamicFilters.value = !showDinamicFilters.value
 }
 
-async function onFiltrar(payload) {
-  loadingLogs.value = true
-  const {
-    _visibleFields = [],
-    busqueda = '',
-    rangoFechas = { from: '', to: '' },
-    ...rest
-  } = payload
-
-  filtros.value = {
-    ...filtros.value,
-    busqueda,
-    rangoFechas,
-    visibleFields: _visibleFields,
-    values: rest,
-  }
-
-  $q.notify({
-    message: '🔍 Filtros aplicados correctamente',
-    color: 'positive',
-    icon: 'filter_list',
-    position: $q.platform.is.mobile ? 'bottom' : 'top',
-  })
-
-  showDinamicFilters.value = false
-  loadingLogs.value = false
-}
-
 function openConsole(selection = null) {
   if (!consolaRef.value?.abrirConsola) {
-    $q.notify({ message: '❌ Error al abrir consola', color: 'negative' })
+    $q.notify({ message: t('notifications.errorOpenConsole'), color: 'negative' })
     return
   }
 
@@ -680,7 +738,7 @@ function logout() {
 
   if (result.success) {
     $q.notify({
-      message: '👋 Sesión cerrada correctamente',
+      message: t('notifications.successLogout'),
       color: 'positive',
       icon: 'logout',
       position: 'top',
@@ -688,13 +746,24 @@ function logout() {
     router.push('/login')
   } else {
     $q.notify({
-      message: '❌ Error al cerrar sesión',
+      message: t('notifications.errorLogout'),
       color: 'negative',
       icon: 'error',
       position: 'top',
     })
   }
 }
+
+function setLocale(lang) {
+  locale.value = lang
+}
+
+const dashboardQueryKey = computed(() => {
+  const sys = String(filtros.value?.system || '').trim()
+  const from = filtros.value?.rangoFechas?.from || ''
+  const to = filtros.value?.rangoFechas?.to || ''
+  return `${sys}|${from}|${to}`
+})
 
 // 1) Cuando cambia system: NO pega al backend, solo refiltra logsRango
 watch(
@@ -721,6 +790,15 @@ watch(
   { immediate: true },
 )
 
+watch(
+  dashboardQueryKey,
+  () => {
+    fetchAll(filtros.value)
+  },
+  { immediate: true },
+)
+
+
 // ── Notificaciones del browser para alertas CRIT ──────────────────────────────
 async function requestNotificationPermission() {
   if (!('Notification' in window)) return false
@@ -731,15 +809,15 @@ async function requestNotificationPermission() {
 }
 
 function showBrowserNotification(alert) {
-  const title  = `🚨 Alerta CRÍTICA — ${alert.system}`
-  const body   = alert.message || `Error rate elevado en ${alert.system}`
+  const title = `${t('notifications.criticalAlertTitle')} - ${alert.system}`
+  const body = alert.message || `${t('notifications.errorRate')}${alert.system}`
   const options = {
     body,
-    icon:    '/icons/favicon-32x32.png',
-    badge:   '/icons/favicon-32x32.png',
-    tag:     `crit-${alert.system}`,        // evita duplicados del mismo sistema
+    icon: '/icons/favicon-32x32.png',
+    badge: '/icons/favicon-32x32.png',
+    tag: `crit-${alert.system}`, // evita duplicados del mismo sistema
     renotify: true,
-    requireInteraction: true,               // no se cierra sola hasta que el usuario la vea
+    requireInteraction: true, // no se cierra sola hasta que el usuario la vea
   }
 
   // Notificación del browser (funciona aunque la app esté en segundo plano)
@@ -753,13 +831,13 @@ function showBrowserNotification(alert) {
 
   // Notificación dentro de la app (Quasar notify)
   $q.notify({
-    type:     'negative',
-    icon:     'warning',
-    message:  title,
-    caption:  body,
+    type: 'negative',
+    icon: 'warning',
+    message: title,
+    caption: body,
     position: 'top-right',
-    timeout:  8000,
-    actions:  [{ label: 'Ver', color: 'white', handler: () => openConsole(null) }],
+    timeout: 8000,
+    actions: [{ label: t('common.seeData'), color: 'white', handler: () => openConsole(null) }],
   })
 }
 
@@ -789,13 +867,14 @@ onMounted(async () => {
     connectSocket()
 
     // Esperar un momento para que la conexión se establezca
-  await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
-  await requestNotificationPermission()
+    await requestNotificationPermission()
 
-  const tenantId = authService.user?.tenantId
-                || authService.user?.authz?.tenantId
-                || authService.user?.organization?.id
+    const tenantId =
+      authService.user?.tenantId ||
+      authService.user?.authz?.tenantId ||
+      authService.user?.organization?.id
 
     if (tenantId) {
       subscribeToAlerts(tenantId, handleCritAlert)
@@ -1316,12 +1395,20 @@ onMounted(async () => {
   vertical-align: middle;
 }
 
-.system-dot--healthy  { background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); }
-.system-dot--warn     { background: #f97316;
-  box-shadow: 0 0 6px rgba(249, 115, 22, 0.6); }
-.system-dot--crit     { background: #ef4444;
+.system-dot--healthy {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+.system-dot--warn {
+  background: #f97316;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.6);
+}
+.system-dot--crit {
+  background: #ef4444;
   box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
-  animation: pulse-dot 1.5s infinite; }
-.system-dot--inactive { background: #6b7280; }
+  animation: pulse-dot 1.5s infinite;
+}
+.system-dot--inactive {
+  background: #6b7280;
+}
 </style>

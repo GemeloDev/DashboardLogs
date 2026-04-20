@@ -68,7 +68,7 @@
           <div class="row items-center q-mb-sm">
             <q-icon name="auto_awesome" color="purple-3" size="18px" class="q-mr-xs" />
             <span class="eva-section-title" style="color: #c084fc; margin-bottom: 0">
-              Análisis generado por IA
+              Análisis generado por sistema
             </span>
             <q-badge
               color="purple-9"

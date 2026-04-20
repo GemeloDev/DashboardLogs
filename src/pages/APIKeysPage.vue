@@ -6,15 +6,15 @@
         <div class="api-keys-header__left">
           <div class="api-keys-header__badge">
             <q-icon name="vpn_key" size="18px" color="cyan" />
-            <span>Administración</span>
+            <span>{{ t('common.administration') }}</span>
           </div>
 
           <h1 class="api-keys-header__title">
-            Mis <span class="color-orange-santoro">API Key's</span>
+            {{ t('common.my') }} <span class="color-orange-santoro"> {{ t('apiKeys.apiKeys') }} </span>
           </h1>
 
           <p class="api-keys-header__subtitle">
-            Gestión y control de accesos
+            {{ t('apiKeys.accessManagement') }}
           </p>
         </div>
 
@@ -23,7 +23,7 @@
             unelevated
             no-caps
             icon="add"
-            label="Nueva API Key"
+            :label="t('apiKeys.newAPIKey')"
             class="btn-primary"
             size="md"
             @click="abrirModalCrear"
@@ -33,7 +33,7 @@
             unelevated
             no-caps
             icon="settings"
-            label="Rate-limit"
+            :label="t('apiKeys.rateLimit')"
             class="btn-secondary"
             size="md"
             @click="abrirModalRateLimit"
@@ -55,9 +55,9 @@
               <template v-slot:top>
                 <div class="row items-center full-width q-px-lg q-py-md">
                   <div>
-                    <div class="table-title">Listado de Llaves</div>
+                    <div class="table-title">{{ t('apiKeys.listAPIKeys') }}</div>
                     <div class="table-subtitle">
-                      Administra las credenciales disponibles del sistema
+                      {{ t('apiKeys.adminCredentials') }}
                     </div>
                   </div>
 
@@ -68,7 +68,7 @@
                     dense
                     debounce="300"
                     v-model="filter"
-                    placeholder="Buscar por nombre, descripción, scope o estado..."
+                    :placeholder="t('apiKeys.inputSearch')"
                     class="search-input premium-input"
                     clearable
                   >
@@ -103,7 +103,7 @@
                       <div>
                         <div class="key-name">{{ props.row.name }}</div>
                         <div class="key-description">
-                          {{ props.row.descripcion || 'Sin descripción' }}
+                          {{ props.row.descripcion || t('common.noDescription') }}
                         </div>
                       </div>
                     </div>
@@ -159,7 +159,7 @@
                         @click="renewToken(props.row.id)"
                         :disable="props.row.status !== 'active'"
                       >
-                        <q-tooltip class="glass-tooltip">Renovar Token</q-tooltip>
+                        <q-tooltip class="glass-tooltip">{{ t('apiKeys.rennovateKey') }}</q-tooltip>
                       </q-btn>
 
                       <q-btn
@@ -172,7 +172,7 @@
                         :disable="props.row.status !== 'active'"
                         @click="abrirModalRevocar(props.row)"
                       >
-                        <q-tooltip class="glass-tooltip">Revocar</q-tooltip>
+                        <q-tooltip class="glass-tooltip">{{ t('apiKeys.revocade') }}</q-tooltip>
                       </q-btn>
                     </div>
                   </q-td>
@@ -182,7 +182,7 @@
               <template v-slot:no-data>
                 <div class="full-width row flex-center q-gutter-sm q-pa-xl empty-state">
                   <q-icon size="2em" name="sentiment_dissatisfied" />
-                  <span>No se encontraron API Keys con ese criterio.</span>
+                  <span>{{ t('apiKeys.noAPIKeys') }}</span>
                 </div>
               </template>
             </q-table>
@@ -200,8 +200,8 @@
               <q-icon name="vpn_key" size="24px" color="white" />
             </div>
             <div>
-              <div class="dialog-title">Nueva API Key</div>
-              <div class="dialog-subtitle">Genera una nueva llave de acceso</div>
+              <div class="dialog-title">{{ t('apiKeys.newAPIKey') }}</div>
+              <div class="dialog-subtitle">{{ t('apiKeys.subtitleNewAPIKey') }}</div>
             </div>
           </div>
 
@@ -211,15 +211,15 @@
         <q-card-section class="dialog-body">
           <q-form class="q-gutter-md">
             <div>
-              <label class="input-label">Nombre de la llave</label>
+              <label class="input-label">{{ t('apiKeys.inputName') }}</label>
               <q-input
                 outlined
                 dense
                 v-model="form.name"
                 class="premium-input"
-                placeholder="Nombre de la API Key"
-                hint="El archivo de credenciales tendrá este nombre"
-                :rules="[(val) => !!val || 'El nombre es requerido']"
+                :placeholder="t('apiKeys.inputNamePlaceholder')"
+                :hint="t('apiKeys.hintName')"
+                :rules="[(val) => !!val || t('apiKeys.validateName')]"
               >
                 <template v-slot:append>
                   <q-btn-dropdown
@@ -249,11 +249,11 @@
         </q-card-section>
 
         <q-card-actions align="right" class="dialog-actions">
-          <q-btn flat no-caps label="Cancelar" class="btn-cancel" v-close-popup />
+          <q-btn flat no-caps :label="t('common.cancel')" class="btn-cancel" v-close-popup />
           <q-btn
             no-caps
             unelevated
-            label="Generar Llave"
+            :label="t('apiKeys.buttonNewAPIKey')"
             class="btn-primary"
             @click="crearAPIKey"
           />
@@ -270,14 +270,14 @@
           </div>
 
           <div>
-            <div class="dialog-title">Confirmar revocación</div>
-            <div class="dialog-subtitle">Esta acción desactivará el acceso de la llave</div>
+            <div class="dialog-title">{{ t('apiKeys.confirmationTitleRevocade') }}</div>
+            <div class="dialog-subtitle">{{ t('apiKeys.subConfirmationRevocade') }}</div>
           </div>
         </q-card-section>
 
         <q-card-section class="dialog-body">
           <div class="text-body1 text-white">
-            ¿Deseas revocar esta API Key?
+            {{ t('apiKeys.confirmationMessageRevocade') }}
           </div>
 
           <div v-if="selectedApiKey" class="selected-key-box">
@@ -285,21 +285,21 @@
               {{ selectedApiKey.name }}
             </div>
             <div class="selected-key-description">
-              {{ selectedApiKey.descripcion || 'Sin descripción' }}
+              {{ selectedApiKey.descripcion || t('common.noDescription') }}
             </div>
           </div>
 
           <div class="warning-text">
-            Esta acción desactivará el acceso de la llave seleccionada.
+            {{ t('apiKeys.subConfirmationRevocade') }}
           </div>
         </q-card-section>
 
         <q-card-actions align="right" class="dialog-actions">
-          <q-btn flat no-caps label="Cancelar" class="btn-cancel" v-close-popup />
+          <q-btn flat no-caps :label="t('apiKeys.cancelButton')" class="btn-cancel" v-close-popup />
           <q-btn
             no-caps
             unelevated
-            label="Sí, revocar"
+            :label="t('apiKeys.buttonConfirmRevoke')"
             icon="delete_forever"
             class="btn-danger"
             :loading="revoking"
@@ -319,6 +319,7 @@ import { computed, onMounted, ref } from 'vue'
 import RateLimitConfig from 'src/components/blocks/RateLimitConfig.vue'
 import { timeAgoIntl, formatearFecha } from 'src/helpers'
 import { ApiKeyService } from 'src/services/apiKeys'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
 
@@ -334,6 +335,8 @@ const revoking = ref(false)
 const ttlDays = 35
 const rotateDays = 30
 
+const t = useI18n().t
+
 const form = ref({
   name: '',
   systemId: null,
@@ -348,43 +351,43 @@ const columns = [
   {
     name: 'nombre',
     required: true,
-    label: 'Nombre / Aplicación',
+    label: t('apiKeys.name_app'),
     align: 'left',
-    field: row => row.name || '',
+    field: (row) => row.name || '',
     sortable: true,
   },
   {
     name: 'scopes',
-    label: 'Scopes',
+    label: t('apiKeys.scopes'),
     align: 'left',
-    field: row => normalizeScopes(row.scopes).join(', '),
+    field: (row) => normalizeScopes(row.scopes).join(', '),
     sortable: false,
   },
   {
     name: 'estado',
     align: 'center',
-    label: 'Estado',
-    field: row => getApiKeyLifecycleUi(row, { renewWindowDays: 7 }).label,
+    label: t('apiKeys.status'),
+    field: (row) => getApiKeyLifecycleUi(row, { renewWindowDays: 7 }).label,
     sortable: true,
   },
   {
     name: 'creado',
     align: 'center',
-    label: 'Creado',
-    field: row => row.createdAt || '',
+    label: t('apiKeys.created'),
+    field: (row) => row.createdAt || '',
     sortable: true,
   },
   {
     name: 'ultimoUso',
     align: 'center',
-    label: 'Último Uso',
-    field: row => row.lastUsedAt || '',
+    label: t('apiKeys.lastUsed'),
+    field: (row) => row.lastUsedAt || '',
     sortable: true,
   },
   {
     name: 'acciones',
     align: 'center',
-    label: 'Acciones',
+    label: t('common.actions'),
     field: 'acciones',
   },
 ]
@@ -403,10 +406,16 @@ function normalizeScopes(scopes) {
   if (typeof scopes === 'string') {
     return scopes
       .split(',')
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean)
   }
   return []
+}
+
+function formatDaysToRenew(days) {
+  return days === 1
+    ? t('apiKeys.daysToRenewSingular', { days })
+    : t('apiKeys.daysToRenewPlural', { days })
 }
 
 function getApiKeyLifecycleUi(apiKey, opts = {}) {
@@ -426,21 +435,24 @@ function getApiKeyLifecycleUi(apiKey, opts = {}) {
   const lastUsedMs = toMs(apiKey?.lastUsedAt)
 
   if (status === 'revoked' || status === 'disabled' || status === 'blocked') {
-    return { state: 'revoked', label: 'Revocada', color: 'negative', icon: 'block' }
+      return { state: 'revoked', label: t('apiKeys.statusRevoked'), color: 'negative', icon: 'block' }
   }
 
   if (expiresMs !== null && nowMs >= expiresMs) {
-    return { state: 'expired', label: 'Expirada', color: 'grey-8', icon: 'event_busy' }
+      return { state: 'expired', label: t('apiKeys.statusExpired'), color: 'grey-8', icon: 'event_busy' }
   }
 
   if (rotatesMs !== null) {
-    const diasParaRenovar = Math.ceil((rotatesMs - nowMs) / MS_DAY)
+      const diasParaRenovar = Math.ceil((rotatesMs - nowMs) / MS_DAY)
     const renewFromMs = rotatesMs - renewWindowDays * MS_DAY
     const needsRenew = nowMs >= renewFromMs
 
     if (needsRenew) {
-      const label = nowMs >= rotatesMs ? 'Renovar ahora' : `${diasParaRenovar} día(s) para renovar`
-      return { state: 'renew', label, color: 'warning', icon: 'autorenew' }
+        const label =
+          nowMs >= rotatesMs
+            ? t('apiKeys.renewNow')
+            : formatDaysToRenew(diasParaRenovar)
+        return { state: 'renew', label, color: 'warning', icon: 'autorenew' }
     }
   }
 
@@ -449,21 +461,21 @@ function getApiKeyLifecycleUi(apiKey, opts = {}) {
       const isUnused = lastUsedMs === null || nowMs - lastUsedMs >= unsedDays * MS_DAY
 
       if (isUnused) {
-        return { state: 'active_unused', label: 'Activa (sin uso)', color: 'blue', icon: 'info' }
+          return { state: 'active_unused', label: t('apiKeys.activeUnused'), color: 'blue', icon: 'info' }
       }
     }
 
-    return { state: 'active', label: 'Activa', color: 'positive', icon: 'check_circle' }
+      return { state: 'active', label: t('apiKeys.activeStatus'), color: 'positive', icon: 'check_circle' }
   }
 
   if (!status) {
     if (treatMissingDatesAs === 'unknown') {
-      return { state: 'unknown', label: 'Estado desconocido', color: 'grey-7', icon: 'help' }
+        return { state: 'unknown', label: t('apiKeys.unknownStatus'), color: 'grey-7', icon: 'help' }
     }
-    return { state: 'active', label: 'Activa', color: 'positive', icon: 'check_circle' }
+      return { state: 'active', label: t('apiKeys.activeStatus'), color: 'positive', icon: 'check_circle' }
   }
 
-  return { state: 'inactive', label: 'Inactiva', color: 'negative', icon: 'block' }
+  return { state: 'inactive', label: t('apiKeys.inactiveStatus'), color: 'negative', icon: 'block' }
 }
 
 const apiKeyUi = (row) => getApiKeyLifecycleUi(row, { renewWindowDays: 7 })
@@ -500,7 +512,7 @@ const cargarKeys = async () => {
     rows.value = data.items || data || []
   } catch (err) {
     console.log('❌ Error al cargar las API Keys: ', err.message)
-    $q.notify({ type: 'negative', message: 'Error cargando llaves' })
+    $q.notify({ type: 'negative', message: t('apiKeys.loadError') })
   }
 }
 
@@ -512,7 +524,7 @@ const crearAPIKey = async () => {
 
     $q.notify({
       type: 'positive',
-      message: 'Llave creada. La descarga comenzará automáticamente.',
+      message: t('apiKeys.createSuccess'),
     })
 
     form.value.name = ''
@@ -520,7 +532,7 @@ const crearAPIKey = async () => {
     await cargarKeys()
   } catch (error) {
     console.error('❌ Error al crear una nueva API Key: ', error.message)
-    $q.notify({ type: 'negative', message: 'Error creando claves' })
+    $q.notify({ type: 'negative', message: t('apiKeys.createError') })
   }
 }
 
@@ -535,7 +547,7 @@ const renewToken = async (id) => {
 
     $q.notify({
       type: 'positive',
-      message: 'API Key renovada correctamente.',
+      message: t('apiKeys.renewSuccess'),
     })
 
     await cargarKeys()
@@ -543,7 +555,7 @@ const renewToken = async (id) => {
     console.error('❌ Error al renovar API Key: ', error.message)
     $q.notify({
       type: 'negative',
-      message: 'Error al renovar la API Key.',
+      message: t('apiKeys.renewError'),
     })
   }
 }
@@ -571,7 +583,7 @@ const confirmarRevocacion = async () => {
 
     $q.notify({
       type: 'positive',
-      message: `API Key "${selectedApiKey.value.name}" revocada correctamente.`,
+      message: t('apiKeys.revokeSuccess', { name: selectedApiKey.value.name }),
     })
 
     revokeDialog.value = false
@@ -581,7 +593,7 @@ const confirmarRevocacion = async () => {
     console.error('❌ Error al revocar API Key: ', error.message)
     $q.notify({
       type: 'negative',
-      message: 'Error al revocar la API Key.',
+      message: t('apiKeys.revokeError'),
     })
   } finally {
     revoking.value = false
@@ -595,11 +607,7 @@ const statusChipClass = (row) => {
     return 'status-chip-active'
   }
 
-  if (
-    ui.color === 'warning' ||
-    ui.color === 'orange' ||
-    String(ui.label || '').toLowerCase().includes('renovar')
-  ) {
+  if (ui.color === 'warning' || ui.color === 'orange' || ui.state === 'renew') {
     return 'status-chip-warning'
   }
 
@@ -875,7 +883,7 @@ onMounted(() => {
   font-weight: 800;
   color: white;
   text-transform: none;
-  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));;
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
   box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
 }
 
@@ -927,7 +935,7 @@ onMounted(() => {
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));;
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
   box-shadow: 0 14px 30px rgba(34, 211, 238, 0.18);
   flex-shrink: 0;
 }

@@ -1,78 +1,83 @@
 <template>
   <q-page class="diagnostic-page text-white">
     <!-- Header Principal -->
-    <div class="diagnostic-header bg-gradient-to-r from-grey-9 to-grey-8 q-pa-lg">
+    <div class="diagnostic-header bg-gradient-to-r from-grey-9 to-grey-8">
       <div class="container">
-        <!-- IMPORTANTE: q-row-gutter para separación vertical cuando se apilan -->
-        <div class="row items-center q-col-gutter-md q-row-gutter-md">
-          <!-- Izquierda: título + subtítulo -->
-          <div class="col-12 col-md-8 diagnostic-header-left">
-            <div class="text-white text-bold diagnostic-title-block">
-              <span class="text-h4">🔬</span>
-              <div class="diagnostic-title-main"><span style="color: var(--orange-accent);">Centro de Diagnóstico</span> Técnico</div>
+        <q-card flat bordered class="dashboard-hero__title-card text-white">
+          <div class="diagnostic-header__top row items-start justify-between q-col-gutter-md">
+            <div class="col">
+              <div class="diagnostic-eyebrow">
+                <q-icon name="medical_services" size="18px" color="cyan-4" />
+                <span>{{ t('diagnostic.technicalDiagnostic') }}</span>
+              </div>
+              <h1 class="hero-title q-mt-md q-mb-sm">
+                {{ t('diagnostic.titlePageDiagnosticLineOne') }}
+                <span class="orange-santoro">{{ t('layout.diagnostic') }}</span>
+                <br />
+                {{ t('diagnostic.titlePageDiagnosticLineTwo') }}
+              </h1>
 
-              <div class="text-blue-3 diagnostic-subtitle">
-                🛡️ Sistema de Análisis de Errores y Sesiones | 📊 Reportes Avanzados
+              <p class="diagnostic-subtitle q-mb-none">
+                {{ t('diagnostic.subtitlePageDiagnostic') }}
+              </p>
+            </div>
+
+            <div class="col-12 col-md-auto diagnostic-header-actions">
+              <div class="row q-col-gutter-sm q-row-gutter-sm">
+                <div class="col-12 col-sm-6 col-md-auto">
+                  <q-btn
+                    color="primary"
+                    icon="refresh"
+                    :label="t('common.update')"
+                    @click="actualizarDatos"
+                    :loading="cargando"
+                    unelevated
+                    class="diagnostic-action-btn full-width"
+                  />
+                </div>
+
+                <div class="col-12 col-sm-6 col-md-auto">
+                  <q-btn
+                    color="secondary"
+                    icon="download"
+                    :label="t('common.export')"
+                    @click="mostrarDialogoExportacion"
+                    :disable="!hayDatosParaExportar"
+                    unelevated
+                    class="diagnostic-action-btn full-width"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Acciones -->
-          <div class="col-12 col-md-4 diagnostic-header-actions">
-            <div class="row q-col-gutter-sm q-row-gutter-sm justify-center justify-md-end">
-              <!-- XS: col-12 (stack); SM: 6/6; MD: auto -->
-              <div class="col-12 col-sm-6 col-md-auto">
-                <q-btn
-                  color="primary"
-                  icon="refresh"
-                  label="Actualizar"
-                  @click="actualizarDatos"
-                  :loading="cargando"
-                  unelevated
-                  class="diagnostic-action-btn full-width"
-                />
-              </div>
-
-              <div class="col-12 col-sm-6 col-md-auto">
-                <q-btn
-                  color="secondary"
-                  icon="download"
-                  label="Exportar"
-                  @click="mostrarDialogoExportacion"
-                  :disable="!hayDatosParaExportar"
-                  unelevated
-                  class="diagnostic-action-btn full-width"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Chips (SIEMPRE en su propia fila y centrados) -->
-          <div class="col-12">
+          <div class="diagnostic-meta q-mt-lg">
             <div class="row q-gutter-sm diagnostic-header-chips">
               <q-chip
+                dense
                 color="green-6"
                 text-color="white"
                 icon="wifi"
                 size="sm"
                 class="diagnostic-status-chip"
               >
-                🟢 Conectado
+                {{ t('common.connected') }}
               </q-chip>
 
               <q-chip
                 v-if="diagnosticoActivo"
+                dense
                 color="blue-5"
                 text-color="white"
                 size="sm"
                 icon="auto_fix_high"
-                class="diagnostic-chip"
+                class="diagnostic-status-chip"
               >
-                <span>✨ {{ diagnosticoActivo }}</span>
+                {{ diagnosticoActivo }}
               </q-chip>
             </div>
           </div>
-        </div>
+        </q-card>
       </div>
     </div>
 
@@ -87,9 +92,9 @@
                 <q-icon name="search" size="32px" color="cyan-1" />
               </div>
               <div class="header-content">
-                <h3 class="card-title">Búsqueda Rápida de Diagnóstico</h3>
+                <h3 class="card-title">{{ t('diagnostic.fastSearchTitle') }}</h3>
                 <p class="card-subtitle">
-                  Ingresa cualquier código para iniciar el análisis automático
+                  {{ t('diagnostic.subFastSearchTitle') }}
                 </p>
               </div>
             </div>
@@ -99,7 +104,7 @@
                 <q-input
                   v-model="busquedaRapida"
                   class="modern-input"
-                  placeholder="⚡Ejemplo: fwp6c5iztZvA"
+                  :placeholder="t('diagnostic.fastSearchPlaceholder')"
                   dark
                   borderless
                   @keyup.enter="realizarBusquedaRapida"
@@ -138,7 +143,7 @@
               <template v-slot:avatar>
                 <q-icon name="info" color="info" />
               </template>
-              Ingresa un <b>caseId</b> y presiona enviar para visualizar la línea del tiempo.
+              {{ t('diagnostic.preDiagnosticMessage') }}
             </q-banner>
           </div>
         </div>
@@ -150,7 +155,7 @@
       :showing="cargando"
       color="blue-5"
       size="50px"
-      label="Procesando diagnóstico..."
+      :label="t('diagnostic.proccessDiagnostic')"
     />
   </q-page>
 </template>
@@ -160,6 +165,7 @@ import { ref, computed, inject } from 'vue'
 import { useQuasar } from 'quasar'
 import { DiagnosticService } from '../services/diagnosticService.js'
 import ResultadosByToken from 'src/components/escritorio/resultadosEscritorio/ResultadosByToken.vue'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
 const filtrosGlobales = inject('filtrosGlobales', ref(null))
@@ -170,6 +176,7 @@ const diagnosticoActivo = ref('')
 const busquedaRapida = ref('')
 const cargandoBusqueda = ref(false)
 const cargandoSesion = ref(false)
+const { t } = useI18n()
 
 const formulario = ref({ caseId: '' })
 const resultadoCaseId = ref(null)
@@ -181,18 +188,18 @@ const hayDatosParaExportar = computed(() => {
 
 const actualizarDatos = async () => {
   cargando.value = true
-  diagnosticoActivo.value = 'Actualizando datos'
+  diagnosticoActivo.value = t('diagnostic.updatingData')
   try {
     await new Promise((resolve) => setTimeout(resolve, 800))
     $q.notify({
       type: 'positive',
-      message: '✅ Datos actualizados correctamente',
+      message: t('diagnostic.updateSuccess'),
       position: 'top-right',
     })
   } catch {
     $q.notify({
       type: 'negative',
-      message: '❌ Error actualizando datos',
+      message: t('diagnostic.updateError'),
       position: 'top-right',
     })
   } finally {
@@ -220,7 +227,7 @@ const consultarCaseId = async (codigo = null) => {
   if (!caseId) return
 
   cargandoSesion.value = true
-  diagnosticoActivo.value = `Consultando sesión: ${caseId}`
+  diagnosticoActivo.value = t('diagnostic.queryingSession', { caseId })
 
   try {
     const system = filtrosGlobales.value?.system
@@ -235,7 +242,7 @@ const consultarCaseId = async (codigo = null) => {
 
     $q.notify({
       type: 'positive',
-      message: 'Sesión consultada',
+      message: t('diagnostic.sessionConsulted'),
       icon: 'code',
       position: 'top-right',
     })
@@ -245,8 +252,8 @@ const consultarCaseId = async (codigo = null) => {
 
     $q.notify({
       type: 'warning',
-      message: 'Usando datos de ejemplo',
-      caption: 'Error al conectar con el servidor',
+      message: t('diagnostic.usingSampleData'),
+      caption: t('diagnostic.serverConnectionError'),
       position: 'top-right',
     })
   } finally {
@@ -266,8 +273,8 @@ const mostrarDialogoExportacion = () => {
   if (!tieneSesiones) {
     $q.notify({
       type: 'warning',
-      message: 'No hay datos disponibles para exportar',
-      caption: 'Realiza primero una consulta por caseId',
+      message: t('diagnostic.noExportData'),
+      caption: t('diagnostic.queryBeforeExport'),
       position: 'top-right',
     })
     return
@@ -280,7 +287,7 @@ const mostrarDialogoExportacion = () => {
           <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%); backdrop-filter: blur(10px); color: white; padding: 24px; border-radius: 16px; margin-bottom: 28px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
             <div style="position: relative; z-index: 1;">
               <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700;">
-                <span style="background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">✨ Exportación Avanzada de Datos</span>
+                <span style="background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">${t('diagnostic.exportDialogTitle')}</span>
               </h3>
             </div>
           </div>
@@ -290,7 +297,7 @@ const mostrarDialogoExportacion = () => {
               <div style="text-align:center;">
                 <div style="font-size: 3.5rem; margin-bottom: 16px;">📄</div>
                 <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700;">PDF</h4>
-                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9;">Reporte detallado</p>
+                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9;">${t('diagnostic.exportPdfSubtitle')}</p>
               </div>
             </div>
 
@@ -298,7 +305,7 @@ const mostrarDialogoExportacion = () => {
               <div style="text-align:center;">
                 <div style="font-size: 3.5rem; margin-bottom: 16px;">📊</div>
                 <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700;">EXCEL</h4>
-                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9;">Timeline + datos</p>
+                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9;">${t('diagnostic.exportExcelSubtitle')}</p>
               </div>
             </div>
 
@@ -306,14 +313,14 @@ const mostrarDialogoExportacion = () => {
               <div style="text-align:center;">
                 <div style="font-size: 3.5rem; margin-bottom: 16px;">💻</div>
                 <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700;">JSON</h4>
-                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9;">Datos técnicos</p>
+                <p style="margin: 12px 0 0 0; font-size: 0.9rem; opacity: 0.9;">${t('diagnostic.exportJsonSubtitle')}</p>
               </div>
             </div>
           </div>
 
           <div style="margin-top: 18px; padding: 14px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05);">
             <p style="margin: 0; color: rgba(255, 255, 255, 0.7); font-size: 0.85rem; text-align: center;">
-              💡 PDF para reporte, Excel para análisis, JSON para integración.
+              ${t('diagnostic.exportDialogHint')}
             </p>
           </div>
         </div>
@@ -356,8 +363,8 @@ const exportarDatos = async (formato) => {
     if (!hayDatosParaExportar.value) {
       $q.notify({
         type: 'warning',
-        message: 'No hay datos disponibles para exportar',
-        caption: 'Realiza primero una consulta por caseId',
+        message: t('diagnostic.noExportData'),
+        caption: t('diagnostic.queryBeforeExport'),
         position: 'top-right',
       })
       return
@@ -370,8 +377,8 @@ const exportarDatos = async (formato) => {
 
     $q.notify({
       type: 'positive',
-      message: `Exportación ${formato.toUpperCase()} completada`,
-      caption: 'Sesión exportada correctamente',
+      message: t('diagnostic.exportSuccess', { format: formato.toUpperCase() }),
+      caption: t('diagnostic.exportSuccessCaption'),
       position: 'top-right',
       timeout: 3000,
     })
@@ -379,8 +386,8 @@ const exportarDatos = async (formato) => {
     console.error('Error en exportación:', error)
     $q.notify({
       type: 'negative',
-      message: 'Error en la exportación',
-      caption: error?.message || 'No se pudo completar la exportación',
+      message: t('diagnostic.exportError'),
+      caption: error?.message || t('diagnostic.exportErrorCaption'),
       position: 'top-right',
     })
   } finally {
@@ -394,33 +401,62 @@ const exportarDatos = async (formato) => {
   min-height: 100vh;
 }
 
-/* Evita conflictos con clases globales tipo header-actions */
+.orange-santoro {
+  color: #e97132;
+}
+
+.diagnostic-header {
+  padding: 24px 0 12px;
+}
+
+.dashboard-hero__title-card {
+  background: transparent;
+  border-radius: 26px;
+  padding: 28px 30px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.hero-title {
+  color: #fff;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 1.03;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.diagnostic-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .diagnostic-header-actions {
   position: static !important;
 }
 
-/* Bloque de título */
-.diagnostic-title-block {
-  text-align: left;
-}
-
-.diagnostic-title-main {
-  font-size: 3rem;
-  line-height: 1.1;
-  margin-top: 6px;
-}
-
 .diagnostic-subtitle {
-  margin-top: 10px;
-  font-size: 1.05rem;
-  line-height: 1.25;
-  font-weight: 600;
-  opacity: 0.95;
+  max-width: 760px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
-/* Chips */
 .diagnostic-header-chips {
   flex-wrap: wrap;
+}
+
+.diagnostic-meta {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.diagnostic-status-chip {
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Botones: que el texto NO se salga y no se rompa */
@@ -579,12 +615,13 @@ const exportarDatos = async (formato) => {
 
 /* MOBILE: centrar todo y compactar tipografía */
 @media (max-width: 600px) {
-  .diagnostic-title-block {
-    text-align: center;
+  .dashboard-hero__title-card {
+    padding: 20px 18px;
+    border-radius: 22px;
   }
 
-  .diagnostic-title-main {
-    font-size: 2.7rem;
+  .diagnostic-header__top {
+    row-gap: 16px;
   }
 
   .diagnostic-subtitle {

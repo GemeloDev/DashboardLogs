@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 // ✅ Worker CSP correcto (Vite/Quasar)
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
@@ -50,7 +52,7 @@ const MAP_STYLES = {
         ],
         tileSize: 256,
         minzoom: 0,
-        maxzoom: 19,                                                                                                                                                                                                                                                                                                                                                                                                                             
+        maxzoom: 19,
         attribution: '© OpenStreetMap contributors',
       },
     },
@@ -158,10 +160,10 @@ function addLayers() {
       .setLngLat([lon, lat])
       .setHTML(
         `<div style="background:rgba(17,24,39,0.9);color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;backdrop-filter:blur(6px)">
-          <strong>📍 Coordenada</strong><br/>
+          <strong>${t('common.ubication')}</strong><br/>
           ${lat.toFixed(5)}, ${lon.toFixed(5)}<br/>
-          Eventos: <b>${count}</b><br/>
-          <span style="opacity:0.7">Click para ver detalles</span>
+          ${t('dashboard.eventsSeriesLabel')}: <b>${count}</b><br/>
+          <span style="opacity:0.7">${t('common.seeData')}</span>
         </div>`,
       )
       .addTo(map)
@@ -223,7 +225,7 @@ onBeforeUnmount(() => {
   <div>
     <!-- CONTROLES -->
     <div class="row q-mb-sm items-center justify-between">
-      <div class="toplist-title">Mapa Dínamico</div>
+      <div class="toplist-title">{{ t('dashboard.dinamicMap') }}</div>
 
       <q-chip
         clickable
@@ -235,7 +237,7 @@ onBeforeUnmount(() => {
         class="q-mr-sm"
         @click="toggleProjection"
       >
-        {{ projection === 'globe' ? 'Globo' : 'Plano' }}
+        {{ projection === 'globe' ? t('dashboard.mapProjection_Globe') : t('dashboard.mapProjection_Plano') }}
       </q-chip>
     </div>
 
@@ -251,8 +253,8 @@ onBeforeUnmount(() => {
         text-color="grey-5"
         toggle-color="orange-9"
         :options="[
-          { label: 'Mapa de Puntos', value: 'points' },
-          { label: 'Mapa de Calor', value: 'heat' },
+          { label: t('dashboard.mapType_points'), value: 'points' },
+          { label: t('dashboard.mapType_heat'), value: 'heat' },
         ]"
       />
     </div>

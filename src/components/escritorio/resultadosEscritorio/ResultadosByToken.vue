@@ -13,7 +13,7 @@
       <div class="q-px-md">
         <q-timeline color="secondary" class="session-timeline">
           <q-timeline-entry heading>
-            <strong class="text-h6 text-bold text-grey-4">Eventos Registrados</strong>
+            <strong class="text-h6 text-bold text-grey-4">{{ t('diagnostic.eventTitle') }}</strong>
           </q-timeline-entry>
           <div style="
             max-height: 350px;
@@ -39,7 +39,7 @@
                           <q-icon name="info" size="sm" class="kpi-icon" />
                         </div>
                         <div class="kpi-data">
-                          <div class="kpi-title text-white">Mensaje del Sistema</div>
+                          <div class="kpi-title text-white">{{ t('diagnostic.systemMessage') }}</div>
                           <div class="kpi-value text-body1">{{ log.message }}</div>
                           <div
                             v-if="log.reasonDescription"
@@ -65,31 +65,31 @@
                   <div class="row q-col-gutter-sm">
                     <div class="col-12 col-sm-6">
                       <div v-if="existUbication(log)" class="detail-box">
-                        <div class="text-caption text-grey-5 q-mb-xs">📍 Ubicación</div>
-                        <div class="text-body2 text-bold" v-if="log.locationName">{{ log.locationName || 'Sin ubicación disponible' }}</div>
+                        <div class="text-caption text-grey-5 q-mb-xs">📍 {{ t('common.ubication') }}</div>
+                        <div class="text-body2 text-bold" v-if="log.locationName">{{ log.locationName || t('diagnostic.noUbication') }}</div>
                         <div class="text-caption text-grey-4" v-if="log.locationId">ID: {{ log.locationId }}</div>
                         <div class="text-caption text-blue-3 q-mt-xs">
-                          <q-icon name="devices" v-if="log.outcome" /> Salida: {{ log.outcome }}
+                          <q-icon name="devices" v-if="log.outcome" />{{ t('common.output') }}: {{ log.outcome }}
                         </div>
                       </div>
                       <div v-else class="detail-box">
-                        <div class="text-caption text-grey-5 q-mb-xs">📍 Ubicación</div>
-                        <div class="text-body2 text-bold">Sin ubicación disponible</div>
+                        <div class="text-caption text-grey-5 q-mb-xs">📍 {{ t('common.ubication') }}</div>
+                        <div class="text-body2 text-bold">{{ t('diagnostic.noUbication') }}</div>
                       </div>
                     </div>
 
                     <div class="col-12 col-sm-6">
                       <div v-if="log.actorId" class="detail-box">
-                        <div class="text-caption text-grey-5 q-mb-xs">👤 Operador</div>
+                        <div class="text-caption text-grey-5 q-mb-xs">👤 {{ t('common.operator') }}</div>
                         <div class="text-caption text-orange-3 q-mt-xs">#ID: {{ log.actorId }}</div>
                         <div class="text-body2 text-bold">{{ log.actorFullName }}</div>
                         <div class="text-caption text-cyan-4">
-                          Username: {{ log.actorUsername }}
+                          {{ t('common.username') }}: {{ log.actorUsername }}
                         </div>
                       </div>
                       <div v-else class="detail-box">
-                        <div class="text-caption text-grey-5 q-mb-xs">👤 Operador</div>
-                        <div class="text-body2 text-bold">Sin operador disponible</div>
+                        <div class="text-caption text-grey-5 q-mb-xs">👤 {{ t('common.operator') }}</div>
+                        <div class="text-body2 text-bold">{{ t('diagnostic.noOperator') }}</div>
                       </div>
                     </div>
                   </div>
@@ -105,7 +105,7 @@
 
                     <div v-if="log.reasonCode" class="tech-item text-red-3">
                       <q-icon name="bug_report" />
-                      <span class="q-ml-xs text-caption text-bold">Code: {{ log.reasonCode }}</span>
+                      <span class="q-ml-xs text-caption text-bold">{{ t('common.reasonCode') }}: {{ log.reasonCode }}</span>
                     </div>
                   </div>
                 </div>
@@ -119,7 +119,9 @@
 </template>
 
 <script setup>
-import { date } from 'quasar' // Usamos utilidades de fecha de Quasar si están disponibles, sino usar JS nativo
+import { useI18n } from 'vue-i18n';
+
+const { t, locale } = useI18n();
 
 const { resultados } = defineProps({
   resultados: {
@@ -133,8 +135,10 @@ const { resultados } = defineProps({
 
 const formatearFecha = (fechaISO) => {
   if (!fechaISO) return ''
-  // Formato: 18 Dic 2025, 18:20
-  return date.formatDate(fechaISO, 'D MMM YYYY, HH:mm a')
+  return new Intl.DateTimeFormat(locale.value, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(fechaISO))
 }
 
 // --- Helpers de UI basados en Estatus ---

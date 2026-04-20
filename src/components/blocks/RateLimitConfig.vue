@@ -13,8 +13,8 @@
           </div>
 
           <div>
-            <h2>Configuración de Rate Limit</h2>
-            <p>Administra los límites por API Key y por Tenant.</p>
+            <h2>{{ t('rateLimitConfig.rateTitle') }}</h2>
+            <p>{{ t('rateLimitConfig.rateSubtitle') }}</p>
           </div>
         </div>
       </q-card-section>
@@ -25,7 +25,7 @@
       <q-card-section v-if="form" class="modal-top-controls">
         <q-toggle
           v-model="form.enabled"
-          label="Rate limit habilitado"
+          :label="t('rateLimitConfig.enabledLabel')"
           color="cyan"
           class="toggle-dark"
           keep-color
@@ -40,11 +40,11 @@
           <div class="rate-box">
             <div class="rate-box__title">
               <q-icon name="vpn_key" size="18px" class="q-mr-sm text-cyan" />
-              Por API Key
+              {{ t('rateLimitConfig.rateByAPIKey') }}
             </div>
 
             <div class="form-field">
-              <label class="input-label">Capacity (burst)</label>
+              <label class="input-label">{{ t('rateLimitConfig.capacity') }}</label>
               <q-input
                 v-model.number="form.apiKey.capacity"
                 type="number"
@@ -52,12 +52,12 @@
                 outlined
                 dense
                 class="premium-input"
-                placeholder="Capacity"
+                :placeholder="t('rateLimitConfig.capacityPlaceholder')"
               />
             </div>
 
             <div class="form-field">
-              <label class="input-label">Refill tokens</label>
+              <label class="input-label">{{ t('rateLimitConfig.refillToken') }}</label>
               <q-input
                 v-model.number="form.apiKey.refillTokens"
                 type="number"
@@ -65,12 +65,12 @@
                 outlined
                 dense
                 class="premium-input"
-                placeholder="Refill tokens"
+                :placeholder="t('rateLimitConfig.refillTokensPlaceholder')"
               />
             </div>
 
             <div class="form-field">
-              <label class="input-label">Refill seconds</label>
+              <label class="input-label">{{ t('rateLimitConfig.refilTime') }}</label>
               <q-input
                 v-model.number="form.apiKey.refillSeconds"
                 type="number"
@@ -78,16 +78,16 @@
                 outlined
                 dense
                 class="premium-input"
-                placeholder="Refill seconds"
+                :placeholder="t('rateLimitConfig.refillSecondsPlaceholder')"
               />
             </div>
 
             <div v-if="apiKeyRate" class="rate-summary">
-              ~{{ apiKeyRate.perSec.toFixed(2) }} req/s
+              ~{{ apiKeyRate.perSec.toFixed(2) }} {{ t('rateLimitConfig.reqPerSecond') }}
               <span class="summary-separator">·</span>
-              {{ apiKeyRate.perMin.toFixed(0) }} req/min
+              {{ apiKeyRate.perMin.toFixed(0) }} {{ t('rateLimitConfig.reqPerMinute') }}
               <span class="summary-separator">·</span>
-              Burst: {{ apiKeyRate.burst }}
+              {{ t('rateLimitConfig.burst') }}: {{ apiKeyRate.burst }}
             </div>
           </div>
         </div>
@@ -97,11 +97,11 @@
           <div class="rate-box">
             <div class="rate-box__title">
               <q-icon name="apartment" size="18px" class="q-mr-sm text-purple" />
-              Por Tenant
+              {{ t('rateLimitConfig.rateByTenant') }}
             </div>
 
             <div class="form-field">
-              <label class="input-label">Capacity (burst)</label>
+              <label class="input-label">{{ t('rateLimitConfig.capacity') }}</label>
               <q-input
                 v-model.number="form.tenant.capacity"
                 type="number"
@@ -109,12 +109,12 @@
                 outlined
                 dense
                 class="premium-input"
-                placeholder="Capacity"
+                :placeholder="t('rateLimitConfig.capacityPlaceholder')"
               />
             </div>
 
             <div class="form-field">
-              <label class="input-label">Refill tokens</label>
+              <label class="input-label">{{ t('rateLimitConfig.refillToken') }}</label>
               <q-input
                 v-model.number="form.tenant.refillTokens"
                 type="number"
@@ -122,12 +122,12 @@
                 outlined
                 dense
                 class="premium-input"
-                placeholder="Refill tokens"
+                :placeholder="t('rateLimitConfig.refillTokensPlaceholder')"
               />
             </div>
 
             <div class="form-field">
-              <label class="input-label">Refill seconds</label>
+              <label class="input-label">{{ t('rateLimitConfig.refilTime') }}</label>
               <q-input
                 v-model.number="form.tenant.refillSeconds"
                 type="number"
@@ -135,16 +135,16 @@
                 outlined
                 dense
                 class="premium-input"
-                placeholder="Refill seconds"
+                :placeholder="t('rateLimitConfig.refillSecondsPlaceholder')"
               />
             </div>
 
             <div v-if="tenantRate" class="rate-summary">
-              ~{{ tenantRate.perSec.toFixed(2) }} req/s
+              ~{{ tenantRate.perSec.toFixed(2) }} {{ t('rateLimitConfig.reqPerSecond') }}
               <span class="summary-separator">·</span>
-              {{ tenantRate.perMin.toFixed(0) }} req/min
+              {{ tenantRate.perMin.toFixed(0) }} {{ t('rateLimitConfig.reqPerMinute') }}
               <span class="summary-separator">·</span>
-              Burst: {{ tenantRate.burst }}
+              {{ t('rateLimitConfig.burst') }}: {{ tenantRate.burst }}
             </div>
           </div>
         </div>
@@ -157,7 +157,7 @@
         <q-btn
           no-caps
           unelevated
-          label="Guardar"
+          :label="t('rateLimitConfig.saveButton')"
           class="btn-primary"
           :loading="loading"
           @click="saveRateLimit"
@@ -167,7 +167,7 @@
         <q-btn
           no-caps
           flat
-          label="Restaurar default"
+          :label="t('rateLimitConfig.resetDefault')"
           class="btn-secondary"
           :loading="loading"
           @click="resetRateLimit"
@@ -182,8 +182,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { RateLimitService } from 'src/services/apiKeys'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
+const { t } = useI18n()
 
 const loading = ref(false)
 const rateLimit = ref(null) // respuesta completa del GET (data.data)
@@ -211,7 +213,7 @@ async function loadRateLimit() {
     form.value = JSON.parse(JSON.stringify(rateLimit.value.effective))
   } catch (e) {
     console.error(e)
-    $q.notify({ type: 'negative', message: 'No se pudo cargar el rate limit' })
+    $q.notify({ type: 'negative', message: t('rateLimitConfig.loadError') })
   } finally {
     loading.value = false
   }
@@ -221,11 +223,11 @@ async function saveRateLimit() {
   loading.value = true
   try {
     await RateLimitService.update(form.value)
-    $q.notify({ type: 'positive', message: 'Rate limit actualizado' })
+    $q.notify({ type: 'positive', message: t('rateLimitConfig.updateSuccess') })
     await loadRateLimit()
   } catch (e) {
     console.error(e)
-    $q.notify({ type: 'negative', message: 'No se pudo actualizar el rate limit' })
+    $q.notify({ type: 'negative', message: t('rateLimitConfig.updateError') })
   } finally {
     loading.value = false
   }
@@ -235,11 +237,11 @@ async function resetRateLimit() {
   loading.value = true
   try {
     await RateLimitService.clear()
-    $q.notify({ type: 'info', message: 'Restaurado a default' })
+    $q.notify({ type: 'info', message: t('rateLimitConfig.resetSuccess') })
     await loadRateLimit()
   } catch (e) {
     console.error(e)
-    $q.notify({ type: 'negative', message: 'No se pudo restaurar a default' })
+    $q.notify({ type: 'negative', message: t('rateLimitConfig.resetError') })
   } finally {
     loading.value = false
   }

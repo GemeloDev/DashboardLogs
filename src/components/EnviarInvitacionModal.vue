@@ -9,12 +9,12 @@
           </div>
 
           <div>
-            <h2>{{ saveMode === 'save' ? 'Envíar Invitación' : 'Editar Usuario' }}</h2>
+            <h2>{{ saveMode === 'save' ? t('userManagement.sendInvitation') : t('userManagement.editUser') }}</h2>
             <p>
               {{
                 saveMode === 'save'
-                  ? 'Invita a un nuevo usuario al sistema.'
-                  : 'Edita los datos del usuario.'
+                  ? t('userManagement.inviteUser')
+                  : t('userManagement.editUserData')
               }}
             </p>
           </div>
@@ -32,17 +32,17 @@
           <div class="form-field">
             <label class="field-label">
               <q-icon name="alternate_email" size="18px" />
-              Correo Electrónico *
+              {{ t('userManagement.email') }} *
             </label>
             <q-input
               v-model="formData.email"
               type="email"
               outlined
               class="premium-input"
-              placeholder="usuario@ejemplo.com"
+              :placeholder="t('userManagement.emailPlaceholder')"
               :rules="[
-                (val) => !!val || 'El email es requerido',
-                (val) => isValidEmail(val) || 'Email inválido',
+                (val) => !!val || t('userManagement.emailRequired'),
+                (val) => isValidEmail(val) || t('userManagement.invalidEmail'),
               ]"
               lazy-rules
             >
@@ -56,17 +56,17 @@
           <div class="form-field">
             <label class="field-label">
               <q-icon name="badge" size="18px" />
-              Roles *
+              {{ t('userManagement.rolesLabel') }}
             </label>
             <q-select
               v-model="formData.roles"
               :options="roleOptions"
               outlined
               class="premium-input"
-              placeholder="Selecciona uno o más roles"
+              :placeholder="t('userManagement.rolesPlaceholder')"
               use-chips
               stack-label
-              :rules="[(val) => (val && val.length > 0) || 'Selecciona al menos un rol']"
+              :rules="[(val) => !!val || t('userManagement.selectAtLeastOneRole')]"
               lazy-rules
             >
               <template v-slot:prepend>
@@ -93,7 +93,7 @@
           >
             <label class="field-label">
               <q-icon name="devices" size="18px" />
-              Sistemas *
+              {{ t('userManagement.systemsLabel') }}
             </label>
             <q-select
               v-model="sistemasModel"
@@ -101,10 +101,10 @@
               :multiple="formData.roles === 'SYSTEM_MANAGER'"
               outlined
               class="premium-input"
-              placeholder="Selecciona uno o más sistemas"
+              :placeholder="t('userManagement.systemsPlaceholder')"
               use-chips
               stack-label
-              :rules="[(val) => (val && val.length > 0) || 'Selecciona al menos un sistema']"
+              :rules="[(val) => (val && val.length > 0) || t('userManagement.selectAtLeastOneSystem')]"
               lazy-rules
             >
               <template v-slot:prepend>
@@ -122,7 +122,7 @@
                 </q-chip>
               </template>
             </q-select>
-            <div class="field-hint">Puedes seleccionar múltiples sistemas para el usuario.</div>
+            <div class="field-hint">{{ t('userManagement.systemsHint') }}</div>
           </div>
 
           <!-- Viewer: filtros -->
@@ -134,7 +134,7 @@
               <div class="form-field">
                 <label class="field-label">
                   <q-icon name="insights" size="18px" />
-                  Resultados <span class="accent-warm">(outcome)</span> permitidos
+                  {{ t('userManagement.allowedOutcomesLabel') }}
                 </label>
                 <q-select
                   v-model="formData.logFilters.allowedOutcomes"
@@ -142,11 +142,11 @@
                   multiple
                   outlined
                   class="premium-input"
-                  placeholder="Selecciona uno o más valores"
+                  :placeholder="t('userManagement.valuesPlaceholder')"
                   use-chips
                   stack-label
                   :rules="[
-                    (val) => (val && val.length > 0) || 'Selecciona al menos un valor outcome',
+                    (val) => (val && val.length > 0) || t('userManagement.selectAtLeastOneOutcome'),
                   ]"
                   lazy-rules
                 >
@@ -172,7 +172,7 @@
               <div class="form-field">
                 <label class="field-label">
                   <q-icon name="toggle_on" size="18px" />
-                  Resultados <span class="accent-warm">(status)</span> permitidos
+                  {{ t('userManagement.allowedStatusesLabel') }}
                 </label>
                 <q-select
                   v-model="formData.logFilters.allowedStatuses"
@@ -180,11 +180,11 @@
                   multiple
                   outlined
                   class="premium-input"
-                  placeholder="Selecciona uno o más valores"
+                  :placeholder="t('userManagement.valuesPlaceholder')"
                   use-chips
                   stack-label
                   :rules="[
-                    (val) => (val && val.length > 0) || 'Selecciona al menos un valor status',
+                    (val) => (val && val.length > 0) || t('userManagement.selectAtLeastOneStatus'),
                   ]"
                   lazy-rules
                 >
@@ -215,7 +215,7 @@
               <div class="form-field">
                 <label class="field-label">
                   <q-icon name="warning" size="18px" />
-                  Resultados <span class="accent-warm">(severity)</span> permitidos
+                  {{ t('userManagement.allowedSeveritiesLabel') }}
                 </label>
                 <q-select
                   v-model="formData.logFilters.allowedSeverities"
@@ -223,11 +223,11 @@
                   multiple
                   outlined
                   class="premium-input"
-                  placeholder="Selecciona uno o más valores"
+                  :placeholder="t('userManagement.valuesPlaceholder')"
                   use-chips
                   stack-label
                   :rules="[
-                    (val) => (val && val.length > 0) || 'Selecciona al menos un valor severity',
+                    (val) => (val && val.length > 0) || t('userManagement.selectAtLeastOneSeverity'),
                   ]"
                   lazy-rules
                 >
@@ -253,7 +253,7 @@
               <div class="form-field">
                 <label class="field-label">
                   <q-icon name="bolt" size="18px" />
-                  Resultados <span class="accent-warm">(eventType)</span> permitidos
+                  {{ t('userManagement.allowedEventTypesLabel') }}
                 </label>
                 <q-select
                   v-model="formData.logFilters.allowedEventTypes"
@@ -261,11 +261,11 @@
                   multiple
                   outlined
                   class="premium-input"
-                  placeholder="Selecciona uno o más valores"
+                  :placeholder="t('userManagement.valuesPlaceholder')"
                   use-chips
                   stack-label
                   :rules="[
-                    (val) => (val && val.length > 0) || 'Selecciona al menos un valor eventType',
+                    (val) => (val && val.length > 0) || t('userManagement.selectAtLeastOneEventType'),
                   ]"
                   lazy-rules
                 >
@@ -292,17 +292,17 @@
           <div class="form-field">
             <label class="field-label">
               <q-icon name="schedule" size="18px" />
-              Validez de la Invitación (horas)
+              {{ t('userManagement.invitationValidity') }}
             </label>
             <q-input
               v-model.number="formData.ttlHours"
               type="number"
               outlined
               class="premium-input"
-              placeholder="48"
+              :placeholder="t('userManagement.invitationValidityPlaceholder')"
               :rules="[
-                (val) => val > 0 || 'Debe ser mayor a 0',
-                (val) => val <= 168 || 'Máximo 7 días (168 horas)',
+                (val) => val > 0 || t('userManagement.invitationTtlMin'),
+                (val) => val <= 168 || t('userManagement.invitationTtlMax'),
               ]"
               lazy-rules
               min="1"
@@ -311,7 +311,9 @@
               <template v-slot:prepend>
                 <q-icon name="timer" class="input-icon" />
               </template>
-              <template v-slot:hint> La invitación expirará después de este tiempo </template>
+              <template v-slot:hint>
+                {{ t('userManagement.invitationExpiresHint') }}
+              </template>
             </q-input>
 
             <div class="ttl-presets">
@@ -336,17 +338,17 @@
           <div v-if="isFormValid" class="invitation-preview">
             <div class="preview-header">
               <q-icon name="visibility" size="18px" />
-              Vista Previa
+              {{ t('userManagement.preview') }}
             </div>
 
             <div class="preview-content">
               <div class="preview-row">
-                <strong>Para:</strong>
+                <strong>{{ t('userManagement.previewTo') }}</strong>
                 <span>{{ formData.email }}</span>
               </div>
 
               <div class="preview-row">
-                <strong>Rol:</strong>
+                <strong>{{ t('userManagement.previewRole') }}</strong>
                 <div class="preview-roles">
                   <q-badge class="preview-badge preview-badge--purple">
                     {{ formData.roles }}
@@ -358,7 +360,7 @@
                 v-if="formData.roles === 'SYSTEM_MANAGER' || formData.roles === 'VIEWER'"
                 class="preview-row"
               >
-                <strong>Sistema(s):</strong>
+                <strong>{{ t('userManagement.previewSystems') }}</strong>
                 <div class="preview-roles">
                   <q-badge
                     v-for="system in formData.systems"
@@ -371,7 +373,7 @@
               </div>
 
               <div v-if="formData.roles === 'VIEWER'" class="preview-row">
-                <strong>Valores sobre filtros:</strong>
+                <strong>{{ t('userManagement.previewFilterValues') }}</strong>
                 <div class="preview-roles">
                   <q-badge
                     v-for="system in formData.logFilters"
@@ -384,7 +386,7 @@
               </div>
 
               <div class="preview-row">
-                <strong>Expira:</strong>
+                <strong>{{ t('userManagement.previewExpires') }}</strong>
                 <span>{{ formatExpiration(formData.ttlHours) }}</span>
               </div>
             </div>
@@ -396,15 +398,15 @@
           <div class="form-field">
             <label class="field-label">
               <q-icon name="account_circle" size="18px" />
-              Usuario *
+              {{ t('userManagement.user') }} *
             </label>
             <q-input
               v-model="formData.name"
               type="text"
               outlined
               class="premium-input"
-              placeholder="Nombre de la persona"
-              :rules="[(val) => !!val || 'El nombre es requerido']"
+              :placeholder="t('userManagement.userPlaceholder')"
+              :rules="[(val) => !!val || t('userManagement.userRequired')]"
               lazy-rules
             >
               <template v-slot:prepend>
@@ -416,17 +418,17 @@
           <div class="form-field">
             <label class="field-label">
               <q-icon name="alternate_email" size="18px" />
-              Correo Electrónico *
+              {{ t('userManagement.email') }} *
             </label>
             <q-input
               v-model="formData.email"
               type="email"
               outlined
               class="premium-input"
-              placeholder="usuario@ejemplo.com"
+              :placeholder="t('userManagement.emailPlaceholder')"
               :rules="[
-                (val) => !!val || 'El email es requerido',
-                (val) => isValidEmail(val) || 'Email inválido',
+                (val) => !!val || t('userManagement.emailRequired'),
+                (val) => isValidEmail(val) || t('userManagement.invalidEmail'),
               ]"
               lazy-rules
             >
@@ -438,7 +440,7 @@
             <q-toggle
               v-model="formData.status"
               color="cyan"
-              label="Activo"
+              :label="t('userManagement.activeLabel')"
               keep-color
               class="toggle-dark"
             />
@@ -447,22 +449,22 @@
           <div class="invitation-preview">
             <div class="preview-header">
               <q-icon name="visibility" size="18px" />
-              Vista Previa
+              {{ t('userManagement.preview') }}
             </div>
 
             <div class="preview-content">
               <div class="preview-row">
-                <strong>Nombre (usuario):</strong>
+                <strong>{{ t('userManagement.previewUserName') }}</strong>
                 <span>{{ formData.name }}</span>
               </div>
 
               <div class="preview-row">
-                <strong>Email:</strong>
+                <strong>{{ t('userManagement.previewEmail') }}</strong>
                 <span>{{ formData.email }}</span>
               </div>
 
               <div class="preview-row">
-                <strong>Estatus:</strong>
+                <strong>{{ t('userManagement.previewStatus') }}</strong>
                 <q-badge
                   :class="
                     formData.status
@@ -470,7 +472,7 @@
                       : 'preview-badge preview-badge--red'
                   "
                 >
-                  {{ formData.status ? 'Activo' : 'Inactivo' }}
+                  {{ formData.status ? t('userManagement.activeLabel') : t('userManagement.inactiveLabel') }}
                 </q-badge>
               </div>
             </div>
@@ -483,7 +485,7 @@
       <!-- Actions -->
       <q-card-actions class="modal-actions">
         <q-btn
-          label="Cancelar"
+          :label="t('userManagement.cancelButton')"
           flat
           no-caps
           class="btn-cancel"
@@ -492,7 +494,7 @@
         />
         <q-space />
         <q-btn
-          :label="saveMode === 'save' ? 'Enviar Invitación' : 'Guardar Cambios'"
+          :label="saveMode === 'save' ? t('userManagement.sendInvitation') : t('userManagement.saveChanges')"
           no-caps
           unelevated
           class="btn-primary"
@@ -509,25 +511,25 @@
           <div class="success-icon-wrap">
             <q-icon name="check_circle" size="42px" color="positive" />
           </div>
-          <h3>¡Invitación Enviada!</h3>
-          <p>Se ha enviado un correo a {{ formData.email }}</p>
+          <h3>{{ t('userManagement.invitationSentTitle') }}</h3>
+          <p>{{ t('userManagement.invitationSentMessage', { email: formData.email }) }}</p>
         </div>
 
         <div class="invitation-link-container">
-          <label class="field-label">Link de Invitación:</label>
+          <label class="field-label">{{ t('userManagement.invitationLinkLabel') }}</label>
 
           <div class="link-display">
             <q-input :model-value="invitationLink" outlined readonly dense class="premium-input" />
             <q-btn icon="content_copy" flat class="copy-btn" @click="copyLink">
-              <q-tooltip class="glass-tooltip">Copiar link</q-tooltip>
+              <q-tooltip class="glass-tooltip">{{ t('userManagement.copyLinkTooltip') }}</q-tooltip>
             </q-btn>
           </div>
 
-          <div class="field-hint">Este link también fue enviado al correo del usuario</div>
+          <div class="field-hint">{{ t('userManagement.invitationLinkHint') }}</div>
         </div>
 
         <q-btn
-          label="Enviar Otra Invitación"
+          :label="t('userManagement.sendAnotherInvitation')"
           no-caps
           unelevated
           icon="add"
@@ -547,6 +549,7 @@ import { editUser } from 'src/services/usersService.js'
 import { getDashboardStatsValues } from 'src/services/santoroFiltersController.js'
 import { CatalogService } from 'src/services/catalogService.js'
 import { formatArrayWithUnderscores } from 'src/helpers/index.js'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -557,6 +560,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'invitation-sent'])
 const $q = useQuasar()
+const { t } = useI18n()
 
 const sending = ref(false)
 const invitationSent = ref(false)
@@ -716,7 +720,7 @@ const enviarInvitacion = async () => {
   if (!isFormValid.value) {
     $q.notify({
       type: 'warning',
-      message: 'Por favor completa todos los campos requeridos',
+      message: t('userManagement.completeRequiredFields'),
       position: 'top',
     })
     return
@@ -748,12 +752,12 @@ const enviarInvitacion = async () => {
 
     invitationSent.value = true
 
-    emit('invitation-sent', response ?? 'Invitación realizada correctamente!')
+    emit('invitation-sent', response ?? t('userManagement.invitationSuccessFallback'))
     closeModal()
   } catch (error) {
     $q.notify({
       type: 'negative',
-      message: error.response?.data?.message || 'Error al enviar la invitación',
+      message: error.response?.data?.message || t('userManagement.sendInvitationError'),
       position: 'top',
       timeout: 5000,
     })
@@ -793,7 +797,7 @@ const copyLink = () => {
   navigator.clipboard.writeText(invitationLink.value).then(() => {
     $q.notify({
       type: 'positive',
-      message: 'Link copiado al portapapeles',
+      message: t('userManagement.copyLinkSuccess'),
       position: 'top',
       icon: 'content_copy',
       timeout: 2000,
