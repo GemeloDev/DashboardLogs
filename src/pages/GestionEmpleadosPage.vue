@@ -14,7 +14,7 @@
         <div class="header-left">
           <div class="header-badge">
             <q-icon name="group" size="18px" color="cyan" />
-            <span>Administración</span>
+            <span>{{ t('common.administration') }}</span>
           </div>
 
           <div class="header-main">
@@ -24,9 +24,9 @@
 
             <div class="header-text">
               <h1 class="no-padding no-margin">
-                Gestión de <span class="gradient-text">Empleados</span>
+                {{ t('userManagement.title') }} <span class="gradient-text">{{ t('layout.users') }}</span>
               </h1>
-              <p class="no-padding no-margin">Administra los usuarios y permisos del sistema</p>
+              <p class="no-padding no-margin">{{ t('userManagement.textManagment') }}</p>
             </div>
           </div>
         </div>
@@ -41,7 +41,7 @@
           unelevated
           no-caps
           icon="person_add"
-          label="Enviar Invitación"
+          :label="t('userManagement.sendInvitation')"
           class="btn-primary"
         />
       </div>
@@ -53,7 +53,7 @@
             <q-icon name="people" size="32px" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">Total Usuarios</div>
+            <div class="stat-label">{{ t('userManagement.totalUsers') }}</div>
             <div class="stat-value">{{ totalUsers }}</div>
           </div>
           <div class="stat-glow"></div>
@@ -64,7 +64,7 @@
             <q-icon name="check_circle" size="32px" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">Activos</div>
+            <div class="stat-label">{{ t('userManagement.active') }}</div>
             <div class="stat-value">{{ activeUsers }}</div>
           </div>
           <div class="stat-glow"></div>
@@ -75,7 +75,7 @@
             <q-icon name="badge" size="32px" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">Roles</div>
+            <div class="stat-label">{{ t('userManagement.statsRoles') }}</div>
             <div class="stat-value">{{ availableRoles.length }}</div>
           </div>
           <div class="stat-glow"></div>
@@ -86,7 +86,7 @@
             <q-icon name="filter_list" size="32px" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">Filtro</div>
+            <div class="stat-label">{{ t('userManagement.statsFilter') }}</div>
             <div class="stat-value-text">{{ selectedRole }}</div>
           </div>
           <div class="stat-glow"></div>
@@ -101,7 +101,7 @@
             v-model="searchTerm"
             dark
             filled
-            placeholder="Buscar por nombre o email..."
+            :placeholder="t('userManagement.searchPlaceholder')"
             class="search-input"
             @update:model-value="onSearchChange"
           >
@@ -121,7 +121,7 @@
             filled
             use-input
             input-debounce="300"
-            label="Filtrar por Rol"
+            :label="t('userManagement.filterRoleLabel')"
             clearable
             class="role-filter"
             @filter="filterRoles"
@@ -133,7 +133,9 @@
             </template>
             <template v-slot:no-option>
               <q-item>
-                <q-item-section class="text-grey-5"> No hay roles disponibles </q-item-section>
+                <q-item-section class="text-grey-5">
+                  {{ t('userManagement.noRolesAvailable') }}
+                </q-item-section>
               </q-item>
             </template>
           </q-select>
@@ -144,7 +146,7 @@
             :options="pageSizeOptions"
             dark
             filled
-            label="Mostrar"
+            :label="t('userManagement.show')"
             emit-value
             map-options
             class="page-size-select"
@@ -160,7 +162,7 @@
       <!-- Loading -->
       <div v-if="loading" class="loading-container">
         <q-spinner-dots size="50px" color="primary" />
-        <p>Cargando usuarios...</p>
+        <p>{{ t('userManagement.loadingUsers') }}</p>
       </div>
 
       <!-- Lista de Usuarios (Cards) con diseño mejorado -->
@@ -208,7 +210,7 @@
               <div class="info-content">
                 <span class="info-label">
                   <q-icon name="star" size="12px" class="q-mr-xs" />
-                  Roles
+                  {{ t('userManagement.roles') }}
                 </span>
                 <div class="roles-container">
                   <q-chip
@@ -223,7 +225,7 @@
                   </q-chip>
                   <span v-if="!user.roles || user.roles.length === 0" class="no-roles">
                     <q-icon name="remove_circle_outline" size="14px" class="q-mr-xs" />
-                    Sin roles asignados
+                    {{ t('userManagement.noRolesAssigned') }}
                   </span>
                 </div>
               </div>
@@ -237,14 +239,14 @@
               <div class="info-content">
                 <span class="info-label">
                   <q-icon name="toggle_on" size="12px" class="q-mr-xs" />
-                  Estado
+                  {{ t('userManagement.status') }}
                 </span>
                 <div class="status-indicator">
                   <div
                     :class="['status-dot', user.status === 'active' ? 'active' : 'inactive']"
                   ></div>
                   <span class="status-text">
-                    {{ user.status === 'active' ? 'Activo' : 'Inactivo' }}
+                    {{ user.status === 'active' ? t('common.active') : t('common.inactive') }}
                   </span>
                 </div>
               </div>
@@ -258,7 +260,7 @@
               <div class="info-content">
                 <span class="info-label">
                   <q-icon name="event" size="12px" class="q-mr-xs" />
-                  Creado
+                  {{ t('userManagement.created') }}
                 </span>
                 <span class="info-value">
                   <q-icon name="date_range" size="14px" class="q-mr-xs" />
@@ -279,7 +281,7 @@
                     <q-item-section avatar>
                       <q-icon name="edit" color="blue-4" />
                     </q-item-section>
-                    <q-item-section>Editar Datos</q-item-section>
+                    <q-item-section>{{ t('userManagement.editData') }}</q-item-section>
                   </q-item>
                   <q-item
                     clickable
@@ -290,7 +292,7 @@
                     <q-item-section avatar>
                       <q-icon name="delete" color="red-4" />
                     </q-item-section>
-                    <q-item-section>Eliminar</q-item-section>
+                    <q-item-section>{{ t('userManagement.delete') }}</q-item-section>
                   </q-item>
                 </q-list>
               </q-menu>
@@ -305,15 +307,15 @@
           <div class="empty-icon-glow"></div>
           <q-icon name="search_off" size="80px" />
         </div>
-        <h3>No se encontraron usuarios</h3>
-        <p>Intenta ajustar los filtros de búsqueda o agregar nuevos usuarios</p>
+        <h3>{{ t('userManagement.noUsers') }}</h3>
+        <p>{{ t('userManagement.tryAgain') }}</p>
         <div class="empty-actions">
           <q-btn
             @click="resetFilters"
             unelevated
             no-caps
             icon="refresh"
-            label="Limpiar Filtros"
+            :label="t('filters.clearFilters')"
             class="empty-btn"
           />
           <q-btn
@@ -321,7 +323,7 @@
             unelevated
             no-caps
             icon="person_add"
-            label="Invitar Usuario"
+            :label="t('userManagement.sendInvitation')"
             class="empty-btn-primary"
           />
         </div>
@@ -344,11 +346,11 @@
         />
         <div class="pagination-info">
           <q-icon name="info" size="16px" class="q-mr-xs" />
-          Mostrando
+          {{ t('userManagement.showing') }}
           <span class="pagination-highlight">{{ startItem }}-{{ endItem }}</span>
-          de
+          {{ t('userManagement.of') }}
           <span class="pagination-highlight">{{ totalUsers }}</span>
-          usuarios
+          {{ t('userManagement.users') }}
         </div>
       </div>
     </div>
@@ -369,8 +371,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { deleteUser, getUsers } from '../services/usersService.js'
 import EnviarInvitacionModal from '../components/EnviarInvitacionModal.vue'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
+const { t, locale } = useI18n()
 
 // State
 const users = ref([])
@@ -389,14 +393,14 @@ const dataUser = ref({})
 
 // Options
 const pageSizeOptions = [
-  { label: '6 por página', value: 6 },
-  { label: '12 por página', value: 12 },
-  { label: '24 por página', value: 24 },
-  { label: '48 por página', value: 48 },
+  { label: t('userManagement.pageSizeOption6'), value: 6 },
+  { label: t('userManagement.pageSizeOption12'), value: 12 },
+  { label: t('userManagement.pageSizeOption24'), value: 24 },
+  { label: t('userManagement.pageSizeOption48'), value: 48 },
 ]
 
 const roleOptions = computed(() => {
-  const allRoles = ['Todos los roles', ...availableRoles.value]
+  const allRoles = [t('userManagement.allRoles'), ...availableRoles.value]
   return allRoles
 })
 
@@ -435,7 +439,7 @@ const fetchUsers = async () => {
     console.error('❌ Error al cargar usuarios:', error)
     $q.notify({
       type: 'negative',
-      message: 'Error al cargar usuarios',
+      message: t('userManagement.loadUsersError'),
       position: 'top',
     })
   } finally {
@@ -452,14 +456,14 @@ const fetchRoles = async () => {
     const allRoles = [...new Set([...defaultRoles])]
 
     availableRoles.value = allRoles
-    filteredRoleOptions.value = ['Todos los roles', ...allRoles]
+    filteredRoleOptions.value = [t('userManagement.allRoles'), ...allRoles]
 
     console.log('✅ Roles disponibles:', allRoles)
   } catch (error) {
     console.error('❌ Error al cargar roles:', error)
     // En caso de error, usar solo roles predeterminados
     availableRoles.value = ['ORG_ADMIN', 'SYSTEM_MANAGER', 'AUDITOR', 'SUPPORT_TI', 'VIEWER']
-    filteredRoleOptions.value = ['Todos los roles', ...availableRoles.value]
+    filteredRoleOptions.value = [t('userManagement.allRoles'), ...availableRoles.value]
   }
 }
 
@@ -491,7 +495,7 @@ const createNewRole = (val, done) => {
       availableRoles.value.push(newRole)
       $q.notify({
         type: 'positive',
-        message: `Rol "${newRole}" agregado`,
+        message: t('userManagement.roleAdded', { role: newRole }),
         position: 'top',
       })
     }
@@ -538,9 +542,9 @@ const getInitials = (name) => {
 }
 
 const formatDate = (dateString) => {
-  if (!dateString) return 'N/A'
+  if (!dateString) return t('common.unknown')
   const date = new Date(dateString)
-  return date.toLocaleDateString('es-ES', {
+  return date.toLocaleDateString(locale.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -555,14 +559,14 @@ const editUsuario = (user) => {
 
 const eliminarUsuario = (user) => {
   $q.dialog({
-    title: 'Eliminar usuario',
-    message: `¿Desea eliminar al usuario ${user.name}?`,
+    title: t('userManagement.deleteUserTitle'),
+    message: t('userManagement.deleteUserMessage', { name: user.name }),
     cancel: true,
     dark: true,
   }).onOk(async () => {
     const response = await deleteUser(user.id)
     $q.notify({
-      message: `✅ ${response.data.message}!`,
+      message: t('userManagement.deleteUserSuccess', { message: response.data.message }),
       color: 'green',
       position: 'top',
     })
@@ -577,7 +581,9 @@ const onInvitationSent = (response) => {
 
   $q.notify({
     type: 'positive',
-    message: `✅ ${response?.data?.message ?? response?.message}!`,
+    message: t('userManagement.invitationSentNotify', {
+      message: response?.data?.message ?? response?.message,
+    }),
     position: 'top',
     timeout: 3000,
   })

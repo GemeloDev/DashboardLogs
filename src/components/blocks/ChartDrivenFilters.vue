@@ -2,9 +2,9 @@
   <q-card flat bordered class="chart-filters-card q-pa-md text-white">
     <div class="row items-center q-col-gutter-md q-mb-md">
       <div class="col">
-        <div class="text-subtitle1 text-weight-medium">Filtros desde gráficas</div>
+        <div class="text-subtitle1 text-weight-medium">{{ t('filters.titleGraphicFilters') }}</div>
         <div class="text-caption text-grey-5">
-          Las opciones se construyen a partir de los datos agregados del dashboard.
+          {{ t('filters.subtitleGraphicFilters') }}
         </div>
       </div>
 
@@ -13,7 +13,7 @@
           flat
           color="grey-5"
           icon="clear_all"
-          label="Limpiar"
+          :label="t('filters.clearFilters')"
           :disable="loading"
           @click="clearAll"
         />
@@ -24,7 +24,7 @@
       <div class="col-12 col-md-12">
         <q-input
           :model-value="dateRangeText"
-          label="Rango de fechas"
+          :label="t('filters.rangeDate')"
           filled
           dark
           dense
@@ -66,7 +66,7 @@
                     <q-icon name="today" color="blue-4" size="sm" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-white text-caption">Hoy</q-item-label>
+                    <q-item-label class="text-white text-caption">{{ t('filters.today') }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -75,7 +75,7 @@
                     <q-icon name="history" color="blue-4" size="sm" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-white text-caption">Ayer</q-item-label>
+                    <q-item-label class="text-white text-caption">{{ t('filters.yesterday') }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -84,7 +84,7 @@
                     <q-icon name="date_range" color="blue-4" size="sm" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-white text-caption">Últimos 7 días</q-item-label>
+                    <q-item-label class="text-white text-caption">{{ t('filters.last7Days') }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -93,7 +93,7 @@
                     <q-icon name="calendar_month" color="blue-4" size="sm" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-white text-caption">Últimos 30 días</q-item-label>
+                    <q-item-label class="text-white text-caption">{{ t('filters.last30Days') }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -104,7 +104,7 @@
                     <q-icon name="calendar_today" color="green-4" size="sm" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-white text-caption">Mes actual</q-item-label>
+                    <q-item-label class="text-white text-caption">{{ t('filters.thisMonth') }}</q-item-label>
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -119,7 +119,7 @@
         <q-select
           :model-value="selectedValues.eventType || ''"
           :options="eventTypeOptions"
-          label="Event Type"
+          :label="t('common.eventType')"
           filled
           dark
           dense
@@ -141,7 +141,7 @@
         <q-select
           :model-value="selectedValues.severity || ''"
           :options="severityOptions"
-          label="Severity"
+          :label="t('common.severity')"
           filled
           dark
           dense
@@ -163,7 +163,7 @@
         <q-select
           :model-value="selectedValues.status || ''"
           :options="statusOptions"
-          label="Status"
+          :label="t('common.status')"
           filled
           dark
           dense
@@ -185,7 +185,7 @@
         <q-select
           :model-value="selectedValues.outcome || ''"
           :options="outcomeOptions"
-          label="Outcome"
+          :label="t('common.outcome')"
           filled
           dark
           dense
@@ -208,6 +208,9 @@
 
 <script setup>
 import { computed, inject, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const filtrosGlobales = inject(
   'filtrosGlobales',

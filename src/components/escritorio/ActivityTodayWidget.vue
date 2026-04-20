@@ -5,8 +5,8 @@
       <div class="row items-center q-mb-md">
         <div class="today-pulse q-mr-sm" :class="hasActivity ? 'today-pulse--active' : ''" />
         <div class="col">
-          <div class="today-title">Actividad de hoy</div>
-          <div class="today-subtitle text-grey-5">Últimas 24 horas · {{ system }}</div>
+          <div class="today-title">{{ t('dashboard.activityToday') }}</div>
+          <div class="today-subtitle text-grey-5">{{ t('dashboard.activitySubtitle') }} · {{ system }}</div>
         </div>
         <div class="col-auto">
           <q-btn
@@ -19,12 +19,12 @@
             :loading="loading"
             @click="fetchToday"
           >
-            <q-tooltip>Actualizar</q-tooltip>
+            <q-tooltip>{{ t('dashboard.refreshTooltip') }}</q-tooltip>
           </q-btn>
           <q-btn
             flat
             dense
-            label="Ver todos"
+            :label="t('common.seeData')"
             color="cyan"
             size="sm"
             class="q-ml-sm"
@@ -37,25 +37,25 @@
       <div class="row q-col-gutter-sm q-mb-md">
         <div class="col-6 col-md-3">
           <div class="today-kpi">
-            <div class="today-kpi__label">Total eventos</div>
+            <div class="today-kpi__label">{{ t('dashboard.totalEvents') }}</div>
             <div class="today-kpi__value">{{ total }}</div>
           </div>
         </div>
         <div class="col-6 col-md-3">
           <div class="today-kpi">
-            <div class="today-kpi__label">Error rate</div>
+            <div class="today-kpi__label">{{ t('dashboard.errorRate') }}</div>
             <div class="today-kpi__value" :class="errorRateColor">{{ errorRatePct }}</div>
           </div>
         </div>
         <div class="col-6 col-md-3">
           <div class="today-kpi today-kpi--red">
-            <div class="today-kpi__label">Failures</div>
+            <div class="today-kpi__label">{{ t('dashboard.failures') }}</div>
             <div class="today-kpi__value text-red-4">{{ failures }}</div>
           </div>
         </div>
         <div class="col-6 col-md-3">
           <div class="today-kpi today-kpi--green">
-            <div class="today-kpi__label">Successes</div>
+            <div class="today-kpi__label">{{ t('dashboard.successes') }}</div>
             <div class="today-kpi__value text-green-4">{{ successes }}</div>
           </div>
         </div>
@@ -63,7 +63,7 @@
 
       <!-- Feed de logs recientes -->
       <div v-if="filteredRecentLogs.length" class="today-feed">
-        <div class="today-feed__title q-mb-sm text-grey-5 text-caption">Logs más recientes</div>
+        <div class="today-feed__title q-mb-sm text-grey-5 text-caption">{{ t('dashboard.recentLogs') }}</div>
         <div
           v-for="log in filteredRecentLogs"
           :key="log.id"
@@ -112,13 +112,13 @@
       <!-- Sin actividad -->
       <div v-else-if="!loading" class="today-empty">
         <q-icon name="check_circle" color="green" size="24px" class="q-mr-sm" />
-        <span class="text-grey-5">Sin actividad en las últimas 24 horas</span>
+        <span class="text-grey-5">{{ t('dashboard.withoutActivityToday') }}</span>
       </div>
 
       <!-- Loading -->
       <div v-if="loading && !filteredRecentLogs.length" class="today-empty">
         <q-spinner color="cyan" size="20px" class="q-mr-sm" />
-        <span class="text-grey-5">Cargando actividad...</span>
+        <span class="text-grey-5">{{ t('common.loading') }}</span>
       </div>
     </q-card>
   </div>
@@ -128,6 +128,8 @@
 import { ref, computed, inject, watch, onMounted, onBeforeUnmount } from 'vue'
 import { axiosInstance } from 'src/services/axiosConfig'
 import { LOGS } from 'src/services/endpoints'
+import { useI18n } from 'vue-i18n'
+const { t, locale } = useI18n()
 
 // ── Injects ───────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
@@ -289,11 +291,12 @@ function timeAgo(isoDate) {
   if (!isoDate) return ''
   const diff = Date.now() - new Date(isoDate).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'ahora'
-  if (mins < 60) return `${mins}m`
+  if (mins < 1) return t('dashboard.justNow')
+  const rtf = new Intl.RelativeTimeFormat(locale.value, { numeric: 'auto' })
+  if (mins < 60) return rtf.format(-mins, 'minute')
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h`
-  return `${Math.floor(hrs / 24)}d`
+  if (hrs < 24) return rtf.format(-hrs, 'hour')
+  return rtf.format(-Math.floor(hrs / 24), 'day')
 }
 
 function openConsoleToday() {

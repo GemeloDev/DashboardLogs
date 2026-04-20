@@ -6,14 +6,14 @@
         <q-card flat bordered class="dashboard-hero__events-card text-white">
           <div class="dashboard-hero__section-head">
             <div>
-              <div class="hero-side-title">Funcionalidades más usadas</div>
+              <div class="hero-side-title">{{ t('dashboard.topFunctions') }}</div>
               <div class="hero-side-subtitle">
-                {{ funcUsage.items.length }} eventos con mayor actividad
+                {{ funcUsage.items.length + ' ' + t('dashboard.mostActivities') }}
               </div>
             </div>
 
             <div class="hero-total-pill">
-              <div class="hero-total-pill__label">Total procesados</div>
+              <div class="hero-total-pill__label">{{ t('dashboard.totalProccessed') }}</div>
               <div class="hero-total-pill__value">{{ funcUsage.total }}</div>
             </div>
           </div>
@@ -45,7 +45,7 @@
               />
 
               <div class="func-subcard__meta">
-                <span>{{ it.pct }}% del total</span>
+                <span>{{ it.pct + t('dashboard.ofTotal') }}</span>
                 <span>{{ it.count }}/{{ funcUsage.total }}</span>
               </div>
             </q-card>
@@ -59,8 +59,8 @@
             <q-icon name="donut_large" size="24px" />
           </div>
           <div>
-            <div class="hero-side-title">Cobertura de funcionalidades</div>
-            <div class="hero-side-subtitle">Distribución de eventos más usados</div>
+            <div class="hero-side-title">{{ t('dashboard.coverageFunctions') }}</div>
+            <div class="hero-side-subtitle">{{ t('dashboard.distributionBySystem') }}</div>
           </div>
         </div>
 
@@ -75,14 +75,14 @@
 
           <div class="dashboard-hero__donut-summary">
             <div class="mini-metric--compact">
-              <div class="mini-metric__label">Evento más activo</div>
+              <div class="mini-metric__label">{{ t('dashboard.mostActiveEvent') }}</div>
               <div class="mini-metric__value dashboard-hero__top-name">
-                {{ funcUsage.topName || 'Sin datos' }}
+                {{ funcUsage.topName || t('dashboard.noData') }}
               </div>
             </div>
 
             <div class="mini-metric--compact">
-              <div class="mini-metric__label">Participación principal</div>
+              <div class="mini-metric__label">{{ t('dashboard.participationMain') }}</div>
               <div class="mini-metric__value">{{ funcUsage.topPct }}%</div>
             </div>
           </div>
@@ -104,8 +104,8 @@
         <div class="row items-center q-mb-md">
           <q-icon name="apartment" color="cyan" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">Locaciones</div>
-            <div class="toplist-subtitle text-grey-5">Top locaciones</div>
+            <div class="toplist-title">{{ t('common.locations') }}</div>
+            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.topLocations') }}</div>
           </div>
         </div>
         <div
@@ -137,8 +137,8 @@
         <div class="row items-center q-mb-md">
           <q-icon name="sell" color="purple" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">Etiquetas</div>
-            <div class="toplist-subtitle text-grey-5">Distribución de eventos</div>
+            <div class="toplist-title">{{ t('common.tags') }}</div>
+            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.distributionBySystem') }}</div>
           </div>
         </div>
         <div
@@ -170,8 +170,8 @@
         <div class="row items-center q-mb-md">
           <q-icon name="insights" color="pink" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">Resultados de eventos (outcome)</div>
-            <div class="toplist-subtitle text-grey-5">Top valores</div>
+            <div class="toplist-title">{{ t('dashboard.eventsResults') }}</div>
+            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.topOutcomes') }}</div>
           </div>
         </div>
         <div
@@ -206,8 +206,8 @@
         <div class="row items-center q-mb-md">
           <q-icon name="fact_check" color="cyan" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">Estatus</div>
-            <div class="toplist-subtitle text-grey-5">Comportamiento a través del tiempo</div>
+            <div class="toplist-title">{{ t('common.status') }}</div>
+            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.subtitleStatus') }}</div>
           </div>
         </div>
         <div class="status-line-wrap">
@@ -224,8 +224,8 @@
         <div class="row items-center q-mb-md">
           <q-icon name="warning" color="orange" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">Severidad</div>
-            <div class="toplist-subtitle text-grey-5">Distribución por nivel</div>
+            <div class="toplist-title">{{ t('common.severity') }}</div>
+            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.subtitleSeverity') }}</div>
           </div>
         </div>
         <div class="severity-pie-wrap">
@@ -239,10 +239,8 @@
         <div class="row items-center q-mb-md">
           <q-icon name="http" color="cyan" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">HTTP</div>
-            <div class="toplist-subtitle text-grey-5">
-              Latencia p95 (ms) por statusCode, separado por método
-            </div>
+            <div class="toplist-title">{{ t('dashboard.http') }}</div>
+            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.substitleHttp') }}</div>
           </div>
         </div>
         <div class="http-radar-wrap">
@@ -258,7 +256,7 @@
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="timeline" color="cyan" size="18px" class="q-mr-sm" />
-          <div><div class="toplist-title">Eventos por Día</div></div>
+          <div><div class="toplist-title">{{ t('dashboard.eventsByDay') }}</div></div>
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsDayCanvas"></canvas>
@@ -270,7 +268,7 @@
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="date_range" color="purple" size="18px" class="q-mr-sm" />
-          <div><div class="toplist-title">Eventos por Semana</div></div>
+          <div><div class="toplist-title">{{ t('dashboard.eventsByWeek') }}</div></div>
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsWeekCanvas"></canvas>
@@ -282,7 +280,7 @@
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="calendar_month" color="pink" size="18px" class="q-mr-sm" />
-          <div><div class="toplist-title">Eventos por Mes</div></div>
+          <div><div class="toplist-title">{{ t('dashboard.eventsByMonth') }}</div></div>
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsMonthCanvas"></canvas>
@@ -298,7 +296,7 @@
 
   <q-inner-loading
     :showing="loading"
-    label="Cargando..."
+    :label="t('common.loading')"
     dark
     label-class="text-teal"
     label-style="font-size: 1.1em"
@@ -312,6 +310,9 @@ import { ref, computed, inject, watch, /* onMounted, */ nextTick, onBeforeUnmoun
 import ConsoleGeoMap from '../blocks/ConsoleGeoMap.vue'
 import Chart from 'chart.js/auto'
 import ActivityTodayWidget from './ActivityTodayWidget.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ─── Injects ──────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
@@ -375,7 +376,7 @@ const FUNC_COLORS = [
 
 const normalizeStatRows = (rows) =>
   (Array.isArray(rows) ? rows : []).map((row) => ({
-    label: String(row?.value ?? row?.label ?? 'N/A'),
+    label: String(row?.value ?? row?.label ?? t('dashboard.noData')),
     count: Number(row?.count || 0),
     pct: Number(row?.pct || 0),
   }))
@@ -410,7 +411,7 @@ function aggregateStatusRowsByPeriod(rows, mode) {
     utc.setUTCDate(utc.getUTCDate() + 4 - dayNum)
     const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1))
     const weekNo = Math.ceil((((utc - yearStart) / 86400000) + 1) / 7)
-    return `Semana ${weekNo}-${utc.getUTCFullYear()}`
+    return `${t('dashboard.weekPrefix')} ${weekNo}-${utc.getUTCFullYear()}`
   }
 
   for (const row of rows) {
@@ -496,7 +497,7 @@ const funcUsage = computed(() => {
   const donutSegments = [...topItems]
   if (rest > 0) {
     donutSegments.push({
-      name: 'Otros',
+      name: t('common.others'),
       count: rest,
       ratio: total ? rest / total : 0,
       pct: Math.round((rest / total || 0) * 1000) / 10,
@@ -519,8 +520,10 @@ const funcUsage = computed(() => {
 const donutCenterPct = computed(() => `${Math.round(Number(funcUsage.value?.coveragePct || 0))}%`)
 const donutCenterLabel = computed(() => {
   const segs = funcUsage.value?.donutSegments || []
-  if (!segs.length) return 'Top'
-  return segs.some((s) => s.name === 'Otros') ? 'Cobertura' : 'Distribución'
+  if (!segs.length) return t('dashboard.topLabel')
+  return segs.some((s) => s.name === t('common.others'))
+    ? t('dashboard.coverageFunctions')
+    : t('dashboard.distributionBySystem')
 })
 
 const coverageDonutCanvas = ref(null)
@@ -606,7 +609,7 @@ const SEVERITY_COLORS = {
 
 function getSeverityRows() {
   return filterStatRowsByKey(statsData.value?.severities, 'severity')
-    .map((row) => ({ label: String(row.label || 'N/A').toUpperCase(), count: row.count }))
+    .map((row) => ({ label: String(row.label || t('dashboard.noData')).toUpperCase(), count: row.count }))
     .sort((a, b) => {
       const ia = SEVERITY_ORDER.indexOf(a.label)
       const ib = SEVERITY_ORDER.indexOf(b.label)
@@ -805,7 +808,7 @@ async function renderStatusLine() {
         tooltip: {
           titleColor: '#fff',
           bodyColor: '#fff',
-          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} eventos` },
+          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} ${t('dashboard.eventsSeriesLabel').toLowerCase()}` },
         },
       },
       onClick: (_, elements) => {
@@ -846,7 +849,7 @@ function buildSimpleSeries(items = [], color = '#22d3ee') {
     labels: items.map((i) => i.date),
     datasets: [
       {
-        label: 'Eventos',
+        label: t('dashboard.eventsSeriesLabel'),
         data: items.map((i) => i.count),
         borderColor: color,
         backgroundColor: color + '33',

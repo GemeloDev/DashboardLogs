@@ -8,30 +8,57 @@
     @escape-key="cerrarDiagnostico"
   >
     <q-card class="diagnostic-modal diagnostico-dialog-fullscreen bg-grey-9">
-      <!-- Header Mejorado -->
-      <q-card-section class="diagnostic-header bg-gradient-to-r from-grey-8 to-grey-7">
-        <div class="row items-center">
-          <div class="col">
-            <div class="text-h5 diagnostic-title">
-              <q-icon name="medical_services" class="q-mr-sm diagnostic-icon" color="cyan-4" />
-              🔬 <span style="color: #e97132;">Centro de Diagnóstico</span> Técnico Avanzado
-              <q-chip
-                v-if="diagnosticoActivo"
-                color="cyan-5"
-                text-color="white"
-                size="md"
-                class="q-ml-md diagnostic-chip"
-                icon="auto_fix_high"
-              >
-                <span class="diagnostic-glow">✨ Análisis: {{ diagnosticoActivo }}</span>
-              </q-chip>
-            </div>
-            <div class="text-subtitle2 text-cyan-3 q-mt-sm diagnostic-subtitle">
-              🛡️ Sistema de Soporte Técnico en Tiempo Real | 🔍 Análisis de Errores & Sesiones
+      <!-- Header -->
+      <q-card-section class="diagnostic-header">
+        <div class="dashboard-header__wrap">
+          <q-card flat bordered class="dashboard-hero__title-card text-white">
+            <div class="diagnostic-header__top row items-start justify-between q-col-gutter-md">
+              <div class="col">
+                <div class="diagnostic-eyebrow">
+                  <q-icon name="medical_services" size="18px" color="cyan-4" />
+                  <span>Diagnóstico técnico</span>
+                </div>
+
+                <h1 class="hero-title q-mt-md q-mb-sm">
+                  Centro de <span class="orange-santoro">Diagnóstico</span>
+                  <br />
+                  Técnico Avanzado
+                </h1>
+
+                <p class="diagnostic-subtitle q-mb-none">
+                  Sistema de soporte técnico en tiempo real para análisis de errores, sesiones
+                  y tokens.
+                </p>
+              </div>
+
+              <div class="col-auto">
+                <div class="diagnostic-actions">
+                  <q-btn
+                    icon="help_outline"
+                    flat
+                    round
+                    color="cyan-4"
+                    @click="mostrarAyuda"
+                  >
+                    <q-tooltip class="bg-cyan-8">Ayuda y guías</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    icon="minimize"
+                    flat
+                    round
+                    color="grey-4"
+                    @click="cerrarDiagnostico"
+                  >
+                    <q-tooltip>Minimizar diagnóstico</q-tooltip>
+                  </q-btn>
+                  <q-btn icon="close" flat round color="red-4" @click="cerrarDiagnostico">
+                    <q-tooltip>Cerrar diagnóstico</q-tooltip>
+                  </q-btn>
+                </div>
+              </div>
             </div>
 
-            <!-- Indicadores de Estado -->
-            <div class="row q-mt-sm q-gutter-sm">
+            <div class="diagnostic-meta q-mt-lg">
               <q-chip
                 dense
                 color="green-6"
@@ -39,7 +66,7 @@
                 icon="wifi"
                 class="diagnostic-status-chip"
               >
-                🟢 API Conectada
+                API conectada
               </q-chip>
 
               <q-chip
@@ -49,35 +76,21 @@
                 icon="security"
                 class="diagnostic-status-chip"
               >
-                🛡️ Modo Seguro
+                Modo seguro
+              </q-chip>
+
+              <q-chip
+                v-if="diagnosticoActivo"
+                dense
+                color="cyan-5"
+                text-color="white"
+                icon="auto_fix_high"
+                class="diagnostic-status-chip"
+              >
+                Análisis: {{ diagnosticoActivo }}
               </q-chip>
             </div>
-          </div>
-          <div class="col-auto">
-            <q-btn
-              icon="help_outline"
-              flat
-              round
-              color="cyan-4"
-              @click="mostrarAyuda"
-              class="q-mr-sm"
-            >
-              <q-tooltip class="bg-cyan-8">💡 Ayuda y Guías</q-tooltip>
-            </q-btn>
-            <q-btn
-              icon="minimize"
-              flat
-              round
-              color="grey-4"
-              @click="cerrarDiagnostico"
-              class="q-mr-sm"
-            >
-              <q-tooltip>Minimizar diagnóstico</q-tooltip>
-            </q-btn>
-            <q-btn icon="close" flat round color="red-4" @click="cerrarDiagnostico">
-              <q-tooltip>Cerrar diagnóstico</q-tooltip>
-            </q-btn>
-          </div>
+          </q-card>
         </div>
       </q-card-section>
 
@@ -1358,7 +1371,7 @@ defineExpose({
 
 .diagnostic-modal {
   .diagnostic-header {
-    min-height: 80px;
+    padding: 24px 0 12px;
   }
 
   .diagnostic-content {
@@ -1366,6 +1379,64 @@ defineExpose({
       padding: 0;
     }
   }
+}
+
+.dashboard-header__wrap {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.dashboard-hero__title-card {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 26px;
+  padding: 28px 30px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.hero-title {
+  color: #fff;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 1.03;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.diagnostic-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.diagnostic-subtitle {
+  max-width: 760px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.diagnostic-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diagnostic-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.diagnostic-status-chip {
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .session-timeline {
@@ -1426,6 +1497,21 @@ defineExpose({
         width: 200px;
       }
     }
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-hero__title-card {
+    padding: 20px 18px;
+    border-radius: 22px;
+  }
+
+  .diagnostic-header__top {
+    row-gap: 16px;
+  }
+
+  .diagnostic-actions {
+    justify-content: flex-start;
   }
 }
 

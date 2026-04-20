@@ -5,9 +5,9 @@
       <div class="dashboard-header__wrap">
         <q-card flat bordered class="dashboard-hero__title-card text-white">
         <h1 class="hero-title">
-          Dashboard de Escritorio
+          {{ t('dashboard.titlePageDashboard') }}
           <br />
-          <span class="color-orange-santoro">Panel de Control Avanzado</span>
+          <span class="color-orange-santoro">{{ t('dashboard.subtitlePageDashboard') }}</span>
         </h1>
         </q-card>
       </div>
@@ -22,6 +22,8 @@
 
 <script setup>
 import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGraficasEnhanced.vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 </script>
 
 <style lang="scss" scoped>
