@@ -3,11 +3,15 @@ import { subscribeToNewLogs } from './socketService'
 import DashboardService from 'src/services/dashboardService'
 import authService from './authService'
 
-// ─── Datos de los 4 endpoints ────────────────────────────────────────────────
-const statsData  = ref(null)
-const seriesData = ref(null)
-const httpData   = ref(null)
-const geoData    = ref(null)
+// ─── Datos de los 5 endpoints ────────────────────────────────────────────────
+const statsData   = ref(null)
+const seriesData  = ref(null)
+const httpData    = ref(null)
+const geoData     = ref(null)
+const devicesData = ref(null)
+
+// Solo estos estados son válidos como filtro para el endpoint de dispositivos
+const DEVICE_VALID_STATUSES = new Set(['ONLINE', 'OFFLINE'])
 
 // ── Auto-refresh por WebSocket ────────────────────────────────────────────────
 let wsSubscription = null // suscripción activa al topic
@@ -49,13 +53,19 @@ async function fetchAll(filters = {}) {
   seriesData.value = null
   httpData.value = null
   geoData.value = null
+  devicesData.value = null
+
+  const deviceStatus = DEVICE_VALID_STATUSES.has(String(filters?.values?.status || '').toUpperCase())
+    ? String(filters.values.status).toUpperCase()
+    : undefined
 
   try {
-    const [rStats, rSeries, rHttp, rGeo] = await Promise.allSettled([
+    const [rStats, rSeries, rHttp, rGeo, rDevices] = await Promise.allSettled([
       DashboardService.getStats({ system: sys, from, to }),
       DashboardService.getSeries({ system: sys }),
       DashboardService.getHttp({ system: sys }),
       DashboardService.getGeo({ system: sys }),
+      DashboardService.getDevices({ system: sys, status: deviceStatus }),
     ])
 
     if (seq !== fetchSeq) return
@@ -64,6 +74,7 @@ async function fetchAll(filters = {}) {
     seriesData.value = rSeries.status === 'fulfilled' ? (rSeries.value ?? null) : null
     httpData.value = rHttp.status === 'fulfilled' ? (rHttp.value ?? null) : null
     geoData.value = rGeo.status === 'fulfilled' ? (rGeo.value ?? null) : null
+    devicesData.value = rDevices.status === 'fulfilled' ? (rDevices.value ?? null) : null
   } catch (err) {
     if (seq !== fetchSeq) return
     console.error('Dashboard fetchAll error:', err?.message || err)
@@ -120,6 +131,7 @@ export function useDashboardData() {
     seriesData,
     httpData,
     geoData,
+    devicesData,
     fetchAll,
     subscribeSystem,
     unsubscribeSystem,

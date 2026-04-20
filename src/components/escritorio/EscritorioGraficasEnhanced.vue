@@ -297,9 +297,14 @@
     </div>
   </div>
 
-  <!-- ✅ Mapa geográfico -->
-  <div v-if="hasGeoData" class="q-mt-xl">
-    <ConsoleGeoMap :points="geoPoints" @select-point="onGeoClick" />
+  <!-- ✅ Mapa geográfico + Dispositivos -->
+  <div v-if="hasMapData" class="q-mt-xl">
+    <ConsoleGeoMap
+      :points="geoPoints"
+      :devices="devicePoints"
+      @select-point="onGeoClick"
+      @select-device="onDeviceClick"
+    />
   </div>
 
   <q-inner-loading
@@ -329,17 +334,19 @@ const openConsole = inject('openConsole', null)
 // ─── Estado único de carga ────────────────────────────────────────────────────
 const loading = inject('dashboardLoading', ref(false))
 
-// ─── Datos de los 4 endpoints ────────────────────────────────────────────────
+// ─── Datos de los 5 endpoints ────────────────────────────────────────────────
 const statsData = inject('dashboardStatsData', ref(null))
 const seriesData = inject('dashboardSeriesData', ref(null))
 const httpData = inject('dashboardHttpData', ref(null))
 const geoData = inject('dashboardGeoData', ref(null))
+const devicesData = inject('dashboardDevicesData', ref(null))
 
 const activityWidgetRef = ref(null) // ← referencia al widget
 
 // ─── Flags derivados de la API ────────────────────────────────────────────────
 const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
 const hasGeoData = computed(() => !!geoData.value?.points?.length)
+const hasDevicesData = computed(() => !!devicesData.value?.devices?.length)
 
 // ─── Helpers de consola ───────────────────────────────────────────────────────
 const selectedEventType = computed(() => filtrosGlobales.value?.values?.eventType || '')
@@ -360,8 +367,6 @@ function openConsoleWithFilter(fieldKey, value) {
 }
 
 // ─── Geo ──────────────────────────────────────────────────────────────────────
-// Transformación directa: {lat, lon, count} → {lat, lon, weight}
-// Sin agregación en frontend, tal como devuelve el endpoint /geo.
 const geoPoints = computed(() =>
   (geoData.value?.points || []).map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
 )
@@ -369,6 +374,30 @@ const geoPoints = computed(() =>
 function onGeoClick({ lat, lon }) {
   openConsole?.({ fieldKey: 'geo.coordinates', value: `[${lat},${lon}]` })
 }
+
+// ─── Dispositivos ─────────────────────────────────────────────────────────────
+const devicePoints = computed(() =>
+  (devicesData.value?.devices || [])
+    .filter((d) => d.latitude != null && d.longitude != null &&
+      Number.isFinite(+d.latitude) && Number.isFinite(+d.longitude))
+    .map((d) => ({
+      lat: +d.latitude,
+      lon: +d.longitude,
+      deviceId: d.deviceId,
+      hostname: d.hostname || '',
+      system: d.system || '',
+      status: d.status || 'OFFLINE',
+      ip: d.ip || '',
+      locationName: d.locationName || '',
+      lastSeen: d.lastSeen || '',
+    })),
+)
+
+function onDeviceClick({ deviceId }) {
+  openConsole?.({ fieldKey: 'meta.deviceId', value: deviceId })
+}
+
+const hasMapData = computed(() => hasGeoData.value || hasDevicesData.value)
 
 // ─── Dashboard stats helpers ──────────────────────────────────────────────────
 const FUNC_COLORS = [

@@ -506,10 +506,10 @@ const {
   seriesData,
   httpData,
   geoData,
+  devicesData,
   fetchAll,
   subscribeSystem,
   unsubscribeSystem,
-  // newLogsCount,
 } = useDashboardData()
 
 provide('dashboardLoading', dashboardLoading)
@@ -517,6 +517,7 @@ provide('dashboardStatsData', statsData)
 provide('dashboardSeriesData', seriesData)
 provide('dashboardHttpData', httpData)
 provide('dashboardGeoData', geoData)
+provide('dashboardDevicesData', devicesData)
 
 
 provide('logsGlobales', logsGlobales)
