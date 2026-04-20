@@ -434,7 +434,7 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted, computed, watch } from 'vue'
+import { ref, provide, onMounted, computed, watch, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -507,6 +507,9 @@ const {
   httpData,
   geoData,
   fetchAll,
+  subscribeSystem,
+  unsubscribeSystem,
+  // newLogsCount,
 } = useDashboardData()
 
 provide('dashboardLoading', dashboardLoading)
@@ -769,7 +772,7 @@ const dashboardQueryKey = computed(() => {
   return `${sys}|${from}|${to}`
 })
 
-// 1) Cuando cambia system: NO pega al backend, solo refiltra logsRango
+// 1) Cuando cambia system: SÍ pega al backend Y se suscribe al WebSocket
 watch(
   selectedSystem,
   (sys) => {
@@ -778,6 +781,16 @@ watch(
 
     if (isClientFlow.value) {
       cargarEventosDelSistema()
+
+      // 📡 Suscribirse al WebSocket para auto-refresh del dashboard
+      subscribeSystem(
+        sys,
+        () => filtros.value,  // getFilters
+        () => {
+          // onRefreshExtra: callback opcional después de cada refresh
+          console.log('[Dashboard] Auto-refresh completado desde WebSocket')
+        }
+      )
     }
   },
   { immediate: true },
@@ -801,6 +814,20 @@ watch(
   },
   { immediate: true },
 )
+
+// Limpiar suscripción al WebSocket si se sale del flujo de cliente
+watch(
+  isClientFlow,
+  (isClient) => {
+    if (!isClient) {
+      unsubscribeSystem()
+    }
+  },
+)
+
+onBeforeUnmount(() => {
+  unsubscribeSystem()
+})
 
 
 // ── Notificaciones del browser para alertas CRIT ──────────────────────────────

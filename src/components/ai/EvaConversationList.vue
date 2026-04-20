@@ -2,8 +2,8 @@
     <div class="eva-conv-list">
         <div class="row item-center justify-betweem q-pa-md">
             <div>
-                <div class="text-h6">Eva</div>
-                <div class="text-caption text-grey-5">Historial</div>
+                <div class="text-h6">{{ t('evaWorkspace.pageTitle') }}</div>
+                <div class="text-caption text-grey-5">{{ t('evaWorkspace.history') }}</div>
             </div>
 
             <q-btn round find icon="add" @click="eva.newConversation()" />
@@ -24,7 +24,7 @@
                     <q-item-section>
                         <q-item-label>{{ conv.title }}</q-item-label>
                         <q-item-label caption lines="1">
-                            {{ conv.messages?.[conv.messages.length - 1]?.content || 'Sin mensajes' }}
+                            {{ conv.messages?.[conv.messages.length - 1]?.content || t('evaWorkspace.noMessages') }}
                         </q-item-label>
                     </q-item-section>
                 </q-item>
@@ -35,9 +35,11 @@
 
 <script setup> 
 import { onMounted } from 'vue'; 
+import { useI18n } from 'vue-i18n'
 import { useEvaStore } from 'src/stores/eva-store'; 
 
 const eva = useEvaStore()
+const { t } = useI18n()
 
 onMounted(() => {
     if (!eva.currentConversationId && eva.conversations.length) {

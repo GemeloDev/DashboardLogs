@@ -9,8 +9,8 @@
             <q-icon name="manage_search" size="24px" color="white" />
           </div>
           <div>
-            <h2>Ficha técnica de log</h2>
-            <p>Detalle completo del evento de acceso</p>
+            <h2>{{ t('consoleSimple.detailTitle') }}</h2>
+            <p>{{ t('consoleSimple.detailSubtitle') }}</p>
           </div>
         </div>
         <q-btn icon="close" flat round dense class="dialog-close-btn" v-close-popup />
@@ -29,22 +29,22 @@
             <div class="form-field">
               <label class="field-label">
                 <q-icon name="account_circle" size="18px" class="field-icon--blue" />
-                Usuario | Actor
+                {{ t('consoleSimple.detailActorLabel') }}
               </label>
               <div v-if="log.actor" class="info-card">
                 <div class="info-row">
                   <q-icon name="badge" size="15px" class="tint--blue" />
-                  <span class="info-primary">{{ log?.actor?.id ?? 'Sin dato' }}</span>
+                  <span class="info-primary">{{ log?.actor?.id ?? t('consoleSimple.detailNoData') }}</span>
                 </div>
-                <div class="info-secondary">{{ log?.actor?.fullName ?? 'Sin dato' }}</div>
-                <div class="info-caption">👤 {{ log?.actor?.username || 'Sin dato' }}</div>
+                <div class="info-secondary">{{ log?.actor?.fullName ?? t('consoleSimple.detailNoData') }}</div>
+                <div class="info-caption">👤 {{ log?.actor?.username || t('consoleSimple.detailNoData') }}</div>
                 <div class="info-row q-mt-xs">
-                  <span class="info-caption">Tipo:</span>
+                  <span class="info-caption">{{ t('consoleSimple.detailType') }}</span>
                   <span class="status-chip status-chip--cyan">{{ log?.actor?.type }}</span>
                 </div>
               </div>
               <div v-else class="info-card info-card--empty">
-                SIN DATOS DEL ACTOR
+                {{ t('consoleSimple.detailActorEmpty') }}
               </div>
             </div>
 
@@ -52,7 +52,7 @@
             <div class="form-field">
               <label class="field-label">
                 <q-icon name="rule" size="18px" class="field-icon--red" />
-                Estados
+                {{ t('consoleSimple.detailStatesLabel') }}
               </label>
               <div class="info-card">
                 <div class="chips-row">
@@ -71,7 +71,7 @@
                     text-color="white"
                     size="sm"
                   >
-                    {{ log?.outcome || 'Sin dato' }}
+                    {{ log?.outcome || t('consoleSimple.detailNoData') }}
                   </q-chip>
                   <q-chip
                     v-if="log.severity && log.severity !== 'INFO'"
@@ -79,10 +79,10 @@
                     class="bg-grey-9 text-white"
                     size="sm"
                   >
-                    {{ log?.severity || 'Sin dato' }}
+                    {{ log?.severity || t('consoleSimple.detailNoData') }}
                   </q-chip>
                   <span v-if="log.environment" class="status-chip status-chip--outline">
-                    ENV: {{ log?.environment || 'Sin dato' }}
+                    {{ t('consoleSimple.detailEnvironmentPrefix', { value: log?.environment || t('consoleSimple.detailNoData') }) }}
                   </span>
                   <q-chip
                     v-if="log.http?.statusCode"
@@ -91,7 +91,7 @@
                     size="sm"
                     icon="http"
                   >
-                    {{ log.http?.statusCode || 'Sin dato' }}
+                    {{ log.http?.statusCode || t('consoleSimple.detailNoData') }}
                   </q-chip>
                   <q-chip
                     v-if="log.reason?.code"
@@ -100,7 +100,7 @@
                     size="sm"
                     icon="warning"
                   >
-                    {{ log.reason?.code || 'Sin dato' }}
+                    {{ log.reason?.code || t('consoleSimple.detailNoData') }}
                   </q-chip>
                   <template v-if="log.tags && log.tags.length">
                     <span
@@ -122,63 +122,63 @@
             <div class="form-field">
               <label class="field-label">
                 <q-icon name="computer" size="18px" class="field-icon--orange" />
-                Sistema
+                {{ t('consoleSimple.detailSystemLabel') }}
               </label>
               <div class="info-card">
 
                 <div class="info-row info-row--between">
                   <span class="status-chip status-chip--green text-weight-bold">
-                    {{ log.system || 'SYSTEM' }}
+                    {{ log.system || t('consoleSimple.detailDefaultSystem') }}
                   </span>
-                  <span class="info-caption">{{ log?.environment ?? 'Sin dato' }}</span>
+                  <span class="info-caption">{{ log?.environment ?? t('consoleSimple.detailNoData') }}</span>
                 </div>
 
-                <div class="section-divider">Software</div>
+                <div class="section-divider">{{ t('consoleSimple.detailSoftwareSection') }}</div>
                 <div class="info-row info-row--wrap">
                   <div class="kv-pair">
                     <span class="kv-key">App</span>
-                    <span class="status-chip status-chip--cyan">{{ log?.meta?.sourceApp || 'Sin dato' }}</span>
+                    <span class="status-chip status-chip--cyan">{{ log?.meta?.sourceApp || t('consoleSimple.detailNoData') }}</span>
                   </div>
                   <div class="kv-pair">
-                    <span class="kv-key">Versión</span>
-                    <span class="status-chip status-chip--cyan">{{ log.meta?.build || 'Sin dato' }}</span>
+                    <span class="kv-key">{{ t('consoleSimple.detailVersionLabel') }}</span>
+                    <span class="status-chip status-chip--cyan">{{ log.meta?.build || t('consoleSimple.detailNoData') }}</span>
                   </div>
                   <div class="kv-pair">
-                    <span class="kv-key">Schema</span>
-                    <span class="status-chip status-chip--cyan">v{{ log?.schemaVersion || 'Sin dato' }}</span>
+                    <span class="kv-key">{{ t('consoleSimple.detailSchemaLabel') }}</span>
+                    <span class="status-chip status-chip--cyan">v{{ log?.schemaVersion || t('consoleSimple.detailNoData') }}</span>
                   </div>
                 </div>
 
-                <div class="section-divider">Hardware & Red</div>
+                <div class="section-divider">{{ t('consoleSimple.detailHardwareNetworkSection') }}</div>
                 <div class="info-row info-row--wrap">
                   <div class="device-chip">
-                    <span class="device-chip__key">Dispositivo</span>
-                    <span class="device-chip__val">{{ log.meta?.deviceId || 'Sin dispositivo' }}</span>
+                    <span class="device-chip__key">{{ t('consoleSimple.detailDeviceChip') }}</span>
+                    <span class="device-chip__val">{{ log.meta?.deviceId || t('consoleSimple.detailNoDevice') }}</span>
                   </div>
                   <div class="device-chip">
-                    <span class="device-chip__key">IP</span>
-                    <span class="device-chip__val device-chip__val--muted">{{ log.meta?.ip || 'Sin IP registrada' }}</span>
+                    <span class="device-chip__key">{{ t('consoleSimple.detailIpChip') }}</span>
+                    <span class="device-chip__val device-chip__val--muted">{{ log.meta?.ip || t('consoleSimple.detailNoIp') }}</span>
                   </div>
                 </div>
 
                 <template v-if="log.http">
-                  <div class="section-divider">Salud | API</div>
+                  <div class="section-divider">{{ t('consoleSimple.detailApiHealthSection') }}</div>
                   <div class="http-card">
                     <div class="http-card__method">
                       <q-icon name="dns" size="14px" class="tint--blue" />
-                      <span class="http-card__verb">{{ log.http?.method || 'Sin método' }}</span>
+                      <span class="http-card__verb">{{ log.http?.method || t('consoleSimple.detailNoMethod') }}</span>
                     </div>
-                    <div class="http-card__path" :title="log.http?.path || 'Sin url'">
-                      {{ log.http?.path || 'Endpoint no localizado' }}
+                    <div class="http-card__path" :title="log.http?.path || t('consoleSimple.detailNoUrl')">
+                      {{ log.http?.path || t('consoleSimple.detailEndpointMissing') }}
                     </div>
                     <div class="http-card__meta">
                       <span class="info-caption">
-                        Status:
+                        {{ t('consoleSimple.httpStatusLabel') }}
                         <span :class="getHttpColorClass(log.http?.statusCode || '000')">
-                          {{ log.http?.statusCode || '###' }}
+                          {{ log.http?.statusCode || t('consoleSimple.detailUnknownStatusCode') }}
                         </span>
                       </span>
-                      <span class="info-caption">⏱ {{ log.http?.latencyMs || '0' }}ms</span>
+                      <span class="info-caption">{{ t('consoleSimple.detailLatency', { value: log.http?.latencyMs || '0' }) }}</span>
                     </div>
                   </div>
                 </template>
@@ -188,14 +188,11 @@
           </div>
         </div>
 
-        <!-- ✅ DESPUÉS — todos col-12, alineados uniformemente -->
         <div v-if="log" class="q-mt-md q-gutter-y-md">
-
-          <!-- Payload — ancho completo -->
           <div v-if="log.payload" class="json-section">
             <div class="json-section__header">
               <q-icon name="notes" size="15px" class="tint--blue" />
-              <span class="json-label json-label--blue">PAYLOAD</span>
+              <span class="json-label json-label--blue">{{ t('consoleSimple.detailPayloadTitle') }}</span>
             </div>
             <div class="json-wrapper">
               <q-btn
@@ -204,23 +201,21 @@
                 class="copy-btn"
                 @click="copiarPayload(log.payload)"
               >
-                <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+                <q-tooltip class="glass-tooltip">{{ t('consoleSimple.detailCopyJson') }}</q-tooltip>
               </q-btn>
               <pre class="json-content json-content--limited">{{ JSON.stringify(log.payload, null, 2) }}</pre>
             </div>
           </div>
 
-          <!-- DESPUÉS — META izquierda, CORRELACIÓN derecha -->
           <div
             v-if="log.meta || log.correlation"
             class="row q-col-gutter-md q-mt-sm"
           >
-            <!-- META -->
             <div :class="[log.meta && log.correlation ? 'col-12 col-md-6' : 'col-12', 'flex column']">
               <div v-if="log.meta" class="json-section json-section--stretch">
                 <div class="json-section__header">
                   <q-icon name="notes" size="15px" class="tint--green" />
-                  <span class="json-label json-label--green">META</span>
+                  <span class="json-label json-label--green">{{ t('consoleSimple.detailMetaTitle') }}</span>
                 </div>
                 <div class="json-wrapper">
                   <q-btn
@@ -229,19 +224,18 @@
                     class="copy-btn"
                     @click="copiarPayload(log.meta)"
                   >
-                    <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+                    <q-tooltip class="glass-tooltip">{{ t('consoleSimple.detailCopyJson') }}</q-tooltip>
                   </q-btn>
                   <pre class="json-content json-content--limited">{{ JSON.stringify(log.meta, null, 2) }}</pre>
                 </div>
               </div>
             </div>
 
-            <!-- CORRELACIÓN -->
             <div :class="[log.meta && log.correlation ? 'col-12 col-md-6' : 'col-12', 'flex column']">
               <div v-if="log.correlation" class="json-section json-section--stretch">
                 <div class="json-section__header">
                   <q-icon name="notes" size="15px" class="tint--pink" />
-                  <span class="json-label json-label--pink">CORRELACIÓN</span>
+                  <span class="json-label json-label--pink">{{ t('consoleSimple.detailCorrelationTitle') }}</span>
                 </div>
                 <div class="json-wrapper">
                   <q-btn
@@ -250,7 +244,7 @@
                     class="copy-btn"
                     @click="copiarPayload(log.correlation)"
                   >
-                    <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+                    <q-tooltip class="glass-tooltip">{{ t('consoleSimple.detailCopyJson') }}</q-tooltip>
                   </q-btn>
                   <pre class="json-content json-content--limited">{{ JSON.stringify(log.correlation, null, 2) }}</pre>
                 </div>
@@ -258,11 +252,10 @@
             </div>
           </div>
 
-          <!-- Objeto Completo — ancho completo -->
           <div class="json-section">
             <div class="json-section__header">
               <q-icon name="data_object" size="15px" style="color: rgba(255,255,255,0.58)" />
-              <span class="json-label json-label--white">Objeto Completo</span>
+              <span class="json-label json-label--white">{{ t('consoleSimple.detailFullObjectTitle') }}</span>
             </div>
             <div class="json-wrapper">
               <q-btn
@@ -272,7 +265,7 @@
                 class="copy-btn"
                 @click="copiarPayload(log)"
               >
-                <q-tooltip class="glass-tooltip">Copiar JSON</q-tooltip>
+                <q-tooltip class="glass-tooltip">{{ t('consoleSimple.detailCopyJson') }}</q-tooltip>
               </q-btn>
               <pre class="json-content json-content--limited">{{ JSON.stringify(log, null, 2) }}</pre>
             </div>
@@ -280,7 +273,7 @@
 
         </div>
 
-        <div v-else class="empty-state">No hay datos seleccionados</div>
+        <div v-else class="empty-state">{{ t('consoleSimple.detailEmptyState') }}</div>
       </q-card-section>
 
     </q-card>
@@ -290,8 +283,10 @@
 <script setup>
 import { useQuasar } from 'quasar'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {
@@ -318,7 +313,7 @@ const copiarPayload = async (datos) => {
     await navigator.clipboard.writeText(texto)
     $q.notify({
       type: 'positive',
-      message: 'JSON copiado al portapapeles',
+      message: t('consoleSimple.detailJsonCopied'),
       position: 'top',
       timeout: 2000,
     })
@@ -326,7 +321,7 @@ const copiarPayload = async (datos) => {
     console.error('Error al copiar: ', err)
     $q.notify({
       type: 'negative',
-      message: 'Error al copiar el JSON',
+      message: t('consoleSimple.detailJsonCopyError'),
       position: 'top',
     })
   }
@@ -369,7 +364,7 @@ const getSeverityIcon = (val) => {
 </script>
 
 <style lang="scss" scoped>
-/* ─── MODAL SHELL ─── */
+/* â”€â”€â”€ MODAL SHELL â”€â”€â”€ */
 .log-detail-modal {
   width: 100%;
   max-width: 800px;
@@ -386,7 +381,7 @@ const getSeverityIcon = (val) => {
   }
 }
 
-/* ─── HEADER ─── */
+/* â”€â”€â”€ HEADER â”€â”€â”€ */
 .modal-header {
   padding: 24px;
   display: flex;
@@ -434,14 +429,14 @@ const getSeverityIcon = (val) => {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ─── BODY ─── */
+/* â”€â”€â”€ BODY â”€â”€â”€ */
 .modal-body {
   padding: 24px;
   max-height: 72vh;
   overflow-y: auto;
 }
 
-/* ─── FIELD LABELS ─── */
+/* â”€â”€â”€ FIELD LABELS â”€â”€â”€ */
 .form-field {
   display: flex;
   flex-direction: column;
@@ -466,7 +461,7 @@ const getSeverityIcon = (val) => {
 .tint--green { color: #86efac; }
 .tint--pink  { color: #f9a8d4; }
 
-/* ─── INFO CARDS (like preview-card) ─── */
+/* â”€â”€â”€ INFO CARDS (like preview-card) â”€â”€â”€ */
 .info-card {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -517,7 +512,7 @@ const getSeverityIcon = (val) => {
   color: rgba(255, 255, 255, 0.42);
 }
 
-/* ─── SECTION DIVIDERS (inside cards) ─── */
+/* â”€â”€â”€ SECTION DIVIDERS (inside cards) â”€â”€â”€ */
 .section-divider {
   font-size: 0.78rem;
   font-weight: 700;
@@ -529,7 +524,7 @@ const getSeverityIcon = (val) => {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* ─── Columna izquierda alineada con columna derecha ─── */
+/* â”€â”€â”€ Columna izquierda alineada con columna derecha â”€â”€â”€ */
 .col-left-stretch {
   display: flex;
   flex-direction: column;
@@ -537,7 +532,7 @@ const getSeverityIcon = (val) => {
   gap: 16px;
 }
 
-/* ← NUEVO: Actor se estira, Estados queda abajo */
+/* NUEVO: Actor se estira, Estados queda abajo */
 .col-left-stretch .form-field:first-child {
   flex: 1;
 }
@@ -546,7 +541,7 @@ const getSeverityIcon = (val) => {
   height: 100%;
 }
 
-/* ─── STATUS CHIPS (rgba pill pattern) ─── */
+/* â”€â”€â”€ STATUS CHIPS (rgba pill pattern) â”€â”€â”€ */
 .status-chip {
   display: inline-flex;
   align-items: center;
@@ -596,7 +591,7 @@ const getSeverityIcon = (val) => {
   align-items: center;
 }
 
-/* ─── KV PAIRS ─── */
+/* â”€â”€â”€ KV PAIRS â”€â”€â”€ */
 .kv-pair {
   display: flex;
   align-items: center;
@@ -609,7 +604,7 @@ const getSeverityIcon = (val) => {
   color: rgba(255, 255, 255, 0.42);
 }
 
-/* ─── DEVICE / IP CHIPS ─── */
+/* â”€â”€â”€ DEVICE / IP CHIPS â”€â”€â”€ */
 .device-chip {
   display: inline-flex;
   align-items: center;
@@ -634,7 +629,7 @@ const getSeverityIcon = (val) => {
   &--muted { color: rgba(255, 255, 255, 0.42); }
 }
 
-/* ─── HTTP MINI CARD ─── */
+/* â”€â”€â”€ HTTP MINI CARD â”€â”€â”€ */
 .http-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -679,7 +674,7 @@ const getSeverityIcon = (val) => {
 .http-error    { color: #fca5a5; font-weight: 700; }
 .http-unknown  { color: rgba(255,255,255,0.42); }
 
-/* ─── JSON SECTIONS ─── */
+/* â”€â”€â”€ JSON SECTIONS â”€â”€â”€ */
 .json-section {
   display: flex;
   flex-direction: column;
@@ -727,13 +722,13 @@ const getSeverityIcon = (val) => {
   overflow-x: auto;
 }
 
-/* ─── JSON content con altura máxima uniforme ─── */
+/* â”€â”€â”€ JSON content con altura mÃ¡xima uniforme â”€â”€â”€ */
 .json-content--limited {
   max-height: 260px;
   overflow-y: auto;
 }
 
-/* ← NUEVO al final del style */
+/* NUEVO al final del style */
 .json-section--stretch {
   height: 100%;
   display: flex;
@@ -766,7 +761,7 @@ const getSeverityIcon = (val) => {
   .copy-btn { opacity: 1; }
 }
 
-/* ─── GLASS TOOLTIP ─── */
+/* â”€â”€â”€ GLASS TOOLTIP â”€â”€â”€ */
 .glass-tooltip {
   background: #121a2a !important;
   color: white !important;
@@ -774,7 +769,7 @@ const getSeverityIcon = (val) => {
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
 }
 
-/* ─── EMPTY STATE ─── */
+/* â”€â”€â”€ EMPTY STATE â”€â”€â”€ */
 .empty-state {
   text-align: center;
   padding: 32px 0;
@@ -782,7 +777,7 @@ const getSeverityIcon = (val) => {
   font-size: 0.92rem;
 }
 
-/* ─── SCROLLBAR HIDDEN ─── */
+/* â”€â”€â”€ SCROLLBAR HIDDEN â”€â”€â”€ */
 .no-scroll-visual {
   &::-webkit-scrollbar { display: none; }
   -ms-overflow-style: none;

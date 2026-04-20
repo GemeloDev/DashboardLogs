@@ -7,7 +7,7 @@
             v-model="camposVisibles"
             :options="configFiltros"
             :loading="loading"
-            label="⚙️ Configurar filtros visibles"
+            :label="t('consoleSimple.filtersConfigLabel')"
             option-value="key"
             option-label="label"
             multiple
@@ -43,7 +43,7 @@
         <div class="col-12 col-md-4">
           <q-input
             v-model="filtrosSeleccionados.busqueda"
-            label="Búsqueda rápida..."
+            :label="t('consoleSimple.quickSearchLabel')"
             filled
             dark
             dense
@@ -56,7 +56,7 @@
         <div class="row justify-center col-12">
           <q-input
             v-model="rangoFechasTexto"
-            label="Rango de Fechas *"
+            :label="t('consoleSimple.dateRangeLabel')"
             filled
             dark
             dense
@@ -97,7 +97,7 @@
                       <q-icon name="today" color="blue-4" size="sm" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label class="text-white text-caption">Hoy</q-item-label>
+                      <q-item-label class="text-white text-caption">{{ t('consoleSimple.quickPeriodToday') }}</q-item-label>
                     </q-item-section>
                   </q-item>
 
@@ -106,7 +106,7 @@
                       <q-icon name="yesterday" color="blue-4" size="sm" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label class="text-white text-caption">Ayer</q-item-label>
+                      <q-item-label class="text-white text-caption">{{ t('consoleSimple.quickPeriodYesterday') }}</q-item-label>
                     </q-item-section>
                   </q-item>
 
@@ -115,7 +115,7 @@
                       <q-icon name="date_range" color="blue-4" size="sm" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label class="text-white text-caption">Últimos 7 días</q-item-label>
+                      <q-item-label class="text-white text-caption">{{ t('consoleSimple.quickPeriodLast7Days') }}</q-item-label>
                     </q-item-section>
                   </q-item>
 
@@ -124,7 +124,7 @@
                       <q-icon name="calendar_month" color="blue-4" size="sm" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label class="text-white text-caption">Últimos 30 días</q-item-label>
+                      <q-item-label class="text-white text-caption">{{ t('consoleSimple.quickPeriodLast30Days') }}</q-item-label>
                     </q-item-section>
                   </q-item>
 
@@ -135,7 +135,7 @@
                       <q-icon name="calendar_today" color="green-4" size="sm" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label class="text-white text-caption">Mes actual</q-item-label>
+                      <q-item-label class="text-white text-caption">{{ t('consoleSimple.quickPeriodCurrentMonth') }}</q-item-label>
                     </q-item-section>
                   </q-item>
                 </q-list>
@@ -169,7 +169,7 @@
             </template>
 
             <template v-slot:no-option>
-              <q-item><q-item-section class="text-grey">Sin datos</q-item-section></q-item>
+              <q-item><q-item-section class="text-grey">{{ t('consoleSimple.noOptionData') }}</q-item-section></q-item>
             </template>
           </q-select>
         </div>
@@ -178,12 +178,12 @@
           v-if="filtrosRenderizables.length === 0"
           class="col-12 text-center text-grey-5 q-py-sm"
         >
-          <q-icon name="info" /> Selecciona filtros en el configurador superior
+          <q-icon name="info" /> {{ t('consoleSimple.selectFiltersHint') }}
         </div>
         <div v-else class="col-12 flex justify-center">
           <q-btn
             color="primary"
-            label="Aplicar Filtros"
+            :label="t('consoleSimple.applyFilters')"
             icon="filter_alt"
             size="md"
             @click="emitirFiltros"
@@ -192,7 +192,7 @@
           <q-btn
             class="q-ml-md"
             color="grey-7"
-            label="Limpiar"
+            :label="t('consoleSimple.clearFilters')"
             icon="clear"
             size="md"
             flat
@@ -207,8 +207,10 @@
 <script setup>
 import { useQuasar } from 'quasar'
 import { ref, computed, onMounted, watch, inject } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
+const { t } = useI18n()
 const filtrosGlobales = inject('filtrosGlobales', null)
 
 // DinamicFilters.vue
@@ -474,7 +476,7 @@ function formatearLabel(key) {
   return key
     .replace(/([A-Z])/g, ' $1') // espacio antes de Mayúscula
     .replace(/^./, (str) => str.toUpperCase()) // Capitalizar primera letra
-    .replace(/\./g, ' › ') // Reemplazar puntos por flechas visuales
+    .replace(/\./g, t('consoleSimple.fieldPathSeparator')) // Reemplazar puntos por flechas visuales
 }
 
 // C. Asignar iconos según el nombre del campo
@@ -500,7 +502,7 @@ const limpiarFiltros = () => {
   filtrosSeleccionados.value = base
 
   emitirFiltros()
-  $q.notify({ type: 'info', message: 'Filtros limpiados', position: 'top' })
+  $q.notify({ type: 'info', message: t('consoleSimple.filtersCleared'), position: 'top' })
 }
 
 //  Helpers para fechas (evita UTC/toISOString que puede cambiar el día)
