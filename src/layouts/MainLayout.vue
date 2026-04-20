@@ -401,6 +401,9 @@ import { ChartDataService } from 'src/services/chartDataService'
 import EvaWorkspace from 'src/components/ai/EvaWorkspace.vue'
 import { CatalogService } from 'src/services/catalogService'
 
+import { requestFcmToken, onForegroundMessage } from 'src/services/firebaseService'
+import { axiosInstance } from 'src/services/axiosConfig'
+
 const $q = useQuasar()
 const router = useRouter()
 const route = useRoute()
@@ -797,6 +800,31 @@ onMounted(async () => {
     if (tenantId) {
       subscribeToAlerts(tenantId, handleCritAlert)
     }
+  }
+
+  // ── FCM Push Notifications ────────────────────────────────────────────────────
+  try {
+    const fcmToken = await requestFcmToken()
+    if (fcmToken) {
+      // Registrar token en el backend
+      await axiosInstance.post('/api/notifications/fcm/token', { token: fcmToken })
+      console.log('[FCM] Token registrado en backend')
+
+      // Escuchar notificaciones cuando la app está abierta
+      onForegroundMessage((payload) => {
+        $q.notify({
+          type:     'negative',
+          icon:     'warning',
+          message:  payload.notification?.title || 'Alerta CRÍTICA',
+          caption:  payload.notification?.body  || '',
+          position: 'top-right',
+          timeout:  10000,
+          actions:  [{ label: 'Ver', color: 'white', handler: () => {} }],
+        })
+      })
+    }
+  } catch (e) {
+    console.warn('[FCM] No se pudo inicializar FCM:', e.message)
   }
 })
 </script>

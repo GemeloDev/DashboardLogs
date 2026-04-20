@@ -18,7 +18,7 @@
             color="grey-5"
             size="sm"
             :loading="loading"
-            @click="fetchToday"
+            @click="fetchToday(true)"
           >
             <q-tooltip>Actualizar</q-tooltip>
           </q-btn>
@@ -149,7 +149,7 @@ const system = computed(() =>
 let refreshTimer = null
 
 onMounted(() => {
-  refreshTimer = setInterval(fetchToday, 2 * 60 * 1000)
+  refreshTimer = setInterval(fetchToday, 5 * 60 * 1000)
 })
 
 onBeforeUnmount(() => {
@@ -157,10 +157,10 @@ onBeforeUnmount(() => {
 })
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
-async function fetchToday() {
+async function fetchToday(showSpinner = true) {
   if (!system.value) return
+  if (showSpinner) loading.value = true
 
-  loading.value = true
   try {
     const now  = new Date()
     const from = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)

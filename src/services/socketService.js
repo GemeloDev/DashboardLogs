@@ -135,12 +135,20 @@ export function subscribeToAlerts(tenantId, onAlert = () => {}) {
 
 /**
  * Suscribirse a nuevos logs de un sistema específico.
- * El backend envía mensajes a este topic cuando llegan logs nuevos.
  */
-export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}) {
+export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}, _retries = 0) {
+  // Máximo 5 reintentos (10 segundos) para evitar loops
   if (!stompClient || !connected) {
-    setTimeout(() => subscribeToNewLogs(tenantId, system, onNewLogs), 2000)
-    return null
+    if (_retries >= 5) {
+      console.warn('[STOMP] No se pudo suscribir a', system, '— sin conexión después de 5 intentos')
+      return null
+    }
+    const timer = setTimeout( 
+      () => subscribeToNewLogs(tenantId, system, onNewLogs, _retries + 1),
+      2000
+    )
+    // Devolver objeto cancelable para que subscribeSystem pueda limpiar el retry
+    return { unsubscribe: () => clearTimeout(timer) }
   }
 
   const topic = `/topic/dashboard/${tenantId}/${system}`
@@ -157,7 +165,7 @@ export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}) {
     }
   })
 
-  return subscription // guardar para poder desuscribirse al cambiar de sistema
+  return subscription
 }
 
 /**

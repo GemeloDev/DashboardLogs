@@ -257,9 +257,17 @@ async function handleQuickAction(action) {
       const base = payload?.base || null
       const pretty = payload?.pretty || null
 
+      const narrative = pretty?.executiveNarrative
+      const narrativeValida = narrative && narrative !== 'string' && narrative.trim().length > 15
+
       const summaryText =
-        pretty?.executiveNarrative ||
-        (Array.isArray(base?.executiveSummary) ? base.executiveSummary.join(' ') : null) ||
+        (narrativeValida ? narrative : null) ||
+        (Array.isArray(base?.executiveSummary) && base.executiveSummary.length > 0
+          ? base.executiveSummary.join('\n')
+          : null) ||
+        (Array.isArray(pretty?.executiveBullets) && pretty.executiveBullets.length > 0
+          ? pretty.executiveBullets.join('\n')
+          : null) ||
         'No se obtuvo resumen.'
 
       eva.addAssistantMessage(summaryText, 'insight', {

@@ -356,13 +356,30 @@ const evaContext = computed(() => payloadData.value?.evaContext || {})
 
 // INSIGHT
 const insightNarrative = computed(() => {
-  return (
-    payloadData.value?.pretty?.executiveNarrative ||
-    (Array.isArray(payloadData.value?.base?.executiveSummary)
-      ? payloadData.value.base.executiveSummary.join(' ')
-      : null) ||
-    'Sin resumen.'
-  )
+  const narrative = payloadData.value?.pretty?.executiveNarrative
+
+  // Ignorar si es un placeholder de tipo o demasiado corto
+  if (narrative && narrative !== 'string' && narrative.trim().length > 15) {
+    return narrative
+  }
+
+  // Fallback: usar los bullets del executiveSummary como narrativa
+  const bullets =
+    payloadData.value?.base?.executiveSummary ||
+    payloadData.value?.pretty?.executiveSummary ||
+    payloadData.value?.executiveSummary
+
+  if (Array.isArray(bullets) && bullets.length > 0) {
+    return bullets.join('\n')
+  }
+
+  // Fallback final: construir desde los puntos clave si existen
+  const keyPoints = insightBullets.value
+  if (keyPoints.length > 0) {
+    return keyPoints.join('\n')
+  }
+
+  return 'Sin resumen disponible.'
 })
 
 const insightBullets = computed(() => {
