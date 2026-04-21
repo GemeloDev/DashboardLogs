@@ -138,7 +138,9 @@
           <q-icon name="sell" color="purple" size="18px" class="q-mr-sm" />
           <div>
             <div class="toplist-title">{{ t('common.tags') }}</div>
-            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.distributionBySystem') }}</div>
+            <div class="toplist-subtitle text-grey-5">
+              {{ t('dashboard.distributionBySystem') }}
+            </div>
           </div>
         </div>
         <div
@@ -256,7 +258,9 @@
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="timeline" color="cyan" size="18px" class="q-mr-sm" />
-          <div><div class="toplist-title">{{ t('dashboard.eventsByDay') }}</div></div>
+          <div>
+            <div class="toplist-title">{{ t('dashboard.eventsByDay') }}</div>
+          </div>
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsDayCanvas"></canvas>
@@ -268,7 +272,9 @@
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="date_range" color="purple" size="18px" class="q-mr-sm" />
-          <div><div class="toplist-title">{{ t('dashboard.eventsByWeek') }}</div></div>
+          <div>
+            <div class="toplist-title">{{ t('dashboard.eventsByWeek') }}</div>
+          </div>
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsWeekCanvas"></canvas>
@@ -280,7 +286,9 @@
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="calendar_month" color="pink" size="18px" class="q-mr-sm" />
-          <div><div class="toplist-title">{{ t('dashboard.eventsByMonth') }}</div></div>
+          <div>
+            <div class="toplist-title">{{ t('dashboard.eventsByMonth') }}</div>
+          </div>
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsMonthCanvas"></canvas>
@@ -289,9 +297,14 @@
     </div>
   </div>
 
-  <!-- ✅ Mapa geográfico -->
-  <div v-if="hasGeoData" class="q-mt-xl">
-    <ConsoleGeoMap :points="geoPoints" @select-point="onGeoClick" />
+  <!-- ✅ Mapa geográfico + Dispositivos -->
+  <div v-if="hasMapData" class="q-mt-xl">
+    <ConsoleGeoMap
+      :points="geoPoints"
+      :devices="devicePoints"
+      @select-point="onGeoClick"
+      @select-device="onDeviceClick"
+    />
   </div>
 
   <q-inner-loading
@@ -321,17 +334,19 @@ const openConsole = inject('openConsole', null)
 // ─── Estado único de carga ────────────────────────────────────────────────────
 const loading = inject('dashboardLoading', ref(false))
 
-// ─── Datos de los 4 endpoints ────────────────────────────────────────────────
+// ─── Datos de los 5 endpoints ────────────────────────────────────────────────
 const statsData = inject('dashboardStatsData', ref(null))
 const seriesData = inject('dashboardSeriesData', ref(null))
 const httpData = inject('dashboardHttpData', ref(null))
 const geoData = inject('dashboardGeoData', ref(null))
+const devicesData = inject('dashboardDevicesData', ref(null))
 
 const activityWidgetRef = ref(null) // ← referencia al widget
 
 // ─── Flags derivados de la API ────────────────────────────────────────────────
 const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
 const hasGeoData = computed(() => !!geoData.value?.points?.length)
+const hasDevicesData = computed(() => !!devicesData.value?.devices?.length)
 
 // ─── Helpers de consola ───────────────────────────────────────────────────────
 const selectedEventType = computed(() => filtrosGlobales.value?.values?.eventType || '')
@@ -352,15 +367,37 @@ function openConsoleWithFilter(fieldKey, value) {
 }
 
 // ─── Geo ──────────────────────────────────────────────────────────────────────
-// Transformación directa: {lat, lon, count} → {lat, lon, weight}
-// Sin agregación en frontend, tal como devuelve el endpoint /geo.
 const geoPoints = computed(() =>
   (geoData.value?.points || []).map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
 )
 
 function onGeoClick({ lat, lon }) {
-  openConsole?.({ fieldKey: 'geo.coordinates', value: `${lat},${lon}` })
+  openConsole?.({ fieldKey: 'geo.coordinates', value: `[${lat},${lon}]` })
 }
+
+// ─── Dispositivos ─────────────────────────────────────────────────────────────
+const devicePoints = computed(() =>
+  (devicesData.value?.devices || [])
+    .filter((d) => d.latitude != null && d.longitude != null &&
+      Number.isFinite(+d.latitude) && Number.isFinite(+d.longitude))
+    .map((d) => ({
+      lat: +d.latitude,
+      lon: +d.longitude,
+      deviceId: d.deviceId,
+      hostname: d.hostname || '',
+      system: d.system || '',
+      status: d.status || 'OFFLINE',
+      ip: d.ip || '',
+      locationName: d.locationName || '',
+      lastSeen: d.lastSeen || '',
+    })),
+)
+
+function onDeviceClick({ deviceId }) {
+  openConsole?.({ fieldKey: 'meta.deviceId', value: deviceId })
+}
+
+const hasMapData = computed(() => hasGeoData.value || hasDevicesData.value)
 
 // ─── Dashboard stats helpers ──────────────────────────────────────────────────
 const FUNC_COLORS = [
@@ -381,7 +418,10 @@ const normalizeStatRows = (rows) =>
     pct: Number(row?.pct || 0),
   }))
 
-const normalizeFilterValue = (value) => String(value ?? '').trim().toUpperCase()
+const normalizeFilterValue = (value) =>
+  String(value ?? '')
+    .trim()
+    .toUpperCase()
 
 const activeValueFilters = computed(() => filtrosGlobales.value?.values || {})
 
@@ -394,7 +434,9 @@ function filterStatRowsByKey(rows, key) {
 
 const filteredStatusOverTime = computed(() => {
   const selectedStatus = normalizeFilterValue(activeValueFilters.value?.status)
-  const items = Array.isArray(seriesData.value?.statusOverTime) ? seriesData.value.statusOverTime : []
+  const items = Array.isArray(seriesData.value?.statusOverTime)
+    ? seriesData.value.statusOverTime
+    : []
   if (!selectedStatus) return items
   return items.filter((row) => normalizeFilterValue(row?.status) === selectedStatus)
 })
@@ -410,7 +452,7 @@ function aggregateStatusRowsByPeriod(rows, mode) {
     const dayNum = utc.getUTCDay() || 7
     utc.setUTCDate(utc.getUTCDate() + 4 - dayNum)
     const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1))
-    const weekNo = Math.ceil((((utc - yearStart) / 86400000) + 1) / 7)
+    const weekNo = Math.ceil(((utc - yearStart) / 86400000 + 1) / 7)
     return `${t('dashboard.weekPrefix')} ${weekNo}-${utc.getUTCFullYear()}`
   }
 
@@ -589,7 +631,9 @@ async function renderCoverageDonutChart() {
 
 const topOffices = computed(() => toApiTopList(statsData.value?.topLocations, { topN: 4 }))
 const topTags = computed(() => toApiTopList(statsData.value?.topTags, { topN: 3 }))
-const topOutcomes = computed(() => toApiTopList(filterStatRowsByKey(statsData.value?.outcomes, 'outcome'), { topN: 3 }))
+const topOutcomes = computed(() =>
+  toApiTopList(filterStatRowsByKey(statsData.value?.outcomes, 'outcome'), { topN: 3 }),
+)
 
 // ─── Severity pie (Chart.js) ──────────────────────────────────────────────────
 const severityPieCanvas = ref(null)
@@ -609,7 +653,10 @@ const SEVERITY_COLORS = {
 
 function getSeverityRows() {
   return filterStatRowsByKey(statsData.value?.severities, 'severity')
-    .map((row) => ({ label: String(row.label || t('dashboard.noData')).toUpperCase(), count: row.count }))
+    .map((row) => ({
+      label: String(row.label || t('dashboard.noData')).toUpperCase(),
+      count: row.count,
+    }))
     .sort((a, b) => {
       const ia = SEVERITY_ORDER.indexOf(a.label)
       const ib = SEVERITY_ORDER.indexOf(b.label)
@@ -808,7 +855,10 @@ async function renderStatusLine() {
         tooltip: {
           titleColor: '#fff',
           bodyColor: '#fff',
-          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} ${t('dashboard.eventsSeriesLabel').toLowerCase()}` },
+          callbacks: {
+            label: (ctx) =>
+              `${ctx.dataset.label}: ${ctx.parsed.y} ${t('dashboard.eventsSeriesLabel').toLowerCase()}`,
+          },
         },
       },
       onClick: (_, elements) => {
@@ -992,7 +1042,6 @@ watch(
   },
   { immediate: true },
 )
-
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 onBeforeUnmount(() => {

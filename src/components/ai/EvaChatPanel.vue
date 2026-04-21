@@ -1,8 +1,8 @@
 <template>
     <div class="eva-chat-panel">
         <div class="eva-chat-header q-pa-md">
-            <div class="text-h6">{{ eva.currentConversation?.title || 'Eva Workspace' }}</div>
-            <div class="text-caption text-grey-5">Asistente Inteligente Operacional</div>
+            <div class="text-h6">{{ eva.currentConversation?.title || t('evaWorkspace.currentConversationFallback') }}</div>
+            <div class="text-caption text-grey-5">{{ t('evaWorkspace.chatSubtitle') }}</div>
         </div>
 
         <q-separator dark />
@@ -27,7 +27,7 @@
                         v-model="input"
                         dark
                         outlined
-                        placeholder="Pregúntale algo a Eva..."
+                        :placeholder="t('evaWorkspace.askPlaceholder')"
                         @keyup.enter="sendMessage"
                     />
                 </div>
@@ -46,6 +46,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useEvaStore } from 'src/stores/eva-store'
 import { EvaService } from 'src/services/eva.service'
 import EvaMessageBubble from './EvaMessageBubble.vue'
@@ -54,6 +55,7 @@ import EvaVoiceButton from './EvaVoiceButton.vue'
 
 const eva = useEvaStore()
 const input = ref('')
+const { t } = useI18n()
 
 async function sendMessage() {
     if (!input.value?.trim()) return
@@ -74,9 +76,9 @@ async function sendMessage() {
         })
 
         const pretty = res?.data?.pretty || res?.pretty
-        const narrative = pretty?.executiveNarrative || 'No se obtuvo resumen.'
+        const narrative = pretty?.executiveNarrative || t('evaWorkspace.noExecutiveSummary')
         eva.addAssistantMessage(narrative, 'text', { raw: res })
-        eva.setContextPanel('insight', 'Resumen diario', res)
+        eva.setContextPanel('insight', t('evaWorkspace.refreshDailySummary'), res)
         } else if (lower.includes('gráfica') || lower.includes('grafica')) {
         const res = await EvaService.getMetricsSeries({
             granularity: eva.selectedGranularity,
@@ -89,12 +91,12 @@ async function sendMessage() {
         const points = res?.data?.points || []
         eva.addAssistantMessage(
             points.length
-            ? `Ya generé la gráfica de ${eva.selectedSystem}.`
-            : `No encontré datos para ${eva.selectedSystem}.`,
+            ? t('evaWorkspace.chartGenerated', { system: eva.selectedSystem })
+            : t('evaWorkspace.noDataForSystem', { system: eva.selectedSystem }),
             'text',
             { raw: res }
         )
-        eva.setContextPanel('chart', `Gráfica: ${eva.selectedSystem}`, res)
+        eva.setContextPanel('chart', t('evaWorkspace.chartTitle', { system: eva.selectedSystem }), res)
         } else if (lower.includes('alerta')) {
         const res = await EvaService.getAlerts({
             page: 0,
@@ -104,17 +106,17 @@ async function sendMessage() {
         })
 
         const total = res?.data?.content?.length || 0
-        eva.addAssistantMessage(`Encontré ${total} alertas recientes.`, 'text', { raw: res })
-        eva.setContextPanel('alert', 'Alertas abiertas', res)
+        eva.addAssistantMessage(t('evaWorkspace.recentAlertsFound', { count: total }), 'text', { raw: res })
+        eva.setContextPanel('alert', t('evaWorkspace.openAlerts'), res)
         } else {
         eva.addAssistantMessage(
-            'Entendí tu mensaje, pero por ahora usa una acción guiada como resumen, alertas o gráfica.',
+            t('evaWorkspace.fallbackGuidedAction'),
             'text'
         )
         }
     } catch (error) {
         console.error('Eva chat error:', error)
-        eva.addAssistantMessage('Ocurrió un error al consultar a Eva.', 'text')
+        eva.addAssistantMessage(t('evaWorkspace.queryError'), 'text')
     } finally {
         eva.setLoading(false)
         input.value = ''
@@ -142,11 +144,11 @@ async function handleQuickAction(action) {
 
         eva.addAssistantMessage(
             pretty?.executiveNarrative || 
-                (Array.isArray(base?.executiveSummary) ? base.executiveSummary.join(' ') : 'Resumen obtenido.'),
+                (Array.isArray(base?.executiveSummary) ? base.executiveSummary.join(' ') : t('evaWorkspace.summaryObtained')),
             'text',
             { raw: res }
         )
-        eva.setContextPanel('insight', 'Resumen diario', payload)
+        eva.setContextPanel('insight', t('evaWorkspace.refreshDailySummary'), payload)
         return
         }
 
@@ -159,8 +161,8 @@ async function handleQuickAction(action) {
         })
 
         const total = res?.data?.content?.length || 0
-        eva.addAssistantMessage(`Encontré ${total} alertas recientes.`, 'text', { raw: res })
-        eva.setContextPanel('alert', 'Alertas abiertas', res)
+        eva.addAssistantMessage(t('evaWorkspace.recentAlertsFound', { count: total }), 'text', { raw: res })
+        eva.setContextPanel('alert', t('evaWorkspace.openAlerts'), res)
         return
         }
 
@@ -172,11 +174,11 @@ async function handleQuickAction(action) {
 
         const dto = res?.data
         eva.addAssistantMessage(
-            dto?.warnings?.[0] || dto?.highlights?.[0] || 'Tendencias obtenidas.',
+            dto?.warnings?.[0] || dto?.highlights?.[0] || t('evaWorkspace.trendsLoaded'),
             'text',
             { raw: res }
         )
-        eva.setContextPanel('trend', 'Tendencias', res)
+        eva.setContextPanel('trend', t('evaWorkspace.trendsLoaded'), res)
         return
         }
 
@@ -189,17 +191,17 @@ async function handleQuickAction(action) {
             tz: eva.selectedTz
         })
 
-        eva.addAssistantMessage(`Ya preparé la gráfica de ${eva.selectedSystem}.`, 'text', {
+        eva.addAssistantMessage(t('evaWorkspace.chartReady', { system: eva.selectedSystem, points: res?.data?.points?.length || 0 }), 'text', {
             raw: res
         })
-        eva.setContextPanel('chart', `Gráfica: ${eva.selectedSystem}`, res)
+        eva.setContextPanel('chart', t('evaWorkspace.chartTitle', { system: eva.selectedSystem }), res)
         return
         }
 
-        eva.addAssistantMessage('Acción todavía no conectada.', 'text')
+        eva.addAssistantMessage(t('evaWorkspace.actionNotConnected'), 'text')
     } catch (error) {
         console.error(error)
-        eva.addAssistantMessage('Ocurrió un error al consultar a Eva.', 'text')
+        eva.addAssistantMessage(t('evaWorkspace.queryError'), 'text')
     } finally {
         eva.setLoading(false)
     }

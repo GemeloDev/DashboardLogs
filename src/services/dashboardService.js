@@ -1,5 +1,5 @@
 import { axiosInstance } from './axiosConfig'
-import { DASHBOARD } from './endpoints'
+import { DASHBOARD, DEVICES } from './endpoints'
 
 function cleanParams(params = {}) {
   return Object.fromEntries(
@@ -37,6 +37,12 @@ export const DashboardService = {
   async getGeo({ system } = {}) {
     const params = cleanParams({ system })
     const response = await axiosInstance.get(DASHBOARD.GEO, { params })
+    return unwrapResponse(response)
+  },
+
+  async getDevices({ system, status } = {}) {
+    const params = cleanParams({ system, status })
+    const response = await axiosInstance.get(DEVICES.SUMMARY, { params })
     return unwrapResponse(response)
   },
 }

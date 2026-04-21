@@ -4,7 +4,7 @@
       <div>
         <div class="eva-panel-title">{{ eva.contextPanel.title }}</div>
         <div class="eva-panel-subtitle">
-          Panel contextual de Eva
+          {{ t('evaWorkspace.workspaceSubtitle') }}
         </div>
       </div>
 
@@ -20,22 +20,21 @@
 
     <div v-if="eva.loading" class="column items-center q-py-xl">
       <q-spinner color="primary" size="40px" />
-      <div class="q-mt-md text-grey-5">Eva está analizando...</div>
+      <div class="q-mt-md text-grey-5">{{ t('evaWorkspace.loadingAnalysis') }}</div>
     </div>
 
     <div v-else-if="eva.contextPanel.mode === 'empty'" class="eva-empty-state">
       <q-icon name="auto_awesome" size="48px" class="q-mb-md" />
-      <div class="text-subtitle1">Sin contexto seleccionado</div>
+      <div class="text-subtitle1">{{ t('evaWorkspace.emptyContextTitle') }}</div>
       <div class="text-caption text-grey-5 q-mt-sm">
-        Aquí aparecerán gráficas, alertas, métricas o detalles del análisis.
+        {{ t('evaWorkspace.emptyContextBody') }}
       </div>
     </div>
 
-    <!-- INSIGHT -->
     <div v-else-if="eva.contextPanel.mode === 'insight'" class="eva-panel-body">
       <q-card flat bordered class="eva-panel-card">
         <q-card-section>
-          <div class="eva-section-title">Resumen ejecutivo</div>
+          <div class="eva-section-title">{{ t('evaWorkspace.executiveSummary') }}</div>
           <div class="eva-main-text q-mt-sm">
             {{ insightNarrative }}
           </div>
@@ -44,7 +43,7 @@
 
       <q-card flat bordered class="eva-panel-card q-mt-md" v-if="insightBullets.length">
         <q-card-section>
-          <div class="eva-section-title">Puntos clave</div>
+          <div class="eva-section-title">{{ t('evaWorkspace.keyPoints') }}</div>
           <div
             v-for="item in insightBullets"
             :key="item"
@@ -55,7 +54,6 @@
         </q-card-section>
       </q-card>
 
-      <!-- ── ANÁLISIS GENERADO POR IA ──────────────────────────────────── -->
       <q-card
         v-if="aiDeepAnalysis"
         flat
@@ -63,12 +61,10 @@
         class="eva-panel-card q-mt-md eva-ai-card"
       >
         <q-card-section>
-
-          <!-- Header con badge IA -->
           <div class="row items-center q-mb-sm">
             <q-icon name="auto_awesome" color="purple-3" size="18px" class="q-mr-xs" />
             <span class="eva-section-title" style="color: #c084fc; margin-bottom: 0">
-              Análisis generado por sistema
+              {{ t('evaWorkspace.aiAnalysisTitle') }}
             </span>
             <q-badge
               color="purple-9"
@@ -79,9 +75,8 @@
             />
           </div>
 
-          <!-- Evento dominante -->
           <div class="row items-center q-mb-md">
-            <span class="text-caption text-grey-5">Evento dominante:</span>
+            <span class="text-caption text-grey-5">{{ t('evaWorkspace.dominantEvent') }}</span>
             <q-chip
               dense
               color="indigo-9"
@@ -92,19 +87,17 @@
               {{ aiDeepAnalysis.dominantEventType }}
             </q-chip>
             <span class="text-caption text-grey-5 q-ml-sm">
-              {{ aiDeepAnalysis.dominantCount?.toLocaleString() }} ocurrencias
+              {{ t('evaWorkspace.occurrences', { count: fmtNumber(aiDeepAnalysis.dominantCount) }) }}
             </span>
           </div>
 
-          <!-- ¿Qué está pasando? -->
           <div v-if="aiDeepSummary">
-            <div class="eva-ai-label">🔍 ¿Qué está pasando?</div>
+            <div class="eva-ai-label">{{ t('evaWorkspace.whatIsHappening') }}</div>
             <div class="eva-ai-text q-mt-xs">{{ aiDeepSummary }}</div>
           </div>
 
-          <!-- Sugerencias específicas -->
           <div v-if="aiDeepSuggestions.length" class="q-mt-md">
-            <div class="eva-ai-label">⚡ Acciones específicas</div>
+            <div class="eva-ai-label">{{ t('evaWorkspace.specificActions') }}</div>
             <div
               v-for="(sug, i) in aiDeepSuggestions"
               :key="i"
@@ -113,27 +106,24 @@
               {{ sug }}
             </div>
           </div>
-
         </q-card-section>
       </q-card>
-      <!-- ─────────────────────────────────────────────────────────────────── -->
     </div>
 
-    <!-- ALERT -->
     <div v-else-if="eva.contextPanel.mode === 'alert'" class="eva-panel-body">
       <div class="eva-kpi-row">
         <div class="eva-kpi-card">
-          <div class="eva-kpi-label">Alertas</div>
-          <div class="eva-kpi-value">{{ alertItems.length }}</div>
+          <div class="eva-kpi-label">{{ t('evaWorkspace.alertsLabel') }}</div>
+          <div class="eva-kpi-value">{{ fmtNumber(alertItems.length) }}</div>
         </div>
       </div>
 
       <q-card flat bordered class="eva-panel-card q-mt-md">
         <q-card-section>
-          <div class="eva-section-title">Alertas recientes</div>
+          <div class="eva-section-title">{{ t('evaWorkspace.recentAlerts') }}</div>
 
           <div v-if="!alertItems.length" class="text-grey-5 q-mt-md">
-            No hay alertas para mostrar.
+            {{ t('evaWorkspace.noAlerts') }}
           </div>
 
           <div
@@ -143,7 +133,7 @@
           >
             <div class="row items-center justify-between">
               <div class="text-weight-bold">
-                {{ item.status || 'N/D' }}
+                {{ item.status || t('evaWorkspace.notAvailable') }}
               </div>
               <q-chip
                 dense
@@ -151,12 +141,12 @@
                 :color="alertColor(item.status)"
                 text-color="white"
               >
-                {{ item.status || 'N/D' }}
+                {{ item.status || t('evaWorkspace.notAvailable') }}
               </q-chip>
             </div>
 
             <div class="text-caption q-mt-xs text-grey-5">
-              {{ fmtDate(item.windowFromLocal) || fmtDate(item.bucketStartLocal) || 'Sin fecha' }}
+              {{ fmtDate(item.windowFromLocal) || fmtDate(item.bucketStartLocal) || t('evaWorkspace.noDate') }}
             </div>
 
             <div class="text-caption q-mt-xs text-grey-4">
@@ -167,11 +157,10 @@
       </q-card>
     </div>
 
-    <!-- TREND -->
     <div v-else-if="eva.contextPanel.mode === 'trend'" class="eva-panel-body">
       <div class="eva-kpi-row">
         <div class="eva-kpi-card">
-          <div class="eva-kpi-label">Status</div>
+          <div class="eva-kpi-label">{{ t('evaWorkspace.statusLabel') }}</div>
           <div class="eva-kpi-value">
             <q-chip
               dense
@@ -184,14 +173,14 @@
         </div>
 
         <div class="eva-kpi-card">
-          <div class="eva-kpi-label">Error rate</div>
+          <div class="eva-kpi-label">{{ t('evaWorkspace.errorRateLabel') }}</div>
           <div class="eva-kpi-value">{{ trendErrorRate }}</div>
         </div>
       </div>
 
       <q-card flat bordered class="eva-panel-card q-mt-md" v-if="trendWarnings.length">
         <q-card-section>
-          <div class="eva-section-title">Warnings</div>
+          <div class="eva-section-title">{{ t('evaWorkspace.warningsTitle') }}</div>
           <div
             v-for="txt in trendWarnings"
             :key="txt"
@@ -204,7 +193,7 @@
 
       <q-card flat bordered class="eva-panel-card q-mt-md" v-if="trendRecommendations.length">
         <q-card-section>
-          <div class="eva-section-title">Recomendaciones</div>
+          <div class="eva-section-title">{{ t('evaWorkspace.recommendationsTitle') }}</div>
           <div
             v-for="txt in trendRecommendations"
             :key="txt"
@@ -216,42 +205,36 @@
       </q-card>
     </div>
 
-    <!-- CHART -->
     <div v-else-if="eva.contextPanel.mode === 'chart'" class="eva-panel-body">
       <div class="eva-kpi-row">
         <div class="eva-kpi-card">
-          <div class="eva-kpi-label">System</div>
+          <div class="eva-kpi-label">{{ t('evaWorkspace.systemLabel') }}</div>
           <div class="eva-kpi-value eva-kpi-value--small">
             {{ chartSystem }}
           </div>
         </div>
 
         <div class="eva-kpi-card">
-          <div class="eva-kpi-label">Granularity</div>
+          <div class="eva-kpi-label">{{ t('evaWorkspace.granularityLabel') }}</div>
           <div class="eva-kpi-value">{{ evaContext.granularity || '-' }}</div>
         </div>
 
         <div class="eva-kpi-card">
-          <div class="eva-kpi-label">Range</div>
+          <div class="eva-kpi-label">{{ t('evaWorkspace.rangeLabel') }}</div>
           <div class="eva-kpi-value">
-            {{
-              evaContext.rangeLabel ||
-              (evaContext.granularity === 'hourly'
-                ? `${evaContext.hours || 24} horas`
-                : `${evaContext.days || 30} ${evaContext.days === 1 ? 'día' : 'días'}`)
-            }}
+            {{ resolvedRangeLabel }}
           </div>
         </div>
 
         <div class="eva-kpi-card">
-          <div class="eva-kpi-label">Puntos</div>
+          <div class="eva-kpi-label">{{ t('evaWorkspace.pointsLabel') }}</div>
           <div class="eva-kpi-value">
-            {{ chartPoints.length }}
+            {{ fmtNumber(chartPoints.length) }}
           </div>
         </div>
 
         <div class="eva-kpi-card">
-          <div class="eva-kpi-label">Max error rate</div>
+          <div class="eva-kpi-label">{{ t('evaWorkspace.maxErrorRateLabel') }}</div>
           <div class="eva-kpi-value">
             {{ chartMaxErrorRate }}
           </div>
@@ -267,25 +250,25 @@
               dark
               outlined
               dense
-              label="System"
+              :label="t('evaWorkspace.systemLabel')"
             />
           </div>
 
           <div class="col-12 col-md-6">
             <q-select
               v-model="localGranularity"
-              :options="['daily', 'hourly']"
+              :options="granularityOptions"
               dark
               outlined
               dense
-              label="Granularity"
+              :label="t('evaWorkspace.granularityLabel')"
             />
           </div>
 
           <div class="col-12">
             <q-btn
               color="primary"
-              label="Actualizar gráfica"
+              :label="t('evaWorkspace.updateChart')"
               icon="refresh"
               @click="reloadChart"
             />
@@ -295,10 +278,10 @@
 
       <q-card flat bordered class="eva-panel-card q-mt-md">
         <q-card-section>
-          <div class="eva-section-title">Serie histórica</div>
+          <div class="eva-section-title">{{ t('evaWorkspace.historicalSeries') }}</div>
 
           <div v-if="chartPoints.length === 0" class="text-grey-5 q-mt-md">
-            No hay puntos para mostrar.
+            {{ t('evaWorkspace.noChartPoints') }}
           </div>
 
           <div v-else class="eva-apex-wrap q-mt-md">
@@ -314,7 +297,7 @@
 
       <q-card flat bordered class="eva-panel-card q-mt-md" v-if="chartPoints.length">
         <q-card-section>
-          <div class="eva-section-title">Detalle de puntos</div>
+          <div class="eva-section-title">{{ t('evaWorkspace.pointDetailTitle') }}</div>
 
           <div
             v-for="point in chartPoints"
@@ -323,9 +306,9 @@
           >
             <div class="eva-chart-detail-date">{{ fmtDate(point.bucketStartLocal) }}</div>
             <div class="eva-chart-detail-metrics">
-              <span>Error rate: {{ pct(point.errorRate) }}</span>
-              <span>Error count: {{ point.errorCount ?? 0 }}</span>
-              <span>Total: {{ point.total ?? 0 }}</span>
+              <span>{{ t('evaWorkspace.pointErrorRate', { value: pct(point.errorRate) }) }}</span>
+              <span>{{ t('evaWorkspace.pointErrorCount', { value: fmtNumber(point.errorCount ?? 0) }) }}</span>
+              <span>{{ t('evaWorkspace.pointTotal', { value: fmtNumber(point.total ?? 0) }) }}</span>
             </div>
           </div>
         </q-card-section>
@@ -337,24 +320,30 @@
 <script setup>
 import VueApexCharts from 'vue3-apexcharts'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useEvaStore } from 'src/stores/eva-store'
 import { EvaService } from 'src/services/eva.service'
 
 const apexchart = VueApexCharts
 const eva = useEvaStore()
+const { t, locale } = useI18n()
 
 const localSystem = ref(eva.selectedSystem)
 const localGranularity = ref(eva.selectedGranularity)
 
+const granularityOptions = computed(() => [
+  { label: t('evaWorkspace.daily'), value: 'daily' },
+  { label: t('evaWorkspace.hourly'), value: 'hourly' },
+])
+
 const systemOptions = computed(() => eva.systemOptions)
 
-watch(localSystem, val => eva.setSelectedSystem(val))
-watch(localGranularity, val => eva.setSelectedGranularity(val))
+watch(localSystem, (val) => eva.setSelectedSystem(val))
+watch(localGranularity, (val) => eva.setSelectedGranularity(val))
 
 const payloadData = computed(() => eva.contextPanel.payload || {})
 const evaContext = computed(() => payloadData.value?.evaContext || {})
 
-// INSIGHT
 const insightNarrative = computed(() => {
   const narrative = payloadData.value?.pretty?.executiveNarrative
 
@@ -379,7 +368,14 @@ const insightNarrative = computed(() => {
     return keyPoints.join('\n')
   }
 
-  return 'Sin resumen disponible.'
+  // return 'Sin resumen disponible.'
+  return (
+    payloadData.value?.pretty?.executiveNarrative ||
+    (Array.isArray(payloadData.value?.base?.executiveSummary)
+      ? payloadData.value.base.executiveSummary.join(' ')
+      : null) ||
+    t('evaWorkspace.noSummary')
+  )
 })
 
 const insightBullets = computed(() => {
@@ -390,31 +386,20 @@ const insightBullets = computed(() => {
   )
 })
 
-
-
-const aiDeepAnalysis = computed(() => {
-  return payloadData.value?.base?.aiDeepAnalysis || null
-})
-
+const aiDeepAnalysis = computed(() => payloadData.value?.base?.aiDeepAnalysis || null)
 const aiDeepSummary = computed(() => aiDeepAnalysis.value?.aiSummary || null)
 
 const aiDeepSuggestions = computed(() => {
   const raw = aiDeepAnalysis.value?.aiSuggestions
   if (!raw) return []
-  return raw.split(/\n/).map(s => s.trim()).filter(s => s.length > 0)
+  return raw.split(/\n/).map((s) => s.trim()).filter((s) => s.length > 0)
 })
 
-// ALERT
 const alertItems = computed(() => payloadData.value?.content || [])
-
-// TREND
 const trendWarnings = computed(() => payloadData.value?.warnings || [])
 const trendRecommendations = computed(() => payloadData.value?.recommendations || [])
 const trendStatus = computed(() => payloadData.value?.status || 'INFO')
-const trendErrorRate = computed(() => {
-  const val = Number(payloadData.value?.errorRate || 0)
-  return `${(val * 100).toFixed(2)}%`
-})
+const trendErrorRate = computed(() => pct(payloadData.value?.errorRate || 0))
 
 const trendStatusColor = computed(() => {
   if (trendStatus.value === 'CRIT') return 'negative'
@@ -422,25 +407,33 @@ const trendStatusColor = computed(() => {
   return 'primary'
 })
 
-// CHART
 const chartPoints = computed(() => payloadData.value?.points || [])
-const chartSystem = computed(() => payloadData.value?.system || localSystem.value || 'N/D')
+const chartSystem = computed(() => payloadData.value?.system || localSystem.value || t('evaWorkspace.notAvailable'))
 
 const chartMaxErrorRate = computed(() => {
   if (!chartPoints.value.length) return '0.00%'
-  const max = Math.max(...chartPoints.value.map(p => Number(p.errorRate || 0)))
-  return `${(max * 100).toFixed(2)}%`
+  const max = Math.max(...chartPoints.value.map((p) => Number(p.errorRate || 0)))
+  return pct(max)
+})
+
+const resolvedRangeLabel = computed(() => {
+  if (evaContext.value.rangeLabel) return evaContext.value.rangeLabel
+  if (evaContext.value.granularity === 'hourly') {
+    return t('evaWorkspace.hoursRange', { count: evaContext.value.hours || 24 })
+  }
+  const count = evaContext.value.days || 30
+  return t(count === 1 ? 'evaWorkspace.daysRangeOne' : 'evaWorkspace.daysRangeOther', { count })
 })
 
 const chartSeries = computed(() => [
   {
-    name: 'Error rate %',
-    data: chartPoints.value.map(point => Number((Number(point.errorRate || 0) * 100).toFixed(2)))
+    name: t('evaWorkspace.errorRateLabel'),
+    data: chartPoints.value.map((point) => Number((Number(point.errorRate || 0) * 100).toFixed(2))),
   },
   {
-    name: 'Error count',
-    data: chartPoints.value.map(point => Number(point.errorCount || 0))
-  }
+    name: t('evaWorkspace.pointErrorCount', { value: '' }).replace(': ', '').trim(),
+    data: chartPoints.value.map((point) => Number(point.errorCount || 0)),
+  },
 ])
 
 const chartOptions = computed(() => ({
@@ -448,101 +441,109 @@ const chartOptions = computed(() => ({
     type: 'line',
     height: 320,
     toolbar: {
-      show: true
+      show: true,
     },
     zoom: {
-      enabled: true
+      enabled: true,
     },
     background: 'transparent',
-    foreColor: '#cfe3ff'
+    foreColor: '#cfe3ff',
   },
   stroke: {
     curve: 'smooth',
-    width: [3, 2]
+    width: [3, 2],
   },
   dataLabels: {
-    enabled: false
+    enabled: false,
   },
   grid: {
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   legend: {
     labels: {
-      colors: '#cfe3ff'
-    }
+      colors: '#cfe3ff',
+    },
   },
   xaxis: {
-    categories: chartPoints.value.map(point => shortLabel(point.bucketStartLocal)),
+    categories: chartPoints.value.map((point) => shortLabel(point.bucketStartLocal)),
     labels: {
       style: {
-        colors: '#a9bbd3'
-      }
-    }
+        colors: '#a9bbd3',
+      },
+    },
   },
   yaxis: [
     {
       title: {
-        text: 'Error rate %',
+        text: t('evaWorkspace.errorRateLabel'),
         style: {
-          color: '#cfe3ff'
-        }
+          color: '#cfe3ff',
+        },
       },
       labels: {
         style: {
-          colors: '#a9bbd3'
-        }
-      }
+          colors: '#a9bbd3',
+        },
+      },
     },
     {
       opposite: true,
       title: {
-        text: 'Error count',
+        text: t('evaWorkspace.pointErrorCount', { value: '' }).replace(': ', '').trim(),
         style: {
-          color: '#cfe3ff'
-        }
+          color: '#cfe3ff',
+        },
       },
       labels: {
         style: {
-          colors: '#a9bbd3'
-        }
-      }
-    }
+          colors: '#a9bbd3',
+        },
+      },
+    },
   ],
   tooltip: {
-    theme: 'dark'
+    theme: 'dark',
   },
   colors: ['#00d4ff', '#7c4dff'],
   markers: {
     size: 4,
-    strokeWidth: 0
-  }
+    strokeWidth: 0,
+  },
 }))
 
-function pct(v) {
-  return `${(Number(v || 0) * 100).toFixed(2)}%`
+function fmtNumber(value) {
+  return new Intl.NumberFormat(locale.value).format(Number(value || 0))
 }
 
-// Formatea fecha ISO a formato legible: "23/Mar/2026 00:00"
-const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+function pct(v) {
+  return new Intl.NumberFormat(locale.value, {
+    style: 'percent',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(v || 0))
+}
+
 function fmtDate(value) {
   if (!value) return ''
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return value
-  const dia  = String(d.getDate()).padStart(2, '0')
-  const mes  = MESES[d.getMonth()]
-  const anio = d.getFullYear()
-  const hh   = String(d.getHours()).padStart(2, '0')
-  const mm   = String(d.getMinutes()).padStart(2, '0')
-  return `${dia}/${mes}/${anio} ${hh}:${mm}`
+  return new Intl.DateTimeFormat(locale.value, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d)
 }
 
 function shortLabel(value) {
   if (!value) return ''
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return value
-  const dia = String(d.getDate()).padStart(2, '0')
-  const mes = MESES[d.getMonth()]
-  return `${dia}/${mes}`
+  return new Intl.DateTimeFormat(locale.value, {
+    month: 'short',
+    day: '2-digit',
+  }).format(d)
 }
 
 function alertColor(status) {
@@ -555,27 +556,30 @@ async function reloadChart() {
   try {
     eva.setLoading(true)
 
+    const granularity = localGranularity.value?.value || localGranularity.value
+    const system = localSystem.value?.value || localSystem.value
+
     const res = await EvaService.getMetricsSeries({
-      granularity: localGranularity.value,
-      system: localSystem.value,
-      days: localGranularity.value === 'daily' ? eva.selectedDays : undefined,
-      hours: localGranularity.value === 'hourly' ? eva.selectedHours : undefined,
-      tz: eva.selectedTz
+      granularity,
+      system,
+      days: granularity === 'daily' ? eva.selectedDays : undefined,
+      hours: granularity === 'hourly' ? eva.selectedHours : undefined,
+      tz: eva.selectedTz,
     })
 
     const payload = res?.data?.data || {}
 
-    eva.setContextPanel('chart', `Gráfica: ${localSystem.value}`, payload)
-    eva.addAssistantMessage(`Actualicé la gráfica de ${localSystem.value}.`, 'chart', {
+    eva.setContextPanel('chart', t('evaWorkspace.chartTitle', { system }), payload)
+    eva.addAssistantMessage(t('evaWorkspace.chartUpdated', { system }), 'chart', {
       raw: payload,
       meta: {
-        system: localSystem.value,
-        points: payload?.points?.length || 0
-      }
+        system,
+        points: payload?.points?.length || 0,
+      },
     })
   } catch (error) {
     console.error(error)
-    eva.addAssistantMessage('No pude actualizar la gráfica.', 'text')
+    eva.addAssistantMessage(t('evaWorkspace.chartUpdateError'), 'text')
   } finally {
     eva.setLoading(false)
   }
@@ -721,7 +725,6 @@ async function reloadChart() {
   color: rgba(234,240,255,0.78);
 }
 
-/* ── Análisis IA ──────────────────────────────────────────────────────── */
 .eva-ai-card {
   border: 1px solid rgba(192, 132, 252, 0.25) !important;
   background: rgba(139, 92, 246, 0.06) !important;
@@ -750,7 +753,6 @@ async function reloadChart() {
   padding-left: 8px;
   border-left: 2px solid rgba(192, 132, 252, 0.4);
 }
-/* ───────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
   .eva-kpi-row {

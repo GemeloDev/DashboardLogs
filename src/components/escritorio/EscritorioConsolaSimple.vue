@@ -13,7 +13,7 @@
           <div class="col">
             <div class="card-title q-mt-md">
               <q-icon name="history_edu" class="q-mr-sm" color="primary" />
-              Bitácora de Eventos - {{ currentSystem }}
+              {{ t('consoleSimple.title') }} - {{ currentSystem }}
               <q-chip
                 v-if="logs.length || rawLogs.length"
                 color="primary"
@@ -22,14 +22,14 @@
                 class="q-ml-md"
                 icon="format_list_numbered"
               >
-                {{ logs.length }} / {{ serverTotalElements }} eventos
+                {{ t('consoleSimple.eventsCounter', { visible: logs.length, total: serverTotalElements }) }}
               </q-chip>
             </div>
             <div class="text-subtitle2 text-grey-4 q-mt-sm">
               <span v-if="logs.length !== rawLogs.length" class="text-amber">
-                <q-icon name="filter_alt" /> Filtros activos
+                <q-icon name="filter_alt" /> {{ t('consoleSimple.activeFilters') }}
               </span>
-              <span v-else>Mostrando todos los registros</span>
+              <span v-else>{{ t('consoleSimple.showingAllRecords') }}</span>
             </div>
           </div>
 
@@ -38,34 +38,34 @@
               <q-list>
                 <q-item clickable v-close-popup @click="exportLogs('excel')">
                   <q-item-section>
-                    <q-item-label>Excel (.xlsx)</q-item-label>
+                    <q-item-label>{{ t('consoleSimple.exportExcel') }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
                 <q-item clickable v-close-popup @click="exportLogs('json')">
                   <q-item-section>
-                    <q-item-label>JSON (.json)</q-item-label>
+                    <q-item-label>{{ t('consoleSimple.exportJson') }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
                 <q-item clickable v-close-popup @click="exportLogs('csv')">
                   <q-item-section>
-                    <q-item-label>CSV (.csv)</q-item-label>
+                    <q-item-label>{{ t('consoleSimple.exportCsv') }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
                 <q-item clickable v-close-popup @click="exportLogs('txt')">
                   <q-item-section>
-                    <q-item-label>Texto (.txt)</q-item-label>
+                    <q-item-label>{{ t('consoleSimple.exportTxt') }}</q-item-label>
                   </q-item-section>
                 </q-item>
               </q-list>
             </q-btn-dropdown>
             <q-btn icon="minimize" flat round color="grey-4" @click="cerrarConsola" class="q-mr-sm">
-              <q-tooltip>Minimizar</q-tooltip>
+              <q-tooltip>{{ t('consoleSimple.minimizeTooltip') }}</q-tooltip>
             </q-btn>
             <q-btn icon="close" flat round color="red-4" @click="cerrarConsola">
-              <q-tooltip>Cerrar</q-tooltip>
+              <q-tooltip>{{ t('consoleSimple.closeTooltip') }}</q-tooltip>
             </q-btn>
           </div>
 
@@ -84,7 +84,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-white text-weight-bold">
-                    Panel de Filtros Dinámicos
+                    {{ t('consoleSimple.filterPanelTitle') }}
                   </q-item-label>
                 </q-item-section>
                 <q-item-section side>
@@ -112,13 +112,13 @@
       <q-card-section class="console-body">
         <div v-if="loading" class="text-center q-pa-xl">
           <q-spinner-grid color="primary" size="80px" />
-          <div class="q-mt-lg text-h6">Cargando logs...</div>
+          <div class="q-mt-lg text-h6">{{ t('consoleSimple.loadingLogs') }}</div>
         </div>
 
         <div v-else-if="!logs.length" class="text-center q-pa-xl">
           <q-icon name="filter_list_off" size="100px" color="grey-7" />
           <div class="text-h6 text-grey-5 q-mt-md">
-            No se encontraron registros con los filtros actuales
+            {{ t('consoleSimple.emptyLogs') }}
           </div>
         </div>
 
@@ -138,13 +138,17 @@
         <div class="row items-center justify-between q-col-gutter-md">
           <div class="col-12 col-sm-6 col-md-4">
             <div class="pagination-info text-caption text-grey-4">
-              Mostrando {{ (paginaActual - 1) * registrosPorPagina + 1 }} -
-              {{ Math.min(paginaActual * registrosPorPagina, serverTotalElements) }}
-              de {{ serverTotalElements }} registros
+              {{
+                t('consoleSimple.paginationSummary', {
+                  from: (paginaActual - 1) * registrosPorPagina + 1,
+                  to: Math.min(paginaActual * registrosPorPagina, serverTotalElements),
+                  total: serverTotalElements,
+                })
+              }}
             </div>
 
             <div v-if="loadingMore" class="text-caption text-grey-5 q-mt-xs">
-              <q-spinner-dots size="18px" class="q-mr-sm" /> Cargando más eventos...
+              <q-spinner-dots size="18px" class="q-mr-sm" /> {{ t('consoleSimple.loadingMoreEvents') }}
             </div>
           </div>
 
@@ -173,6 +177,7 @@
 <script setup>
 import { ref, computed, inject, watch, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import DinamicFilters from '../blocks/DinamicFilters.vue'
 import ConsoleCard from '../blocks/ConsoleCard.vue'
 import DetailDialog from '../blocks/DetailDialog.vue'
@@ -182,6 +187,7 @@ import ConsoleExportService from 'src/services/consoleExportService'
 import authService from 'src/services/authService'
 
 const $q = useQuasar()
+const { t } = useI18n()
 
 const filtrosGlobales = inject('filtrosGlobales', ref(null))
 
@@ -599,10 +605,10 @@ if (format === 'csv')   return ConsoleExportService.exportCSV(items, base)
 if (format === 'json')  return ConsoleExportService.exportJSON(items, base)
 if (format === 'txt')   return ConsoleExportService.exportTXT(items, base)
 
-    throw new Error('Formato no soportado')
+    throw new Error(t('consoleSimple.unsupportedFormat'))
   } catch (e) {
     console.error(e)
-    $q.notify({ type: 'negative', message: e.message || 'Error exportando logs' })
+    $q.notify({ type: 'negative', message: e.message || t('consoleSimple.exportError') })
   }
 }
 

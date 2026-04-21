@@ -16,8 +16,8 @@
         <div class="header-content">
           <q-icon name="qr_code_scanner" size="32px" color="primary" />
           <div class="header-text">
-            <h3>Escanear Código QR</h3>
-            <p>Escanea el QR del Tenant para iniciar sesión</p>
+            <h3>{{ t('qrScanner.title') }}</h3>
+            <p>{{ t('qrScanner.subtitle') }}</p>
           </div>
         </div>
         <q-btn icon="close" flat round dense v-close-popup />
@@ -30,9 +30,8 @@
           <template v-slot:avatar>
             <q-icon name="warning" color="white" />
           </template>
-          <strong>⚠️ Conexión no segura</strong><br />
-          Los navegadores móviles requieren HTTPS para acceder a la cámara. Te recomendamos usar la
-          opción de <strong>subir imagen</strong> o acceder desde una conexión segura.
+          <strong>{{ t('qrScanner.insecureTitle') }}</strong><br />
+          {{ t('qrScanner.insecureBody') }}
         </q-banner>
 
         <div class="camera-container">
@@ -47,16 +46,15 @@
 
           <div v-if="!cameraActive" class="camera-placeholder">
             <q-icon name="videocam_off" size="64px" color="grey-5" />
-            <p>Cámara no iniciada</p>
+            <p>{{ t('qrScanner.cameraNotStarted') }}</p>
             <div class="help-section">
-              <p class="hint-text">📱 <strong>¿Primera vez?</strong></p>
-              <p class="hint-text">1. Presiona "Iniciar Cámara"</p>
-              <p class="hint-text">2. Tu navegador pedirá permiso</p>
-              <p class="hint-text">3. Selecciona "Permitir"</p>
+              <p class="hint-text">📱 <strong>{{ t('qrScanner.firstTimeTitle') }}</strong></p>
+              <p class="hint-text">{{ t('qrScanner.firstTimeStep1') }}</p>
+              <p class="hint-text">{{ t('qrScanner.firstTimeStep2') }}</p>
+              <p class="hint-text">{{ t('qrScanner.firstTimeStep3') }}</p>
               <q-separator spaced />
               <p class="hint-text-small">
-                Si no funciona, verifica en la configuración de tu navegador que el sitio tenga
-                permiso para usar la cámara.
+                {{ t('qrScanner.firstTimeHint') }}
               </p>
             </div>
           </div>
@@ -64,13 +62,13 @@
           <!-- Overlay de escaneo -->
           <div v-if="cameraActive" class="scan-overlay">
             <div class="scan-frame"></div>
-            <p class="scan-instruction">Coloca el código QR dentro del marco</p>
+            <p class="scan-instruction">{{ t('qrScanner.scanInstruction') }}</p>
           </div>
 
           <!-- Loading -->
           <div v-if="scanning" class="scan-loading">
             <q-spinner-dots size="50px" color="primary" />
-            <p>Escaneando...</p>
+            <p>{{ t('qrScanner.scanning') }}</p>
           </div>
         </div>
 
@@ -81,7 +79,7 @@
             @click="startCamera"
             color="primary"
             icon="videocam"
-            label="Iniciar Cámara"
+            :label="t('qrScanner.startCamera')"
             size="lg"
             unelevated
             :loading="initializingCamera"
@@ -92,7 +90,7 @@
             @click="stopCamera"
             color="negative"
             icon="videocam_off"
-            label="Detener Cámara"
+            :label="t('qrScanner.stopCamera')"
             size="lg"
             flat
           />
@@ -102,7 +100,7 @@
       <!-- Footer con info -->
       <q-card-section class="modal-footer">
         <q-icon name="info" size="20px" color="info" />
-        <span>El código QR contiene el ID del Tenant para autenticación</span>
+        <span>{{ t('qrScanner.footerInfo') }}</span>
       </q-card-section>
     </q-card>
   </q-dialog>
@@ -111,6 +109,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { startQRScanner } from '../services/qrScannerService.js'
 import { disconnectSocket, initializeSocket } from 'src/services/socketService.js'
 import authService from 'src/services/authService.js'
@@ -134,6 +133,7 @@ const isSecureContext = computed(() => {
 const emit = defineEmits(['update:modelValue', 'qr-scanned'])
 
 const $q = useQuasar()
+const { t } = useI18n()
 
 const isOpen = ref(props.modelValue)
 const cameraActive = ref(false)
@@ -178,20 +178,18 @@ const startCamera = async () => {
       (error) => {
         console.error('❌ Error en escáner:', error)
 
-        let errorMessage = 'No se pudo acceder a la cámara'
+        let errorMessage = t('qrScanner.cameraAccessError')
 
         if (error.name === 'NotSecureContextError') {
-          errorMessage =
-            '🔒 Se requiere HTTPS para usar la cámara en móviles. Por favor usa la opción de subir imagen o accede desde https://'
+          errorMessage = t('qrScanner.secureContextError')
         } else if (error.name === 'NotAllowedError') {
-          errorMessage =
-            '❌ Permiso de cámara denegado. Por favor permite el acceso en la configuración de tu navegador.'
+          errorMessage = t('qrScanner.permissionDeniedError')
         } else if (error.name === 'NotFoundError') {
-          errorMessage = '❌ No se encontró cámara en tu dispositivo'
+          errorMessage = t('qrScanner.cameraNotFoundError')
         } else if (error.name === 'NotReadableError') {
-          errorMessage = '❌ La cámara está siendo usada por otra aplicación'
+          errorMessage = t('qrScanner.cameraBusyError')
         } else if (error.name === 'OverconstrainedError') {
-          errorMessage = '❌ No se pudo iniciar la cámara con la configuración solicitada'
+          errorMessage = t('qrScanner.cameraConfigError')
         } else if (error.message) {
           errorMessage = error.message
         }
@@ -203,7 +201,7 @@ const startCamera = async () => {
           timeout: 5000,
           actions: [
             {
-              label: 'Cerrar',
+              label: t('qrScanner.closeAction'),
               color: 'white',
             },
           ],
@@ -216,7 +214,7 @@ const startCamera = async () => {
     cameraActive.value = true
     $q.notify({
       type: 'positive',
-      message: '📷 Cámara iniciada correctamente',
+      message: t('qrScanner.cameraStarted'),
       position: 'top',
       timeout: 2000,
     })
@@ -246,7 +244,7 @@ const stopCamera = () => {
  */
 const onQRScanned = async (qrData) => {
   console.log('🎯 QR detectado:', qrData)
-  if(qrData === '') throw new Error('QR vacío')
+  if(qrData === '') throw new Error(t('qrScanner.emptyQrError'))
 
   const token = qrData.split('/qr-login/')[1]
 

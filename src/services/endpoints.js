@@ -102,6 +102,10 @@ export const DASHBOARD = {
   GEO: `${BASE_URL}/logs/dashboard/geo`,
 }
 
+export const DEVICES = {
+  SUMMARY: `${BASE_URL}/devices`,
+}
+
 // ─── Catálogos ────────────────────────────────────────────────────────────────
 
 export const CATALOGS = {
