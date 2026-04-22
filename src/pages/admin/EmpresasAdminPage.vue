@@ -6,12 +6,11 @@
         <div class="hero-left">
           <h1 class="hero-title">
             <!-- Más titulo -->
-            <span class="color-orange-santoro">Empresas</span>
+            <span class="color-orange-santoro">{{ t('layout.enterprises') }}</span>
           </h1>
 
           <p class="hero-subtitle">
-            Administra empresas, estado y datos operativos desde un panel visual consistente con el
-            dashboard.
+            {{ t('santoroAdmin.companiesSubtitle') }}
           </p>
         </div>
 
@@ -21,7 +20,7 @@
             no-caps
             class="hero-action-btn"
             icon="add_business"
-            label="Nueva empresa"
+            :label="t('santoroAdmin.newCompanyButton')"
             @click="openCreateDialog"
           />
         </div>
@@ -34,8 +33,8 @@
             <q-icon name="apartment" size="24px" />
           </div>
           <div class="stat-body">
-            <div class="stat-label">Total empresas</div>
-            <div class="stat-value">{{ empresasFiltradas.length }}</div>
+            <div class="stat-label">{{ t('santoroAdmin.totalCompaniesMetric') }}</div>
+            <div class="stat-value">{{ formatNumber(empresasFiltradas.length) }}</div>
           </div>
         </q-card>
 
@@ -44,8 +43,8 @@
             <q-icon name="check_circle" size="24px" />
           </div>
           <div class="stat-body">
-            <div class="stat-label">Activas</div>
-            <div class="stat-value">{{ totalActivas }}</div>
+            <div class="stat-label">{{ t('santoroAdmin.activeCompaniesMetric') }}</div>
+            <div class="stat-value">{{ formatNumber(totalActivas) }}</div>
           </div>
         </q-card>
 
@@ -54,8 +53,8 @@
             <q-icon name="account_circle" size="24px" />
           </div>
           <div class="stat-body">
-            <div class="stat-label">Usuarios</div>
-            <div class="stat-value">{{ totalUsuarios }}</div>
+            <div class="stat-label">{{ t('santoroAdmin.usersMetric') }}</div>
+            <div class="stat-value">{{ formatNumber(totalUsuarios) }}</div>
           </div>
         </q-card>
 
@@ -64,8 +63,8 @@
             <q-icon name="key" size="24px" />
           </div>
           <div class="stat-body">
-            <div class="stat-label">API Keys</div>
-            <div class="stat-value">{{ totalApiKeysActivas }}</div>
+            <div class="stat-label">{{ t('santoroAdmin.apiKeysMetric') }}</div>
+            <div class="stat-value">{{ formatNumber(totalApiKeysActivas) }}</div>
           </div>
         </q-card>
       </section>
@@ -91,7 +90,7 @@
             <div class="empresa-header-text">
               <div class="empresa-title">{{ empresa.name }}</div>
               <div class="empresa-subtitle">
-                {{ empresa.slug || 'Sin slug definido' }}
+                {{ empresa.slug || t('santoroAdmin.noSlugDefined') }}
               </div>
             </div>
           </div>
@@ -115,34 +114,34 @@
 
           <div class="empresa-meta-grid">
             <div class="meta-stat">
-              <div class="meta-stat__label">Usuarios</div>
-              <div class="meta-stat__value">{{ empresa.totalUsers ?? 0 }}</div>
+              <div class="meta-stat__label">{{ t('santoroAdmin.usersMetric') }}</div>
+              <div class="meta-stat__value">{{ formatNumber(empresa.totalUsers ?? 0) }}</div>
             </div>
 
             <div class="meta-stat">
-              <div class="meta-stat__label">Activos</div>
-              <div class="meta-stat__value text-positive">{{ empresa.activeUsers ?? 0 }}</div>
+              <div class="meta-stat__label">{{ t('santoroAdmin.activeUsersFilter') }}</div>
+              <div class="meta-stat__value text-positive">{{ formatNumber(empresa.activeUsers ?? 0) }}</div>
             </div>
 
             <div class="meta-stat">
-              <div class="meta-stat__label">Inactivos</div>
-              <div class="meta-stat__value text-negative">{{ empresa.inactiveUsers ?? 0 }}</div>
+              <div class="meta-stat__label">{{ t('santoroAdmin.inactiveUsersFilter') }}</div>
+              <div class="meta-stat__value text-negative">{{ formatNumber(empresa.inactiveUsers ?? 0) }}</div>
             </div>
 
             <div class="meta-stat">
-              <div class="meta-stat__label">API Keys</div>
-              <div class="meta-stat__value">{{ empresa.totalApiKeys ?? 0 }}</div>
+              <div class="meta-stat__label">{{ t('santoroAdmin.apiKeysMetric') }}</div>
+              <div class="meta-stat__value">{{ formatNumber(empresa.totalApiKeys ?? 0) }}</div>
             </div>
 
             <div class="meta-stat">
-              <div class="meta-stat__label">Keys activas</div>
-              <div class="meta-stat__value text-cyan">{{ empresa.activeApiKeys ?? 0 }}</div>
+              <div class="meta-stat__label">{{ t('santoroAdmin.activeKeysMetric') }}</div>
+              <div class="meta-stat__value text-cyan">{{ formatNumber(empresa.activeApiKeys ?? 0) }}</div>
             </div>
 
             <div class="meta-stat">
-              <div class="meta-stat__label">Revocadas/Exp.</div>
+              <div class="meta-stat__label">{{ t('santoroAdmin.revokedExpiredMetric') }}</div>
               <div class="meta-stat__value text-orange">
-                {{ (empresa.revokedApiKeys ?? 0) + (empresa.expiredApiKeys ?? 0) }}
+                {{ formatNumber((empresa.revokedApiKeys ?? 0) + (empresa.expiredApiKeys ?? 0)) }}
               </div>
             </div>
           </div>
@@ -150,11 +149,11 @@
           <div class="empresa-extra q-mb-md">
             <div class="empresa-created">
               <q-icon name="event" size="16px" class="q-mr-xs" />
-              <span>Creada: {{ formatearFecha(empresa.createdAt) }}</span>
+              <span>{{ t('santoroAdmin.createdPrefix') }} {{ formatDate(empresa.createdAt) }}</span>
             </div>
 
             <q-chip dense :class="empresa.status === 'active' ? 'chip-active' : 'chip-inactive'">
-              {{ empresa.status === 'active' ? 'Activa' : 'Inactiva' }}
+              {{ empresa.status === 'active' ? t('santoroAdmin.companyActive') : t('santoroAdmin.companyInactive') }}
             </q-chip>
           </div>
 
@@ -163,7 +162,7 @@
               unelevated
               no-caps
               :icon="empresa.status === 'active' ? 'toggle_off' : 'toggle_on'"
-              :label="empresa.status === 'active' ? 'Desactivar' : 'Activar'"
+              :label="empresa.status === 'active' ? t('santoroAdmin.deactivateCompany') : t('santoroAdmin.activateCompany')"
               class="mini-action-btn"
               @click="toggleActivo(empresa)"
             />
@@ -172,8 +171,8 @@
 
         <div v-if="!empresasFiltradas.length" class="empty-state">
           <q-icon name="domain_disabled" size="52px" color="grey-6" />
-          <div class="empty-title">No se encontraron empresas</div>
-          <div class="empty-subtitle">Ajusta los filtros o crea una nueva empresa.</div>
+          <div class="empty-title">{{ t('santoroAdmin.noCompaniesTitle') }}</div>
+          <div class="empty-subtitle">{{ t('santoroAdmin.noCompaniesSubtitle') }}</div>
         </div>
       </section>
     </div>
@@ -186,11 +185,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { DashboardSantoro } from 'src/services/dashboardSantoro'
-import { formatearFecha } from 'src/helpers'
 import CreateEmpresa from './modals/CreateEmpresa.vue'
 
 const $q = useQuasar()
+const { t, locale } = useI18n()
 
 const search = ref('')
 const filtroEstado = ref('todos')
@@ -199,6 +199,15 @@ const sortBy = ref('reciente')
 const dialogEmpresa = ref(false)
 
 const empresas = ref([])
+const formatNumber = (value) => new Intl.NumberFormat(locale.value).format(Number(value || 0))
+const formatDate = (value) =>
+  value
+    ? new Intl.DateTimeFormat(locale.value, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(new Date(value))
+    : t('santoroAdmin.unavailable')
 
 const totalActivas = computed(() => empresas.value.filter((e) => e.status === 'active').length)
 const totalUsuarios = computed(() =>
@@ -261,7 +270,12 @@ const toggleActivo = async (empresa) => {
   if (response.success) {
     $q.notify({
       type: 'positive',
-      message: `Empresa ${nuevoEstado === 'active' ? 'activada' : 'desactivada'} correctamente.`,
+      message: t('santoroAdmin.companyStatusUpdated', {
+        status:
+          nuevoEstado === 'active'
+            ? t('santoroAdmin.companyActivated')
+            : t('santoroAdmin.companyDeactivated'),
+      }),
       position: 'top',
     })
   }
@@ -281,7 +295,7 @@ async function reloadEmpresas() {
   empresas.value = respuesta.data.content
 
   $q.notify({
-    message: 'Empresas obtenidas correctamente!',
+    message: t('santoroAdmin.companiesLoaded'),
     type: 'positive',
     position: 'top',
   })

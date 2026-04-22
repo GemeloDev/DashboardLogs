@@ -5,84 +5,76 @@
     @update:model-value="emit('update:modelValue', $event)"
   >
     <q-card flat bordered class="empresa-dialog-card">
-      <!-- HEADER -->
       <div class="dialog-header">
         <div class="dialog-icon-box">
           <q-icon name="add_business" size="24px" color="white" />
         </div>
 
         <div>
-          <div class="dialog-title">Nueva empresa</div>
-          <div class="dialog-subtitle">Completa la información principal de la empresa.</div>
+          <div class="dialog-title">{{ t('santoroAdmin.createCompanyTitle') }}</div>
+          <div class="dialog-subtitle">{{ t('santoroAdmin.createCompanySubtitle') }}</div>
         </div>
       </div>
 
-      <!-- FORM -->
       <q-card-section class="dialog-form">
         <div class="dialog-grid">
-          <!-- Nombre -->
           <div class="field-span-2">
-            <label class="input-label">Nombre de la organización</label>
+            <label class="input-label">{{ t('santoroAdmin.organizationNameLabel') }}</label>
             <q-input
               v-model="form.orgName"
               outlined
               dense
               class="premium-input"
-              placeholder="Ej. Banco Demo S.A. de C.V."
+              :placeholder="t('santoroAdmin.organizationNamePlaceholder')"
             />
           </div>
 
-          <!-- Dominio -->
           <div>
-            <label class="input-label">Dominio</label>
+            <label class="input-label">{{ t('santoroAdmin.domainLabel') }}</label>
             <q-input
               v-model="form.orgDomain"
               outlined
               dense
               class="premium-input"
-              placeholder="Ej. bancodemo.com"
+              :placeholder="t('santoroAdmin.domainPlaceholder')"
             />
           </div>
 
-          <!-- Código -->
           <div>
-            <label class="input-label">Código</label>
+            <label class="input-label">{{ t('santoroAdmin.organizationCodeLabel') }}</label>
             <q-input
               v-model="form.orgCode"
               outlined
               dense
               class="premium-input"
-              placeholder="Ej. BANC"
+              :placeholder="t('santoroAdmin.organizationCodePlaceholder')"
             />
           </div>
 
-          <!-- Slug -->
           <div>
-            <label class="input-label">Slug</label>
+            <label class="input-label">{{ t('santoroAdmin.slugLabel') }}</label>
             <q-input
               v-model="form.orgSlug"
               outlined
               dense
               class="premium-input"
-              placeholder="Ej. banco-demo"
+              :placeholder="t('santoroAdmin.slugPlaceholder')"
             />
           </div>
 
-          <!-- Zona horaria -->
           <div>
-            <label class="input-label">Zona horaria</label>
+            <label class="input-label">{{ t('santoroAdmin.timezoneLabel') }}</label>
             <q-input
               v-model="form.timezone"
               outlined
               dense
               class="premium-input"
-              placeholder="Ej. America/Mexico_City"
+              :placeholder="t('santoroAdmin.timezonePlaceholder')"
             />
           </div>
 
-          <!-- Retención -->
           <div>
-            <label class="input-label">Retención (días)</label>
+            <label class="input-label">{{ t('santoroAdmin.retentionDaysLabel') }}</label>
             <q-input
               v-model.number="form.retentionDays"
               outlined
@@ -94,49 +86,45 @@
             />
           </div>
 
-          <!-- Sección administrador -->
           <div class="field-span-2 section-divider">
-            <div class="section-title">Administrador inicial</div>
+            <div class="section-title">{{ t('santoroAdmin.initialAdminSectionTitle') }}</div>
             <div class="section-subtitle">
-              Estos datos se usarán para crear el usuario administrador principal.
+              {{ t('santoroAdmin.initialAdminSectionSubtitle') }}
             </div>
           </div>
 
-          <!-- Nombre admin -->
           <div>
-            <label class="input-label">Nombre del administrador</label>
+            <label class="input-label">{{ t('santoroAdmin.adminNameLabel') }}</label>
             <q-input
               v-model="form.adminName"
               outlined
               dense
               class="premium-input"
-              placeholder="Ej. Carlos Ramírez"
+              :placeholder="t('santoroAdmin.adminNamePlaceholder')"
             />
           </div>
 
-          <!-- Correo admin -->
           <div>
-            <label class="input-label">Correo del administrador</label>
+            <label class="input-label">{{ t('santoroAdmin.adminEmailLabel') }}</label>
             <q-input
               v-model="form.adminEmail"
               outlined
               dense
               type="email"
               class="premium-input"
-              placeholder="Ej. carlos.ramirez@bancodemo.com"
+              :placeholder="t('santoroAdmin.adminEmailPlaceholder')"
             />
           </div>
 
-          <!-- Contraseña temporal -->
           <div class="field-span-2">
-            <label class="input-label">Contraseña temporal</label>
+            <label class="input-label">{{ t('santoroAdmin.temporaryPasswordLabel') }}</label>
             <q-input
               v-model="form.temporaryPassword"
               outlined
               dense
               :type="showPassword ? 'text' : 'password'"
               class="premium-input"
-              placeholder="Ej. TempPass2026!"
+              :placeholder="t('santoroAdmin.temporaryPasswordPlaceholder')"
             >
               <template v-slot:prepend>
                 <q-icon name="lock" class="input-icon" />
@@ -158,10 +146,15 @@
         </div>
       </q-card-section>
 
-      <!-- ACTIONS -->
       <div class="dialog-actions">
-        <q-btn flat no-caps label="Cancelar" class="cancel-btn" v-close-popup />
-        <q-btn unelevated no-caps label="Crear empresa" class="save-btn" @click="handleSave" />
+        <q-btn flat no-caps :label="t('common.cancel')" class="cancel-btn" v-close-popup />
+        <q-btn
+          unelevated
+          no-caps
+          :label="t('santoroAdmin.createCompanyButton')"
+          class="save-btn"
+          @click="handleSave"
+        />
       </div>
     </q-card>
   </q-dialog>
@@ -170,9 +163,9 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { DashboardSantoro } from 'src/services/dashboardSantoro'
 
-// ─── Props & Emits ────────────────────────────────────────────────────────────
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -182,8 +175,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'created'])
 
-// ─── State ────────────────────────────────────────────────────────────────────
 const $q = useQuasar()
+const { t } = useI18n()
 const showPassword = ref(false)
 const showModalCreate = ref(props.modelValue)
 
@@ -201,7 +194,6 @@ const emptyForm = () => ({
 
 const form = ref(emptyForm())
 
-// Resetear form cada vez que el dialog se abre
 watch(
   () => props.modelValue,
   (val) => {
@@ -213,15 +205,14 @@ watch(
   },
 )
 
-// ─── Validations ──────────────────────────────────────────────────────────────
 const validate = () => {
   const rules = [
-    { field: 'orgName', message: 'El nombre de la organización es requerido.' },
-    { field: 'orgDomain', message: 'El dominio es requerido.' },
-    { field: 'orgCode', message: 'El código es requerido.' },
-    { field: 'orgSlug', message: 'El slug es requerido.' },
-    { field: 'adminName', message: 'El nombre del administrador es requerido.' },
-    { field: 'adminEmail', message: 'El correo del administrador es requerido.' },
+    { field: 'orgName', message: t('santoroAdmin.organizationNameRequired') },
+    { field: 'orgDomain', message: t('santoroAdmin.domainRequired') },
+    { field: 'orgCode', message: t('santoroAdmin.codeRequired') },
+    { field: 'orgSlug', message: t('santoroAdmin.slugRequired') },
+    { field: 'adminName', message: t('santoroAdmin.adminNameRequired') },
+    { field: 'adminEmail', message: t('santoroAdmin.adminEmailRequired') },
   ]
 
   for (const rule of rules) {
@@ -234,7 +225,6 @@ const validate = () => {
   return true
 }
 
-// ─── Save ─────────────────────────────────────────────────────────────────────
 const handleSave = async () => {
   if (!validate()) return
 
@@ -251,20 +241,20 @@ const handleSave = async () => {
   }
 
   try {
-    // Servicio real:
     const respuesta = await DashboardSantoro.createEmpresas(payload)
     $q.notify({
       type: 'positive',
-      message: respuesta.message || 'Organización creada correctamente.',
+      message: respuesta.message || t('santoroAdmin.companyCreated'),
       position: 'top',
     })
   } catch (error) {
-    console.error('❌ Error al generar empresa: ', error.message)
+    console.error('Error al generar empresa:', error.message)
     $q.notify({
       type: 'negative',
-      message: error.message || '❌ Error al crear empresa.',
+      message: error.message || t('santoroAdmin.companyCreateError'),
       position: 'top',
     })
+    return
   }
 
   emit('created', payload)

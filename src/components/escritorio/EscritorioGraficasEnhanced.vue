@@ -1,4 +1,8 @@
 <template>
+  <div v-show="refreshing" class="dashboard-refresh-indicator">
+    <q-spinner size="16px" color="cyan" />
+    <span>{{ t('diagnostic.updatingData') }}</span>
+  </div>
   <!-- ✅ Hero superior -->
   <div v-if="!loading" class="q-mb-lg">
     <section class="dashboard-hero">
@@ -297,12 +301,33 @@
     </div>
   </div>
 
-  <!-- ✅ Mapa geográfico + Dispositivos -->
+  <!-- ✅ Mapa geográfico / Dispositivos -->
   <div v-if="hasMapData" class="q-mt-xl">
+    <!-- Toggle solo visible cuando existen ambos tipos de datos -->
+    <div v-if="hasGeoData && hasDevicesData" class="flex justify-center q-mb-md">
+      <q-btn-toggle
+        v-model="mapView"
+        dense
+        unelevated
+        class="map-view-toggle"
+        text-color="grey-5"
+        toggle-color="orange-9"
+        :options="[
+          { label: t('dashboard.mapType'), value: 'logs'    },
+          { label: t('dashboard.mapType_devices'), value: 'devices' },
+        ]"
+      />
+    </div>
+
     <ConsoleGeoMap
+      v-if="mapView === 'logs'"
       :points="geoPoints"
-      :devices="devicePoints"
       @select-point="onGeoClick"
+    />
+
+    <ConsoleDevicesMap
+      v-if="mapView === 'devices'"
+      :devices="devicePoints"
       @select-device="onDeviceClick"
     />
   </div>
@@ -320,19 +345,25 @@
 
 <script setup>
 import { ref, computed, inject, watch, /* onMounted, */ nextTick, onBeforeUnmount } from 'vue'
+import { useQuasar } from 'quasar'
 import ConsoleGeoMap from '../blocks/ConsoleGeoMap.vue'
+import ConsoleDevicesMap from '../blocks/ConsoleDevicesMap.vue'
 import Chart from 'chart.js/auto'
 import ActivityTodayWidget from './ActivityTodayWidget.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const $q = useQuasar()
+const GEO_CONSOLE_RADIUS_KM = 5
 
 // ─── Injects ──────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
 const openConsole = inject('openConsole', null)
+const logsGlobales = inject('logsGlobales', ref([]))
 
 // ─── Estado único de carga ────────────────────────────────────────────────────
 const loading = inject('dashboardLoading', ref(false))
+const refreshing = inject('dashboardRefreshing', ref(false))
 
 // ─── Datos de los 5 endpoints ────────────────────────────────────────────────
 const statsData = inject('dashboardStatsData', ref(null))
@@ -346,7 +377,18 @@ const activityWidgetRef = ref(null) // ← referencia al widget
 // ─── Flags derivados de la API ────────────────────────────────────────────────
 const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
 const hasGeoData = computed(() => !!geoData.value?.points?.length)
-const hasDevicesData = computed(() => !!devicesData.value?.devices?.length)
+const hasDevicesData = computed(() =>
+  (devicesData.value?.devices || []).some((d) => {
+    const status = String(d?.status || '').toUpperCase()
+    return (
+      (status === 'ONLINE' || status === 'OFFLINE') &&
+      d?.latitude != null &&
+      d?.longitude != null &&
+      Number.isFinite(+d.latitude) &&
+      Number.isFinite(+d.longitude)
+    )
+  }),
+)
 
 // ─── Helpers de consola ───────────────────────────────────────────────────────
 const selectedEventType = computed(() => filtrosGlobales.value?.values?.eventType || '')
@@ -366,13 +408,141 @@ function openConsoleWithFilter(fieldKey, value) {
   window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail: { fieldKey, value } }))
 }
 
+const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
+
+function parseGeoLike(value) {
+  if (!value) return null
+
+  if (typeof value === 'object' && value?.type === 'Point' && Array.isArray(value.coordinates)) {
+    const [lng, lat] = value.coordinates.map(Number)
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lon: lng }
+  }
+
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const lat =
+      value.lat ??
+      value.latitude ??
+      (value.coords ? (value.coords.lat ?? value.coords.latitude) : undefined)
+    const lon =
+      value.lng ??
+      value.lon ??
+      value.long ??
+      value.longitude ??
+      (value.coords ? (value.coords.lng ?? value.coords.lon ?? value.coords.longitude) : undefined)
+
+    const parsedLat = Number(lat)
+    const parsedLon = Number(lon)
+    if (Number.isFinite(parsedLat) && Number.isFinite(parsedLon)) {
+      return { lat: parsedLat, lon: parsedLon }
+    }
+  }
+
+  if (Array.isArray(value) && value.length >= 2) {
+    const a = Number(value[0])
+    const b = Number(value[1])
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+
+    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
+    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
+    if (aIsLat) return { lat: a, lon: b }
+    if (bIsLat) return { lat: b, lon: a }
+  }
+
+  if (typeof value === 'string') {
+    const parts = value.split(',').map((part) => Number(part.trim()))
+    if (parts.length !== 2 || parts.some((part) => !Number.isFinite(part))) return null
+    const [a, b] = parts
+    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
+    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
+    if (aIsLat) return { lat: a, lon: b }
+    if (bIsLat) return { lat: b, lon: a }
+  }
+
+  return null
+}
+
+function parseLogGeo(log) {
+  return (
+    parseGeoLike(log?.geo) ||
+    parseGeoLike(log?.geoCoordinates) ||
+    parseGeoLike(log?.meta?.geoCoordinates) ||
+    null
+  )
+}
+
+function haversineKm(a, b) {
+  const R = 6371
+  const toRad = (x) => (x * Math.PI) / 180
+  const dLat = toRad(b.lat - a.lat)
+  const dLon = toRad(b.lon - a.lon)
+  const lat1 = toRad(a.lat)
+  const lat2 = toRad(b.lat)
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(s))
+}
+
+function normalizeStableValue(value) {
+  return String(value ?? '').trim()
+}
+
+function buildStableGeoSelection(logs) {
+  const candidates = [
+    {
+      fieldKey: 'meta.deviceId',
+      getValue: (log) => normalizeStableValue(getDeep(log, 'meta.deviceId')),
+    },
+    {
+      fieldKey: 'location.name',
+      getValue: (log) => normalizeStableValue(getDeep(log, 'location.name')),
+    },
+    {
+      fieldKey: 'actor.fullName',
+      getValue: (log) => normalizeStableValue(getDeep(log, 'actor.fullName')),
+    },
+  ]
+
+  for (const candidate of candidates) {
+    const values = logs.map(candidate.getValue).filter(Boolean)
+    if (!values.length || values.length !== logs.length) continue
+    const unique = new Set(values)
+    if (unique.size === 1) {
+      return [{ fieldKey: candidate.fieldKey, value: values[0] }]
+    }
+  }
+
+  return []
+}
+
+function openConsoleWithGeoSelection(logs, selections = []) {
+  const detail = { dataGrafica: logs, selections }
+  if (typeof openConsole === 'function') return openConsole(detail)
+  window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail }))
+}
+
 // ─── Geo ──────────────────────────────────────────────────────────────────────
 const geoPoints = computed(() =>
   (geoData.value?.points || []).map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
 )
 
 function onGeoClick({ lat, lon }) {
-  openConsole?.({ fieldKey: 'geo.coordinates', value: `[${lat},${lon}]` })
+  const center = { lat: Number(lat), lon: Number(lon) }
+  if (!Number.isFinite(center.lat) || !Number.isFinite(center.lon)) return
+
+  const nearbyLogs = (logsGlobales.value || []).filter((log) => {
+    const point = parseLogGeo(log)
+    return point ? haversineKm(center, point) <= GEO_CONSOLE_RADIUS_KM : false
+  })
+
+  if (!nearbyLogs.length) {
+    $q.notify({
+      type: 'info',
+      position: 'top',
+      message: 'No se encontraron logs relacionados a esa zona.',
+    })
+    return
+  }
+
+  openConsoleWithGeoSelection(nearbyLogs, buildStableGeoSelection(nearbyLogs))
 }
 
 // ─── Dispositivos ─────────────────────────────────────────────────────────────
@@ -398,6 +568,18 @@ function onDeviceClick({ deviceId }) {
 }
 
 const hasMapData = computed(() => hasGeoData.value || hasDevicesData.value)
+
+// 'logs' muestra ConsoleGeoMap, 'devices' muestra ConsoleDevicesMap.
+// Cuando solo existe un tipo de datos, se fuerza ese valor.
+const mapView = ref('logs')
+watch(
+  [hasGeoData, hasDevicesData],
+  ([geo, dev]) => {
+    if (!geo && dev) mapView.value = 'devices'
+    if (geo && !dev) mapView.value = 'logs'
+  },
+  { immediate: true },
+)
 
 // ─── Dashboard stats helpers ──────────────────────────────────────────────────
 const FUNC_COLORS = [
@@ -1056,6 +1238,68 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+.dashboard-refresh-indicator {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 1200;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: rgba(6, 16, 28, 0.82);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .dashboard-refresh-indicator {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    justify-content: center;
+  }
+}
+
+.map-view-toggle {
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 14px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+
+  :deep(.q-btn) {
+    border-radius: 12px;
+    padding: 10px 22px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.55);
+    background: transparent;
+    transition: all 0.12s ease;
+  }
+
+  :deep(.q-btn:hover) {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  :deep(.q-btn.q-btn--active) {
+    background: linear-gradient(180deg, #ff7a1a 0%, #d65400 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 25px rgba(255, 122, 26, 0.35);
+  }
+
+  :deep(.q-btn .q-btn__content) {
+    white-space: nowrap;
+  }
+}
+
 .dashboard-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
