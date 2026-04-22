@@ -15,7 +15,6 @@ const props = defineProps({
   points: { type: Array, default: () => [] }, // [{ lat, lon, count }]
 })
 
-const emit = defineEmits(['select-point'])
 
 // ---------------- STATE ----------------
 const mapEl   = ref(null)
@@ -50,6 +49,7 @@ const DARK_TILES = {
 const MAP_STYLES = {
   points: {
     version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
       osm: {
         type: 'raster',
@@ -90,7 +90,6 @@ async function initMap() {
   map.on('load', () => {
     loaded = true
     map.setProjection({ type: projection.value })
-    map.addSource('geo', { type: 'geojson', data: geojson.value })
     addLayers()
     fitBounds()
   })
@@ -100,74 +99,101 @@ async function initMap() {
 function addLayers() {
   if (!map) return
 
-  const isPoints = mode.value === 'points'
-  const isHeat   = mode.value === 'heat'
+  if (mode.value === 'points') {
+    map.addSource('geo', {
+      type: 'geojson',
+      data: geojson.value,
+      cluster: true,
+      clusterMaxZoom: 10,
+      clusterRadius: 60,
+      clusterProperties: { sum: ['+', ['get', 'count']] },
+    })
 
-  map.addLayer({
-    id: 'points-layer',
-    type: 'circle',
-    source: 'geo',
-    layout: { visibility: isPoints ? 'visible' : 'none' },
-    paint: {
-      'circle-color':        ['step', ['get', 'count'], '#22c55e', 5, '#f59e0b', 20, '#ef4444'],
-      'circle-radius':       ['step', ['get', 'count'], 6, 5, 10, 20, 14, 100, 18],
-      'circle-opacity':      0.9,
-      'circle-stroke-width': 1.5,
-      'circle-stroke-color': '#fff',
-    },
-  })
+    map.addLayer({
+      id: 'clusters',
+      type: 'circle',
+      source: 'geo',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color':        ['step', ['get', 'sum'], '#22c55e', 50, '#f59e0b', 200, '#ef4444'],
+        'circle-radius':       ['step', ['get', 'point_count'], 20, 5, 28, 20, 36],
+        'circle-opacity':      0.9,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#fff',
+      },
+    })
 
-  map.addLayer({
-    id: 'heat-layer',
-    type: 'heatmap',
-    source: 'geo',
-    layout: { visibility: isHeat ? 'visible' : 'none' },
-    paint: {
-      'heatmap-weight':    ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
-      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1.8, 9, 5.5, 14, 7.5],
-      'heatmap-radius':    ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
-      'heatmap-opacity':   0.95,
-      'heatmap-color': [
-        'interpolate', ['linear'], ['heatmap-density'],
-        0.0,  'rgba(34,197,94,0)',
-        0.25, '#22c55e',
-        0.6,  '#f59e0b',
-        1.0,  '#ef4444',
-      ],
-    },
-  })
+    map.addLayer({
+      id: 'cluster-count',
+      type: 'symbol',
+      source: 'geo',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field':  ['to-string', ['get', 'sum']],
+        'text-size':   12,
+        'text-font':   ['Open Sans Bold'],
+      },
+      paint: { 'text-color': '#fff' },
+    })
 
-  if (popup) popup.remove()
-  popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false })
+    map.addLayer({
+      id: 'unclustered-point',
+      type: 'circle',
+      source: 'geo',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color':        ['step', ['get', 'count'], '#22c55e', 5, '#f59e0b', 20, '#ef4444'],
+        'circle-radius':       ['step', ['get', 'count'], 6, 5, 10, 20, 14, 100, 18],
+        'circle-opacity':      0.9,
+        'circle-stroke-width': 1.5,
+        'circle-stroke-color': '#fff',
+      },
+    })
 
-  map.on('click', 'points-layer', (e) => {
-    const f = e.features?.[0]
-    if (!f) return
-    const [lon, lat] = f.geometry.coordinates
-    emit('select-point', { lat, lon })
-  })
+    if (popup) popup.remove()
+    popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false })
 
-  map.on('mousemove', 'points-layer', (e) => {
-    const f = e.features?.[0]
-    if (!f) return
-    const [lon, lat] = f.geometry.coordinates
-    const count = f.properties.count
-    popup
-      .setLngLat([lon, lat])
-      .setHTML(
-        `<div style="background:rgba(17,24,39,0.9);color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;backdrop-filter:blur(6px)">
-          <strong>${t('common.ubication')}</strong><br/>
-          ${lat.toFixed(5)}, ${lon.toFixed(5)}<br/>
-          ${t('dashboard.eventsSeriesLabel')}: <b>${count}</b><br/>
-          <span style="opacity:0.7">${t('common.seeData')}</span>
-        </div>`,
-      )
-      .addTo(map)
-  })
-  map.on('mouseleave', 'points-layer', () => popup?.remove())
+    map.on('mousemove', 'unclustered-point', (e) => {
+      const f = e.features?.[0]
+      if (!f) return
+      const [lon, lat] = f.geometry.coordinates
+      const count = f.properties.count
+      popup
+        .setLngLat([lon, lat])
+        .setHTML(
+          `<div style="background:rgba(17,24,39,0.9);color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;backdrop-filter:blur(6px)">
+            <strong>${t('common.ubication')}</strong><br/>
+            ${lat.toFixed(5)}, ${lon.toFixed(5)}<br/>
+            ${t('dashboard.eventsSeriesLabel')}: <b>${count}</b>
+          </div>`,
+        )
+        .addTo(map)
+    })
+    map.on('mouseleave', 'unclustered-point', () => popup?.remove())
+    map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'default' })
+    map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = '' })
+  } else {
+    map.addSource('geo', { type: 'geojson', data: geojson.value })
 
-  map.on('mouseenter', 'points-layer', () => { map.getCanvas().style.cursor = 'pointer' })
-  map.on('mouseleave', 'points-layer', () => { map.getCanvas().style.cursor = '' })
+    map.addLayer({
+      id: 'heat-layer',
+      type: 'heatmap',
+      source: 'geo',
+      paint: {
+        'heatmap-weight':    ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
+        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1.8, 9, 5.5, 14, 7.5],
+        'heatmap-radius':    ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
+        'heatmap-opacity':   0.95,
+        'heatmap-color': [
+          'interpolate', ['linear'], ['heatmap-density'],
+          0.0,  'rgba(34,197,94,0)',
+          0.25, '#22c55e',
+          0.6,  '#f59e0b',
+          1.0,  '#ef4444',
+        ],
+      },
+    })
+  }
 }
 
 // ---------------- MODE TOGGLE ----------------
@@ -178,7 +204,6 @@ function updateMode() {
   map.once('style.load', () => {
     loaded = true
     map.setProjection({ type: projection.value })
-    map.addSource('geo', { type: 'geojson', data: geojson.value })
     addLayers()
     fitBounds()
   })

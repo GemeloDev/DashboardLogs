@@ -322,7 +322,6 @@
     <ConsoleGeoMap
       v-if="mapView === 'logs'"
       :points="geoPoints"
-      @select-point="onGeoClick"
     />
 
     <ConsoleDevicesMap
@@ -345,7 +344,6 @@
 
 <script setup>
 import { ref, computed, inject, watch, /* onMounted, */ nextTick, onBeforeUnmount } from 'vue'
-import { useQuasar } from 'quasar'
 import ConsoleGeoMap from '../blocks/ConsoleGeoMap.vue'
 import ConsoleDevicesMap from '../blocks/ConsoleDevicesMap.vue'
 import Chart from 'chart.js/auto'
@@ -353,8 +351,6 @@ import ActivityTodayWidget from './ActivityTodayWidget.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-const $q = useQuasar()
-const GEO_CONSOLE_RADIUS_KM = 5
 
 // ─── Injects ──────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
@@ -410,107 +406,10 @@ function openConsoleWithFilter(fieldKey, value) {
 
 const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
 
-function parseGeoLike(value) {
-  if (!value) return null
-
-  if (typeof value === 'object' && value?.type === 'Point' && Array.isArray(value.coordinates)) {
-    const [lng, lat] = value.coordinates.map(Number)
-    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lon: lng }
-  }
-
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const lat =
-      value.lat ??
-      value.latitude ??
-      (value.coords ? (value.coords.lat ?? value.coords.latitude) : undefined)
-    const lon =
-      value.lng ??
-      value.lon ??
-      value.long ??
-      value.longitude ??
-      (value.coords ? (value.coords.lng ?? value.coords.lon ?? value.coords.longitude) : undefined)
-
-    const parsedLat = Number(lat)
-    const parsedLon = Number(lon)
-    if (Number.isFinite(parsedLat) && Number.isFinite(parsedLon)) {
-      return { lat: parsedLat, lon: parsedLon }
-    }
-  }
-
-  if (Array.isArray(value) && value.length >= 2) {
-    const a = Number(value[0])
-    const b = Number(value[1])
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
-
-    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
-    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
-    if (aIsLat) return { lat: a, lon: b }
-    if (bIsLat) return { lat: b, lon: a }
-  }
-
-  if (typeof value === 'string') {
-    const parts = value.split(',').map((part) => Number(part.trim()))
-    if (parts.length !== 2 || parts.some((part) => !Number.isFinite(part))) return null
-    const [a, b] = parts
-    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
-    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
-    if (aIsLat) return { lat: a, lon: b }
-    if (bIsLat) return { lat: b, lon: a }
-  }
-
-  return null
-}
-
-function parseLogGeo(log) {
-  return (
-    parseGeoLike(log?.geo) ||
-    parseGeoLike(log?.geoCoordinates) ||
-    parseGeoLike(log?.meta?.geoCoordinates) ||
-    null
-  )
-}
-
-function haversineKm(a, b) {
-  const R = 6371
-  const toRad = (x) => (x * Math.PI) / 180
-  const dLat = toRad(b.lat - a.lat)
-  const dLon = toRad(b.lon - a.lon)
-  const lat1 = toRad(a.lat)
-  const lat2 = toRad(b.lat)
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(s))
-}
-
-function normalizeStableValue(value) {
-  return String(value ?? '').trim()
-}
-
-function buildStableGeoSelection(logs) {
-  const candidates = [
-    {
-      fieldKey: 'meta.deviceId',
-      getValue: (log) => normalizeStableValue(getDeep(log, 'meta.deviceId')),
-    },
-    {
-      fieldKey: 'location.name',
-      getValue: (log) => normalizeStableValue(getDeep(log, 'location.name')),
-    },
-    {
-      fieldKey: 'actor.fullName',
-      getValue: (log) => normalizeStableValue(getDeep(log, 'actor.fullName')),
-    },
-  ]
-
-  for (const candidate of candidates) {
-    const values = logs.map(candidate.getValue).filter(Boolean)
-    if (!values.length || values.length !== logs.length) continue
-    const unique = new Set(values)
-    if (unique.size === 1) {
-      return [{ fieldKey: candidate.fieldKey, value: values[0] }]
-    }
-  }
-
-  return []
+function normalizeCompareValue(value) {
+  return String(value ?? '')
+    .trim()
+    .toUpperCase()
 }
 
 function openConsoleWithGeoSelection(logs, selections = []) {
@@ -523,27 +422,6 @@ function openConsoleWithGeoSelection(logs, selections = []) {
 const geoPoints = computed(() =>
   (geoData.value?.points || []).map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
 )
-
-function onGeoClick({ lat, lon }) {
-  const center = { lat: Number(lat), lon: Number(lon) }
-  if (!Number.isFinite(center.lat) || !Number.isFinite(center.lon)) return
-
-  const nearbyLogs = (logsGlobales.value || []).filter((log) => {
-    const point = parseLogGeo(log)
-    return point ? haversineKm(center, point) <= GEO_CONSOLE_RADIUS_KM : false
-  })
-
-  if (!nearbyLogs.length) {
-    $q.notify({
-      type: 'info',
-      position: 'top',
-      message: 'No se encontraron logs relacionados a esa zona.',
-    })
-    return
-  }
-
-  openConsoleWithGeoSelection(nearbyLogs, buildStableGeoSelection(nearbyLogs))
-}
 
 // ─── Dispositivos ─────────────────────────────────────────────────────────────
 const devicePoints = computed(() =>
@@ -563,8 +441,82 @@ const devicePoints = computed(() =>
     })),
 )
 
-function onDeviceClick({ deviceId }) {
-  openConsole?.({ fieldKey: 'meta.deviceId', value: deviceId })
+function buildDeviceLogMatchers(device = {}) {
+  const candidates = [
+    {
+      fieldKey: 'meta.deviceId',
+      deviceValue: device.deviceId,
+      logPaths: ['meta.deviceId', 'deviceId', 'device.id', 'source'],
+    },
+    {
+      fieldKey: 'meta.ip',
+      deviceValue: device.ip,
+      logPaths: ['meta.ip', 'ip', 'client.ip', 'request.ip'],
+    },
+    {
+      fieldKey: 'meta.deviceName',
+      deviceValue: device.hostname,
+      logPaths: ['meta.deviceName', 'meta.hostname', 'hostname', 'device.hostname'],
+    },
+    {
+      fieldKey: 'location.name',
+      deviceValue: device.locationName,
+      logPaths: ['location.name', 'locationName'],
+    },
+  ]
+
+  return candidates
+    .map((candidate) => ({
+      ...candidate,
+      normalizedValue: normalizeCompareValue(candidate.deviceValue),
+    }))
+    .filter((candidate) => candidate.normalizedValue)
+}
+
+function matchLogsForDevice(device = {}) {
+  const matchers = buildDeviceLogMatchers(device)
+  if (!matchers.length) return { logs: [], selections: [] }
+
+  const matchesByPriority = matchers.map((matcher) => {
+    const logs = (logsGlobales.value || []).filter((log) =>
+      matcher.logPaths.some((path) => normalizeCompareValue(getDeep(log, path)) === matcher.normalizedValue),
+    )
+
+    return {
+      fieldKey: matcher.fieldKey,
+      value: matcher.deviceValue,
+      logs,
+    }
+  })
+
+  const firstNonEmpty = matchesByPriority.find((item) => item.logs.length)
+  if (!firstNonEmpty) return { logs: [], selections: [] }
+
+  const selections = matchesByPriority
+    .filter((item) => item.logs.length)
+    .map((item) => ({ fieldKey: item.fieldKey, value: item.value }))
+
+  return {
+    logs: firstNonEmpty.logs,
+    selections,
+  }
+}
+
+function onDeviceClick(device) {
+  const { logs, selections } = matchLogsForDevice(device)
+
+  if (logs.length) {
+    openConsoleWithGeoSelection(logs, selections)
+    return
+  }
+
+  const fallbackSelection =
+    selections[0] ||
+    (device?.deviceId ? { fieldKey: 'meta.deviceId', value: device.deviceId } : null)
+
+  if (fallbackSelection) {
+    openConsole?.(fallbackSelection)
+  }
 }
 
 const hasMapData = computed(() => hasGeoData.value || hasDevicesData.value)
