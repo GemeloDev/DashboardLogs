@@ -106,7 +106,16 @@ export const useEvaStore = defineStore('eva', {
         },
 
         setSelectedSystem(system) {
-            this.selectedSystem = system || null
+            const next = system || null
+            if (next !== this.selectedSystem) {
+                // Clear stale insight/alert/trend panels when switching systems.
+                // 'chart' mode is excluded because its own selector calls this action too.
+                const staleMode = this.contextPanel.mode
+                if (staleMode && staleMode !== 'empty' && staleMode !== 'chart') {
+                    this.clearContextPanel()
+                }
+            }
+            this.selectedSystem = next
         },
 
         setSelectedGranularity(value) {
