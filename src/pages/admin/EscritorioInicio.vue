@@ -10,18 +10,17 @@
         <div class="hero-left">
           <div class="hero-badge">
             <q-icon name="admin_panel_settings" size="18px" color="cyan" />
-            <span>Panel administrativo</span>
+            <span>{{ t('santoroAdmin.panelAdministrative') }}</span>
           </div>
 
           <h1 class="hero-title">
-            Centro de Control
+            {{ t('santoroAdmin.controlCenterTitle') }}
             <br />
             <span class="color-orange-santoro">Santoro</span>
           </h1>
 
           <p class="hero-subtitle">
-            Administra usuarios, empresas y API Keys desde una consola central con visibilidad
-            operativa y accesos rápidos.
+            {{ t('santoroAdmin.santoroSubtitle') }}
           </p>
 
           <div class="hero-actions">
@@ -30,7 +29,7 @@
               no-caps
               class="hero-btn hero-btn--secondary"
               icon="add_business"
-              label="Nueva empresa"
+              :label="t('santoroAdmin.newCompanyButton')"
               @click="openEmpresaCreate"
             />
           </div>
@@ -43,23 +42,23 @@
                 <q-icon name="insights" size="22px" />
               </div>
               <div>
-                <div class="hero-side-title">Resumen del sistema</div>
-                <div class="hero-side-subtitle">Estado general administrativo</div>
+                <div class="hero-side-title">{{ t('santoroAdmin.systemSummaryTitle') }}</div>
+                <div class="hero-side-subtitle">{{ t('santoroAdmin.systemSummarySubtitle') }}</div>
               </div>
             </div>
 
             <div class="hero-side-metrics">
               <div class="mini-metric">
-                <div class="mini-metric__label">Usuarios activos</div>
-                <div class="mini-metric__value">{{ users.activeUsers }}</div>
+                <div class="mini-metric__label">{{ t('santoroAdmin.activeUsersMetric') }}</div>
+                <div class="mini-metric__value">{{ formatNumber(users.activeUsers) }}</div>
               </div>
               <div class="mini-metric">
-                <div class="mini-metric__label">Empresas registradas</div>
-                <div class="mini-metric__value">{{ organizations.totalOrganizations }}</div>
+                <div class="mini-metric__label">{{ t('santoroAdmin.registeredCompaniesMetric') }}</div>
+                <div class="mini-metric__value">{{ formatNumber(organizations.totalOrganizations) }}</div>
               </div>
               <div class="mini-metric">
-                <div class="mini-metric__label">API Keys vigentes</div>
-                <div class="mini-metric__value">{{ apiKeys.totalApiKeys }}</div>
+                <div class="mini-metric__label">{{ t('santoroAdmin.currentApiKeysMetric') }}</div>
+                <div class="mini-metric__value">{{ formatNumber(apiKeys.totalApiKeys) }}</div>
               </div>
             </div>
           </q-card>
@@ -83,14 +82,14 @@
             />
           </div>
 
-          <div class="module-title">Usuarios</div>
+          <div class="module-title">{{ t('santoroAdmin.usersModuleTitle') }}</div>
           <div class="module-text">
-            Alta, edición, roles, permisos y estado de usuarios del sistema.
+            {{ t('santoroAdmin.usersModuleText') }}
           </div>
 
           <div class="module-chips">
-            <q-chip dense class="glass-chip chip-info">{{ users.totalUsers }} registrados</q-chip>
-            <q-chip dense class="glass-chip chip-active">{{ users.activeUsers }} activos</q-chip>
+            <q-chip dense class="glass-chip chip-info">{{ t('santoroAdmin.registeredUsersChip', { count: formatNumber(users.totalUsers) }) }}</q-chip>
+            <q-chip dense class="glass-chip chip-active">{{ t('santoroAdmin.activeUsersChip', { count: formatNumber(users.activeUsers) }) }}</q-chip>
           </div>
         </q-card>
 
@@ -109,18 +108,14 @@
             />
           </div>
 
-          <div class="module-title">Empresas</div>
+          <div class="module-title">{{ t('santoroAdmin.companiesModuleTitle') }}</div>
           <div class="module-text">
-            Administra empresas, estado operativo, relación con usuarios y datos base.
+            {{ t('santoroAdmin.companiesModuleText') }}
           </div>
 
           <div class="module-chips">
-            <q-chip dense class="glass-chip chip-info"
-              >{{ organizations.totalOrganizations }} empresas</q-chip
-            >
-            <q-chip dense class="glass-chip chip-pending"
-              >{{ organizations.disabledOrganizations }} desactivadas</q-chip
-            >
+            <q-chip dense class="glass-chip chip-info">{{ t('santoroAdmin.companiesChip', { count: formatNumber(organizations.totalOrganizations) }) }}</q-chip>
+            <q-chip dense class="glass-chip chip-pending">{{ t('santoroAdmin.disabledCompaniesChip', { count: formatNumber(organizations.disabledOrganizations) }) }}</q-chip>
           </div>
         </q-card>
 
@@ -139,16 +134,14 @@
             />
           </div>
 
-          <div class="module-title">API Keys</div>
+          <div class="module-title">{{ t('santoroAdmin.apiKeysModuleTitle') }}</div>
           <div class="module-text">
-            Controla vigencia, rotación, expiración y seguridad de credenciales del sistema.
+            {{ t('santoroAdmin.apiKeysModuleText') }}
           </div>
 
           <div class="module-chips">
-            <q-chip dense class="glass-chip chip-info">{{ apiKeys.activeApiKeys }} activas</q-chip>
-            <q-chip dense class="glass-chip chip-inactive"
-              >{{ apiKeys.expiringApiKeys }} por expirar</q-chip
-            >
+            <q-chip dense class="glass-chip chip-info">{{ t('santoroAdmin.activeApiKeysChip', { count: formatNumber(apiKeys.activeApiKeys) }) }}</q-chip>
+            <q-chip dense class="glass-chip chip-inactive">{{ t('santoroAdmin.expiringApiKeysChip', { count: formatNumber(apiKeys.expiringApiKeys) }) }}</q-chip>
           </div>
         </q-card>
       </section>
@@ -159,8 +152,8 @@
         <q-card flat bordered class="panel-card">
           <div class="panel-header">
             <div>
-              <div class="panel-title">Alertas y seguimiento</div>
-              <div class="panel-subtitle">Elementos que requieren atención</div>
+              <div class="panel-title">{{ t('santoroAdmin.alertsTrackingTitle') }}</div>
+              <div class="panel-subtitle">{{ t('santoroAdmin.alertsTrackingSubtitle') }}</div>
             </div>
           </div>
 
@@ -171,15 +164,19 @@
                 <q-icon name="cancel" size="18px" />
               </div>
               <div class="alert-body">
-                <div class="alert-title">API Keys vencidas</div>
+                <div class="alert-title">{{ t('santoroAdmin.expiredApiKeysTitle') }}</div>
                 <div class="alert-text">
-                  {{ alerts.expiredKeys.length }} clave{{
-                    alerts.expiredKeys.length > 1 ? 's han' : ' ha'
+                  {{
+                    t(
+                      alerts.expiredKeys.length === 1
+                        ? 'santoroAdmin.expiredApiKeysTextSingular'
+                        : 'santoroAdmin.expiredApiKeysTextPlural',
+                      { count: formatNumber(alerts.expiredKeys.length) },
+                    )
                   }}
-                  expirado y sigue{{ alerts.expiredKeys.length > 1 ? 'n' : '' }} con estado activo.
                 </div>
               </div>
-              <q-chip dense class="glass-chip chip-danger">Crítico</q-chip>
+              <q-chip dense class="glass-chip chip-danger">{{ t('santoroAdmin.criticalChip') }}</q-chip>
             </div>
 
             <!-- Claves por expirar en 7 días -->
@@ -188,15 +185,19 @@
                 <q-icon name="warning_amber" size="18px" />
               </div>
               <div class="alert-body">
-                <div class="alert-title">API Keys por expirar</div>
+                <div class="alert-title">{{ t('santoroAdmin.expiringApiKeysTitle') }}</div>
                 <div class="alert-text">
-                  {{ alerts.expiringKeys.length }} clave{{
-                    alerts.expiringKeys.length > 1 ? 's vencen' : ' vence'
+                  {{
+                    t(
+                      alerts.expiringKeys.length === 1
+                        ? 'santoroAdmin.expiringApiKeysTextSingular'
+                        : 'santoroAdmin.expiringApiKeysTextPlural',
+                      { count: formatNumber(alerts.expiringKeys.length) },
+                    )
                   }}
-                  en los próximos 7 días.
                 </div>
               </div>
-              <q-chip dense class="glass-chip chip-pending">Urgente</q-chip>
+              <q-chip dense class="glass-chip chip-pending">{{ t('santoroAdmin.urgentChip') }}</q-chip>
             </div>
 
             <!-- Claves creadas recientemente -->
@@ -205,15 +206,19 @@
                 <q-icon name="fiber_new" size="18px" />
               </div>
               <div class="alert-body">
-                <div class="alert-title">API Keys nuevas</div>
+                <div class="alert-title">{{ t('santoroAdmin.newApiKeysTitle') }}</div>
                 <div class="alert-text">
-                  {{ alerts.recentKeys.length }} clave{{
-                    alerts.recentKeys.length > 1 ? 's fueron creadas' : ' fue creada'
+                  {{
+                    t(
+                      alerts.recentKeys.length === 1
+                        ? 'santoroAdmin.newApiKeysTextSingular'
+                        : 'santoroAdmin.newApiKeysTextPlural',
+                      { count: formatNumber(alerts.recentKeys.length) },
+                    )
                   }}
-                  en los últimos 7 días.
                 </div>
               </div>
-              <q-chip dense class="glass-chip chip-info">Reciente</q-chip>
+              <q-chip dense class="glass-chip chip-info">{{ t('santoroAdmin.recentChip') }}</q-chip>
             </div>
 
             <!-- Sin alertas -->
@@ -229,8 +234,8 @@
                 <q-icon name="check_circle" size="18px" />
               </div>
               <div class="alert-body">
-                <div class="alert-title">Sin alertas</div>
-                <div class="alert-text">Todas las claves están en orden.</div>
+                <div class="alert-title">{{ t('santoroAdmin.noAlertsTitle') }}</div>
+                <div class="alert-text">{{ t('santoroAdmin.noAlertsText') }}</div>
               </div>
             </div>
           </div>
@@ -240,14 +245,14 @@
         <q-card flat bordered class="panel-card">
           <div class="panel-header">
             <div>
-              <div class="panel-title">Distribución rápida</div>
-              <div class="panel-subtitle">Vista compacta por módulo</div>
+              <div class="panel-title">{{ t('santoroAdmin.quickDistributionTitle') }}</div>
+              <div class="panel-subtitle">{{ t('santoroAdmin.quickDistributionSubtitle') }}</div>
             </div>
           </div>
 
           <div class="distribution-list">
             <div class="dist-row">
-              <div class="dist-label">Usuarios</div>
+              <div class="dist-label">{{ t('santoroAdmin.usersShort') }}</div>
               <q-linear-progress
                 :value="distUsuarios"
                 color="cyan"
@@ -256,11 +261,11 @@
                 size="10px"
                 class="dist-progress"
               />
-              <div class="dist-value">{{ Math.round(distUsuarios * 100) }}%</div>
+              <div class="dist-value">{{ formatPercent(distUsuarios) }}</div>
             </div>
 
             <div class="dist-row">
-              <div class="dist-label">Empresas</div>
+              <div class="dist-label">{{ t('santoroAdmin.companiesShort') }}</div>
               <q-linear-progress
                 :value="distEmpresas"
                 color="orange"
@@ -269,11 +274,11 @@
                 size="10px"
                 class="dist-progress"
               />
-              <div class="dist-value">{{ Math.round(distEmpresas * 100) }}%</div>
+              <div class="dist-value">{{ formatPercent(distEmpresas) }}</div>
             </div>
 
             <div class="dist-row">
-              <div class="dist-label">API Keys</div>
+              <div class="dist-label">{{ t('santoroAdmin.apiKeysShort') }}</div>
               <q-linear-progress
                 :value="distApiKeys"
                 color="purple"
@@ -282,7 +287,7 @@
                 size="10px"
                 class="dist-progress"
               />
-              <div class="dist-value">{{ Math.round(distApiKeys * 100) }}%</div>
+              <div class="dist-value">{{ formatPercent(distApiKeys) }}</div>
             </div>
           </div>
         </q-card>
@@ -297,8 +302,10 @@ import { useQuasar } from 'quasar'
 import { DashboardSantoro } from 'src/services/dashboardSantoro'
 import { onMounted, ref, computed } from 'vue'
 import CreateEmpresa from './modals/CreateEmpresa.vue'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
+const { t, locale } = useI18n()
 const dialogEmpresa = ref(false)
 const loading = ref(false)
 
@@ -324,6 +331,12 @@ const apiKeys = ref({
 })
 
 const alerts = ref({ expiredKeys: [], expiringKeys: [], recentKeys: [] })
+const formatNumber = (value) => new Intl.NumberFormat(locale.value).format(Number(value || 0))
+const formatPercent = (value) =>
+  new Intl.NumberFormat(locale.value, {
+    style: 'percent',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0))
 
 // — computed para distribución —
 const distUsuarios = computed(() => {
@@ -350,7 +363,7 @@ async function initializeStats() {
   try {
     const respuesta = await DashboardSantoro.getStats()
     $q.notify({
-      message: `${respuesta.message} iniciados correctamente!`,
+      message: t('santoroAdmin.panelStatsInitialized', { message: respuesta.message }),
       type: 'positive',
       position: 'top',
     })
@@ -376,7 +389,7 @@ async function initializeStats() {
   } catch (error) {
     console.error('❌ Error al iniciar las estadísticas: ', error.message)
     $q.notify({
-      message: '❌ Error al iniciar estadísticas del panel!',
+      message: t('santoroAdmin.panelStatsError'),
       type: 'negative',
     })
   } finally {

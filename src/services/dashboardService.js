@@ -22,20 +22,20 @@ export const DashboardService = {
     return unwrapResponse(response)
   },
 
-  async getSeries({ system } = {}) {
-    const params = cleanParams({ system })
+  async getSeries({ system, from, to } = {}) {
+    const params = cleanParams({ system, from, to })
     const response = await axiosInstance.get(DASHBOARD.SERIES, { params })
     return unwrapResponse(response)
   },
 
-  async getHttp({ system } = {}) {
-    const params = cleanParams({ system })
+  async getHttp({ system, from, to } = {}) {
+    const params = cleanParams({ system, from, to })
     const response = await axiosInstance.get(DASHBOARD.HTTP, { params })
     return unwrapResponse(response)
   },
 
-  async getGeo({ system } = {}) {
-    const params = cleanParams({ system })
+  async getGeo({ system, from, to } = {}) {
+    const params = cleanParams({ system, from, to })
     const response = await axiosInstance.get(DASHBOARD.GEO, { params })
     return unwrapResponse(response)
   },

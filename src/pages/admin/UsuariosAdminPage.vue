@@ -6,15 +6,15 @@
         <div>
           <div class="users-header__badge">
             <q-icon name="group" size="18px" color="cyan" />
-            <span>Administración</span>
+            <span>{{ t('santoroAdmin.administrationBadge') }}</span>
           </div>
 
           <h1 class="users-header__title">
-            Gestión de <span class="color-orange-santoro">Usuarios</span>
+            {{ t('userManagement.title') }} <span class="color-orange-santoro">{{ t('layout.users') }}</span>
           </h1>
 
           <p class="users-header__subtitle">
-            Alta, edición y eliminación de usuarios del sistema.
+            {{ t('santoroAdmin.usersSubtitle') }}
           </p>
         </div>
       </section>
@@ -28,7 +28,7 @@
             dense
             clearable
             class="premium-input"
-            placeholder="Buscar por nombre, email o empresa..."
+            :placeholder="t('santoroAdmin.usersSearchPlaceholder')"
           >
             <template v-slot:prepend>
               <q-icon name="search" class="input-icon" />
@@ -43,7 +43,7 @@
             map-options
             class="premium-input"
             :options="opcionesEmpresa"
-            label="Empresa"
+            :label="t('santoroAdmin.companyFilterLabel')"
           >
             <template v-slot:prepend>
               <q-icon name="apartment" class="input-icon" />
@@ -58,11 +58,11 @@
             map-options
             class="premium-input"
             :options="[
-              { label: 'Todos los estados', value: 'todos' },
-              { label: 'Activos', value: 'activo' },
-              { label: 'Inactivos', value: 'inactivo' },
+              { label: t('santoroAdmin.allStatuses'), value: 'todos' },
+              { label: t('santoroAdmin.activeUsersFilter'), value: 'activo' },
+              { label: t('santoroAdmin.inactiveUsersFilter'), value: 'inactivo' },
             ]"
-            label="Estado"
+            :label="t('santoroAdmin.statusFilterLabel')"
           >
             <template v-slot:prepend>
               <q-icon name="filter_alt" class="input-icon" />
@@ -82,14 +82,14 @@
           :pagination="pagination"
           class="users-table"
           :rows-per-page-options="[5, 10, 15, 20]"
-          no-data-label="No se encontraron usuarios"
+          :no-data-label="t('santoroAdmin.noUsersFound')"
         >
           <template v-slot:top>
             <div class="table-top">
               <div>
-                <div class="table-title">Listado de Usuarios</div>
+                <div class="table-title">{{ t('santoroAdmin.usersListTitle') }}</div>
                 <div class="table-subtitle">
-                  {{ rowsFiltrados.length }} registro(s) encontrado(s)
+                  {{ rowsFoundLabel }}
                 </div>
               </div>
             </div>
@@ -112,7 +112,7 @@
           <template v-slot:body-cell-empresa="props">
             <q-td :props="props">
               <q-chip dense class="chip-role">
-                {{ props.row.orgName || 'Sin empresa' }}
+                {{ props.row.orgName || t('santoroAdmin.noCompany') }}
               </q-chip>
             </q-td>
           </template>
@@ -120,7 +120,7 @@
           <template v-slot:body-cell-activo="props">
             <q-td :props="props">
               <q-chip dense :class="props.row.status ? 'chip-active' : 'chip-inactive'">
-                {{ props.row.status ? 'Activo' : 'Inactivo' }}
+                {{ props.row.status ? t('santoroAdmin.activeStatus') : t('santoroAdmin.inactiveStatus') }}
               </q-chip>
             </q-td>
           </template>
@@ -142,7 +142,7 @@
                   class="action-btn action-btn--edit"
                   @click="openDetailDialog(props.row)"
                 >
-                  <q-tooltip class="glass-tooltip">Ver detalles</q-tooltip>
+                  <q-tooltip class="glass-tooltip">{{ t('santoroAdmin.viewDetailsTooltip') }}</q-tooltip>
                 </q-btn>
               </div>
             </q-td>
@@ -159,8 +159,8 @@
             <q-icon name="person" size="24px" color="white" />
           </div>
           <div>
-            <div class="dialog-title">Detalle de usuario</div>
-            <div class="dialog-subtitle">Información completa del usuario seleccionado.</div>
+            <div class="dialog-title">{{ t('santoroAdmin.userDetailTitle') }}</div>
+            <div class="dialog-subtitle">{{ t('santoroAdmin.userDetailSubtitle') }}</div>
           </div>
         </div>
 
@@ -182,7 +182,7 @@
                 :class="selectedUser.status ? 'chip-active' : 'chip-inactive'"
                 class="q-mt-xs"
               >
-                {{ selectedUser.status ? 'Activo' : 'Inactivo' }}
+                {{ selectedUser.status ? t('santoroAdmin.activeStatus') : t('santoroAdmin.inactiveStatus') }}
               </q-chip>
             </div>
           </div>
@@ -191,36 +191,36 @@
           <div class="detail-grid">
             <div class="detail-field">
               <div class="detail-field__label">
-                <q-icon name="apartment" size="14px" class="q-mr-xs" />Empresa
+                <q-icon name="apartment" size="14px" class="q-mr-xs" />{{ t('santoroAdmin.companyField') }}
               </div>
-              <div class="detail-field__value">{{ selectedUser.orgName || 'Sin empresa' }}</div>
+              <div class="detail-field__value">{{ selectedUser.orgName || t('santoroAdmin.noCompany') }}</div>
             </div>
 
             <div class="detail-field">
               <div class="detail-field__label">
-                <q-icon name="badge" size="14px" class="q-mr-xs" />ID
+                <q-icon name="badge" size="14px" class="q-mr-xs" />{{ t('santoroAdmin.idField') }}
               </div>
               <div class="detail-field__value detail-field__value--mono">{{ selectedUser.id }}</div>
             </div>
 
             <div class="detail-field">
               <div class="detail-field__label">
-                <q-icon name="event" size="14px" class="q-mr-xs" />Fecha de creación
+                <q-icon name="event" size="14px" class="q-mr-xs" />{{ t('santoroAdmin.createdAtField') }}
               </div>
               <div class="detail-field__value">{{ formatDate(selectedUser.createdAt) }}</div>
             </div>
 
             <div class="detail-field">
               <div class="detail-field__label">
-                <q-icon name="schedule" size="14px" class="q-mr-xs" />Zona horaria
+                <q-icon name="schedule" size="14px" class="q-mr-xs" />{{ t('santoroAdmin.timezoneField') }}
               </div>
-              <div class="detail-field__value">{{ selectedUser.timezone || '—' }}</div>
+              <div class="detail-field__value">{{ selectedUser.timezone || t('santoroAdmin.unavailable') }}</div>
             </div>
           </div>
         </q-card-section>
 
         <div class="dialog-actions">
-          <q-btn flat no-caps label="Cerrar" class="btn-cancel" v-close-popup />
+          <q-btn flat no-caps :label="t('qrScanner.closeAction')" class="btn-cancel" v-close-popup />
         </div>
       </q-card>
     </q-dialog>
@@ -230,9 +230,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { DashboardSantoro } from 'src/services/dashboardSantoro'
 
 const $q = useQuasar()
+const { t, locale } = useI18n()
 
 const search = ref('')
 const filtroEstado = ref('todos')
@@ -246,20 +248,28 @@ const rows = ref([])
 const opcionesEmpresa = computed(() => {
   const empresas = [...new Set(rows.value.map((u) => u.orgName).filter(Boolean))]
   return [
-    { label: 'Todas las empresas', value: 'todas' },
+    { label: t('santoroAdmin.allCompanies'), value: 'todas' },
     ...empresas.map((e) => ({ label: e, value: e })),
   ]
 })
 
 const columns = [
-  { name: 'name', label: 'USUARIO', field: 'name', align: 'left', sortable: true },
-  { name: 'empresa', label: 'EMPRESA', field: 'empresa', align: 'left', sortable: true },
-  { name: 'activo', label: 'ESTADO', field: 'activo', align: 'left', sortable: true },
-  { name: 'fechaCreacion', label: 'FECHA CREACIÓN', field: 'fechaCreacion', align: 'left', sortable: true },
-  { name: 'acciones', label: 'ACCIONES', field: 'acciones', align: 'center' },
+  { name: 'name', label: t('userManagement.user').toUpperCase(), field: 'name', align: 'left', sortable: true },
+  { name: 'empresa', label: t('santoroAdmin.companyColumn'), field: 'empresa', align: 'left', sortable: true },
+  { name: 'activo', label: t('santoroAdmin.statusColumn'), field: 'activo', align: 'left', sortable: true },
+  { name: 'fechaCreacion', label: t('santoroAdmin.createdColumn'), field: 'fechaCreacion', align: 'left', sortable: true },
+  { name: 'acciones', label: t('common.actions').toUpperCase(), field: 'acciones', align: 'center' },
 ]
 
 const pagination = ref({ page: 1, rowsPerPage: 10 })
+const rowsFoundLabel = computed(() =>
+  t(
+    rowsFiltrados.value.length === 1
+      ? 'santoroAdmin.recordsFoundSingular'
+      : 'santoroAdmin.recordsFoundPlural',
+    { count: rowsFiltrados.value.length },
+  ),
+)
 
 const rowsFiltrados = computed(() => {
   let result = [...rows.value]
@@ -296,12 +306,12 @@ const getInitials = (name) =>
     .join('')
 
 const formatDate = (date) => {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('es-MX', {
+  if (!date) return t('santoroAdmin.unavailable')
+  return new Intl.DateTimeFormat(locale.value, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  })
+  }).format(new Date(date))
 }
 
 // ─── Dialog detalle ───────────────────────────────────────────────────────────
@@ -323,7 +333,7 @@ async function loadUsers() {
   $q.notify({
     type: 'positive',
     position: 'top',
-    message: response.message + ' obtenidos correctamente' || 'Usuarios obtenidos correctamente.',
+    message: response.message || t('santoroAdmin.usersLoaded'),
   })
 }
 

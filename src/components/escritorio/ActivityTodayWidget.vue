@@ -134,6 +134,7 @@ const { t, locale } = useI18n()
 // ── Injects ───────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
 const openConsole = inject('openConsole', null)
+const dashboardRefreshTick = inject('dashboardRefreshTick', ref(0))
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 const loading = ref(false)
@@ -234,6 +235,14 @@ watch(
     if (val && val !== old) fetchToday()
   },
   { immediate: true },
+)
+
+watch(
+  dashboardRefreshTick,
+  (tick, prev) => {
+    if (!system.value || tick === prev) return
+    fetchToday()
+  },
 )
 
 // ── Computed ──────────────────────────────────────────────────────────────────

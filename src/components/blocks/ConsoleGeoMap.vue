@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { useI18n } from 'vue-i18n'
+
 const { t } = useI18n()
 
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
@@ -11,19 +12,18 @@ maplibregl.workerUrl = workerUrl
 
 // ---------------- PROPS ----------------
 const props = defineProps({
-  points:  { type: Array, default: () => [] }, // [{ lat, lon, count }]
-  devices: { type: Array, default: () => [] }, // [{ lat, lon, deviceId, hostname, system, status, ip, locationName, lastSeen }]
+  points: { type: Array, default: () => [] }, // [{ lat, lon, count }]
 })
 
-const emit = defineEmits(['select-point', 'select-device'])
+const emit = defineEmits(['select-point'])
 
 // ---------------- STATE ----------------
-const mapEl = ref(null)
-let map    = null
-let loaded = false
-let popup  = null
+const mapEl   = ref(null)
+let map       = null
+let loaded    = false
+let popup     = null
 
-const mode       = ref('points') // 'points' | 'heat' | 'devices'
+const mode       = ref('points') // 'points' | 'heat'
 const projection = ref('mercator')
 
 // ---------------- ESTILOS BASE ----------------
@@ -59,11 +59,10 @@ const MAP_STYLES = {
     },
     layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
   },
-  heat:    DARK_TILES,
-  devices: DARK_TILES,
+  heat: DARK_TILES,
 }
 
-// ---------------- GEOJSON: LOGS ----------------
+// ---------------- GEOJSON ----------------
 const geojson = computed(() => ({
   type: 'FeatureCollection',
   features: (props.points || []).map((p) => ({
@@ -72,52 +71,6 @@ const geojson = computed(() => ({
     properties: { count: p.weight || p.count || 1 },
   })),
 }))
-
-// ---------------- GEOJSON: DEVICES ----------------
-const devicesGeojson = computed(() => {
-  const devList = props.devices || []
-  if (!devList.length) return { type: 'FeatureCollection', features: [] }
-
-  // Agrupar por coordenada exacta para detectar colisiones
-  const groups = new Map()
-  for (const d of devList) {
-    const key = `${d.lat},${d.lon}`
-    if (!groups.has(key)) groups.set(key, [])
-    groups.get(key).push(d)
-  }
-
-  const features = []
-  for (const group of groups.values()) {
-    const count = group.length
-    group.forEach((d, idx) => {
-      // Expansión radial determinística para colisiones en la misma coordenada
-      let lon = d.lon
-      let lat = d.lat
-      if (count > 1) {
-        const angle    = (2 * Math.PI * idx) / count
-        const radiusDeg = 0.0015
-        lon = d.lon + radiusDeg * Math.cos(angle)
-        lat = d.lat + radiusDeg * Math.sin(angle)
-      }
-
-      features.push({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [lon, lat] },
-        properties: {
-          deviceId:     d.deviceId,
-          hostname:     d.hostname     || '',
-          deviceSystem: d.system       || '',
-          status:       d.status       || 'OFFLINE',
-          ip:           d.ip           || '',
-          locationName: d.locationName || '',
-          lastSeen:     d.lastSeen     || '',
-        },
-      })
-    })
-  }
-
-  return { type: 'FeatureCollection', features }
-})
 
 // ---------------- INIT ----------------
 async function initMap() {
@@ -137,71 +90,19 @@ async function initMap() {
   map.on('load', () => {
     loaded = true
     map.setProjection({ type: projection.value })
-    map.addSource('geo',         { type: 'geojson', data: geojson.value })
-    map.addSource('devices-geo', { type: 'geojson', data: devicesGeojson.value })
+    map.addSource('geo', { type: 'geojson', data: geojson.value })
     addLayers()
     fitBounds()
   })
-}
-
-// ---------------- PULSE IMAGE (ONLINE devices) ----------------
-function addPulseImage() {
-  if (map.hasImage('pulse-dot')) return
-  const size = 80
-  const pulseImage = {
-    width: size,
-    height: size,
-    data: new Uint8Array(size * size * 4),
-    context: null,
-    onAdd() {
-      const canvas = document.createElement('canvas')
-      canvas.width = size
-      canvas.height = size
-      this.context = canvas.getContext('2d')
-    },
-    render() {
-      const duration = 1800
-      const t = (performance.now() % duration) / duration
-      const ctx = this.context
-      const center = size / 2
-      const coreRadius = 10
-      const outerRadius = Math.max(coreRadius, (size / 2 - 2) * t)
-
-      ctx.clearRect(0, 0, size, size)
-
-      // Expanding ring
-      ctx.beginPath()
-      ctx.arc(center, center, outerRadius, 0, Math.PI * 2)
-      ctx.strokeStyle = `rgba(34, 197, 94, ${1 - t})`
-      ctx.lineWidth = 3
-      ctx.stroke()
-
-      // Solid core dot
-      ctx.beginPath()
-      ctx.arc(center, center, coreRadius, 0, Math.PI * 2)
-      ctx.fillStyle = '#22c55e'
-      ctx.fill()
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2.5
-      ctx.stroke()
-
-      this.data = ctx.getImageData(0, 0, size, size).data
-      map.triggerRepaint()
-      return true
-    },
-  }
-  map.addImage('pulse-dot', pulseImage, { pixelRatio: 2 })
 }
 
 // ---------------- LAYERS ----------------
 function addLayers() {
   if (!map) return
 
-  const isPoints  = mode.value === 'points'
-  const isHeat    = mode.value === 'heat'
-  const isDevices = mode.value === 'devices'
+  const isPoints = mode.value === 'points'
+  const isHeat   = mode.value === 'heat'
 
-  // ── Log layers ──────────────────────────────────────────────────────────────
   map.addLayer({
     id: 'points-layer',
     type: 'circle',
@@ -222,13 +123,13 @@ function addLayers() {
     source: 'geo',
     layout: { visibility: isHeat ? 'visible' : 'none' },
     paint: {
-      'heatmap-weight':     ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
-      'heatmap-intensity':  ['interpolate', ['linear'], ['zoom'], 0, 1.8, 9, 5.5, 14, 7.5],
-      'heatmap-radius':     ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
-      'heatmap-opacity':    0.95,
+      'heatmap-weight':    ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
+      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1.8, 9, 5.5, 14, 7.5],
+      'heatmap-radius':    ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
+      'heatmap-opacity':   0.95,
       'heatmap-color': [
         'interpolate', ['linear'], ['heatmap-density'],
-        0.0, 'rgba(34,197,94,0)',
+        0.0,  'rgba(34,197,94,0)',
         0.25, '#22c55e',
         0.6,  '#f59e0b',
         1.0,  '#ef4444',
@@ -236,43 +137,9 @@ function addLayers() {
     },
   })
 
-  // ── Device layers ────────────────────────────────────────────────────────────
-  // ONLINE: ícono pulsante animado (verde)
-  addPulseImage()
-  map.addLayer({
-    id: 'devices-online',
-    type: 'symbol',
-    source: 'devices-geo',
-    filter: ['==', ['get', 'status'], 'ONLINE'],
-    layout: {
-      visibility: isDevices ? 'visible' : 'none',
-      'icon-image': 'pulse-dot',
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true,
-    },
-  })
-
-  // OFFLINE: círculo rojo pequeño
-  map.addLayer({
-    id: 'devices-offline',
-    type: 'circle',
-    source: 'devices-geo',
-    filter: ['!=', ['get', 'status'], 'ONLINE'],
-    layout: { visibility: isDevices ? 'visible' : 'none' },
-    paint: {
-      'circle-color':        '#ef4444',
-      'circle-radius':       6,
-      'circle-opacity':      0.85,
-      'circle-stroke-width': 1.5,
-      'circle-stroke-color': 'rgba(255,255,255,0.4)',
-    },
-  })
-
-  // ── Popup compartido ─────────────────────────────────────────────────────────
   if (popup) popup.remove()
   popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false })
 
-  // ── Click: logs ──────────────────────────────────────────────────────────────
   map.on('click', 'points-layer', (e) => {
     const f = e.features?.[0]
     if (!f) return
@@ -280,7 +147,6 @@ function addLayers() {
     emit('select-point', { lat, lon })
   })
 
-  // ── Tooltip: logs ────────────────────────────────────────────────────────────
   map.on('mousemove', 'points-layer', (e) => {
     const f = e.features?.[0]
     if (!f) return
@@ -300,53 +166,8 @@ function addLayers() {
   })
   map.on('mouseleave', 'points-layer', () => popup?.remove())
 
-  // ── Click: devices ───────────────────────────────────────────────────────────
-  const onDeviceClick = (e) => {
-    const f = e.features?.[0]
-    if (!f) return
-    emit('select-device', { deviceId: f.properties.deviceId })
-  }
-  map.on('click', 'devices-online',  onDeviceClick)
-  map.on('click', 'devices-offline', onDeviceClick)
-
-  // ── Tooltip: devices ─────────────────────────────────────────────────────────
-  const onDeviceHover = (e) => {
-    const f = e.features?.[0]
-    if (!f) return
-    const p = f.properties
-    const isOnline = p.status === 'ONLINE'
-    const dotColor = isOnline ? '#22c55e' : '#ef4444'
-    const statusLabel = isOnline ? t('dashboard.devicesMapOnline') : t('dashboard.devicesMapOffline')
-    const lastSeen = p.lastSeen ? new Date(p.lastSeen).toLocaleString() : '—'
-
-    popup
-      .setLngLat(f.geometry.coordinates)
-      .setHTML(
-        `<div style="background:rgba(10,14,26,0.95);color:#fff;padding:10px 12px;border-radius:10px;font-size:12px;backdrop-filter:blur(6px);min-width:180px;border:1px solid rgba(255,255,255,0.08)">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-            <span style="width:8px;height:8px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0"></span>
-            <strong style="font-size:13px">${p.hostname || p.deviceId}</strong>
-          </div>
-          <div style="opacity:0.7;margin-bottom:2px">${p.deviceId}</div>
-          <div style="margin-bottom:2px"><span style="opacity:0.55">${t('dashboard.devicesMapIp')}:</span> ${p.ip || '—'}</div>
-          ${p.locationName ? `<div style="margin-bottom:2px"><span style="opacity:0.55">${t('dashboard.devicesMapLocation')}:</span> ${p.locationName}</div>` : ''}
-          <div style="margin-bottom:6px"><span style="opacity:0.55">${t('dashboard.devicesMapLastSeen')}:</span> ${lastSeen}</div>
-          <div style="color:${dotColor};font-weight:700">${statusLabel}</div>
-          <div style="margin-top:4px;opacity:0.5;font-size:11px">${t('dashboard.devicesMapClickHint')}</div>
-        </div>`,
-      )
-      .addTo(map)
-  }
-  map.on('mousemove', 'devices-online',  onDeviceHover)
-  map.on('mousemove', 'devices-offline', onDeviceHover)
-  map.on('mouseleave', 'devices-online',  () => popup?.remove())
-  map.on('mouseleave', 'devices-offline', () => popup?.remove())
-
-  // ── Cursor ───────────────────────────────────────────────────────────────────
-  ;['points-layer', 'devices-online', 'devices-offline'].forEach((layer) => {
-    map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer' })
-    map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = '' })
-  })
+  map.on('mouseenter', 'points-layer', () => { map.getCanvas().style.cursor = 'pointer' })
+  map.on('mouseleave', 'points-layer', () => { map.getCanvas().style.cursor = '' })
 }
 
 // ---------------- MODE TOGGLE ----------------
@@ -357,8 +178,7 @@ function updateMode() {
   map.once('style.load', () => {
     loaded = true
     map.setProjection({ type: projection.value })
-    map.addSource('geo',         { type: 'geojson', data: geojson.value })
-    map.addSource('devices-geo', { type: 'geojson', data: devicesGeojson.value })
+    map.addSource('geo', { type: 'geojson', data: geojson.value })
     addLayers()
     fitBounds()
   })
@@ -376,19 +196,10 @@ watch(geojson, (data) => {
   map.getSource('geo')?.setData(data)
 })
 
-watch(devicesGeojson, (data) => {
-  if (!map || !loaded) return
-  map.getSource('devices-geo')?.setData(data)
-})
-
 // ---------------- FIT BOUNDS ----------------
 function fitBounds() {
   if (!map) return
-
-  const pts = mode.value === 'devices'
-    ? (props.devices || []).map((d) => [d.lon, d.lat])
-    : (props.points  || []).map((p) => [p.lon, p.lat])
-
+  const pts = (props.points || []).map((p) => [p.lon, p.lat])
   if (!pts.length) return
   const bounds = new maplibregl.LngLatBounds()
   pts.forEach((c) => bounds.extend(c))
@@ -409,7 +220,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <!-- CONTROLES -->
     <div class="row q-mb-sm items-center justify-between">
       <div class="toplist-title">{{ t('dashboard.dinamicMap') }}</div>
 
@@ -427,7 +237,6 @@ onBeforeUnmount(() => {
       </q-chip>
     </div>
 
-    <!-- MAPA -->
     <div ref="mapEl" style="width: 100%; height: 520px; border-radius: 12px" />
 
     <div class="flex justify-center q-mt-md">
@@ -439,9 +248,8 @@ onBeforeUnmount(() => {
         text-color="grey-5"
         toggle-color="orange-9"
         :options="[
-          { label: t('dashboard.mapType_points'),  value: 'points'  },
-          { label: t('dashboard.mapType_heat'),    value: 'heat'    },
-          { label: t('dashboard.mapType_devices'), value: 'devices' },
+          { label: t('dashboard.mapType_points'), value: 'points' },
+          { label: t('dashboard.mapType_heat'),   value: 'heat'   },
         ]"
       />
     </div>
@@ -481,8 +289,6 @@ onBeforeUnmount(() => {
   background: linear-gradient(180deg, #ff7a1a 0%, #d65400 100%);
   color: #ffffff;
   box-shadow: 0 10px 25px rgba(255, 122, 26, 0.35);
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
 }
 
 .map-switch__toggle :deep(.q-btn .q-btn__content) {

@@ -129,7 +129,6 @@
 
           <!-- Selector de idioma -->
           <q-btn-dropdown
-            v-if="isClientFlow"
             flat
             dense
             round
@@ -476,7 +475,10 @@ const prefs = authService.loadPrefs()
 const systems = ref([])
 const healthMap = ref({})
 
-const selectedSystem = ref(prefs.system || systems.value?.[0] || 'DASHBOARD')
+const allowedSystemNames = computed(() => authService.user?.authz?.systems || [])
+const selectedSystem = ref(
+  allowedSystemNames.value.includes(prefs.system) ? prefs.system : allowedSystemNames.value[0] || '',
+)
 
 const logsGlobales = ref([])
 const MS_DIA = 1000 * 60 * 60 * 24
@@ -497,11 +499,31 @@ const userInfo = computed(() => ({
   roles: authService.user?.authz?.roles || [],
 }))
 
+const filterAuthorizedSystems = (catalogSystems = []) => {
+  const allowed = new Set(allowedSystemNames.value)
+  return catalogSystems.filter((system) => allowed.has(system?.value))
+}
+
+const resolveSelectedSystem = (candidate = selectedSystem.value) => {
+  const availableSystems = systems.value.map((system) => system.value)
+
+  if (candidate && availableSystems.includes(candidate)) {
+    return candidate
+  }
+
+  if (prefs.system && availableSystems.includes(prefs.system)) {
+    return prefs.system
+  }
+
+  return allowedSystemNames.value.find((system) => availableSystems.includes(system)) || ''
+}
+
 const eventosRaw = ref([]) // lo que llega del backend (ya filtrado por system)
 const loadingLogs = ref(false) // puedes mantener el mismo nombre
 
 const {
   loading: dashboardLoading,
+  refreshing: dashboardRefreshing,
   statsData,
   seriesData,
   httpData,
@@ -510,9 +532,12 @@ const {
   fetchAll,
   subscribeSystem,
   unsubscribeSystem,
+  refreshTick: dashboardRefreshTick,
 } = useDashboardData()
 
 provide('dashboardLoading', dashboardLoading)
+provide('dashboardRefreshing', dashboardRefreshing)
+provide('dashboardRefreshTick', dashboardRefreshTick)
 provide('dashboardStatsData', statsData)
 provide('dashboardSeriesData', seriesData)
 provide('dashboardHttpData', httpData)
@@ -565,6 +590,16 @@ const cargarEventosDelSistema = async () => {
     logsGlobales.value = []
   } finally {
     loadingLogs.value = false
+  }
+}
+
+const refreshSystemsCatalog = async () => {
+  try {
+    const catalogs = await CatalogService.fetchCatalogs()
+    systems.value = filterAuthorizedSystems(catalogs.sistemas)
+    healthMap.value = catalogs.healthMap || {}
+  } catch (e) {
+    console.error('❌ Error al refrescar sistemas: ', e)
   }
 }
 
@@ -773,11 +808,30 @@ const dashboardQueryKey = computed(() => {
   return `${sys}|${from}|${to}`
 })
 
+watch(
+  [systems, allowedSystemNames],
+  () => {
+    const nextSystem = resolveSelectedSystem()
+    if (nextSystem !== selectedSystem.value) {
+      selectedSystem.value = nextSystem
+    }
+  },
+  { immediate: true },
+)
+
 // 1) Cuando cambia system: SÍ pega al backend Y se suscribe al WebSocket
 watch(
   selectedSystem,
   (sys) => {
-    filtros.value.system = sys
+    filtros.value.system = sys || ''
+
+    if (!sys) {
+      eventosRaw.value = []
+      logsGlobales.value = []
+      unsubscribeSystem()
+      return
+    }
+
     authService.savePrefs(currentFlow.value, sys)
 
     if (isClientFlow.value) {
@@ -787,10 +841,13 @@ watch(
       subscribeSystem(
         sys,
         () => filtros.value,  // getFilters
-        () => {
-          // onRefreshExtra: callback opcional después de cada refresh
+        async () => {
+          await Promise.all([
+            cargarEventosDelSistema(),
+            refreshSystemsCatalog(),
+          ])
           console.log('[Dashboard] Auto-refresh completado desde WebSocket')
-        }
+        },
       )
     }
   },
@@ -811,6 +868,7 @@ watch(
 watch(
   dashboardQueryKey,
   () => {
+    if (!filtros.value.system) return
     fetchAll(filtros.value)
   },
   { immediate: true },
@@ -892,9 +950,7 @@ onMounted(async () => {
     checkApiKeysExpirations()
 
     // Cargar sistemas desde la API
-    const catalogs = await CatalogService.fetchCatalogs()
-    systems.value = catalogs.sistemas
-    healthMap.value = catalogs.healthMap || {}
+    await refreshSystemsCatalog()
 
     connectSocket()
 

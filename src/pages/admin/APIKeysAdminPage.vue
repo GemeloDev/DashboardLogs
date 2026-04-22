@@ -1,25 +1,23 @@
 <template>
   <q-page class="apikeys-page">
     <div class="apikeys-page__wrap">
-      <!-- Header -->
       <section class="apikeys-header">
         <div>
           <div class="apikeys-header__badge">
             <q-icon name="vpn_key" size="18px" color="cyan" />
-            <span>Administración</span>
+            <span>{{ t('santoroAdmin.administrationBadge') }}</span>
           </div>
 
           <h1 class="apikeys-header__title">
-            Gestión de <span class="color-orange-santoro">API Keys</span>
+            {{ t('userManagement.title') }} <span class="color-orange-santoro">API Keys</span>
           </h1>
 
           <p class="apikeys-header__subtitle">
-            Alta, edición, rotación y eliminación de llaves de acceso del sistema.
+            {{ t('santoroAdmin.apiKeysSubtitle') }}
           </p>
         </div>
       </section>
 
-      <!-- Toolbar -->
       <section class="apikeys-toolbar">
         <div class="apikeys-toolbar__grid">
           <q-input
@@ -28,7 +26,7 @@
             dense
             clearable
             class="premium-input"
-            placeholder="Buscar por nombre, sistema o empresa..."
+            :placeholder="t('santoroAdmin.apiKeysSearchPlaceholder')"
           >
             <template v-slot:prepend>
               <q-icon name="search" class="input-icon" />
@@ -43,7 +41,7 @@
             map-options
             class="premium-input"
             :options="opcionesEmpresa"
-            label="Empresa"
+            :label="t('santoroAdmin.companyFilterLabel')"
           >
             <template v-slot:prepend>
               <q-icon name="apartment" class="input-icon" />
@@ -57,12 +55,8 @@
             emit-value
             map-options
             class="premium-input"
-            :options="[
-              { label: 'Todos los estados', value: 'todos' },
-              { label: 'Activas', value: 'active' },
-              { label: 'Desactivadas', value: 'disabled' },
-            ]"
-            label="Estado"
+            :options="statusOptions"
+            :label="t('santoroAdmin.statusFilterLabel')"
           >
             <template v-slot:prepend>
               <q-icon name="filter_alt" class="input-icon" />
@@ -71,7 +65,6 @@
         </div>
       </section>
 
-      <!-- Tabla -->
       <section class="apikeys-table-wrap">
         <q-table
           flat
@@ -82,15 +75,13 @@
           :pagination="pagination"
           class="apikeys-table"
           :rows-per-page-options="[5, 10, 15, 20]"
-          no-data-label="No se encontraron API Keys"
+          :no-data-label="t('santoroAdmin.noApiKeysFound')"
         >
           <template v-slot:top>
             <div class="table-top">
               <div>
-                <div class="table-title">Listado de API Keys</div>
-                <div class="table-subtitle">
-                  {{ rowsFiltrados.length }} registro(s) encontrado(s)
-                </div>
+                <div class="table-title">{{ t('santoroAdmin.apiKeysListTitle') }}</div>
+                <div class="table-subtitle">{{ rowsFoundLabel }}</div>
               </div>
             </div>
           </template>
@@ -112,7 +103,7 @@
           <template v-slot:body-cell-empresa="props">
             <q-td :props="props">
               <q-chip dense class="chip-empresa">
-                {{ props.row.orgName || 'Sin empresa' }}
+                {{ props.row.orgName || t('santoroAdmin.noCompany') }}
               </q-chip>
             </q-td>
           </template>
@@ -133,7 +124,7 @@
 
           <template v-slot:body-cell-lastUse="props">
             <q-td :props="props">
-              {{ props.row.lastUse || 'Nunca' }}
+              {{ formatLastUse(props.row.lastUse) }}
             </q-td>
           </template>
 
@@ -153,10 +144,10 @@
                   <q-tooltip class="glass-tooltip">
                     {{
                       props.row.status === 'expired'
-                        ? 'Key expirada, no se puede activar'
+                        ? t('santoroAdmin.expiredKeyTooltip')
                         : props.row.status === 'active'
-                          ? 'Desactivar key'
-                          : 'Activar key'
+                          ? t('santoroAdmin.deactivateKeyTooltip')
+                          : t('santoroAdmin.activateKeyTooltip')
                     }}
                   </q-tooltip>
                 </q-toggle>
@@ -172,33 +163,74 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { DashboardSantoro } from 'src/services/dashboardSantoro'
 
 const $q = useQuasar()
+const { t, locale } = useI18n()
 
 const search = ref('')
 const filtroEstado = ref('todos')
 const filtroEmpresa = ref('todas')
-
 const rows = ref([])
 
-// ─── Opciones dinámicas de empresa ───────────────────────────────────────────
 const opcionesEmpresa = computed(() => {
   const empresas = [...new Set(rows.value.map((k) => k.orgName).filter(Boolean))]
   return [
-    { label: 'Todas las empresas', value: 'todas' },
-    ...empresas.map((e) => ({ label: e, value: e })),
+    { label: t('santoroAdmin.allCompanies'), value: 'todas' },
+    ...empresas.map((empresa) => ({ label: empresa, value: empresa })),
   ]
 })
 
-const columns = [
-  { name: 'name', label: 'NOMBRE / APLICACIÓN', field: 'name', align: 'left', sortable: true },
-  { name: 'empresa', label: 'EMPRESA', field: 'empresa', align: 'left', sortable: true },
-  { name: 'status', label: 'ESTADO', field: 'status', align: 'left', sortable: true },
-  { name: 'createdAt', label: 'CREADO', field: 'createdAt', align: 'left', sortable: true },
-  { name: 'lastUse', label: 'ÚLTIMO USO', field: 'lastUse', align: 'left', sortable: true },
-  { name: 'toggle', label: 'ACTIVA', field: 'toggle', align: 'center' },
-]
+const statusOptions = computed(() => [
+  { label: t('santoroAdmin.allStatuses'), value: 'todos' },
+  { label: t('santoroAdmin.activeKeysFilter'), value: 'active' },
+  { label: t('santoroAdmin.disabledKeysFilter'), value: 'revoked' },
+])
+
+const columns = computed(() => [
+  {
+    name: 'name',
+    label: t('santoroAdmin.nameApplicationColumn'),
+    field: 'name',
+    align: 'left',
+    sortable: true,
+  },
+  {
+    name: 'empresa',
+    label: t('santoroAdmin.companyColumn'),
+    field: 'empresa',
+    align: 'left',
+    sortable: true,
+  },
+  {
+    name: 'status',
+    label: t('santoroAdmin.statusColumn'),
+    field: 'status',
+    align: 'left',
+    sortable: true,
+  },
+  {
+    name: 'createdAt',
+    label: t('santoroAdmin.createdColumn'),
+    field: 'createdAt',
+    align: 'left',
+    sortable: true,
+  },
+  {
+    name: 'lastUse',
+    label: t('santoroAdmin.lastUseColumn'),
+    field: 'lastUse',
+    align: 'left',
+    sortable: true,
+  },
+  {
+    name: 'toggle',
+    label: t('santoroAdmin.enabledColumn'),
+    field: 'toggle',
+    align: 'center',
+  },
+])
 
 const pagination = ref({ page: 1, rowsPerPage: 10 })
 
@@ -206,12 +238,12 @@ const rowsFiltrados = computed(() => {
   let result = [...rows.value]
 
   if (search.value.trim()) {
-    const q = search.value.toLowerCase()
+    const query = search.value.toLowerCase()
     result = result.filter((item) =>
-      [item.name, item.system, item.orgName].some((v) =>
-        String(v || '')
+      [item.name, item.system, item.orgName].some((value) =>
+        String(value || '')
           .toLowerCase()
-          .includes(q),
+          .includes(query),
       ),
     )
   }
@@ -227,61 +259,87 @@ const rowsFiltrados = computed(() => {
   return result
 })
 
-// ─── Toggle activo/inactivo ───────────────────────────────────────────────────
+const rowsFoundLabel = computed(() =>
+  t(
+    rowsFiltrados.value.length === 1
+      ? 'santoroAdmin.recordsFoundSingular'
+      : 'santoroAdmin.recordsFoundPlural',
+    { count: rowsFiltrados.value.length },
+  ),
+)
+
 const toggleStatus = async (row, isActive, tenant, id) => {
   const nuevoEstado = isActive ? 'active' : 'revoked'
-  const idx = rows.value.findIndex((r) => r.id === row.id)
+  const previousStatus = row.status
+  const idx = rows.value.findIndex((item) => item.id === row.id)
   if (idx === -1) return
 
-  // Optimistic update
   rows.value[idx] = { ...rows.value[idx], status: nuevoEstado }
 
-  // Servicio real:
   const response = await DashboardSantoro.changeStatusApiKey(tenant, id, nuevoEstado)
 
   if (!response.ok) {
+    rows.value[idx] = { ...rows.value[idx], status: previousStatus }
     $q.notify({
       type: 'negative',
       position: 'top',
-      message: `API Key "${row.name}" ${isActive ? 'activada' : 'desactivada'} correctamente.`,
+      message: response.message || t('santoroAdmin.apiKeyStatusError'),
     })
+    return
   }
 
   $q.notify({
     type: 'positive',
     position: 'top',
-    message: `API Key "${row.name}" ${isActive ? 'activada' : 'desactivada'} correctamente.`,
+    message: t(isActive ? 'santoroAdmin.apiKeyActivated' : 'santoroAdmin.apiKeyDeactivated', {
+      name: row.name,
+    }),
   })
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const formatDate = (date) => {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('es-MX', {
+  if (!date) return t('santoroAdmin.unavailable')
+  return new Intl.DateTimeFormat(locale.value, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  })
+  }).format(new Date(date))
+}
+
+const formatLastUse = (value) => {
+  if (!value) return t('santoroAdmin.neverUsed')
+  const parsedDate = new Date(value)
+  if (Number.isNaN(parsedDate.getTime())) return value
+  return new Intl.DateTimeFormat(locale.value, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsedDate)
 }
 
 const getStatusChipClass = (status) => {
   if (status === 'active') return 'chip-active'
-  if (status === 'revoked') return 'chip-revoked'
+  if (status === 'revoked' || status === 'disabled') return 'chip-revoked'
   return 'chip-expired'
 }
 
 const getStatusLabel = (status) => {
-  if (status === 'active') return 'Activa'
-  if (status === 'revoked') return 'Desactivada'
-  return 'Expirada'
+  if (status === 'active') return t('santoroAdmin.apiKeyActive')
+  if (status === 'revoked' || status === 'disabled') return t('santoroAdmin.apiKeyDisabled')
+  return t('santoroAdmin.apiKeyExpired')
 }
 
-// ─── Carga inicial ────────────────────────────────────────────────────────────
 const loadAPIKeys = async () => {
   const response = await DashboardSantoro.getAPIKeys()
 
   if (!response.ok) {
-    $q.notify({ type: 'negative', position: 'top', message: response.message })
+    $q.notify({
+      type: 'negative',
+      position: 'top',
+      message: response.message || t('santoroAdmin.apiKeysLoadError'),
+    })
     return
   }
 
@@ -289,7 +347,7 @@ const loadAPIKeys = async () => {
   $q.notify({
     type: 'positive',
     position: 'top',
-    message: response.message + ' obtenidas correctamente' || 'API Keys obtenidas correctamente.',
+    message: response.message || t('santoroAdmin.apiKeysLoaded'),
   })
 }
 

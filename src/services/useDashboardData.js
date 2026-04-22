@@ -18,9 +18,11 @@ let wsSubscription = null // suscripción activa al topic
 let refreshDebounce = null // timer para evitar múltiples refreshes seguidos
 //let pendingRefresh    = false  // indica que hay datos nuevos pero aún no se refrescó
 const newLogsCount = ref(0) // cuántos logs nuevos llegaron sin refrescar
+const refreshTick = ref(0)
 
 // ─── Estado único de carga ────────────────────────────────────────────────────
 const loading = ref(false)
+const refreshing = ref(false)
 
 // ─── Concurrencia: solo la última petición aplica ─────────────────────────────
 // Cada llamada a fetchAll incrementa `fetchSeq`. Al resolver Promise.allSettled,
@@ -39,21 +41,36 @@ const toIsoEnd = (value) => {
   return raw.includes('T') ? raw : `${raw}T23:59:59Z`
 }
 
-async function fetchAll(filters = {}) {
+function hasCachedDashboardData() {
+  return !!(
+    statsData.value ||
+    seriesData.value ||
+    httpData.value ||
+    geoData.value ||
+    devicesData.value
+  )
+}
+
+async function fetchAll(filters = {}, options = {}) {
   const sys = String(filters?.system || '').trim()
   const from = toIsoStart(filters?.rangoFechas?.from || '')
   const to = toIsoEnd(filters?.rangoFechas?.to || '')
+  const preserveExistingData = !!options?.preserveExistingData
+  const isIncrementalRefresh = preserveExistingData && hasCachedDashboardData()
 
   if (!sys) return
 
   const seq = ++fetchSeq
-  loading.value = true
+  loading.value = !isIncrementalRefresh
+  refreshing.value = isIncrementalRefresh
 
-  statsData.value = null
-  seriesData.value = null
-  httpData.value = null
-  geoData.value = null
-  devicesData.value = null
+  if (!isIncrementalRefresh) {
+    statsData.value = null
+    seriesData.value = null
+    httpData.value = null
+    geoData.value = null
+    devicesData.value = null
+  }
 
   const deviceStatus = DEVICE_VALID_STATUSES.has(String(filters?.values?.status || '').toUpperCase())
     ? String(filters.values.status).toUpperCase()
@@ -62,9 +79,9 @@ async function fetchAll(filters = {}) {
   try {
     const [rStats, rSeries, rHttp, rGeo, rDevices] = await Promise.allSettled([
       DashboardService.getStats({ system: sys, from, to }),
-      DashboardService.getSeries({ system: sys }),
-      DashboardService.getHttp({ system: sys }),
-      DashboardService.getGeo({ system: sys }),
+      DashboardService.getSeries({ system: sys, from, to }),
+      DashboardService.getHttp({ system: sys, from, to }),
+      DashboardService.getGeo({ system: sys, from, to }),
       DashboardService.getDevices({ system: sys, status: deviceStatus }),
     ])
 
@@ -79,7 +96,10 @@ async function fetchAll(filters = {}) {
     if (seq !== fetchSeq) return
     console.error('Dashboard fetchAll error:', err?.message || err)
   } finally {
-    if (seq === fetchSeq) loading.value = false
+    if (seq === fetchSeq) {
+      loading.value = false
+      refreshing.value = false
+    }
   }
 }
 
@@ -118,8 +138,9 @@ function subscribeSystem(system, getFilters, onRefreshExtra) {
     if (refreshDebounce) clearTimeout(refreshDebounce)
     refreshDebounce = setTimeout(async () => {
       newLogsCount.value = 0
-      await fetchAll(getFilters?.() || {})
-      onRefreshExtra?.()
+      await fetchAll(getFilters?.() || {}, { preserveExistingData: true })
+      await onRefreshExtra?.()
+      refreshTick.value += 1
     }, 3000)
   })
 }
@@ -127,6 +148,7 @@ function subscribeSystem(system, getFilters, onRefreshExtra) {
 export function useDashboardData() {
   return {
     loading,
+    refreshing,
     statsData,
     seriesData,
     httpData,
@@ -136,6 +158,6 @@ export function useDashboardData() {
     subscribeSystem,
     unsubscribeSystem,
     newLogsCount,
+    refreshTick,
   }
 }
-
