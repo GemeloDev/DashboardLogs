@@ -95,7 +95,17 @@ function renderMarkers() {
     bindDevicePopup(marker, d, isOnline)
 
     marker.on('click', () => {
-      emit('select-device', { deviceId: d.deviceId })
+      emit('select-device', {
+        deviceId: d.deviceId,
+        hostname: d.hostname || '',
+        system: d.system || '',
+        status: d.status || '',
+        ip: d.ip || '',
+        locationName: d.locationName || '',
+        lastSeen: d.lastSeen || '',
+        lat: Number(d.lat),
+        lon: Number(d.lon),
+      })
     })
 
     clusterGroup.addLayer(marker)
