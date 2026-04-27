@@ -31,12 +31,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DashboardDataProvider from 'src/components/dashboard/DashboardDataProvider.vue'
 import DashboardSectionRenderer from 'src/components/dashboard/DashboardSectionRenderer.vue'
 import ChartDrivenFilters from 'src/components/blocks/ChartDrivenFilters.vue'
+import { useDashboardSharedStore } from 'src/stores/dashboardShared.store'
 import {
   getDashboardSectionDefinition,
   getDashboardSectionIdFromPanel,
@@ -44,6 +45,7 @@ import {
 
 const route = useRoute()
 const { t } = useI18n()
+const dashboardStore = useDashboardSharedStore()
 
 const sectionId = computed(() => {
   const directSection = String(route.params.section || '').trim()
@@ -59,6 +61,22 @@ const sectionTitle = computed(() =>
     ? t(sectionDefinition.value.titleKey)
     : t('dashboard.windowUnavailableTitle'),
 )
+
+function markCurrentSectionClosed() {
+  if (!sectionDefinition.value) return
+  dashboardStore.markSectionPopoutClosed(sectionId.value)
+}
+
+onMounted(() => {
+  if (!sectionDefinition.value) return
+  dashboardStore.markSectionPopoutOpen(sectionId.value)
+  window.addEventListener('beforeunload', markCurrentSectionClosed)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', markCurrentSectionClosed)
+  markCurrentSectionClosed()
+})
 </script>
 
 <style scoped lang="scss">

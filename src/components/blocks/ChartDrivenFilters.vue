@@ -58,6 +58,7 @@
               icon="schedule"
               color="blue-4"
               dropdown-icon="expand_more"
+              content-class="chart-range-presets-menu"
               no-caps
             >
               <q-list dense class="q-pa-none">
@@ -115,7 +116,7 @@
     </div>
 
     <div class="row q-col-gutter-md q-mt-sm">
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-md-4">
         <q-select
           :model-value="selectedValues.eventType || ''"
           :options="eventTypeOptions"
@@ -137,7 +138,7 @@
         </q-select>
       </div>
 
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-md-4">
         <q-select
           :model-value="selectedValues.severity || ''"
           :options="severityOptions"
@@ -159,7 +160,7 @@
         </q-select>
       </div>
 
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-md-4">
         <q-select
           :model-value="selectedValues.status || ''"
           :options="statusOptions"
@@ -181,7 +182,7 @@
         </q-select>
       </div>
 
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-md-4">
         <q-select
           :model-value="selectedValues.outcome || ''"
           :options="outcomeOptions"
@@ -199,6 +200,28 @@
         >
           <template #prepend>
             <q-icon name="insights" color="pink" />
+          </template>
+        </q-select>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <q-select
+          :model-value="selectedValues.deviceId || ''"
+          :options="deviceOptions"
+          :label="t('common.device')"
+          filled
+          dark
+          dense
+          :loading="loading"
+          clearable
+          emit-value
+          map-options
+          option-value="value"
+          option-label="label"
+          @update:model-value="onChange('deviceId', $event)"
+        >
+          <template #prepend>
+            <q-icon name="devices" color="blue-4" />
           </template>
         </q-select>
       </div>
@@ -224,6 +247,7 @@ const filtrosGlobales = inject(
 )
 
 const statsData = inject('dashboardStatsData', ref(null))
+const devicesData = inject('dashboardDevicesData', ref(null))
 const loading = inject('dashboardLoading', ref(false))
 
 const localRange = ref({
@@ -245,6 +269,23 @@ const eventTypeOptions = computed(() => toOptions(statsData.value?.topEventTypes
 const severityOptions = computed(() => toOptions(statsData.value?.severities))
 const statusOptions = computed(() => toOptions(statsData.value?.statuses))
 const outcomeOptions = computed(() => toOptions(statsData.value?.outcomes))
+const deviceOptions = computed(() => {
+  const devices = Array.isArray(devicesData.value?.devices) ? devicesData.value.devices : []
+  const seen = new Set()
+
+  return devices
+    .map((device) => String(device?.deviceId || '').trim())
+    .filter((deviceId) => {
+      if (!deviceId || seen.has(deviceId)) return false
+      seen.add(deviceId)
+      return true
+    })
+    .sort((a, b) => a.localeCompare(b))
+    .map((deviceId) => ({
+      label: deviceId,
+      value: deviceId,
+    }))
+})
 
 const dateRangeText = computed(() => {
   const from = filtrosGlobales.value?.rangoFechas?.from || ''
@@ -374,5 +415,43 @@ watch(
   border-radius: 16px;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+</style>
+
+<style lang="scss">
+.chart-range-presets-menu {
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 32%),
+    linear-gradient(160deg, rgba(14, 19, 31, 0.98), rgba(10, 14, 24, 0.98)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+
+  .q-list {
+    background: transparent;
+    color: #ffffff;
+    min-width: 220px;
+    padding: 4px;
+  }
+
+  .q-item {
+    min-height: 38px;
+    color: #ffffff;
+    border-radius: 8px;
+  }
+
+  .q-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .q-item__label {
+    color: #ffffff;
+  }
+
+  .q-separator {
+    background: rgba(255, 255, 255, 0.12);
+    margin: 4px 0;
+  }
 }
 </style>

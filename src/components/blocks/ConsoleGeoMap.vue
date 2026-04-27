@@ -24,6 +24,10 @@ let popup     = null
 
 const mode       = ref('points') // 'points' | 'heat'
 const projection = ref('mercator')
+const mapModeLabel = computed(() =>
+  mode.value === 'points' ? t('dashboard.mapType_points') : t('dashboard.mapType_heat'),
+)
+const mapModeIcon = computed(() => (mode.value === 'points' ? 'place' : 'local_fire_department'))
 
 // ---------------- ESTILOS BASE ----------------
 const DARK_TILES = {
@@ -209,6 +213,10 @@ function updateMode() {
   })
 }
 
+function toggleMapMode() {
+  mode.value = mode.value === 'points' ? 'heat' : 'points'
+}
+
 // ---------------- PROJECTION ----------------
 function toggleProjection() {
   projection.value = projection.value === 'globe' ? 'mercator' : 'globe'
@@ -245,9 +253,21 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div class="row q-mb-sm items-center justify-between">
+    <div class="row q-mb-sm items-center">
       <div class="toplist-title">{{ t('dashboard.dinamicMap') }}</div>
+      <q-space />
 
+      <q-btn
+        dense
+        unelevated
+        no-caps
+        color="primary"
+        text-color="white"
+        :icon="mapModeIcon"
+        :label="mapModeLabel"
+        class="q-mr-sm"
+        @click="toggleMapMode"
+      />
       <q-chip
         clickable
         v-ripple
@@ -263,21 +283,6 @@ onBeforeUnmount(() => {
     </div>
 
     <div ref="mapEl" style="width: 100%; height: 520px; border-radius: 12px" />
-
-    <div class="flex justify-center q-mt-md">
-      <q-btn-toggle
-        v-model="mode"
-        dense
-        unelevated
-        class="map-switch__toggle"
-        text-color="grey-5"
-        toggle-color="orange-9"
-        :options="[
-          { label: t('dashboard.mapType_points'), value: 'points' },
-          { label: t('dashboard.mapType_heat'),   value: 'heat'   },
-        ]"
-      />
-    </div>
   </div>
 </template>
 
@@ -287,42 +292,8 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
-.map-switch__toggle {
-  background: rgba(0, 0, 0, 0.55);
-  border-radius: 14px;
-  padding: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
-}
-
-.map-switch__toggle :deep(.q-btn) {
-  border-radius: 12px;
-  padding: 10px 18px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.55);
-  background: transparent;
-  transition: all 0.12s ease;
-}
-
-.map-switch__toggle :deep(.q-btn:hover) {
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.map-switch__toggle :deep(.q-btn.q-btn--active) {
-  background: linear-gradient(180deg, #ff7a1a 0%, #d65400 100%);
-  color: #ffffff;
-  box-shadow: 0 10px 25px rgba(255, 122, 26, 0.35);
-}
-
-.map-switch__toggle :deep(.q-btn .q-btn__content) {
-  white-space: nowrap;
-}
-
 @media (max-width: 420px) {
-  .map-switch__toggle :deep(.q-btn) {
-    padding: 10px 12px;
+  :deep(.q-btn__content) {
     font-size: 12px;
   }
 }

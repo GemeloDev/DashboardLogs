@@ -29,6 +29,7 @@ export default {
     reasonCode: 'Reason code',
     unknown: 'Unknown',
     others: 'Others',
+    device: 'Device',
     my: 'My',
   },
   layout: {

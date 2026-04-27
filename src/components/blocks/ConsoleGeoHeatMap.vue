@@ -4,6 +4,17 @@
       <q-icon name="local_fire_department" class="q-mr-sm" color="primary" />
       <div class="text-subtitle1">Mapa de Calor (geo)</div>
       <q-space />
+      <q-btn
+        dense
+        unelevated
+        no-caps
+        color="primary"
+        text-color="white"
+        :icon="mapModeIcon"
+        :label="mapModeLabel"
+        class="q-mr-sm"
+        @click="toggleMapMode"
+      />
       <q-chip
         clickable
         v-ripple
@@ -51,8 +62,35 @@ const mapEl = ref(null)
 let map = null
 let ro = null
 let loaded = false
+const mapMode = ref('heat')
 const projectionType = ref('globe')
+const mapModeLabel = computed(() => (mapMode.value === 'heat' ? 'Mapa de Calor' : 'Mapa de Puntos'))
+const mapModeIcon = computed(() => (mapMode.value === 'heat' ? 'local_fire_department' : 'place'))
 const projectionLabel = computed(() => (projectionType.value === 'globe' ? 'Globo' : 'Plano'))
+
+function setLayerVisibility(layerId, visibility) {
+  if (!map?.getLayer?.(layerId)) return
+  map.setLayoutProperty(layerId, 'visibility', visibility)
+}
+
+function applyMapMode() {
+  if (!map || !loaded) return
+
+  if (mapMode.value === 'heat') {
+    setLayerVisibility('logs-heat', 'visible')
+    setLayerVisibility('logs-point', 'none')
+    return
+  }
+
+  setLayerVisibility('logs-heat', 'none')
+  setLayerVisibility('logs-point', 'visible')
+  map.setPaintProperty('logs-point', 'circle-opacity', 0.86)
+}
+
+function toggleMapMode() {
+  mapMode.value = mapMode.value === 'heat' ? 'points' : 'heat'
+  applyMapMode()
+}
 
 function applyProjection(type) {
   if (!map) return
@@ -339,6 +377,7 @@ async function initMap() {
     })
 
     refreshHeat()
+    applyMapMode()
 
     ro = new ResizeObserver(() => {
       if (!map) return
@@ -371,6 +410,8 @@ watch(
   },
   { deep: false },
 )
+
+watch(mapMode, applyMapMode)
 
 onBeforeUnmount(() => {
   try {
