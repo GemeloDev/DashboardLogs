@@ -455,6 +455,7 @@ import { CatalogService } from 'src/services/catalogService'
 
 import { useDashboardData } from 'src/services/useDashboardData'
 import ChartDrivenFilters from 'src/components/blocks/ChartDrivenFilters.vue'
+import { useDashboardSharedStore } from 'src/stores/dashboardShared.store'
 import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
@@ -471,24 +472,44 @@ const consolaRef = ref(null)
 
 const apiKeysPorExpirar = ref([])
 const prefs = authService.loadPrefs()
+const dashboardStore = useDashboardSharedStore()
+
+dashboardStore.initSync()
+
+const debugWindowLabel =
+  typeof window !== 'undefined' ? window.name || 'main-window' : 'ssr-window'
+
+const logLayout = (message, details = undefined) => {
+  if (details === undefined) {
+    console.info(`[MainLayout][${debugWindowLabel}] ${message}`)
+    return
+  }
+  console.info(`[MainLayout][${debugWindowLabel}] ${message}`, details)
+}
 
 const systems = ref([])
 const healthMap = ref({})
 
 const allowedSystemNames = computed(() => authService.user?.authz?.systems || [])
-const selectedSystem = ref(
-  allowedSystemNames.value.includes(prefs.system) ? prefs.system : allowedSystemNames.value[0] || '',
-)
+const selectedSystem = computed({
+  get: () => String(dashboardStore.filtros?.system || ''),
+  set: (value) => dashboardStore.setSystem(value || ''),
+})
 
 const logsGlobales = ref([])
 const MS_DIA = 1000 * 60 * 60 * 24
 
 const filtros = ref({
-  system: '',
-  rangoFechas: { from: '', to: '' },
-  busqueda: '',
-  visibleFields: [],
-  values: {},
+  system: dashboardStore.filtros?.system || '',
+  rangoFechas: {
+    from: dashboardStore.filtros?.rangoFechas?.from || '',
+    to: dashboardStore.filtros?.rangoFechas?.to || '',
+  },
+  busqueda: dashboardStore.filtros?.busqueda || '',
+  visibleFields: Array.isArray(dashboardStore.filtros?.visibleFields)
+    ? [...dashboardStore.filtros.visibleFields]
+    : [],
+  values: { ...(dashboardStore.filtros?.values || {}) },
 })
 
 // Info usuario
@@ -809,6 +830,40 @@ const dashboardQueryKey = computed(() => {
 })
 
 watch(
+  () => dashboardStore.filtros,
+  (nextFilters) => {
+    logLayout('watch:dashboardStore.filtros', nextFilters)
+    const nextSerialized = JSON.stringify(nextFilters || {})
+    const currentSerialized = JSON.stringify(filtros.value || {})
+    if (nextSerialized === currentSerialized) return
+
+    filtros.value = {
+      system: nextFilters?.system || '',
+      busqueda: nextFilters?.busqueda || '',
+      rangoFechas: {
+        from: nextFilters?.rangoFechas?.from || '',
+        to: nextFilters?.rangoFechas?.to || '',
+      },
+      visibleFields: Array.isArray(nextFilters?.visibleFields) ? [...nextFilters.visibleFields] : [],
+      values: { ...(nextFilters?.values || {}) },
+    }
+  },
+  { deep: true },
+)
+
+watch(
+  filtros,
+  (nextFilters) => {
+    logLayout('watch:filtros', nextFilters)
+    const nextSerialized = JSON.stringify(nextFilters || {})
+    const storeSerialized = JSON.stringify(dashboardStore.filtros || {})
+    if (nextSerialized === storeSerialized) return
+    dashboardStore.setFilters(nextFilters)
+  },
+  { deep: true },
+)
+
+watch(
   [systems, allowedSystemNames],
   () => {
     const nextSystem = resolveSelectedSystem()
@@ -823,6 +878,7 @@ watch(
 watch(
   selectedSystem,
   (sys) => {
+    logLayout('watch:selectedSystem', { sys, filtros: filtros.value })
     filtros.value.system = sys || ''
 
     if (!sys) {
@@ -842,10 +898,12 @@ watch(
         sys,
         () => filtros.value,  // getFilters
         async () => {
+          logLayout('subscribeSystem:event', { sys, filtros: filtros.value })
           await Promise.all([
             cargarEventosDelSistema(),
             refreshSystemsCatalog(),
           ])
+          dashboardStore.announceRealtimeRefresh()
           console.log('[Dashboard] Auto-refresh completado desde WebSocket')
         },
       )

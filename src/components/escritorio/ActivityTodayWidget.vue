@@ -9,6 +9,10 @@
           <div class="today-subtitle text-grey-5">{{ t('dashboard.activitySubtitle') }} · {{ system }}</div>
         </div>
         <div class="col-auto">
+          <DashboardPopoutButton
+            v-if="showPopout"
+            :section-id="DASHBOARD_SECTION_IDS.ACTIVITY"
+          />
           <q-btn
             flat
             dense
@@ -128,8 +132,21 @@
 import { ref, computed, inject, watch, onMounted, onBeforeUnmount } from 'vue'
 import { axiosInstance } from 'src/services/axiosConfig'
 import { LOGS } from 'src/services/endpoints'
+import DashboardPopoutButton from 'src/components/dashboard/DashboardPopoutButton.vue'
+import { DASHBOARD_SECTION_IDS } from 'src/constants/dashboardSections'
 import { useI18n } from 'vue-i18n'
 const { t, locale } = useI18n()
+
+defineProps({
+  popupMode: {
+    type: Boolean,
+    default: false,
+  },
+  showPopout: {
+    type: Boolean,
+    default: true,
+  },
+})
 
 // ── Injects ───────────────────────────────────────────────────────────────────
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
