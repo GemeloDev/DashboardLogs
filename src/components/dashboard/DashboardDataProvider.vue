@@ -22,17 +22,6 @@ const props = defineProps({
 const dashboardStore = useDashboardSharedStore()
 dashboardStore.initSync()
 
-const debugWindowLabel =
-  typeof window !== 'undefined' ? window.name || 'main-window' : 'ssr-window'
-
-const logProvider = (message, details = undefined) => {
-  if (details === undefined) {
-    console.info(`[DashboardDataProvider][${debugWindowLabel}] ${message}`)
-    return
-  }
-  console.info(`[DashboardDataProvider][${debugWindowLabel}] ${message}`, details)
-}
-
 const filtrosGlobales = computed({
   get: () => dashboardStore.filtros,
   set: (value) => dashboardStore.setFilters(value),
@@ -107,12 +96,10 @@ function aplicarFiltroRangoFechas() {
 
 async function cargarEventosDelSistema() {
   const system = String(dashboardStore.filtros?.system || '').trim()
-  logProvider('cargarEventosDelSistema:start', { system, filtros: dashboardStore.filtros })
 
   if (!system) {
     eventosRaw.value = []
     logsGlobales.value = []
-    logProvider('cargarEventosDelSistema:skip-no-system')
     return
   }
 
@@ -127,10 +114,6 @@ async function cargarEventosDelSistema() {
 
     eventosRaw.value = response?.items || []
     aplicarFiltroRangoFechas()
-    logProvider('cargarEventosDelSistema:done', {
-      rawCount: eventosRaw.value.length,
-      filteredCount: logsGlobales.value.length,
-    })
   } catch (error) {
     console.error('[DashboardDataProvider] Error al cargar eventos:', error)
     eventosRaw.value = []
@@ -142,26 +125,17 @@ async function cargarEventosDelSistema() {
 
 async function refreshFromRealtime() {
   if (!dashboardStore.filtros?.system) return
-  logProvider('refreshFromRealtime:start', {
-    filtros: dashboardStore.filtros,
-    externalRefreshTick: dashboardStore.externalRefreshTick,
-  })
 
   await Promise.all([
     fetchAll(dashboardStore.filtros, { preserveExistingData: true }),
     cargarEventosDelSistema(),
   ])
-  logProvider('refreshFromRealtime:done')
 }
 
 watch(
   dashboardQueryKey,
   () => {
     if (!dashboardStore.filtros?.system) return
-    logProvider('watch:dashboardQueryKey', {
-      key: dashboardQueryKey.value,
-      filtros: dashboardStore.filtros,
-    })
     fetchAll(dashboardStore.filtros)
   },
   { immediate: true },
@@ -178,11 +152,6 @@ watch(
 watch(
   () => dashboardStore.filtros.system,
   (system) => {
-    logProvider('watch:filtros.system', {
-      system,
-      realtimeOwner: props.realtimeOwner,
-      filtros: dashboardStore.filtros,
-    })
     if (!system) {
       eventosRaw.value = []
       logsGlobales.value = []
@@ -195,10 +164,6 @@ watch(
     if (!props.realtimeOwner) return
 
     subscribeSystem(system, () => dashboardStore.filtros, async () => {
-      logProvider('subscribeSystem:event', {
-        system,
-        filtros: dashboardStore.filtros,
-      })
       await cargarEventosDelSistema()
       dashboardStore.announceRealtimeRefresh()
     })
@@ -209,12 +174,6 @@ watch(
 watch(
   () => dashboardStore.externalRefreshTick,
   (tick, previous) => {
-    logProvider('watch:externalRefreshTick', {
-      tick,
-      previous,
-      realtimeOwner: props.realtimeOwner,
-      system: dashboardStore.filtros?.system,
-    })
     if (props.realtimeOwner || !dashboardStore.filtros?.system || tick === previous) return
     refreshFromRealtime()
   },

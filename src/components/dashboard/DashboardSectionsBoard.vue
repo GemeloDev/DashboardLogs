@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-sections-board">
     <DashboardSectionRenderer
-      v-for="sectionId in sectionOrder"
+      v-for="sectionId in visibleSectionOrder"
       :key="sectionId"
       :section-id="sectionId"
       mode="dashboard"
@@ -11,8 +11,12 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import DashboardSectionRenderer from './DashboardSectionRenderer.vue'
 import { DASHBOARD_SECTION_IDS } from 'src/constants/dashboardSections'
+import { useDashboardSharedStore } from 'src/stores/dashboardShared.store'
+
+const dashboardStore = useDashboardSharedStore()
 
 const sectionOrder = [
   DASHBOARD_SECTION_IDS.FUNCTIONS,
@@ -23,6 +27,10 @@ const sectionOrder = [
   DASHBOARD_SECTION_IDS.TIME_SERIES,
   DASHBOARD_SECTION_IDS.GEO_DEVICES,
 ]
+
+const visibleSectionOrder = computed(() =>
+  sectionOrder.filter((sectionId) => !dashboardStore.isSectionPopoutOpen(sectionId)),
+)
 </script>
 
 <style scoped lang="scss">

@@ -29,6 +29,7 @@ export default {
     reasonCode: 'Código de razón',
     unknown: 'Desconocido',
     others: 'Otros',
+    device: 'Dispositivo',
     my: 'Mis',
   },
   layout: {

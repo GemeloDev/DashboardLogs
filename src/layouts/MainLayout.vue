@@ -476,17 +476,6 @@ const dashboardStore = useDashboardSharedStore()
 
 dashboardStore.initSync()
 
-const debugWindowLabel =
-  typeof window !== 'undefined' ? window.name || 'main-window' : 'ssr-window'
-
-const logLayout = (message, details = undefined) => {
-  if (details === undefined) {
-    console.info(`[MainLayout][${debugWindowLabel}] ${message}`)
-    return
-  }
-  console.info(`[MainLayout][${debugWindowLabel}] ${message}`, details)
-}
-
 const systems = ref([])
 const healthMap = ref({})
 
@@ -832,7 +821,6 @@ const dashboardQueryKey = computed(() => {
 watch(
   () => dashboardStore.filtros,
   (nextFilters) => {
-    logLayout('watch:dashboardStore.filtros', nextFilters)
     const nextSerialized = JSON.stringify(nextFilters || {})
     const currentSerialized = JSON.stringify(filtros.value || {})
     if (nextSerialized === currentSerialized) return
@@ -854,7 +842,6 @@ watch(
 watch(
   filtros,
   (nextFilters) => {
-    logLayout('watch:filtros', nextFilters)
     const nextSerialized = JSON.stringify(nextFilters || {})
     const storeSerialized = JSON.stringify(dashboardStore.filtros || {})
     if (nextSerialized === storeSerialized) return
@@ -878,7 +865,6 @@ watch(
 watch(
   selectedSystem,
   (sys) => {
-    logLayout('watch:selectedSystem', { sys, filtros: filtros.value })
     filtros.value.system = sys || ''
 
     if (!sys) {
@@ -898,7 +884,6 @@ watch(
         sys,
         () => filtros.value,  // getFilters
         async () => {
-          logLayout('subscribeSystem:event', { sys, filtros: filtros.value })
           await Promise.all([
             cargarEventosDelSistema(),
             refreshSystemsCatalog(),

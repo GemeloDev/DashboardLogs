@@ -8,7 +8,7 @@
     v-if="!loading && (shouldShowPanel(DASHBOARD_PANEL_IDS.EVENT_TYPES) || shouldShowPanel(DASHBOARD_PANEL_IDS.COVERAGE))"
     class="q-mb-lg"
   >
-    <section class="dashboard-hero">
+    <section class="dashboard-hero" :class="{ 'dashboard-hero--popup': popupMode }">
       <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENT_TYPES)" class="dashboard-hero__left">
         <q-card flat bordered class="dashboard-hero__events-card text-white">
           <div class="dashboard-hero__section-head">
@@ -133,7 +133,7 @@
     class="row q-col-gutter-md q-mb-md items-stretch"
   >
     <div
-      :class="visiblePanelSet ? 'col-12 col-md-4 toplist-col' : 'col-12 toplist-col'"
+      :class="[thirdColumnClass, 'toplist-col']"
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.OFFICES) && topOffices.items.length"
     >
       <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
@@ -174,7 +174,7 @@
     </div>
 
     <div
-      :class="visiblePanelSet ? 'col-12 col-md-4 toplist-col' : 'col-12 toplist-col'"
+      :class="[thirdColumnClass, 'toplist-col']"
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.TAGS) && topTags.items.length"
     >
       <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
@@ -217,7 +217,7 @@
     </div>
 
     <div
-      :class="visiblePanelSet ? 'col-12 col-md-4 toplist-col' : 'col-12 toplist-col'"
+      :class="[thirdColumnClass, 'toplist-col']"
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.OUTCOMES) && topOutcomes.items.length"
     >
       <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
@@ -297,7 +297,7 @@
   >
     <div
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY)"
-      :class="visiblePanelSet ? 'col-12' : hasHttpData ? 'col-12 col-md-6' : 'col-12'"
+      :class="halfColumnClass"
     >
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
@@ -320,7 +320,7 @@
 
     <div
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData"
-      :class="visiblePanelSet ? 'col-12' : 'col-12 col-md-6'"
+      :class="halfColumnClass"
     >
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
@@ -342,7 +342,7 @@
     </div>
   </div>
 
-  <!-- Series: por DÃ­a, Semana y Mes -->
+  <!-- Series: por Dí­a, Semana y Mes -->
   <div
     v-show="
       !loading &&
@@ -356,7 +356,7 @@
   >
     <div
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_DAY)"
-      :class="visiblePanelSet ? 'col-12 col-md-4' : 'col-sm-12 col-md-4'"
+      :class="thirdColumnClass"
     >
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
@@ -378,7 +378,7 @@
 
     <div
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_WEEK)"
-      :class="visiblePanelSet ? 'col-12 col-md-4' : 'col-sm-12'"
+      :class="thirdColumnClass"
     >
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
@@ -400,7 +400,7 @@
 
     <div
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_MONTH)"
-      :class="visiblePanelSet ? 'col-12 col-md-4' : 'col-sm-12'"
+      :class="thirdColumnClass"
     >
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
@@ -421,7 +421,7 @@
     </div>
   </div>
 
-  <!-- Mapa geogrÃ¡fico / Dispositivos -->
+  <!-- Mapa geográfico / Dispositivos -->
   <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.GEO) && hasMapData" class="q-mt-xl">
     <div class="row items-center q-mb-md">
       <div>
@@ -530,21 +530,40 @@ const visiblePanelSet = computed(() =>
 )
 const shouldShowPanel = (panelId) =>
   !visiblePanelSet.value || visiblePanelSet.value.has(panelId)
+const halfColumnClass = computed(() => (props.popupMode ? 'col-12' : 'col-12 col-md-6'))
+const thirdColumnClass = computed(() => (props.popupMode ? 'col-12' : 'col-12 col-md-4'))
 
 // Flags derivados de la API
 const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
 const hasGeoData = computed(() => !!geoData.value?.points?.length)
+const normalizeDeviceFilterValue = (value) =>
+  String(value ?? '')
+    .trim()
+    .toUpperCase()
+const selectedDeviceIdFilter = computed(() =>
+  normalizeDeviceFilterValue(filtrosGlobales.value?.values?.deviceId),
+)
+
+function isValidDeviceForMap(device = {}) {
+  return (
+    device?.latitude != null &&
+    device?.longitude != null &&
+    Number.isFinite(+device.latitude) &&
+    Number.isFinite(+device.longitude)
+  )
+}
+
+function matchesSelectedDevice(device = {}) {
+  return (
+    !selectedDeviceIdFilter.value ||
+    normalizeDeviceFilterValue(device?.deviceId) === selectedDeviceIdFilter.value
+  )
+}
+
 const hasDevicesData = computed(() =>
-  (devicesData.value?.devices || []).some((d) => {
-    const status = String(d?.status || '').toUpperCase()
-    return (
-      (status === 'ONLINE' || status === 'OFFLINE') &&
-      d?.latitude != null &&
-      d?.longitude != null &&
-      Number.isFinite(+d.latitude) &&
-      Number.isFinite(+d.longitude)
-    )
-  }),
+  (devicesData.value?.devices || []).some(
+    (device) => matchesSelectedDevice(device) && isValidDeviceForMap(device),
+  ),
 )
 
 // Helpers de consola â”€â”€â”€
@@ -658,8 +677,7 @@ const geoPoints = computed(() =>
 // Dispositivos â”€
 const devicePoints = computed(() =>
   (devicesData.value?.devices || [])
-    .filter((d) => d.latitude != null && d.longitude != null &&
-      Number.isFinite(+d.latitude) && Number.isFinite(+d.longitude))
+    .filter((d) => matchesSelectedDevice(d) && isValidDeviceForMap(d))
     .map((d) => ({
       lat: +d.latitude,
       lon: +d.longitude,
@@ -739,7 +757,6 @@ function matchLogsForDevice(device = {}) {
 }
 
 function onDeviceClick(device) {
-  console.log('Device selected on map:', device)
   const { logs, selections, source } = matchLogsForDevice(device)
 
   if (logs.length) {
@@ -767,6 +784,14 @@ watch(
   ([geo, dev]) => {
     if (!geo && dev) mapView.value = 'devices'
     if (geo && !dev) mapView.value = 'logs'
+  },
+  { immediate: true },
+)
+
+watch(
+  selectedDeviceIdFilter,
+  (deviceId) => {
+    if (deviceId && hasDevicesData.value) mapView.value = 'devices'
   },
   { immediate: true },
 )
@@ -1495,6 +1520,10 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
   gap: 22px;
   align-items: stretch;
+}
+
+.dashboard-hero--popup {
+  grid-template-columns: 1fr;
 }
 
 .dashboard-hero__left {
