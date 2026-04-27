@@ -24,6 +24,18 @@ const routes = [
     meta: { hideLayout: true }
   },
   {
+    path: '/client/escritorio/section/:section',
+    name: 'dashboardSectionWindow',
+    component: () => import('pages/DashboardPanelWindowPage.vue'),
+    meta: { requiresAuth: true, hideLayout: true, flow: 'client' }
+  },
+  {
+    path: '/client/escritorio/panel/:panel',
+    name: 'dashboardPanelWindow',
+    component: () => import('pages/DashboardPanelWindowPage.vue'),
+    meta: { requiresAuth: true, hideLayout: true, flow: 'client' }
+  },
+  {
     path: '/new-password',
     name: 'newPassword',
     component: () => import('pages/ChangeTempPassword.vue'),

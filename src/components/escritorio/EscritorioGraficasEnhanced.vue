@@ -3,10 +3,13 @@
     <q-spinner size="16px" color="cyan" />
     <span>{{ t('diagnostic.updatingData') }}</span>
   </div>
-  <!-- ✅ Hero superior -->
-  <div v-if="!loading" class="q-mb-lg">
+  <!-- Hero superior -->
+  <div
+    v-if="!loading && (shouldShowPanel(DASHBOARD_PANEL_IDS.EVENT_TYPES) || shouldShowPanel(DASHBOARD_PANEL_IDS.COVERAGE))"
+    class="q-mb-lg"
+  >
     <section class="dashboard-hero">
-      <div class="dashboard-hero__left">
+      <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENT_TYPES)" class="dashboard-hero__left">
         <q-card flat bordered class="dashboard-hero__events-card text-white">
           <div class="dashboard-hero__section-head">
             <div>
@@ -16,6 +19,10 @@
               </div>
             </div>
 
+            <DashboardPopoutButton
+              v-if="showInternalPopouts"
+              :section-id="DASHBOARD_SECTION_IDS.FUNCTIONS"
+            />
             <div class="hero-total-pill">
               <div class="hero-total-pill__label">{{ t('dashboard.totalProccessed') }}</div>
               <div class="hero-total-pill__value">{{ funcUsage.total }}</div>
@@ -57,7 +64,12 @@
         </q-card>
       </div>
 
-      <q-card flat bordered class="dashboard-hero__donut-card text-white">
+      <q-card
+        v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.COVERAGE)"
+        flat
+        bordered
+        class="dashboard-hero__donut-card text-white"
+      >
         <div class="hero-side-top">
           <div class="hero-side-icon">
             <q-icon name="donut_large" size="24px" />
@@ -66,6 +78,11 @@
             <div class="hero-side-title">{{ t('dashboard.coverageFunctions') }}</div>
             <div class="hero-side-subtitle">{{ t('dashboard.distributionBySystem') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.FUNCTIONS"
+          />
         </div>
 
         <div class="dashboard-hero__donut-wrap">
@@ -95,15 +112,30 @@
     </section>
   </div>
 
-  <!-- ✅ Widget Actividad de Hoy -->
-  <ActivityTodayWidget ref="activityWidgetRef" />
+  <!-- Widget Actividad de Hoy -->
+  <ActivityTodayWidget
+    v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.ACTIVITY)"
+    ref="activityWidgetRef"
+    :popup-mode="popupMode"
+    :show-popout="showInternalPopouts"
+  />
 
-  <!-- ✅ Locaciones + Etiquetas + Outcomes -->
+  <!-- Locaciones + Etiquetas + Outcomes -->
   <div
-    v-if="!loading && (topOffices.items.length || topTags.items.length || topOutcomes.items.length)"
+    v-if="
+      !loading &&
+      (
+        (shouldShowPanel(DASHBOARD_PANEL_IDS.OFFICES) && topOffices.items.length) ||
+        (shouldShowPanel(DASHBOARD_PANEL_IDS.TAGS) && topTags.items.length) ||
+        (shouldShowPanel(DASHBOARD_PANEL_IDS.OUTCOMES) && topOutcomes.items.length)
+      )
+    "
     class="row q-col-gutter-md q-mb-md items-stretch"
   >
-    <div class="col-12 col-md-4 toplist-col" v-if="topOffices.items.length">
+    <div
+      :class="visiblePanelSet ? 'col-12 col-md-4 toplist-col' : 'col-12 toplist-col'"
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.OFFICES) && topOffices.items.length"
+    >
       <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="apartment" color="cyan" size="18px" class="q-mr-sm" />
@@ -111,6 +143,11 @@
             <div class="toplist-title">{{ t('common.locations') }}</div>
             <div class="toplist-subtitle text-grey-5">{{ t('dashboard.topLocations') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.TOPLISTS"
+          />
         </div>
         <div
           v-for="it in topOffices.items"
@@ -136,7 +173,10 @@
       </q-card>
     </div>
 
-    <div class="col-12 col-md-4 toplist-col" v-if="topTags.items.length">
+    <div
+      :class="visiblePanelSet ? 'col-12 col-md-4 toplist-col' : 'col-12 toplist-col'"
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.TAGS) && topTags.items.length"
+    >
       <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="sell" color="purple" size="18px" class="q-mr-sm" />
@@ -146,6 +186,11 @@
               {{ t('dashboard.distributionBySystem') }}
             </div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.TOPLISTS"
+          />
         </div>
         <div
           v-for="it in topTags.items"
@@ -171,7 +216,10 @@
       </q-card>
     </div>
 
-    <div class="col-12 col-md-4 toplist-col" v-if="topOutcomes.items.length">
+    <div
+      :class="visiblePanelSet ? 'col-12 col-md-4 toplist-col' : 'col-12 toplist-col'"
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.OUTCOMES) && topOutcomes.items.length"
+    >
       <q-card flat bordered class="toplist-card toplist-card--full q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="insights" color="pink" size="18px" class="q-mr-sm" />
@@ -179,6 +227,11 @@
             <div class="toplist-title">{{ t('dashboard.eventsResults') }}</div>
             <div class="toplist-subtitle text-grey-5">{{ t('dashboard.topOutcomes') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.TOPLISTS"
+          />
         </div>
         <div
           v-for="it in topOutcomes.items"
@@ -205,8 +258,11 @@
     </div>
   </div>
 
-  <!-- ✅ Status a través del tiempo -->
-  <div v-show="!loading" class="row q-col-gutter-md q-mb-md">
+  <!-- Status a travÃ©s del tiempo -->
+  <div
+    v-show="!loading && shouldShowPanel(DASHBOARD_PANEL_IDS.STATUS_TIMELINE)"
+    class="row q-col-gutter-md q-mb-md"
+  >
     <div class="col-12">
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
@@ -215,6 +271,11 @@
             <div class="toplist-title">{{ t('common.status') }}</div>
             <div class="toplist-subtitle text-grey-5">{{ t('dashboard.subtitleStatus') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.STATUS"
+          />
         </div>
         <div class="status-line-wrap">
           <canvas ref="statusLineCanvas"></canvas>
@@ -223,9 +284,21 @@
     </div>
   </div>
 
-  <!-- ✅ Severidad + HTTP -->
-  <div v-if="!loading" class="row q-col-gutter-md q-mb-md items-stretch">
-    <div :class="hasHttpData ? 'col-12 col-md-6' : 'col-12'">
+  <!-- Severidad + HTTP -->
+  <div
+    v-if="
+      !loading &&
+      (
+        shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY) ||
+        (shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData)
+      )
+    "
+    class="row q-col-gutter-md q-mb-md items-stretch"
+  >
+    <div
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY)"
+      :class="visiblePanelSet ? 'col-12' : hasHttpData ? 'col-12 col-md-6' : 'col-12'"
+    >
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
           <q-icon name="warning" color="orange" size="18px" class="q-mr-sm" />
@@ -233,6 +306,11 @@
             <div class="toplist-title">{{ t('common.severity') }}</div>
             <div class="toplist-subtitle text-grey-5">{{ t('dashboard.subtitleSeverity') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.SEVERITY_HTTP"
+          />
         </div>
         <div class="severity-pie-wrap">
           <canvas ref="severityPieCanvas"></canvas>
@@ -240,7 +318,10 @@
       </q-card>
     </div>
 
-    <div v-if="hasHttpData" class="col-12 col-md-6">
+    <div
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData"
+      :class="visiblePanelSet ? 'col-12' : 'col-12 col-md-6'"
+    >
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
           <q-icon name="http" color="cyan" size="18px" class="q-mr-sm" />
@@ -248,6 +329,11 @@
             <div class="toplist-title">{{ t('dashboard.http') }}</div>
             <div class="toplist-subtitle text-grey-5">{{ t('dashboard.substitleHttp') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.SEVERITY_HTTP"
+          />
         </div>
         <div class="http-radar-wrap">
           <canvas ref="httpRadarCanvas"></canvas>
@@ -256,15 +342,33 @@
     </div>
   </div>
 
-  <!-- ✅ Series: por Día, Semana y Mes -->
-  <div v-show="!loading" class="row q-col-gutter-md q-mb-md">
-    <div class="col-sm-12 col-md-4">
+  <!-- Series: por DÃ­a, Semana y Mes -->
+  <div
+    v-show="
+      !loading &&
+      (
+        shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_DAY) ||
+        shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_WEEK) ||
+        shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_MONTH)
+      )
+    "
+    class="row q-col-gutter-md q-mb-md"
+  >
+    <div
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_DAY)"
+      :class="visiblePanelSet ? 'col-12 col-md-4' : 'col-sm-12 col-md-4'"
+    >
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="timeline" color="cyan" size="18px" class="q-mr-sm" />
           <div>
             <div class="toplist-title">{{ t('dashboard.eventsByDay') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.TIME_SERIES"
+          />
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsDayCanvas"></canvas>
@@ -272,13 +376,21 @@
       </q-card>
     </div>
 
-    <div class="col-sm-12 col-md-4">
+    <div
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_WEEK)"
+      :class="visiblePanelSet ? 'col-12 col-md-4' : 'col-sm-12'"
+    >
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="date_range" color="purple" size="18px" class="q-mr-sm" />
           <div>
             <div class="toplist-title">{{ t('dashboard.eventsByWeek') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.TIME_SERIES"
+          />
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsWeekCanvas"></canvas>
@@ -286,13 +398,21 @@
       </q-card>
     </div>
 
-    <div class="col-sm-12 col-md-4">
+    <div
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_MONTH)"
+      :class="visiblePanelSet ? 'col-12 col-md-4' : 'col-sm-12'"
+    >
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="calendar_month" color="pink" size="18px" class="q-mr-sm" />
           <div>
             <div class="toplist-title">{{ t('dashboard.eventsByMonth') }}</div>
           </div>
+          <q-space />
+          <DashboardPopoutButton
+            v-if="showInternalPopouts"
+            :section-id="DASHBOARD_SECTION_IDS.TIME_SERIES"
+          />
         </div>
         <div class="chart-wrap">
           <canvas ref="eventsMonthCanvas"></canvas>
@@ -301,8 +421,19 @@
     </div>
   </div>
 
-  <!-- ✅ Mapa geográfico / Dispositivos -->
-  <div v-if="hasMapData" class="q-mt-xl">
+  <!-- Mapa geogrÃ¡fico / Dispositivos -->
+  <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.GEO) && hasMapData" class="q-mt-xl">
+    <div class="row items-center q-mb-md">
+      <div>
+        <div class="toplist-title">{{ t('dashboard.panelGeoDevices') }}</div>
+        <div class="toplist-subtitle text-grey-5">{{ t('dashboard.mapType') }}</div>
+      </div>
+      <q-space />
+      <DashboardPopoutButton
+        v-if="showInternalPopouts"
+        :section-id="DASHBOARD_SECTION_IDS.GEO_DEVICES"
+      />
+    </div>
     <!-- Toggle solo visible cuando existen ambos tipos de datos -->
     <div v-if="hasGeoData && hasDevicesData" class="flex justify-center q-mb-md">
       <q-btn-toggle
@@ -343,34 +474,64 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, watch, /* onMounted, */ nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, inject, watch, nextTick, onBeforeUnmount } from 'vue'
 import ConsoleGeoMap from '../blocks/ConsoleGeoMap.vue'
 import ConsoleDevicesMap from '../blocks/ConsoleDevicesMap.vue'
 import Chart from 'chart.js/auto'
 import ActivityTodayWidget from './ActivityTodayWidget.vue'
+import DashboardPopoutButton from 'src/components/dashboard/DashboardPopoutButton.vue'
+import { DASHBOARD_PANEL_IDS } from 'src/constants/dashboardPanels'
+import { DASHBOARD_SECTION_IDS } from 'src/constants/dashboardSections'
+import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const $q = useQuasar()
+const DEVICE_CONSOLE_RADIUS_KM = 5
 
-// ─── Injects ──────────────────────────────────────────────────────────────────
+const props = defineProps({
+  visiblePanels: {
+    type: Array,
+    default: null,
+  },
+  popupMode: {
+    type: Boolean,
+    default: false,
+  },
+  showInternalPopouts: {
+    type: Boolean,
+    default: true,
+  },
+  topEventLimit: {
+    type: Number,
+    default: 12,
+  },
+})
+
+// Injects â”€â”€
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
 const openConsole = inject('openConsole', null)
 const logsGlobales = inject('logsGlobales', ref([]))
 
-// ─── Estado único de carga ────────────────────────────────────────────────────
+// Estado Ãºnico de carga
 const loading = inject('dashboardLoading', ref(false))
 const refreshing = inject('dashboardRefreshing', ref(false))
 
-// ─── Datos de los 5 endpoints ────────────────────────────────────────────────
+// Datos de los 5 endpoints
 const statsData = inject('dashboardStatsData', ref(null))
 const seriesData = inject('dashboardSeriesData', ref(null))
 const httpData = inject('dashboardHttpData', ref(null))
 const geoData = inject('dashboardGeoData', ref(null))
 const devicesData = inject('dashboardDevicesData', ref(null))
 
-const activityWidgetRef = ref(null) // ← referencia al widget
+const activityWidgetRef = ref(null)
+const visiblePanelSet = computed(() =>
+  props.visiblePanels?.length ? new Set(props.visiblePanels) : null,
+)
+const shouldShowPanel = (panelId) =>
+  !visiblePanelSet.value || visiblePanelSet.value.has(panelId)
 
-// ─── Flags derivados de la API ────────────────────────────────────────────────
+// Flags derivados de la API
 const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
 const hasGeoData = computed(() => !!geoData.value?.points?.length)
 const hasDevicesData = computed(() =>
@@ -386,7 +547,7 @@ const hasDevicesData = computed(() =>
   }),
 )
 
-// ─── Helpers de consola ───────────────────────────────────────────────────────
+// Helpers de consola â”€â”€â”€
 const selectedEventType = computed(() => filtrosGlobales.value?.values?.eventType || '')
 
 function onEventTypeCardClick(eventType) {
@@ -418,12 +579,83 @@ function openConsoleWithGeoSelection(logs, selections = []) {
   window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail }))
 }
 
-// ─── Geo ──────────────────────────────────────────────────────────────────────
+function parseGeoLike(value) {
+  if (!value) return null
+
+  if (typeof value === 'object' && value?.type === 'Point' && Array.isArray(value.coordinates)) {
+    const [lng, lat] = value.coordinates.map(Number)
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lon: lng }
+  }
+
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const lat =
+      value.lat ??
+      value.latitude ??
+      (value.coords ? (value.coords.lat ?? value.coords.latitude) : undefined)
+    const lon =
+      value.lng ??
+      value.lon ??
+      value.long ??
+      value.longitude ??
+      (value.coords ? (value.coords.lng ?? value.coords.lon ?? value.coords.longitude) : undefined)
+
+    const parsedLat = Number(lat)
+    const parsedLon = Number(lon)
+    if (Number.isFinite(parsedLat) && Number.isFinite(parsedLon)) {
+      return { lat: parsedLat, lon: parsedLon }
+    }
+  }
+
+  if (Array.isArray(value) && value.length >= 2) {
+    const a = Number(value[0])
+    const b = Number(value[1])
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+
+    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
+    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
+    if (aIsLat) return { lat: a, lon: b }
+    if (bIsLat) return { lat: b, lon: a }
+  }
+
+  if (typeof value === 'string') {
+    const parts = value.split(',').map((part) => Number(part.trim()))
+    if (parts.length !== 2 || parts.some((part) => !Number.isFinite(part))) return null
+    const [a, b] = parts
+    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
+    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
+    if (aIsLat) return { lat: a, lon: b }
+    if (bIsLat) return { lat: b, lon: a }
+  }
+
+  return null
+}
+
+function parseLogGeo(log) {
+  return (
+    parseGeoLike(log?.geo) ||
+    parseGeoLike(log?.geoCoordinates) ||
+    parseGeoLike(log?.meta?.geoCoordinates) ||
+    null
+  )
+}
+
+function haversineKm(a, b) {
+  const R = 6371
+  const toRad = (x) => (x * Math.PI) / 180
+  const dLat = toRad(b.lat - a.lat)
+  const dLon = toRad(b.lon - a.lon)
+  const lat1 = toRad(a.lat)
+  const lat2 = toRad(b.lat)
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(s))
+}
+
+// Geo â”€â”€
 const geoPoints = computed(() =>
   (geoData.value?.points || []).map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
 )
 
-// ─── Dispositivos ─────────────────────────────────────────────────────────────
+// Dispositivos â”€
 const devicePoints = computed(() =>
   (devicesData.value?.devices || [])
     .filter((d) => d.latitude != null && d.longitude != null &&
@@ -444,9 +676,9 @@ const devicePoints = computed(() =>
 function buildDeviceLogMatchers(device = {}) {
   const candidates = [
     {
-      fieldKey: 'meta.deviceId',
+      fieldKey: 'caseId',
       deviceValue: device.deviceId,
-      logPaths: ['meta.deviceId', 'deviceId', 'device.id', 'source'],
+      logPaths: ['caseId'],
     },
     {
       fieldKey: 'meta.ip',
@@ -473,50 +705,56 @@ function buildDeviceLogMatchers(device = {}) {
     .filter((candidate) => candidate.normalizedValue)
 }
 
+function findLogsNearDevice(device = {}) {
+  const center = { lat: Number(device?.lat), lon: Number(device?.lon) }
+  if (!Number.isFinite(center.lat) || !Number.isFinite(center.lon)) return []
+
+  return (logsGlobales.value || []).filter((log) => {
+    const point = parseLogGeo(log)
+    return point ? haversineKm(center, point) <= DEVICE_CONSOLE_RADIUS_KM : false
+  })
+}
+
 function matchLogsForDevice(device = {}) {
   const matchers = buildDeviceLogMatchers(device)
-  if (!matchers.length) return { logs: [], selections: [] }
+  if (!matchers.length) {
+    return { logs: findLogsNearDevice(device), selections: [], source: 'proximity' }
+  }
 
-  const matchesByPriority = matchers.map((matcher) => {
+  for (const matcher of matchers) {
     const logs = (logsGlobales.value || []).filter((log) =>
       matcher.logPaths.some((path) => normalizeCompareValue(getDeep(log, path)) === matcher.normalizedValue),
     )
 
-    return {
-      fieldKey: matcher.fieldKey,
-      value: matcher.deviceValue,
-      logs,
+    if (logs.length) {
+      return {
+        logs,
+        selections: [{ fieldKey: matcher.fieldKey, value: matcher.deviceValue }],
+        source: matcher.fieldKey,
+      }
     }
-  })
-
-  const firstNonEmpty = matchesByPriority.find((item) => item.logs.length)
-  if (!firstNonEmpty) return { logs: [], selections: [] }
-
-  const selections = matchesByPriority
-    .filter((item) => item.logs.length)
-    .map((item) => ({ fieldKey: item.fieldKey, value: item.value }))
-
-  return {
-    logs: firstNonEmpty.logs,
-    selections,
   }
+
+  return { logs: findLogsNearDevice(device), selections: [], source: 'proximity' }
 }
 
 function onDeviceClick(device) {
-  const { logs, selections } = matchLogsForDevice(device)
+  console.log('Device selected on map:', device)
+  const { logs, selections, source } = matchLogsForDevice(device)
 
   if (logs.length) {
     openConsoleWithGeoSelection(logs, selections)
     return
   }
 
-  const fallbackSelection =
-    selections[0] ||
-    (device?.deviceId ? { fieldKey: 'meta.deviceId', value: device.deviceId } : null)
-
-  if (fallbackSelection) {
-    openConsole?.(fallbackSelection)
-  }
+  $q.notify({
+    type: 'info',
+    position: 'top',
+    message:
+      source === 'proximity'
+        ? 'No se encontraron logs cercanos para ese dispositivo.'
+        : 'No se encontraron logs relacionados a ese dispositivo.',
+  })
 }
 
 const hasMapData = computed(() => hasGeoData.value || hasDevicesData.value)
@@ -533,7 +771,7 @@ watch(
   { immediate: true },
 )
 
-// ─── Dashboard stats helpers ──────────────────────────────────────────────────
+// Dashboard stats helpers â”€â”€
 const FUNC_COLORS = [
   { q: 'teal', hex: '#29d3c2' },
   { q: 'pink', hex: '#ff5c8a' },
@@ -640,7 +878,7 @@ const toApiTopList = (rows, { topN = 4 } = {}) => {
   }
 }
 
-// ─── funcUsage ────────────────────────────────────────────────────────────────
+// funcUsage
 const funcUsage = computed(() => {
   const totalFromApi = Number(statsData.value?.total || 0)
   const source = filterStatRowsByKey(statsData.value?.topEventTypes, 'eventType')
@@ -652,7 +890,7 @@ const funcUsage = computed(() => {
   if (!total || !source.length)
     return { total: 0, items: [], donutSegments: [], coveragePct: 0, topName: '', topPct: 0 }
 
-  const topN = 12
+  const topN = props.topEventLimit > 0 ? props.topEventLimit : 12
   const top = source.slice(0, topN)
   const topSum = top.reduce((s, x) => s + x.count, 0)
   const rest = Math.max(0, total - topSum)
@@ -769,7 +1007,7 @@ const topOutcomes = computed(() =>
   toApiTopList(filterStatRowsByKey(statsData.value?.outcomes, 'outcome'), { topN: 3 }),
 )
 
-// ─── Severity pie (Chart.js) ──────────────────────────────────────────────────
+// Severity pie (Chart.js) â”€â”€
 const severityPieCanvas = ref(null)
 let severityPieChart = null
 
@@ -853,7 +1091,7 @@ async function renderSeverityPieChart() {
   })
 }
 
-// ─── HTTP Radar (Chart.js) ────────────────────────────────────────────────────
+// HTTP Radar (Chart.js)
 const httpRadarCanvas = ref(null)
 let httpRadarChart = null
 
@@ -936,7 +1174,7 @@ async function renderHttpRadar() {
   })
 }
 
-// ─── Status over time (Chart.js line) ────────────────────────────────────────
+// Status over time (Chart.js line)
 const statusLineCanvas = ref(null)
 let statusLineChart = null
 
@@ -1013,7 +1251,7 @@ async function renderStatusLine() {
   })
 }
 
-// ─── Series temporales: día / semana / mes ────────────────────────────────────
+// Series temporales: dÃ­a / semana / mes
 const eventsDayCanvas = ref(null)
 const eventsWeekCanvas = ref(null)
 const eventsMonthCanvas = ref(null)
@@ -1046,7 +1284,7 @@ function buildSimpleSeries(items = [], color = '#22d3ee') {
   }
 }
 
-// ─── Helpers de rango de fechas para click en series ─────────────────────────
+// Helpers de rango de fechas para click en series â”€
 function dayRange(dateStr) {
   return { from: dateStr, to: dateStr }
 }
@@ -1061,7 +1299,7 @@ function weekRange(dateStr) {
     const year = parseInt(match[2])
     // El 4 de enero siempre cae en la semana 1 ISO
     const jan4 = new Date(year, 0, 4)
-    const dow = jan4.getDay() || 7 // 1=Lun … 7=Dom
+    const dow = jan4.getDay() || 7 // 1=Lun â€¦ 7=Dom
     const week1Mon = new Date(jan4)
     week1Mon.setDate(jan4.getDate() - (dow - 1))
     const start = new Date(week1Mon)
@@ -1149,7 +1387,7 @@ async function renderSeriesCharts() {
   )
 }
 
-// ─── redrawCharts: punto único de re-render ───────────────────────────────────
+// redrawCharts: punto Ãºnico de re-render â”€â”€â”€
 async function redrawCharts() {
   renderCoverageDonutChart()
   renderSeverityPieChart()
@@ -1177,7 +1415,7 @@ watch(
   { immediate: true },
 )
 
-// ─── Lifecycle ────────────────────────────────────────────────────────────────
+// Lifecycle
 onBeforeUnmount(() => {
   coverageDonutChart?.destroy()
   severityPieChart?.destroy()

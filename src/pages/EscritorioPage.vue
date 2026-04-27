@@ -15,13 +15,13 @@
 
     <!-- Contenido Principal: Gráficas Enhanced -->
     <div class="container q-px-md q-pb-xl">
-      <EscritorioGraficasEnhanced />
+      <DashboardSectionsBoard />
     </div>
   </q-page>
 </template>
 
 <script setup>
-import EscritorioGraficasEnhanced from '../components/escritorio/EscritorioGraficasEnhanced.vue'
+import DashboardSectionsBoard from 'src/components/dashboard/DashboardSectionsBoard.vue'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 </script>
