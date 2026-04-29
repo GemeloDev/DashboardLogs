@@ -7,7 +7,12 @@ function isAuthenticated() {
   return authService.checkSession()
 }
 
-export default defineRouter(function (/* { store, ssrContext } */) {
+function getDefaultRoute(user) {
+  const allowedFlow = authService.getAllowedFlow(user)
+  return allowedFlow === 'santoro' ? '/santoro/inicio' : '/client/escritorio'
+}
+
+export default defineRouter(function () {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
     : (process.env.VUE_ROUTER_MODE === 'history' ? createWebHistory : createWebHashHistory)
@@ -15,52 +20,51 @@ export default defineRouter(function (/* { store, ssrContext } */) {
   const Router = createRouter({
     scrollBehavior: () => ({ left: 0, top: 0 }),
     routes,
-
-    // Leave this as is and make changes in quasar.conf.js instead!
-    // quasar.conf.js -> build -> vueRouterMode
-    // quasar.conf.js -> build -> publicPath
     history: createHistory(process.env.VUE_ROUTER_BASE)
   })
 
-  // Guardia de navegación global
   Router.beforeEach((to, from, next) => {
     const authenticated = isAuthenticated()
 
-    // Si la ruta requiere autenticación y no está autenticado
     if (to.meta.requiresAuth && !authenticated) {
-      console.log('🔒 Acceso denegado - Redirigiendo a login')
       next('/login')
       return
     }
 
-    // Si la ruta requiere ser admin
-    if (to.meta.requiresAdmin && authenticated) {
-      const user = authService.user
-      const isAdmin = user?.authz?.roles.includes('ORG_ADMIN') || user?.authz?.roles.includes('ORG_OWNER')
-
-      if (!isAdmin) {
-        console.log('🚫 Acceso denegado - Se requiere rol de administrador')
-        next('/escritorio')
-        return
-      }
-    }
-
-    // Si está autenticado y trata de acceder al login, redirigir al dashboard
-    if (to.path === '/login' && authenticated) {
-      console.log('✅ Usuario autenticado - Redirigiendo a dashboard')
-      next('/dashboard')
+    if (!authenticated) {
+      next()
       return
     }
 
-    // Si accede a la raíz y está autenticado, redirigir al dashboard
-    if (to.path === '/' && authenticated) {
-      next('/dashboard')
+    const user = authService.user
+    const defaultRoute = getDefaultRoute(user)
+    const canAccessSantoro = authService.canAccessSantoroFlow(user)
+
+    const isAdmin =
+      user?.authz?.roles?.includes('ORG_ADMIN') ||
+      user?.authz?.roles?.includes('ORG_OWNER')
+
+    // Bloqueo de acceso a flujo santoro
+    if (to.meta.flow === 'santoro' && !canAccessSantoro) {
+      next('/client/escritorio')
       return
     }
 
-    // Si accede a la raíz y no está autenticado, redirigir al login
-    if (to.path === '/' && !authenticated) {
-      next('/login')
+    // Si además requiere admin
+    if (to.meta.requiresAdmin && !isAdmin) {
+      next(defaultRoute)
+      return
+    }
+
+    // Si intenta ir a login estando autenticado
+    if (to.path === '/login') {
+      next(defaultRoute)
+      return
+    }
+
+    // Entradas genéricas
+    if (to.path === '/' || to.path === '/dashboard' || to.path === '/logs') {
+      next(defaultRoute)
       return
     }
 

@@ -1,26 +1,97 @@
-// stompSocketService.js
-import { Client } from "@stomp/stompjs";
-import { getJWTData } from "./cookieService";
-// import { SOCKET } from "./apiEndpoints";
+/**
+ * ════════════════════════════════════════════════════════════════
+ * SERVICIO DE WEBSOCKET CON STOMP
+ * ════════════════════════════════════════════════════════════════
+ *
+ * Maneja conexiones WebSocket usando el protocolo STOMP.
+ * La URL del WebSocket se obtiene de la configuración central.
+ *
+ * ════════════════════════════════════════════════════════════════
+ */
 
-let stompClient = null;
-let connected = false;
+import { Client } from '@stomp/stompjs'
+import { getJWTData } from './cookieService'
+import { WS_BASE_URL, isDebug } from 'src/config/env'
 
-// 1. Detectar si estamos en HTTPS o HTTP para usar wss o ws
-const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+let stompClient = null
+let connected = false
+const connectListeners = new Set()
 
-// 2. Obtener la IP y Puerto del navegador (ej: 192.168.100.30:9000)
-const host = window.location.host;
+// URL del WebSocket desde configuración central
+const brokerURL = WS_BASE_URL
 
-// 3. Construir la URL completa apuntando al Proxy de Quasar
-// Asegúrate de que '/ws-endpoint' coincida con lo que pusiste en quasar.config.js
-const brokerURL = `${protocol}://${host}/ws`;
+if (isDebug) {
+  console.log('🔌 WebSocket URL configurada:', brokerURL)
+}
 
 /**
  * Convierte un "eventName" en un destino STOMP para suscribirse
  */
 function eventToDestination(eventName) {
-  return `/topic/${eventName}`;
+  return `/topic/${eventName}`
+}
+
+function notifyConnectListeners() {
+  connectListeners.forEach((listener) => {
+    try {
+      listener(stompClient)
+    } catch (err) {
+      console.error('[STOMP] Error en listener de conexión:', err)
+    }
+  })
+}
+
+export function onSocketConnect(listener) {
+  if (typeof listener !== 'function') return () => {}
+  connectListeners.add(listener)
+  return () => connectListeners.delete(listener)
+}
+
+/**
+ * Conecta el STOMP sin suscribirse a ningún topic específico.
+ * Útil para inicializar la conexión en el dashboard.
+ */
+export function connectSocket({ endpoint = brokerURL, debug = isDebug, reconnectDelay = 3000 } = {}) {
+  if (stompClient?.connected && connected) return stompClient
+  if (stompClient?.active) return stompClient
+
+  stompClient = new Client({
+    brokerURL: endpoint,
+    reconnectDelay,
+    debug: (msg) => { if (debug) console.log('[STOMP DEBUG]', msg) },
+    onConnect: () => {
+      connected = true
+      notifyConnectListeners()
+      console.log('✅ STOMP dashboard conectado.')
+    },
+    onStompError: (frame) => {
+      console.error('🚨 Error STOMP:', frame.headers['message'])
+    },
+    onWebSocketClose: (evt) => {
+      connected = false
+      console.warn('❌ STOMP desconectado:', evt.reason || 'Conexión cerrada')
+    },
+    onWebSocketError: (err) => {
+      console.error('🚨 Error WebSocket:', err)
+    },
+  })
+
+  stompClient.activate()
+  return stompClient
+}
+
+export function isSocketConnected() {
+  return !!stompClient?.connected && connected
+}
+
+export function ensureSocketConnected(options = {}) {
+  if (isSocketConnected()) return stompClient
+
+  if (!stompClient || !stompClient.active) {
+    return connectSocket(options)
+  }
+
+  return stompClient
 }
 
 /**
@@ -28,53 +99,117 @@ function eventToDestination(eventName) {
  */
 export function initializeSocket(
   subscribeTopic = 'qr-login/',
-  onMessageReceived = () => { },
-  {
-    endpoint = brokerURL,
-    debug = false,
-    reconnectDelay = 3000
-  } = {}
+  onMessageReceived = () => {},
+  { endpoint = brokerURL, debug = isDebug, reconnectDelay = 3000 } = {},
 ) {
-  if (stompClient && connected) return stompClient;
+  if (stompClient && connected) return stompClient
 
   stompClient = new Client({
     brokerURL: endpoint,
     reconnectDelay,
-    debug: msg => {
-      if (debug) console.log("[STOMP DEBUG]", msg);
+    debug: (msg) => {
+      if (debug) console.log('[STOMP DEBUG]', msg)
     },
     onConnect: () => {
-      connected = true;
-      console.log("✅ STOMP conectado exitosamente.");
+      connected = true
+      notifyConnectListeners()
+      console.log('✅ STOMP conectado exitosamente.')
 
-      const topic = eventToDestination(subscribeTopic);
+      const topic = eventToDestination(subscribeTopic)
       console.log('Suscribiéndose a:', topic)
 
-      stompClient.subscribe(topic, message => {
+      stompClient.subscribe(topic, (message) => {
         console.log(`Received:`, JSON.parse(message.body))
-        const payload = JSON.parse(message.body);
+        const payload = JSON.parse(message.body)
         const data = getJWTData(payload.accessToken)
         onMessageReceived({
           payload,
-          data
+          data,
         })
-      });
+      })
     },
-    onStompError: frame => {
-      console.error("🚨 Error STOMP:", frame.headers["message"]);
-      console.error("Detalles:", frame.body);
+    onStompError: (frame) => {
+      console.error('🚨 Error STOMP:', frame.headers['message'])
+      console.error('Detalles:', frame.body)
     },
-    onWebSocketClose: evt => {
-      connected = false;
-      console.warn("❌ STOMP desconectado:", evt.reason || "Conexión cerrada");
+    onWebSocketClose: (evt) => {
+      connected = false
+      console.warn('❌ STOMP desconectado:', evt.reason || 'Conexión cerrada')
     },
-    onWebSocketError: err => {
-      console.error("🚨 Error WebSocket:", err);
-    }
-  });
+    onWebSocketError: (err) => {
+      console.error('🚨 Error WebSocket:', err)
+    },
+  })
 
-  stompClient.activate();
-  return stompClient;
+  stompClient.activate()
+  return stompClient
+}
+
+// Suscribirse a alertas de un tenant especifico
+export function subscribeToAlerts(tenantId, onAlert = () => {}) {
+  if (!stompClient || !connected) {
+    // Reintentar cuando se conecte
+    setTimeout(() => subscribeToAlerts(tenantId, onAlert), 2000)
+    return
+  }
+
+  const topic = `/topic/alerts/${tenantId}`
+  console.log('[STOMP] Suscribiéndose a alertas:', topic)
+
+  stompClient.subscribe(topic, (message) => {
+    try {
+      const payload = JSON.parse(message.body)
+      if (payload.type === 'ALERT_CRIT') {
+        onAlert(payload)
+      }
+    } catch (e) {
+      console.error('[STOMP] Error parseando alerta:', e)
+    }
+  })
+}
+
+/**
+ * Suscribirse a nuevos logs de un sistema específico.
+ * El backend envía mensajes a este topic cuando llegan logs nuevos.
+ */
+export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}) {
+  if (!stompClient || !connected) {
+    ensureSocketConnected()
+    let cancelled = false
+    let subscription = null
+    const retry = () => {
+      if (cancelled) return
+      if (!isSocketConnected()) {
+        setTimeout(retry, 2000)
+        return
+      }
+      subscription = subscribeToNewLogs(tenantId, system, onNewLogs)
+    }
+
+    setTimeout(retry, 2000)
+    return {
+      unsubscribe() {
+        cancelled = true
+        subscription?.unsubscribe?.()
+      },
+    }
+  }
+
+  const topic = `/topic/dashboard/${tenantId}/${system}`
+  console.log('[STOMP] Suscribiéndose a nuevos logs:', topic)
+
+  const subscription = stompClient.subscribe(topic, (message) => {
+    try {
+      const payload = JSON.parse(message.body)
+      if (payload.type === 'NEW_LOGS') {
+        onNewLogs(payload)
+      }
+    } catch (e) {
+      console.error('[STOMP] Error parseando mensaje de logs:', e)
+    }
+  })
+
+  return subscription // guardar para poder desuscribirse al cambiar de sistema
 }
 
 /**
@@ -82,10 +217,10 @@ export function initializeSocket(
  */
 export function disconnectSocket() {
   if (stompClient) {
-    stompClient.deactivate();
-    stompClient = null;
-    connected = false;
-    console.log("🔌 STOMP desconectado manualmente");
+    stompClient.deactivate()
+    stompClient = null
+    connected = false
+    console.log('🔌 STOMP desconectado manualmente')
   }
 }
 
@@ -93,5 +228,5 @@ export function disconnectSocket() {
  * Obtener el cliente STOMP directamente (para usos avanzados)
  */
 export function getSocket() {
-  return stompClient;
+  return stompClient
 }

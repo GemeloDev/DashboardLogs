@@ -1,9 +1,7 @@
-import { useQuasar } from 'quasar'
+import { Notify } from 'quasar'
 import { axiosInstance } from './axiosConfig'
-import { API_BASE_URL } from './apiConfig'
+import { BASE_URL, CATALOGS } from './endpoints'
 
-const $q = useQuasar()
-const BASE_URL = `${API_BASE_URL}/catalogs/api-keys`
 
 export class ApiKeyService {
   /**
@@ -13,7 +11,7 @@ export class ApiKeyService {
    */
   static async getAll(params = { page: 0, size: 25 }) {
     try {
-      const response = await axiosInstance.get(BASE_URL, { params })
+      const response = await axiosInstance.get(CATALOGS.API_KEYS, { params })
       return response.data
     } catch (error) {
       console.error('Error al obtener API Keys:', error)
@@ -28,7 +26,7 @@ export class ApiKeyService {
    */
   static async create(payload, extension = 'txt') {
     try {
-      const response = await axiosInstance.post(`${BASE_URL}?export=${extension}`, payload, {
+      const response = await axiosInstance.post(`${CATALOGS.API_KEYS}?export=${extension}`, payload, {
         responseType: 'arraybuffer', // Importante para recibir el archivo
         headers: {
           'Accept': '*/*'
@@ -56,7 +54,7 @@ export class ApiKeyService {
    */
   static async renew(id, payload) {
     try {
-      const response = await axiosInstance.post(`${BASE_URL}/${id}/renew`, payload)
+      const response = await axiosInstance.post(`${CATALOGS.API_KEYS}/${id}/renew`, payload)
       return response.data
     } catch (error) {
       console.error('Error al renovar API Key:', error)
@@ -71,11 +69,11 @@ export class ApiKeyService {
    */
   static async delete(id) {
     try {
-      const response = await axiosInstance.delete(`${BASE_URL}/${id}`)
+      const response = await axiosInstance.delete(`${CATALOGS.API_KEYS}/${id}`)
       return response.data
     } catch (error) {
       console.error('❌ Error al eliminar API Key:', error)
-      $q.notify({
+      Notify.create({
         type: 'negative',
         message: '❌ Error al eliminar la API Key.',
       })
@@ -112,12 +110,12 @@ export class ApiKeyService {
 
 export const RateLimitService = {
   get() {
-    return axiosInstance.get(`${API_BASE_URL}/admin/rate-limit`)
+    return axiosInstance.get(`${BASE_URL}/admin/rate-limit`)
   },
   update(payload) {
-    return axiosInstance.put(`${API_BASE_URL}/admin/rate-limit`, payload)
+    return axiosInstance.put(`${BASE_URL.API_KEYS}/admin/rate-limit`, payload)
   },
   clear() {
-    return axiosInstance.delete(`${API_BASE_URL}/admin/rate-limit`)
+    return axiosInstance.delete(`${BASE_URL.API_KEYS}/admin/rate-limit`)
   }
 }

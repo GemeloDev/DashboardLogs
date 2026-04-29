@@ -13,26 +13,35 @@ export class ConsoleExportService {
 
   static buildRows(logs = []) {
     return (Array.isArray(logs) ? logs : []).map((log) => ({
-      eventTime: this.safe(log?.eventTime),
-      eventType: this.safe(log?.eventType),
-      status: this.safe(log?.status),
-      message: this.safe(log?.message),
-      'actor.fullname': this.safe(this.geetDeep(log, 'actor.fullName')),
-      'meta.device': this.safe(this.geetDeep(log, 'meta.device')),
+      eventTime:       this.safe(log?.eventTime),
+      eventType:       this.safe(log?.eventType),
+      eventCode:       this.safe(log?.eventCode),
+      status:          this.safe(log?.status),
+      outcome:         this.safe(log?.outcome),
+      severity:        this.safe(log?.severity),
+      system:          this.safe(log?.system),
+      caseId:          this.safe(log?.caseId),
+      message:         this.safe(log?.message),
+      'actor.id':      this.safe(this.geetDeep(log, 'actor.id')),
+      'actor.type':    this.safe(this.geetDeep(log, 'actor.type')),
+      'actor.fullName':this.safe(this.geetDeep(log, 'actor.fullName')),
+      'meta.ip':       this.safe(this.geetDeep(log, 'meta.ip')),
+      'meta.deviceId': this.safe(this.geetDeep(log, 'meta.deviceId')),
+      'meta.channel':  this.safe(this.geetDeep(log, 'meta.channel')),
     }))
   }
 
   static downloadBlob(content, filename, mime) {
     const blob = new Blob([content], { type: mime })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
     a.download = filename
     a.click()
     URL.revokeObjectURL(url)
   }
 
-  //  Excel
+  // ── Excel ─────────────────────────────────────────────────────────────────
   static exportExcel(logs, filenameBase = 'logs-consola') {
     const rows = this.buildRows(logs)
     if (!rows.length) throw new Error('No hay registros para exportar')
@@ -41,45 +50,84 @@ export class ConsoleExportService {
     const ws = XLSX.utils.json_to_sheet(rows, { skipHeader: false })
 
     const headers = Object.keys(rows[0] || {})
-    ws['!cols'] = headers.map((h) => ({ wch: Math.min(60, Math.max(12, h.length + 2)) }))
+    ws['!cols'] = headers.map((h) => ({
+      wch: Math.min(60, Math.max(12, h.length + 2))
+    }))
 
     XLSX.utils.book_append_sheet(wb, ws, 'Logs')
     XLSX.writeFile(wb, `${filenameBase}-${Date.now()}.xlsx`)
   }
 
-  //  JSON
+  // ── CSV ───────────────────────────────────────────────────────────────────
+  static exportCSV(logs, filenameBase = 'logs-consola') {
+    const rows = this.buildRows(logs)
+    if (!rows.length) throw new Error('No hay registros para exportar')
+
+    const headers = Object.keys(rows[0])
+
+    // Escapar campo CSV: si contiene coma, comilla o salto de línea → envolver en comillas
+    const escapeField = (val) => {
+      const str = String(val ?? '')
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"'
+      }
+      return str
+    }
+
+    const headerLine = headers.map(escapeField).join(',')
+    const dataLines  = rows.map((row) =>
+      headers.map((h) => escapeField(row[h])).join(',')
+    )
+
+    // BOM UTF-8 para que Excel lo abra correctamente con acentos
+    const bom     = '\uFEFF'
+    const content = bom + [headerLine, ...dataLines].join('\r\n')
+
+    this.downloadBlob(
+      content,
+      `${filenameBase}-${Date.now()}.csv`,
+      'text/csv;charset=utf-8'
+    )
+  }
+
+  // ── JSON ──────────────────────────────────────────────────────────────────
   static exportJSON(logs, filenameBase = 'logs-consola') {
     const items = Array.isArray(logs) ? logs : []
     if (!items.length) throw new Error('No hay registros para exportar')
 
-    // (Opcional) Asegura JSON “limpio” (quita undefined, fechas como string, etc.)
-    // Si tus logs ya son planos, esto está perfecto.
     const safeItems = items.map((x) => JSON.parse(JSON.stringify(x)))
-
     const json = JSON.stringify(safeItems, null, 2)
-    this.downloadBlob(json, `${filenameBase}-${Date.now()}.json`, 'application/json;charset=utf-8')
+
+    this.downloadBlob(
+      json,
+      `${filenameBase}-${Date.now()}.json`,
+      'application/json;charset=utf-8'
+    )
   }
 
-  //  TXT (.txt)
+  // ── TXT ───────────────────────────────────────────────────────────────────
   static exportTXT(logs, filenameBase = 'logs-consola') {
     const rows = this.buildRows(logs)
     if (!rows.length) throw new Error('No hay registros para exportar')
 
     const txt = rows
-      .map((r) => {
-        // formato legible por línea
-        return [
+      .map((r) =>
+        [
           r.eventTime,
           r.eventType,
           r.status,
           r['actor.fullName'],
-          r['meta.device'],
-          r.message?.replace(/\s+/g, ' '), // compacta saltos
+          r['meta.deviceId'],
+          r.message?.replace(/\s+/g, ' '),
         ].join(' | ')
-      })
+      )
       .join('\n')
 
-    this.downloadBlob(txt, `${filenameBase}-${Date.now()}.txt`, 'text/plain;charset=utf-8')
+    this.downloadBlob(
+      txt,
+      `${filenameBase}-${Date.now()}.txt`,
+      'text/plain;charset=utf-8'
+    )
   }
 }
 

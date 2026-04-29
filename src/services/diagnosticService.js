@@ -1,16 +1,16 @@
 // Servicio para diagnósticos de códigos de error, sesiones y soporte
-import { API_ENDPOINTS } from './apiEndpoints.js'
 import { axiosInstance } from './axiosConfig.js'
+import { LOGS } from './endpoints.js'
 
 export class DiagnosticService {
 
   static async getCaseId(tokenSesion, system) {
     try {
       console.log(`🔍 Consultando sesión del sistema ${system} por id: ${tokenSesion}`)
-      console.log(`🌐 URL: ${API_ENDPOINTS.SESSION_ID}`)
+      console.log(`🌐 URL: ${LOGS.TIMELINE}`)
 
       //  Obtener el 'system' para realizar la petición
-      const response = await axiosInstance.get(`${API_ENDPOINTS.SESSION_ID}`, {
+      const response = await axiosInstance.get(`${LOGS.TIMELINE}`, {
         params: {
           system,
           caseId: tokenSesion

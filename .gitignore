@@ -1,7 +1,8 @@
 .DS_Store
 .thumbs.db
 node_modules
-
+.github
+.env
 # Quasar core related directories
 .quasar
 /dist
@@ -30,7 +31,15 @@ yarn-error.log*
 *.njsproj
 *.sln
 
-# local .env files
+# ════════════════════════════════════════════════════════════════
+# Variables de Entorno
+# ════════════════════════════════════════════════════════════════
+ .env                   → Se sube (valores por defecto)
+ .env.development       → Se sube (config de desarrollo)
+.env.production        → Se sube (config de producción)
+ .env.local             → NO se sube (overrides locales)
+ .env.*.local           → NO se sube (overrides locales por ambiente)
 
-.env
+.env.local
+.env.*.local
 *.pyc

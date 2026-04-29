@@ -40,7 +40,17 @@ const timeAgoIntl = (dateString) => {
   }
 }
 
+const formatWithUnderscores = (text) => text.trim().replace(/\s+/g, '_');
+
+// Versión defensiva: acepta string o array
+const formatArrayWithUnderscores = (value) => {
+  const arr = Array.isArray(value) ? value : [value];
+  return arr.map(formatWithUnderscores);
+};
+
 export {
   formatearFecha,
   timeAgoIntl,
+  formatWithUnderscores,
+  formatArrayWithUnderscores
 }

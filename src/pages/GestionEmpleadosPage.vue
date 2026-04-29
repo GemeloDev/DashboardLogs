@@ -9,20 +9,28 @@
     </div>
 
     <div class="page-container">
-      <!-- Header con animaciones -->
+      <!-- Header -->
       <div class="page-header">
         <div class="header-left">
-          <div class="icon-container">
-            <div class="icon-glow"></div>
-            <q-icon name="group" size="36px" />
+          <div class="header-badge">
+            <q-icon name="group" size="18px" color="cyan" />
+            <span>{{ t('common.administration') }}</span>
           </div>
-          <div class="header-text">
-            <h1>
-              <span class="gradient-text no-padding no-margin">Gestión de Empleados</span>
-            </h1>
-            <p class="no-padding no-margin">Administra los usuarios y permisos del sistema</p>
+
+          <div class="header-main">
+            <div class="icon-container">
+              <q-icon name="group" size="30px" />
+            </div>
+
+            <div class="header-text">
+              <h1 class="no-padding no-margin">
+                {{ t('userManagement.title') }} <span class="gradient-text">{{ t('layout.users') }}</span>
+              </h1>
+              <p class="no-padding no-margin">{{ t('userManagement.textManagment') }}</p>
+            </div>
           </div>
         </div>
+
         <q-btn
           @click="
             () => {
@@ -33,11 +41,9 @@
           unelevated
           no-caps
           icon="person_add"
-          label="Enviar Invitación"
+          :label="t('userManagement.sendInvitation')"
           class="btn-primary"
-        >
-          <q-icon name="add_circle" class="q-ml-xs" />
-        </q-btn>
+        />
       </div>
 
       <!-- Stats Cards con animación -->
@@ -47,7 +53,7 @@
             <q-icon name="people" size="32px" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">Total Usuarios</div>
+            <div class="stat-label">{{ t('userManagement.totalUsers') }}</div>
             <div class="stat-value">{{ totalUsers }}</div>
           </div>
           <div class="stat-glow"></div>
@@ -58,7 +64,7 @@
             <q-icon name="check_circle" size="32px" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">Activos</div>
+            <div class="stat-label">{{ t('userManagement.active') }}</div>
             <div class="stat-value">{{ activeUsers }}</div>
           </div>
           <div class="stat-glow"></div>
@@ -69,7 +75,7 @@
             <q-icon name="badge" size="32px" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">Roles</div>
+            <div class="stat-label">{{ t('userManagement.statsRoles') }}</div>
             <div class="stat-value">{{ availableRoles.length }}</div>
           </div>
           <div class="stat-glow"></div>
@@ -80,7 +86,7 @@
             <q-icon name="filter_list" size="32px" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">Filtro</div>
+            <div class="stat-label">{{ t('userManagement.statsFilter') }}</div>
             <div class="stat-value-text">{{ selectedRole }}</div>
           </div>
           <div class="stat-glow"></div>
@@ -95,7 +101,7 @@
             v-model="searchTerm"
             dark
             filled
-            placeholder="Buscar por nombre o email..."
+            :placeholder="t('userManagement.searchPlaceholder')"
             class="search-input"
             @update:model-value="onSearchChange"
           >
@@ -115,7 +121,7 @@
             filled
             use-input
             input-debounce="300"
-            label="Filtrar por Rol"
+            :label="t('userManagement.filterRoleLabel')"
             clearable
             class="role-filter"
             @filter="filterRoles"
@@ -127,7 +133,9 @@
             </template>
             <template v-slot:no-option>
               <q-item>
-                <q-item-section class="text-grey-5"> No hay roles disponibles </q-item-section>
+                <q-item-section class="text-grey-5">
+                  {{ t('userManagement.noRolesAvailable') }}
+                </q-item-section>
               </q-item>
             </template>
           </q-select>
@@ -138,7 +146,7 @@
             :options="pageSizeOptions"
             dark
             filled
-            label="Mostrar"
+            :label="t('userManagement.show')"
             emit-value
             map-options
             class="page-size-select"
@@ -154,7 +162,7 @@
       <!-- Loading -->
       <div v-if="loading" class="loading-container">
         <q-spinner-dots size="50px" color="primary" />
-        <p>Cargando usuarios...</p>
+        <p>{{ t('userManagement.loadingUsers') }}</p>
       </div>
 
       <!-- Lista de Usuarios (Cards) con diseño mejorado -->
@@ -202,7 +210,7 @@
               <div class="info-content">
                 <span class="info-label">
                   <q-icon name="star" size="12px" class="q-mr-xs" />
-                  Roles
+                  {{ t('userManagement.roles') }}
                 </span>
                 <div class="roles-container">
                   <q-chip
@@ -217,7 +225,7 @@
                   </q-chip>
                   <span v-if="!user.roles || user.roles.length === 0" class="no-roles">
                     <q-icon name="remove_circle_outline" size="14px" class="q-mr-xs" />
-                    Sin roles asignados
+                    {{ t('userManagement.noRolesAssigned') }}
                   </span>
                 </div>
               </div>
@@ -231,14 +239,14 @@
               <div class="info-content">
                 <span class="info-label">
                   <q-icon name="toggle_on" size="12px" class="q-mr-xs" />
-                  Estado
+                  {{ t('userManagement.status') }}
                 </span>
                 <div class="status-indicator">
                   <div
                     :class="['status-dot', user.status === 'active' ? 'active' : 'inactive']"
                   ></div>
                   <span class="status-text">
-                    {{ user.status === 'active' ? 'Activo' : 'Inactivo' }}
+                    {{ user.status === 'active' ? t('common.active') : t('common.inactive') }}
                   </span>
                 </div>
               </div>
@@ -252,7 +260,7 @@
               <div class="info-content">
                 <span class="info-label">
                   <q-icon name="event" size="12px" class="q-mr-xs" />
-                  Creado
+                  {{ t('userManagement.created') }}
                 </span>
                 <span class="info-value">
                   <q-icon name="date_range" size="14px" class="q-mr-xs" />
@@ -273,7 +281,7 @@
                     <q-item-section avatar>
                       <q-icon name="edit" color="blue-4" />
                     </q-item-section>
-                    <q-item-section>Editar Datos</q-item-section>
+                    <q-item-section>{{ t('userManagement.editData') }}</q-item-section>
                   </q-item>
                   <q-item
                     clickable
@@ -284,7 +292,7 @@
                     <q-item-section avatar>
                       <q-icon name="delete" color="red-4" />
                     </q-item-section>
-                    <q-item-section>Eliminar</q-item-section>
+                    <q-item-section>{{ t('userManagement.delete') }}</q-item-section>
                   </q-item>
                 </q-list>
               </q-menu>
@@ -299,15 +307,15 @@
           <div class="empty-icon-glow"></div>
           <q-icon name="search_off" size="80px" />
         </div>
-        <h3>No se encontraron usuarios</h3>
-        <p>Intenta ajustar los filtros de búsqueda o agregar nuevos usuarios</p>
+        <h3>{{ t('userManagement.noUsers') }}</h3>
+        <p>{{ t('userManagement.tryAgain') }}</p>
         <div class="empty-actions">
           <q-btn
             @click="resetFilters"
             unelevated
             no-caps
             icon="refresh"
-            label="Limpiar Filtros"
+            :label="t('filters.clearFilters')"
             class="empty-btn"
           />
           <q-btn
@@ -315,7 +323,7 @@
             unelevated
             no-caps
             icon="person_add"
-            label="Invitar Usuario"
+            :label="t('userManagement.sendInvitation')"
             class="empty-btn-primary"
           />
         </div>
@@ -338,11 +346,11 @@
         />
         <div class="pagination-info">
           <q-icon name="info" size="16px" class="q-mr-xs" />
-          Mostrando
+          {{ t('userManagement.showing') }}
           <span class="pagination-highlight">{{ startItem }}-{{ endItem }}</span>
-          de
+          {{ t('userManagement.of') }}
           <span class="pagination-highlight">{{ totalUsers }}</span>
-          usuarios
+          {{ t('userManagement.users') }}
         </div>
       </div>
     </div>
@@ -363,8 +371,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { deleteUser, getUsers } from '../services/usersService.js'
 import EnviarInvitacionModal from '../components/EnviarInvitacionModal.vue'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
+const { t, locale } = useI18n()
 
 // State
 const users = ref([])
@@ -383,14 +393,14 @@ const dataUser = ref({})
 
 // Options
 const pageSizeOptions = [
-  { label: '6 por página', value: 6 },
-  { label: '12 por página', value: 12 },
-  { label: '24 por página', value: 24 },
-  { label: '48 por página', value: 48 },
+  { label: t('userManagement.pageSizeOption6'), value: 6 },
+  { label: t('userManagement.pageSizeOption12'), value: 12 },
+  { label: t('userManagement.pageSizeOption24'), value: 24 },
+  { label: t('userManagement.pageSizeOption48'), value: 48 },
 ]
 
 const roleOptions = computed(() => {
-  const allRoles = ['Todos los roles', ...availableRoles.value]
+  const allRoles = [t('userManagement.allRoles'), ...availableRoles.value]
   return allRoles
 })
 
@@ -429,7 +439,7 @@ const fetchUsers = async () => {
     console.error('❌ Error al cargar usuarios:', error)
     $q.notify({
       type: 'negative',
-      message: 'Error al cargar usuarios',
+      message: t('userManagement.loadUsersError'),
       position: 'top',
     })
   } finally {
@@ -446,14 +456,14 @@ const fetchRoles = async () => {
     const allRoles = [...new Set([...defaultRoles])]
 
     availableRoles.value = allRoles
-    filteredRoleOptions.value = ['Todos los roles', ...allRoles]
+    filteredRoleOptions.value = [t('userManagement.allRoles'), ...allRoles]
 
     console.log('✅ Roles disponibles:', allRoles)
   } catch (error) {
     console.error('❌ Error al cargar roles:', error)
     // En caso de error, usar solo roles predeterminados
     availableRoles.value = ['ORG_ADMIN', 'SYSTEM_MANAGER', 'AUDITOR', 'SUPPORT_TI', 'VIEWER']
-    filteredRoleOptions.value = ['Todos los roles', ...availableRoles.value]
+    filteredRoleOptions.value = [t('userManagement.allRoles'), ...availableRoles.value]
   }
 }
 
@@ -485,7 +495,7 @@ const createNewRole = (val, done) => {
       availableRoles.value.push(newRole)
       $q.notify({
         type: 'positive',
-        message: `Rol "${newRole}" agregado`,
+        message: t('userManagement.roleAdded', { role: newRole }),
         position: 'top',
       })
     }
@@ -532,9 +542,9 @@ const getInitials = (name) => {
 }
 
 const formatDate = (dateString) => {
-  if (!dateString) return 'N/A'
+  if (!dateString) return t('common.unknown')
   const date = new Date(dateString)
-  return date.toLocaleDateString('es-ES', {
+  return date.toLocaleDateString(locale.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -549,14 +559,14 @@ const editUsuario = (user) => {
 
 const eliminarUsuario = (user) => {
   $q.dialog({
-    title: 'Eliminar usuario',
-    message: `¿Desea eliminar al usuario ${user.name}?`,
+    title: t('userManagement.deleteUserTitle'),
+    message: t('userManagement.deleteUserMessage', { name: user.name }),
     cancel: true,
     dark: true,
   }).onOk(async () => {
     const response = await deleteUser(user.id)
     $q.notify({
-      message: `✅ ${response.data.message}!`,
+      message: t('userManagement.deleteUserSuccess', { message: response.data.message }),
       color: 'green',
       position: 'top',
     })
@@ -571,7 +581,9 @@ const onInvitationSent = (response) => {
 
   $q.notify({
     type: 'positive',
-    message: `✅ ${response?.data?.message ?? response?.message}!`,
+    message: t('userManagement.invitationSentNotify', {
+      message: response?.data?.message ?? response?.message,
+    }),
     position: 'top',
     timeout: 3000,
   })
@@ -607,7 +619,6 @@ $error: #ef4444;
 $border: rgba(255, 255, 255, 0.1);
 $border-hover: rgba(255, 255, 255, 0.2);
 .gestion-empleados-page {
-  background: $bg-dark;
   min-height: 100vh;
   padding: 24px;
   position: relative;
@@ -687,148 +698,132 @@ $border-hover: rgba(255, 255, 255, 0.2);
 .page-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.header-badge {
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 32px;
-  padding: 28px;
-  background: $bg-card;
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border: 1px solid $border;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+  color: white;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  span {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+  color: white;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  span {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-container {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: white;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  box-shadow: 0 14px 30px rgba(34, 211, 238, 0.18);
+}
+
+.header-text {
+  h1 {
+    margin: 0 0 8px 0;
+    color: #ffffff;
+    font-size: clamp(2rem, 3.8vw, 3rem);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+}
+
+.gradient-text {
+  color: var(--santoro);
+}
+
+.btn-primary {
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 16px;
+  font-weight: 800;
+  color: white;
+  text-transform: none;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 
   &:hover {
-    border-color: $border-hover;
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 20px 44px rgba(34, 211, 238, 0.22);
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, $primary, transparent);
-    animation: shimmer 3s infinite;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-
-    @media (max-width: 768px) {
-      flex-direction: column;
-      text-align: center;
-      gap: 1rem;
-    }
-  }
-
-  .icon-container {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, $primary, $primary-dark);
-    border-radius: 16px;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
-    animation: pulse 3s ease-in-out infinite;
-
-    .icon-glow {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle, rgba($primary-light, 0.3), transparent);
-      animation: rotate 10s linear infinite;
-    }
-
-    .q-icon {
-      color: white;
-      position: relative;
-      z-index: 1;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    }
+  .header-main {
+    align-items: flex-start;
   }
 
   .header-text {
     h1 {
-      margin: 0 0 6px 0;
-      font-size: 30px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-
-      .gradient-text {
-        background: linear-gradient(135deg, $primary-light, $secondary);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: gradient-shift 3s ease infinite;
-      }
-
-      @media (max-width: 768px) {
-        font-size: 20px;
-        margin: 0;
-      }
+      font-size: 2rem;
     }
 
     p {
-      margin: 0;
-      font-size: 15px;
-      color: $text-secondary;
+      font-size: 0.95rem;
     }
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, $primary, $primary-dark);
-    color: white;
-    padding: 0 28px;
-    height: 48px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s;
-    }
-
-    &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6);
-
-      &::before {
-        left: 100%;
-      }
-    }
-
-    &:active {
-      transform: translateY(-1px);
-    }
-
-    @media (max-width: 768px) {
-      font-size: small;
-    }
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
+    width: 100%;
   }
 }
 
@@ -878,7 +873,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
   margin-bottom: 28px;
 
   .stat-card {
-    background: $bg-card;
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 20px;
     padding: 24px;
     display: flex;
@@ -1007,7 +1002,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
 
 // Filtros
 .filters-section {
-  background: $bg-card;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 20px;
   padding: 24px;
   margin-bottom: 28px;
@@ -1084,7 +1079,7 @@ $border-hover: rgba(255, 255, 255, 0.2);
 }
 
 .user-card {
-  background: $bg-card;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid $border;

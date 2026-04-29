@@ -4,7 +4,7 @@
  */
 
 import { axiosInstance } from './axiosConfig'
-import { SERVER_CONFIG } from '../config/serverConfig'
+import { CORE } from './endpoints';
 
 /**
  * Obtiene la lista de usuarios con paginación
@@ -24,7 +24,7 @@ export const getUsers = async (page = 0, size = 10, search = '', role = '') => {
     let allUsers = [];
 
     while (true) {
-      const resp = await axiosInstance.get(`${SERVER_CONFIG.BASE_URL}/core/users`, {
+      const resp = await axiosInstance.get(`${CORE.USERS}`, {
         params: { page: currentPage, size: batchSize }
       });
 
@@ -101,7 +101,7 @@ export const getUsers = async (page = 0, size = 10, search = '', role = '') => {
 export const editUser = async (formData) => {
   const { id, email, name, status } = formData
   try {
-    const response = await axiosInstance.put(`${SERVER_CONFIG.BASE_URL}/core/users/${id}`, {
+    const response = await axiosInstance.put(`${CORE.USERS}/${id}`, {
       email,
       name,
       status
@@ -118,7 +118,7 @@ export const editUser = async (formData) => {
 export const deleteUser = async (idUser) => {
   try {
     console.log('🗑️ Eliminando registro de usuario: ', idUser)
-    const response = await axiosInstance.delete(`${SERVER_CONFIG.BASE_URL}/core/users/${idUser}`)
+    const response = await axiosInstance.delete(`${CORE.USERS}/${idUser}`)
 
     return response
   } catch(error) {

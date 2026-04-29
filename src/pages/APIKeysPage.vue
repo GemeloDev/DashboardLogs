@@ -1,70 +1,82 @@
 <template>
-  <q-page class="bg-dark-page">
-    <div class="q-pa-lg text-white">
-      <div class="container">
-        <div class="row items-center justify-between">
-          <div class="col-12 col-md-6">
-            <div class="text-h3 diagnostic-title q-mt-md flex items-center">
-              <span class="q-mr-sm">🔐</span>
-              <span class="text-weight-bold">Mis API Key's</span>
-            </div>
-            <div class="text-h6 text-blue-3 q-mt-sm">🛠️ Gestión y control de accesos</div>
+  <q-page class="api-keys-page">
+    <div class="api-keys-wrap">
+      <!-- Header -->
+      <section class="api-keys-header">
+        <div class="api-keys-header__left">
+          <div class="api-keys-header__badge">
+            <q-icon name="vpn_key" size="18px" color="cyan" />
+            <span>{{ t('common.administration') }}</span>
           </div>
-          <div class="col-12 col-md-4 text-right q-mt-md q-mt-md-none">
-            <q-btn
-              color="primary"
-              icon="add"
-              label="Nueva API Key"
-              class="glossy-btn"
-              size="md"
-              @click="abrirModalCrear"
-            />
-          </div>
-          <div class="col-12 col-md-2 text-center q-mt-md q-mt-md-none">
-            <q-btn
-              color="secondary"
-              icon="settings"
-              label="Rate-limit"
-              class="glossy-btn"
-              size="md"
-              @click="abrirModalRateLimit"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="q-px-lg q-pb-xl">
-      <div class="container">
-        <q-card class="modern-card">
+          <h1 class="api-keys-header__title">
+            {{ t('common.my') }} <span class="color-orange-santoro"> {{ t('apiKeys.apiKeys') }} </span>
+          </h1>
+
+          <p class="api-keys-header__subtitle">
+            {{ t('apiKeys.accessManagement') }}
+          </p>
+        </div>
+
+        <div class="api-keys-header__actions">
+          <q-btn
+            unelevated
+            no-caps
+            icon="add"
+            :label="t('apiKeys.newAPIKey')"
+            class="btn-primary"
+            size="md"
+            @click="abrirModalCrear"
+          />
+
+          <q-btn
+            unelevated
+            no-caps
+            icon="settings"
+            :label="t('apiKeys.rateLimit')"
+            class="btn-secondary"
+            size="md"
+            @click="abrirModalRateLimit"
+          />
+        </div>
+      </section>
+
+      <!-- Tabla -->
+      <section class="table-shell">
+        <q-card flat bordered class="modern-card">
           <q-card-section class="q-pa-none">
             <q-table
-              :rows="rows"
+              :rows="filteredRows"
               :columns="columns"
               row-key="id"
-              dark
               class="api-keys-table"
-              :filter="filter"
               :pagination="{ rowsPerPage: 10 }"
             >
               <template v-slot:top>
-                <div class="row items-center text-h6 text-white q-my-sm q-ml-md">
-                  Listado de Llaves
+                <div class="row items-center full-width q-px-lg q-py-md">
+                  <div>
+                    <div class="table-title">{{ t('apiKeys.listAPIKeys') }}</div>
+                    <div class="table-subtitle">
+                      {{ t('apiKeys.adminCredentials') }}
+                    </div>
+                  </div>
+
+                  <q-space />
+
+                  <q-input
+                    outlined
+                    dense
+                    debounce="300"
+                    v-model="filter"
+                    :placeholder="t('apiKeys.inputSearch')"
+                    class="search-input premium-input"
+                    clearable
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="search" class="input-icon" />
+                    </template>
+                  </q-input>
                 </div>
-                <q-space />
-                <q-input
-                  dark
-                  borderless
-                  dense
-                  debounce="300"
-                  v-model="filter"
-                  placeholder="Buscar..."
-                  class="search-input q-mr-md"
-                >
-                  <template v-slot:append>
-                    <q-icon name="search" />
-                  </template>
-                </q-input>
               </template>
 
               <template v-slot:header="props">
@@ -73,7 +85,7 @@
                     v-for="col in props.cols"
                     :key="col.name"
                     :props="props"
-                    class="text-weight-bold text-uppercase text-blue-2"
+                    class="text-weight-bold text-uppercase"
                   >
                     {{ col.label }}
                   </q-th>
@@ -83,33 +95,56 @@
               <template v-slot:body="props">
                 <q-tr :props="props" class="body-row">
                   <q-td key="nombre" :props="props">
-                    <div class="text-weight-bold">{{ props.row.name }}</div>
-                    <div class="text-caption text-grey-5">{{ props.row.descripcion }}</div>
+                    <div class="key-main">
+                      <div class="key-avatar">
+                        <q-icon name="key" size="18px" />
+                      </div>
+
+                      <div>
+                        <div class="key-name">{{ props.row.name }}</div>
+                        <div class="key-description">
+                          {{ props.row.descripcion || t('common.noDescription') }}
+                        </div>
+                      </div>
+                    </div>
                   </q-td>
 
-                  <q-td key="prefix" :props="props.row.scopes">
-                    <q-chip dense color="grey-7" text-color="white" size="sm" class="log-id-chip">
-                      {{ props.row.scopes }}
-                    </q-chip>
+                  <q-td key="scopes" :props="props">
+                    <div class="row q-gutter-xs">
+                      <q-chip
+                        v-for="scope in normalizeScopes(props.row.scopes)"
+                        :key="scope"
+                        dense
+                        class="scope-chip"
+                        text-color="white"
+                        size="sm"
+                      >
+                        {{ scope }}
+                      </q-chip>
+                    </div>
                   </q-td>
 
                   <q-td key="estado" :props="props">
                     <q-chip
                       dense
-                      :color="apiKeyUi(props.row).color"
                       text-color="white"
                       :icon="apiKeyUi(props.row).icon"
+                      :class="statusChipClass(props.row)"
                     >
                       {{ apiKeyUi(props.row).label }}
                     </q-chip>
                   </q-td>
 
                   <q-td key="creado" :props="props">
-                    <div class="text-grey-4">{{ formatearFecha(props.row.createdAt) }}</div>
+                    <div class="table-muted">
+                      {{ formatearFecha(props.row.createdAt) }}
+                    </div>
                   </q-td>
 
                   <q-td key="ultimoUso" :props="props">
-                    <div class="text-grey-4">{{ timeAgoIntl(props.row.lastUsedAt) }}</div>
+                    <div class="table-muted">
+                      {{ timeAgoIntl(props.row.lastUsedAt) }}
+                    </div>
                   </q-td>
 
                   <q-td key="acciones" :props="props" align="center">
@@ -118,100 +153,173 @@
                         flat
                         round
                         dense
-                        color="cyan-4"
                         icon="autorenew"
                         size="sm"
+                        class="action-btn action-btn--renew"
                         @click="renewToken(props.row.id)"
                         :disable="props.row.status !== 'active'"
                       >
-                        <q-tooltip>Recargar Token</q-tooltip>
+                        <q-tooltip class="glass-tooltip">{{ t('apiKeys.rennovateKey') }}</q-tooltip>
                       </q-btn>
+
                       <q-btn
                         flat
                         round
                         dense
-                        color="red-4"
-                        :disable="props.row.status !== 'active'"
                         icon="delete"
                         size="sm"
-                        @click="ApiKeyService.delete(props.row.id)"
+                        class="action-btn action-btn--delete"
+                        :disable="props.row.status !== 'active'"
+                        @click="abrirModalRevocar(props.row)"
                       >
-                        <q-tooltip>Revocar</q-tooltip>
+                        <q-tooltip class="glass-tooltip">{{ t('apiKeys.revocade') }}</q-tooltip>
                       </q-btn>
                     </div>
                   </q-td>
                 </q-tr>
               </template>
+
+              <template v-slot:no-data>
+                <div class="full-width row flex-center q-gutter-sm q-pa-xl empty-state">
+                  <q-icon size="2em" name="sentiment_dissatisfied" />
+                  <span>{{ t('apiKeys.noAPIKeys') }}</span>
+                </div>
+              </template>
             </q-table>
           </q-card-section>
         </q-card>
-      </div>
+      </section>
     </div>
 
+    <!-- Modal crear -->
     <q-dialog v-model="modalOpen" persistent>
-      <q-card class="modal-card bg-dark text-white" style="min-width: 500px">
-        <q-card-section class="row items-center justify-between header-modal-bg">
-          <h6 class="no-padding no-margin">✨ Nueva API Key</h6>
-          <q-btn icon="close" flat round dense v-close-popup />
+      <q-card flat bordered class="modal-card">
+        <q-card-section class="dialog-header row items-center justify-between">
+          <div class="row items-center q-gutter-md">
+            <div class="dialog-icon">
+              <q-icon name="vpn_key" size="24px" color="white" />
+            </div>
+            <div>
+              <div class="dialog-title">{{ t('apiKeys.newAPIKey') }}</div>
+              <div class="dialog-subtitle">{{ t('apiKeys.subtitleNewAPIKey') }}</div>
+            </div>
+          </div>
+
+          <q-btn icon="close" flat round dense v-close-popup class="dialog-close-btn" />
         </q-card-section>
 
-        <q-card-section class="q-pt-lg body-modal-bg">
+        <q-card-section class="dialog-body">
           <q-form class="q-gutter-md">
-            <q-input
-              filled
-              dark
-              v-model="form.name"
-              label="Nombre de la llave *"
-              hint="El archivo de credenciales tendrá este nombre"
-              color="primary"
-              :rules="[(val) => !!val || 'El nombre es requerido']"
-            >
-              <template v-slot:append>
-                <div class="row items-center no-wrap">
-                  <q-btn-dropdown color="green" :label="'.' + form.formato">
-                    <q-list>
+            <div>
+              <label class="input-label">{{ t('apiKeys.inputName') }}</label>
+              <q-input
+                outlined
+                dense
+                v-model="form.name"
+                class="premium-input"
+                :placeholder="t('apiKeys.inputNamePlaceholder')"
+                :hint="t('apiKeys.hintName')"
+                :rules="[(val) => !!val || t('apiKeys.validateName')]"
+              >
+                <template v-slot:append>
+                  <q-btn-dropdown
+                    no-caps
+                    unelevated
+                    class="format-dropdown"
+                    :label="'.' + form.formato"
+                  >
+                    <q-list class="format-dropdown-menu">
                       <q-item clickable v-close-popup @click="form.formato = 'txt'">
                         <q-item-section>
-                          <q-item-label>.txt</q-item-label>
+                          <q-item-label class="text-white">.txt</q-item-label>
                         </q-item-section>
                       </q-item>
 
                       <q-item clickable v-close-popup @click="form.formato = 'json'">
                         <q-item-section>
-                          <q-item-label>.json</q-item-label>
+                          <q-item-label class="text-white">.json</q-item-label>
                         </q-item-section>
                       </q-item>
                     </q-list>
                   </q-btn-dropdown>
-                </div>
-              </template>
-            </q-input>
+                </template>
+              </q-input>
+            </div>
           </q-form>
         </q-card-section>
 
-        <q-card-actions align="right" class="q-pa-md header-modal-bg">
-          <q-btn flat label="Cancelar" color="grey-5" v-close-popup />
-          <q-btn label="Generar Llave" color="primary" class="q-px-md" @click="crearAPIKey" />
+        <q-card-actions align="right" class="dialog-actions">
+          <q-btn flat no-caps :label="t('common.cancel')" class="btn-cancel" v-close-popup />
+          <q-btn
+            no-caps
+            unelevated
+            :label="t('apiKeys.buttonNewAPIKey')"
+            class="btn-primary"
+            @click="crearAPIKey"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Modal confirmar revocación -->
+    <q-dialog v-model="revokeDialog">
+      <q-card flat bordered class="modal-card modal-card--danger">
+        <q-card-section class="dialog-header row items-center q-gutter-sm">
+          <div class="dialog-icon dialog-icon--danger">
+            <q-icon name="warning" size="24px" color="white" />
+          </div>
+
+          <div>
+            <div class="dialog-title">{{ t('apiKeys.confirmationTitleRevocade') }}</div>
+            <div class="dialog-subtitle">{{ t('apiKeys.subConfirmationRevocade') }}</div>
+          </div>
+        </q-card-section>
+
+        <q-card-section class="dialog-body">
+          <div class="text-body1 text-white">
+            {{ t('apiKeys.confirmationMessageRevocade') }}
+          </div>
+
+          <div v-if="selectedApiKey" class="selected-key-box">
+            <div class="selected-key-name">
+              {{ selectedApiKey.name }}
+            </div>
+            <div class="selected-key-description">
+              {{ selectedApiKey.descripcion || t('common.noDescription') }}
+            </div>
+          </div>
+
+          <div class="warning-text">
+            {{ t('apiKeys.subConfirmationRevocade') }}
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="dialog-actions">
+          <q-btn flat no-caps :label="t('apiKeys.cancelButton')" class="btn-cancel" v-close-popup />
+          <q-btn
+            no-caps
+            unelevated
+            :label="t('apiKeys.buttonConfirmRevoke')"
+            icon="delete_forever"
+            class="btn-danger"
+            :loading="revoking"
+            @click="confirmarRevocacion"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <rate-limit-config v-model="rateLimitDialog" />
-
-    <q-page-sticky position="bottom-right" :offset="[18, 18]">
-      <q-btn fab icon="add" color="primary" @click="abrirModalCrear" class="shadow-10">
-        <q-tooltip anchor="center left" self="center right">Crear API Key</q-tooltip>
-      </q-btn>
-    </q-page-sticky>
   </q-page>
 </template>
 
 <script setup>
 import { useQuasar } from 'quasar'
+import { computed, onMounted, ref } from 'vue'
 import RateLimitConfig from 'src/components/blocks/RateLimitConfig.vue'
 import { timeAgoIntl, formatearFecha } from 'src/helpers'
 import { ApiKeyService } from 'src/services/apiKeys'
-import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
 
@@ -220,14 +328,20 @@ const modalOpen = ref(false)
 const rows = ref([])
 const rateLimitDialog = ref(false)
 
+const revokeDialog = ref(false)
+const selectedApiKey = ref(null)
+const revoking = ref(false)
+
 const ttlDays = 35
 const rotateDays = 30
+
+const t = useI18n().t
 
 const form = ref({
   name: '',
   systemId: null,
   environmentId: null,
-  scopes: ['LOGS_INGEST'], // "LOGS_INGEST", "INGEST", "ALL"
+  scopes: ['LOGS_INGEST'],
   ttlDays,
   formato: 'txt',
   rotateDays,
@@ -237,15 +351,45 @@ const columns = [
   {
     name: 'nombre',
     required: true,
-    label: 'Nombre / Aplicación',
-    align: 'center',
-    field: 'nombre',
+    label: t('apiKeys.name_app'),
+    align: 'left',
+    field: (row) => row.name || '',
     sortable: true,
   },
-  { name: 'estado', align: 'center', label: 'Estado', field: 'activo', sortable: true },
-  { name: 'creado', align: 'center', label: 'Creado', field: 'creado', sortable: true },
-  { name: 'ultimoUso', align: 'center', label: 'Último Uso', field: 'ultimoUso', sortable: true },
-  { name: 'acciones', align: 'center', label: 'Acciones' },
+  {
+    name: 'scopes',
+    label: t('apiKeys.scopes'),
+    align: 'left',
+    field: (row) => normalizeScopes(row.scopes).join(', '),
+    sortable: false,
+  },
+  {
+    name: 'estado',
+    align: 'center',
+    label: t('apiKeys.status'),
+    field: (row) => getApiKeyLifecycleUi(row, { renewWindowDays: 7 }).label,
+    sortable: true,
+  },
+  {
+    name: 'creado',
+    align: 'center',
+    label: t('apiKeys.created'),
+    field: (row) => row.createdAt || '',
+    sortable: true,
+  },
+  {
+    name: 'ultimoUso',
+    align: 'center',
+    label: t('apiKeys.lastUsed'),
+    field: (row) => row.lastUsedAt || '',
+    sortable: true,
+  },
+  {
+    name: 'acciones',
+    align: 'center',
+    label: t('common.actions'),
+    field: 'acciones',
+  },
 ]
 
 const MS_DAY = 24 * 60 * 60 * 1000
@@ -256,7 +400,25 @@ function toMs(d) {
   return Number.isFinite(t) ? t : null
 }
 
-function getApiKeyLifecycleUi(apiKey, opts) {
+function normalizeScopes(scopes) {
+  if (!scopes) return []
+  if (Array.isArray(scopes)) return scopes
+  if (typeof scopes === 'string') {
+    return scopes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+function formatDaysToRenew(days) {
+  return days === 1
+    ? t('apiKeys.daysToRenewSingular', { days })
+    : t('apiKeys.daysToRenewPlural', { days })
+}
+
+function getApiKeyLifecycleUi(apiKey, opts = {}) {
   const {
     now = new Date(),
     renewWindowDays = 7,
@@ -266,94 +428,111 @@ function getApiKeyLifecycleUi(apiKey, opts) {
   } = opts
 
   const nowMs = now.getTime()
-
   const status = String(apiKey?.status || '').toLowerCase()
 
   const expiresMs = toMs(apiKey?.expiresAt)
   const rotatesMs = toMs(apiKey?.rotatesAt)
   const lastUsedMs = toMs(apiKey?.lastUsedAt)
 
-  //  1) Revocada (prioridad máxima)
-  if (status == 'revoked' || status === 'disabled' || status === 'blocked') {
-    return { state: 'revoked', label: 'Revocada', color: 'negative', icon: 'block' }
+  if (status === 'revoked' || status === 'disabled' || status === 'blocked') {
+      return { state: 'revoked', label: t('apiKeys.statusRevoked'), color: 'negative', icon: 'block' }
   }
 
-  //  2) Expirada
   if (expiresMs !== null && nowMs >= expiresMs) {
-    return { state: 'expires', label: 'Expirada', color: 'grey-8', icon: 'event_busy' }
+      return { state: 'expired', label: t('apiKeys.statusExpired'), color: 'grey-8', icon: 'event_busy' }
   }
 
-  //  3) Renovación expirada (rotación)
   if (rotatesMs !== null) {
-    // días para la fecha de renovación (rotación)
-    const diasParaRenovar = Math.ceil((rotatesMs - nowMs) / MS_DAY)
-
+      const diasParaRenovar = Math.ceil((rotatesMs - nowMs) / MS_DAY)
     const renewFromMs = rotatesMs - renewWindowDays * MS_DAY
-
     const needsRenew = nowMs >= renewFromMs
 
     if (needsRenew) {
-      const label = nowMs >= rotatesMs ? 'Renovar ahora' : `${diasParaRenovar} día(s) para renovar`
-      return { state: 'renew', label, color: 'warning', icon: 'autorenew' }
+        const label =
+          nowMs >= rotatesMs
+            ? t('apiKeys.renewNow')
+            : formatDaysToRenew(diasParaRenovar)
+        return { state: 'renew', label, color: 'warning', icon: 'autorenew' }
     }
   }
 
-  //  4) Activa (si estatus 'active')
   if (status === 'active') {
-    //  Hint opcional: sin uso
     if (showUnsedHint) {
-      const isUnsed = lastUsedMs === null || nowMs - lastUsedMs >= unsedDays * MS_DAY
+      const isUnused = lastUsedMs === null || nowMs - lastUsedMs >= unsedDays * MS_DAY
 
-      if (isUnsed) {
-        return { state: 'active_unsed', label: 'Activa (sin uso)', color: 'blue', icon: 'info' }
+      if (isUnused) {
+          return { state: 'active_unused', label: t('apiKeys.activeUnused'), color: 'blue', icon: 'info' }
       }
     }
 
-    return { state: 'active', label: 'Activa', color: 'positive', icon: 'check_circle' }
+      return { state: 'active', label: t('apiKeys.activeStatus'), color: 'positive', icon: 'check_circle' }
   }
 
-  // 5) Inactiva / desconocida
   if (!status) {
     if (treatMissingDatesAs === 'unknown') {
-      return { state: 'unknown', label: 'Estado desconocido', color: 'grey-7', icon: 'help' }
+        return { state: 'unknown', label: t('apiKeys.unknownStatus'), color: 'grey-7', icon: 'help' }
     }
-    return { state: 'active', label: 'Activa', color: 'positive', icon: 'check_circle' }
+      return { state: 'active', label: t('apiKeys.activeStatus'), color: 'positive', icon: 'check_circle' }
   }
 
-  return { state: 'inactive', label: 'Inactiva', color: 'negative', icon: 'block' }
+  return { state: 'inactive', label: t('apiKeys.inactiveStatus'), color: 'negative', icon: 'block' }
 }
 
-const apiKeyUi = computed(() => {
-  const opts = { renewWindowDays: 7 }
-  return (row) => getApiKeyLifecycleUi(row, opts)
+const apiKeyUi = (row) => getApiKeyLifecycleUi(row, { renewWindowDays: 7 })
+
+const filteredRows = computed(() => {
+  const term = filter.value?.trim().toLowerCase()
+
+  if (!term) return rows.value
+
+  return rows.value.filter((row) => {
+    const estado = apiKeyUi(row).label.toLowerCase()
+    const scopes = normalizeScopes(row.scopes).join(' ').toLowerCase()
+
+    const searchable = [
+      row.name,
+      row.descripcion,
+      row.status,
+      estado,
+      scopes,
+      formatearFecha(row.createdAt),
+      timeAgoIntl(row.lastUsedAt),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return searchable.includes(term)
+  })
 })
 
 const cargarKeys = async () => {
   try {
     const { data } = await ApiKeyService.getAll({ page: 0, size: 25 })
-    rows.value = data.items || data
+    rows.value = data.items || data || []
   } catch (err) {
     console.log('❌ Error al cargar las API Keys: ', err.message)
-    $q.notify({ type: 'negative', message: 'Error cargando llaves' })
+    $q.notify({ type: 'negative', message: t('apiKeys.loadError') })
   }
 }
 
 const crearAPIKey = async () => {
   try {
     const payload = { ...form.value }
+
     await ApiKeyService.create(payload, form.value.formato)
+
     $q.notify({
       type: 'positive',
-      message: 'Llave creada. La descarga comenzará automáticamente.',
+      message: t('apiKeys.createSuccess'),
     })
 
     form.value.name = ''
     modalOpen.value = false
-    cargarKeys()
+    await cargarKeys()
   } catch (error) {
     console.error('❌ Error al crear una nueva API Key: ', error.message)
-    $q.notify({ type: 'negative', message: 'Error creando claves' })
-    return
+    $q.notify({ type: 'negative', message: t('apiKeys.createError') })
   }
 }
 
@@ -368,15 +547,15 @@ const renewToken = async (id) => {
 
     $q.notify({
       type: 'positive',
-      message: 'API Key renovada correctamente!',
+      message: t('apiKeys.renewSuccess'),
     })
 
-    cargarKeys()
+    await cargarKeys()
   } catch (error) {
     console.error('❌ Error al renovar API Key: ', error.message)
     $q.notify({
       type: 'negative',
-      message: 'Llave creada. La descarga comenzará automáticamente.',
+      message: t('apiKeys.renewError'),
     })
   }
 }
@@ -389,95 +568,491 @@ const abrirModalRateLimit = () => {
   rateLimitDialog.value = true
 }
 
+const abrirModalRevocar = (row) => {
+  selectedApiKey.value = row
+  revokeDialog.value = true
+}
+
+const confirmarRevocacion = async () => {
+  if (!selectedApiKey.value?.id) return
+
+  revoking.value = true
+
+  try {
+    await ApiKeyService.delete(selectedApiKey.value.id)
+
+    $q.notify({
+      type: 'positive',
+      message: t('apiKeys.revokeSuccess', { name: selectedApiKey.value.name }),
+    })
+
+    revokeDialog.value = false
+    selectedApiKey.value = null
+    await cargarKeys()
+  } catch (error) {
+    console.error('❌ Error al revocar API Key: ', error.message)
+    $q.notify({
+      type: 'negative',
+      message: t('apiKeys.revokeError'),
+    })
+  } finally {
+    revoking.value = false
+  }
+}
+
+const statusChipClass = (row) => {
+  const ui = apiKeyUi(row)
+
+  if (ui.color === 'positive' || ui.color === 'green' || row.status === 'active') {
+    return 'status-chip-active'
+  }
+
+  if (ui.color === 'warning' || ui.color === 'orange' || ui.state === 'renew') {
+    return 'status-chip-warning'
+  }
+
+  if (ui.color === 'negative' || ui.color === 'red' || row.status === 'revoked') {
+    return 'status-chip-danger'
+  }
+
+  return 'status-chip-muted'
+}
+
 onMounted(() => {
   cargarKeys()
 })
 </script>
 
 <style lang="scss" scoped>
-// Fondo general oscuro
-.bg-dark-page {
-  background-color: #121826; // Color de fondo base de tu app
+.api-keys-page {
   min-height: 100vh;
+  background: transparent;
 }
 
-// Contenedor centrado (si usas bootstrap grid o similar, esto ayuda)
-.container {
-  max-width: 1400px;
+.api-keys-wrap {
+  width: 100%;
+  max-width: 1440px;
   margin: 0 auto;
+  padding: 24px 20px 36px;
 }
 
-// Tarjeta moderna con efecto glassmorphism o solido
-.modern-card {
-  background: #1e1e2f;
-  border-radius: 16px;
+/* HEADER */
+.api-keys-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.api-keys-header__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+  color: white;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  span {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+}
+
+.api-keys-header__title {
+  margin: 0 0 10px;
+  color: white;
+  font-size: clamp(2rem, 3.8vw, 3rem);
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.api-keys-header__subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.api-keys-header__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* TABLE CARD */
+.table-shell {
+  border-radius: 24px;
   overflow: hidden;
 }
 
-// Estilos de la Tabla
+.modern-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+  overflow: hidden;
+}
+
 .api-keys-table {
   background: transparent;
-
-  /* Header de la tabla */
-  :deep(thead tr:first-child th) {
-    background-color: #2b2b3d; // Un poco más claro que el fondo de la tarjeta
-    font-size: 0.85rem;
-    padding: 16px;
-  }
-
-  /* Filas del cuerpo */
-  .body-row {
-    transition: background-color 0.2s ease;
-
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.03) !important;
-    }
-  }
+  color: white;
 }
 
-.header-modal-bg {
-  background-color: #252b37;
+.api-keys-table :deep(.q-table__top) {
+  padding: 0;
 }
 
-.body-modal-bg {
-  background-color: #333c4d;
+.api-keys-table :deep(thead tr th) {
+  background: rgba(255, 255, 255, 0.03);
+  color: #9fd5ff;
+  font-size: 0.85rem;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-// Input de búsqueda personalizado
+.api-keys-table :deep(tbody tr) {
+  background: transparent;
+}
+
+.api-keys-table :deep(tbody tr:hover) {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.api-keys-table :deep(td) {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.api-keys-table :deep(.q-table__bottom) {
+  color: rgba(255, 255, 255, 0.72);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.table-title {
+  color: white;
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.table-subtitle {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.9rem;
+}
+
+.header-row {
+  backdrop-filter: blur(8px);
+}
+
+.body-row {
+  transition: background-color 0.2s ease;
+}
+
+.key-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.key-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #06121f;
+  background: linear-gradient(135deg, #60a5fa, #2dd4bf);
+  box-shadow: 0 0 24px rgba(96, 165, 250, 0.18);
+}
+
+.key-name {
+  color: white;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.key-description {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.88rem;
+}
+
+.scope-chip {
+  background: rgba(124, 58, 237, 0.16);
+  color: #d8b4fe;
+  border: 1px solid rgba(124, 58, 237, 0.26);
+}
+
+.table-muted {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* STATUS CHIPS */
+.status-chip-active {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac !important;
+  border: 1px solid rgba(34, 197, 94, 0.26);
+}
+
+.status-chip-warning {
+  background: rgba(233, 113, 50, 0.14);
+  color: #ffb088 !important;
+  border: 1px solid rgba(233, 113, 50, 0.25);
+}
+
+.status-chip-danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.24);
+}
+
+.status-chip-muted {
+  background: rgba(156, 163, 175, 0.16);
+  color: #d1d5db !important;
+  border: 1px solid rgba(156, 163, 175, 0.24);
+}
+
+/* SEARCH INPUT */
 .search-input {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 0 12px;
-  min-width: 250px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
+  min-width: 320px;
+}
 
-  &:focus-within {
-    border-color: var(--q-primary);
-    background: rgba(0, 0, 0, 0.3);
+/* INPUTS */
+.premium-input {
+  :deep(.q-field__control) {
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: white;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  :deep(.q-field__native),
+  :deep(.q-field__input),
+  :deep(.q-field__label),
+  :deep(.q-field__bottom),
+  :deep(.q-select__dropdown-icon) {
+    color: white;
+  }
+
+  :deep(input::placeholder) {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  :deep(.q-field__control:hover) {
+    border-color: rgba(34, 211, 238, 0.22);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  :deep(.q-field--focused .q-field__control) {
+    border-color: rgba(34, 211, 238, 0.55);
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.08);
+  }
+
+  :deep(.q-field__marginal) {
+    color: rgba(255, 255, 255, 0.58);
   }
 }
 
-// Botón "Glossy" del header
-.glossy-btn {
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.4);
-  font-weight: 600;
+.input-icon {
+  color: rgba(255, 255, 255, 0.58);
 }
 
-// Fuente monoespaciada para las llaves
-.font-mono {
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 0.9em;
-  letter-spacing: 0.5px;
+/* ACTION BUTTONS */
+.action-btn--renew {
+  color: #22d3ee;
 }
 
-// Estilos del Modal
+.action-btn--delete {
+  color: #f87171;
+}
+
+/* MAIN BUTTONS */
+.btn-primary {
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 16px;
+  font-weight: 800;
+  color: white;
+  text-transform: none;
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
+  box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
+}
+
+.btn-secondary {
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 16px;
+  font-weight: 800;
+  color: white;
+  text-transform: none;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  box-shadow: 0 18px 38px rgba(233, 113, 50, 0.18);
+}
+
+.btn-cancel {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.btn-danger {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 14px;
+  color: white;
+  text-transform: none;
+  background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
+}
+
+/* MODALS */
 .modal-card {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  width: min(92vw, 520px);
+  border-radius: 26px;
+  background: linear-gradient(160deg, rgba(15, 20, 32, 0.96), rgba(18, 25, 42, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.48);
+}
+
+.modal-card--danger {
+  width: min(92vw, 480px);
+}
+
+.dialog-header {
+  padding: 22px 22px 10px;
+}
+
+.dialog-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
+  box-shadow: 0 14px 30px rgba(34, 211, 238, 0.18);
+  flex-shrink: 0;
+}
+
+.dialog-icon--danger {
+  background: linear-gradient(135deg, #e97132, #ef4444);
+  box-shadow: 0 14px 30px rgba(233, 113, 50, 0.2);
+}
+
+.dialog-title {
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.dialog-subtitle {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.92rem;
+}
+
+.dialog-body {
+  padding: 10px 22px 18px;
+}
+
+.dialog-actions {
+  padding: 0 22px 22px;
+  gap: 12px;
+}
+
+.dialog-close-btn {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.selected-key-box {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.selected-key-name {
+  color: #9fd5ff;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.selected-key-description {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.9rem;
+}
+
+.warning-text {
+  margin-top: 16px;
+  color: #ffb088;
+}
+
+/* EMPTY STATE */
+.empty-state {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+/* DROPDOWN */
+.format-dropdown {
   border-radius: 12px;
+  color: white;
+  text-transform: none;
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+}
+
+.format-dropdown-menu {
+  background: linear-gradient(160deg, rgba(15, 20, 32, 0.98), rgba(18, 25, 42, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+/* TOOLTIP */
+.glass-tooltip {
+  background: #121a2a !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .api-keys-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .api-keys-header__actions {
+    justify-content: flex-start;
+  }
+
+  .search-input {
+    min-width: 100%;
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 700px) {
+  .api-keys-wrap {
+    padding: 18px 14px 28px;
+  }
+
+  .api-keys-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-cancel {
+    width: 100%;
+  }
 }
 </style>

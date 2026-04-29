@@ -1,173 +1,142 @@
-import { API_BASE_URL } from './apiConfig'
+/**
+ * ════════════════════════════════════════════════════════════════
+ * ENDPOINTS - Fuente única de verdad para URLs del backend
+ * ════════════════════════════════════════════════════════════════
+ *
+ * Todos los endpoints de la API centralizados en un solo lugar.
+ *
+ * IMPORTANTE: No hardcodear URLs. Todas las URLs se construyen
+ * dinámicamente desde la configuración de entorno.
+ *
+ * Uso:
+ *   import { AUTH, CORE, ADMIN, LOGS, EVA } from 'src/services/endpoints'
+ *   axios.get(AUTH.LOGIN)
+ * ════════════════════════════════════════════════════════════════
+ */
 
-// DTOs y endpoints
-export const endpoints = {
-  // Logs
-  logs: `${API_BASE_URL}/logs/events/all`,
+import { API_BASE_URL, API_TIMEOUT } from 'src/config/env'
 
-  // Catálogos
-  catalogSummary: `${API_BASE_URL}/dashboard/passports/summary`,
-  catalogEvents: `${API_BASE_URL}/dashboard/passports/events`,
-  catalogOficinas: `${API_BASE_URL}/dashboard/passports/by-office`,
-  catalogDevices: `${API_BASE_URL}/dashboard/passports/events`,
-  catalogEstatus: `${API_BASE_URL}/dashboard/passports/by-type`,
-  catalogPersons: `${API_BASE_URL}/core/users`,
+// ─── Base URL ────────────────────────────────────────────────────
+// Importada desde configuración central
+export const BASE_URL = API_BASE_URL
+
+// ─── Configuración global de peticiones ──────────────────────────
+export const REQUEST_CONFIG = {
+  timeout: API_TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  },
 }
 
-// DTOs para diferentes tipos de consultas - FLUJO REFACTORIZADO
-export function buildErrorLogsQuery(filtros) {
-  const params = {
-    type: 'ERROR',
-    fromDate: filtros.fechaInicio,
-    toDate: filtros.fechaFin,
+/**
+ * Construye la configuración para axios incluyendo el Bearer token opcional.
+ */
+export function buildApiConfig({ token = null, withCredentials = false } = {}) {
+  const headers = { ...REQUEST_CONFIG.headers }
+  if (token) headers.Authorization = `Bearer ${token}`
+  return { ...REQUEST_CONFIG, headers, withCredentials }
+}
+
+/**
+ * Construye una URL con query params, ignorando valores nulos/vacíos.
+ */
+export function buildUrl(base, params = {}) {
+  const q = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== null && v !== undefined && v !== '') q.set(k, String(v))
   }
-
-  if (filtros.oficina) params.oficinaId = filtros.oficina
-  if (filtros.proceso) params.process = filtros.proceso
-  if (filtros.dispositivo) params.device = filtros.dispositivo
-  if (filtros.usuario) params.personId = filtros.usuario
-  if (filtros.escaner) params.scanDevice = filtros.escaner
-
-  return { url: endpoints.logsFilter, params }
+  const qs = q.toString()
+  return qs ? `${base}?${qs}` : base
 }
 
-export function buildScanSummaryQuery(filtros) {
-  const params = {
-    fromDate: filtros.fechaInicio,
-    toDate: filtros.fechaFin,
-  }
-
-  if (filtros.oficina) params.oficinaId = filtros.oficina
-  if (filtros.proceso && ['QR', 'MRZ'].includes(filtros.proceso)) {
-    params.process = filtros.proceso
-  }
-
-  return { url: endpoints.logsSummary, params }
+// ─── Helpers de prefijo ───────────────────────────────────────────
+export const url = {
+  api: (path) => `${BASE_URL}${path}`,
+  auth: (path) => `${BASE_URL}/auth${path}`,
+  core: (path) => `${BASE_URL}/core${path}`,
+  admin: (path) => `${BASE_URL}/admin${path}`,
+  ai: (path) => `${BASE_URL}/ai${path}`,
 }
 
-export function buildLoginLogsQuery(filtros, tipoLogin = 'SUCCESS') {
-  const params = {
-    type: tipoLogin,
-    process: 'LOGIN',
-    fromDate: filtros.fechaInicio,
-    toDate: filtros.fechaFin,
-  }
+// ─── Autenticación ────────────────────────────────────────────────────────────
 
-  if (filtros.oficina) params.oficinaId = filtros.oficina
-  if (filtros.dispositivo) params.device = filtros.dispositivo
-  if (filtros.usuario) params.personId = filtros.usuario
-
-  return { url: endpoints.logsFilter, params }
+export const AUTH = {
+  LOGIN: `${BASE_URL}/auth/login`,
+  LOGOUT: `${BASE_URL}/auth/logout`,
+  REGISTER: `${BASE_URL}/auth/register`,
+  VERIFY_TOKEN: `${BASE_URL}/auth/verify`,
+  REFRESH_TOKEN: `${BASE_URL}/auth/refresh`,
+  RESET_PASSWORD: `${BASE_URL}/auth/change-password`,
+  ACCEPT_INVITE: `${BASE_URL}/auth/accept-invite`,
+  LOGIN_QR: `${BASE_URL}/auth/qr-login`,
+  QR_TOKEN: `${BASE_URL}/auth/qr-token`,
 }
 
-export function buildRegisterLogsQuery(filtros) {
-  const params = {
-    process: 'REGISTER',
-    fromDate: filtros.fechaInicio,
-    toDate: filtros.fechaFin,
-  }
+// ─── Core (usuarios, configuración) ──────────────────────────────────────────
 
-  if (filtros.oficina) params.oficinaId = filtros.oficina
-  if (filtros.dispositivo) params.device = filtros.dispositivo
-  if (filtros.usuario) params.personId = filtros.usuario
-  if (filtros.tipoLog) params.type = filtros.tipoLog
-
-  return { url: endpoints.logsFilter, params }
+export const CORE = {
+  USERS: `${BASE_URL}/core/users`,
+  CONFIG: `${BASE_URL}/config`,
 }
 
-export function buildExportLogsQuery(filtros) {
-  const params = {
-    type: 'EXPORT',
-    fromDate: filtros.fechaInicio,
-    toDate: filtros.fechaFin,
-  }
+// ─── Admin ────────────────────────────────────────────────────────────────────
 
-  if (filtros.oficina) params.oficinaId = filtros.oficina
-  if (filtros.tipoExportacion) params.process = filtros.tipoExportacion
-  if (filtros.formato) params.formato = filtros.formato
-  if (filtros.tipoDatos) params.datos = filtros.tipoDatos
-
-  return { url: endpoints.logsFilter, params }
+export const ADMIN = {
+  INVITES: `${BASE_URL}/admin/invites`,
 }
 
-export function buildConsolaLogsQuery(filtros) {
-  const params = {
-    fromDate: filtros.fechaInicio,
-    toDate: filtros.fechaFin,
-  }
+// ─── Logs y Dashboard ─────────────────────────────────────────────────────────
 
-  if (filtros.oficina) params.oficinaId = filtros.oficina
-  if (filtros.usuario) params.personId = filtros.usuario
-  if (filtros.dispositivo) params.device = filtros.dispositivo
-  if (filtros.escaner) params.scanDevice = filtros.escaner
-  if (filtros.proceso) params.process = filtros.proceso
-  if (filtros.tipoLog) params.type = filtros.tipoLog
-
-  return { url: endpoints.logsFilter, params }
+export const LOGS = {
+  EVENTS: `${BASE_URL}/logs/events/all`,
+  EVENTS_RAW: `${BASE_URL}/logs/events`,
+  TIMELINE: `${BASE_URL}/logs/timeline`,
+  STATS: `${BASE_URL}/logs/dashboard/stats`,
 }
 
-// FUNCIONES LEGACY - MANTENER COMPATIBILIDAD
-export function getLoginLogs({ type, fromDate, toDate, oficinaId, personId, device }) {
-  return buildLoginLogsQuery({
-    fechaInicio: fromDate,
-    fechaFin: toDate,
-    oficina: oficinaId,
-    usuario: personId,
-    dispositivo: device
-  }, type)
+export const DASHBOARD = {
+  STATS: `${BASE_URL}/logs/dashboard/stats`,
+  SERIES: `${BASE_URL}/logs/dashboard/series`,
+  HTTP: `${BASE_URL}/logs/dashboard/http`,
+  GEO: `${BASE_URL}/logs/dashboard/geo`,
 }
 
-export function getErrorLogs({ fromDate, toDate, oficinaId, personId, device }) {
-  return buildErrorLogsQuery({
-    fechaInicio: fromDate,
-    fechaFin: toDate,
-    oficina: oficinaId,
-    usuario: personId,
-    dispositivo: device
-  })
+export const DEVICES = {
+  SUMMARY: `${BASE_URL}/devices`,
 }
 
-export function getRegisterLogs({ fromDate, toDate, oficinaId, personId, device }) {
-  return buildRegisterLogsQuery({
-    fechaInicio: fromDate,
-    fechaFin: toDate,
-    oficina: oficinaId,
-    usuario: personId,
-    dispositivo: device
-  })
+// ─── Catálogos ────────────────────────────────────────────────────────────────
+
+export const CATALOGS = {
+  API_KEYS: `${BASE_URL}/catalogs/api-keys`,
 }
 
-export function getExportLogs({ fromDate, toDate, oficinaId, personId, device }) {
-  return buildExportLogsQuery({
-    fechaInicio: fromDate,
-    fechaFin: toDate,
-    oficina: oficinaId,
-    usuario: personId,
-    dispositivo: device
-  })
+// ─── Panel Santoro (admin interno) ───────────────────────────────────────────
+
+export const SANTORO = {
+  STATS: `${BASE_URL}/santoro/panel/stats`,
+  EMPRESAS: `${BASE_URL}/santoro/panel/organizations`,
+  USUARIOS: `${BASE_URL}/santoro/panel/users`,
+  API_KEYS: `${BASE_URL}/santoro/panel/api-keys`,
 }
 
-export function getScanSummary({ fromDate, toDate, oficinaId, personId, device }) {
-  return buildScanSummaryQuery({
-    fechaInicio: fromDate,
-    fechaFin: toDate,
-    oficina: oficinaId,
-    usuario: personId,
-    dispositivo: device
-  })
+// ─── Eva (IA) ─────────────────────────────────────────────────────────────────
+
+export const EVA = {
+  STREAM: `${BASE_URL}/ai/eva/stream`,
+  DAILY_PRETTY: `${BASE_URL}/ai/llm/assist/manager/daily/pretty`,
+  ALERTS: `${BASE_URL}/ai/alerts`,
+  METRICS_SERIES: `${BASE_URL}/ai/metrics/series`,
+  HOURLY_INSIGHTS: `${BASE_URL}/ai/summaries/hourly/insights`,
+  CATALOGS_SYSTEMS: `${BASE_URL}/ai/catalogs/systems`,
+  alertExplain: (id) => `${BASE_URL}/ai/alerts/${id}/explain/operator`,
+  ticketDraft: (id) => `${BASE_URL}/ai/alerts/${id}/ticket/draft`,
 }
 
-export function getAllLogs({ fromDate, toDate, type, process, device, scanDevice, personId, oficinaId }) {
-  return buildConsolaLogsQuery({
-    fechaInicio: fromDate,
-    fechaFin: toDate,
-    tipoLog: type,
-    proceso: process,
-    dispositivo: device,
-    escaner: scanDevice,
-    usuario: personId,
-    oficina: oficinaId
-  })
-}
+// ─── WebSocket ────────────────────────────────────────────────────────────────
 
-// Otros DTOs pueden agregarse aquí
+export const SOCKET = {
+  URL: process.env.SOCKET_URL ?? '',
+  TOPIC: process.env.SOCKET_TOPIC ?? '/topic/qr-login',
+}

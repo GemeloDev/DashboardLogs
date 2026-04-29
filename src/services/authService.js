@@ -4,14 +4,17 @@
 
 import axios from 'axios'
 import { ref, computed } from 'vue'
-import { AUTH_ENDPOINTS, DEFAULT_CONFIG } from './apiEndpoints.js'
+import { AUTH, REQUEST_CONFIG } from './endpoints.js'
 import { storeJWTInCookie, deleteJWTFromCookie } from './cookieService.js'
 import { axiosInstance } from './axiosConfig.js'
 
 const currentUser = ref(null)
 const isAuthenticated = ref(false)
 const SESSION_KEY = 'dashboardLogsSession'
-const DEFAULT_PREFS = { flow: 'escritorio', system: 'DASHBOARD' }
+const DEFAULT_PREFS = { flow: 'client', system: 'DASHBOARD' }
+const SANTORO_DOMAIN = '@grupo-santoro.com.mx'
+const DASHBOARD_SYNC_CHANNEL = 'dashboard-multipanel-sync-v1'
+const DASHBOARD_SHARED_STORE_KEY = 'dashboardShared'
 
 export const useAuthService = () => {
   const clearSession = () => {
@@ -54,9 +57,9 @@ export const useAuthService = () => {
   const register = async (userData) => {
     try {
       console.log(' Iniciando registro:', { name: userData.name, email: userData.email })
-      const response = await fetch(AUTH_ENDPOINTS.REGISTER, {
+      const response = await fetch(AUTH.REGISTER, {
         method: 'POST',
-        headers: DEFAULT_CONFIG.headers,
+        headers: REQUEST_CONFIG.headers,
         body: JSON.stringify({
           name: userData.name,
           email: userData.email,
@@ -86,10 +89,10 @@ export const useAuthService = () => {
     try {
       // Crear headers con X-Tenant
       const headers = {
-        ...DEFAULT_CONFIG.headers,
+        ...REQUEST_CONFIG.headers,
       }
 
-      const response = await fetch(AUTH_ENDPOINTS.LOGIN, {
+      const response = await fetch(AUTH.LOGIN, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
@@ -110,14 +113,18 @@ export const useAuthService = () => {
             roles: data.data.authz.roles,
             systems: data.data.authz.systems,
           },
-          tenantId: data.data.tenantId || null,
+          organization: {...data.data.organization},
           loginTime: new Date().toISOString(),
+          mustChangePassword: data.data.mustChangePassword
         }
+
+        const initialFlow = getAllowedFlow(userData)
+        console.log(initialFlow)
 
         if (userData?.authz?.systems && userData?.authz?.systems.length !== 0) {
           localStorage.setItem(
             'dashboardFlow',
-            JSON.stringify({ flow: 'escritorio', system: userData?.authz?.systems[0] }),
+            JSON.stringify({ flow: initialFlow, system: userData?.authz?.systems[0] }),
           )
         }
 
@@ -154,7 +161,7 @@ export const useAuthService = () => {
           sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
         }
         console.log('✅ Login exitoso con roles guardados:', userData)
-        return { success: true, message: data.message || 'Login exitoso', user: userData }
+        return { success: true, message: data.message || 'Login exitoso', user: userData, mustChangePassword: userData.mustChangePassword }
       } else {
         return { success: false, message: data.message || 'Credenciales inválidas', user: null }
       }
@@ -175,7 +182,7 @@ export const useAuthService = () => {
       console.log('AccessToken del usuario:', token.accessToken)
       console.log('Token del QR:', credentials.qrToken)
 
-      const response = await axiosInstance.post(AUTH_ENDPOINTS.LOGIN_QR, {
+      const response = await axiosInstance.post(AUTH.LOGIN_QR, {
         qrToken: credentials.qrToken,
       })
 
@@ -195,19 +202,32 @@ export const useAuthService = () => {
   const loadPrefs = () => {
     try {
       const raw = localStorage.getItem('dashboardFlow')
-      if (!raw) return DEFAULT_PREFS
+      const allowedFlow = getAllowedFlow()
+
+      if (!raw) {
+        return {
+          ...DEFAULT_PREFS,
+          flow: allowedFlow,
+        }
+      }
+
       const p = JSON.parse(raw)
+
       return {
-        flow: p.flow ?? DEFAULT_PREFS.flow,
+        flow: sanitizeFlow(p.flow, currentUser.value),
         system: p.system ?? DEFAULT_PREFS.system,
       }
     } catch {
-      return DEFAULT_PREFS
+      return {
+        ...DEFAULT_PREFS,
+        flow: getAllowedFlow(),
+      }
     }
   }
 
   const savePrefs = (flow, system) => {
-    localStorage.setItem('dashboardFlow', JSON.stringify({ flow, system }))
+    const safeFlow = sanitizeFlow(flow, currentUser.value)
+    localStorage.setItem('dashboardFlow', JSON.stringify({ flow: safeFlow, system }))
   }
 
   const buildSession = (data) => {
@@ -230,10 +250,12 @@ export const useAuthService = () => {
       console.log('🍪 JWT guardado en cookie')
     }
 
-    if (userData?.authz?.systems && userData?.authz?.systems !== 0) {
+    const initialFlow = getAllowedFlow(userData)
+
+    if (userData?.authz?.systems && userData?.authz?.systems.length !== 0) {
       localStorage.setItem(
         'dashboardFlow',
-        JSON.stringify({ flow: 'escritorio', system: userData?.authz?.systems[0] }),
+        JSON.stringify({ flow: initialFlow, system: userData?.authz?.systems[0] }),
       )
     }
 
@@ -258,6 +280,8 @@ export const useAuthService = () => {
       localStorage.removeItem(SESSION_KEY)
       sessionStorage.removeItem(SESSION_KEY)
       localStorage.removeItem('dashboardFlow')
+      localStorage.removeItem(DASHBOARD_SYNC_CHANNEL)
+      localStorage.removeItem(DASHBOARD_SHARED_STORE_KEY)
       deleteJWTFromCookie()
       currentUser.value = null
       isAuthenticated.value = false
@@ -276,10 +300,16 @@ export const useAuthService = () => {
         clearSession()
         return false
       }
+
       const session = JSON.parse(sessionData)
+
       if (session && session.isAuthenticated === true) {
         currentUser.value = session.user
         isAuthenticated.value = true
+
+        const prefs = loadPrefs()
+        savePrefs(prefs.flow, prefs.system)
+
         return true
       } else {
         clearSession()
@@ -294,7 +324,7 @@ export const useAuthService = () => {
 
   const refreshAuthToken = (accessToken) => {
     try {
-      const responseRefresh = axios.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {
+      const responseRefresh = axios.post(AUTH.REFRESH_TOKEN, {
         refreshToken: accessToken,
       })
 
@@ -312,7 +342,7 @@ export const useAuthService = () => {
   const getRoles = () => currentUser.value?.authz.roles || []
 
   const hasPermission = (permissions) => {
-    if(!permissions) return true
+    if (!permissions) return true
     return getPermissions().includes(permissions)
   }
 
@@ -325,7 +355,7 @@ export const useAuthService = () => {
   const hasAllPermissions = (permissions = []) => {
     if (!permissions || permissions.length === 0) return true
     const perms = getPermissions()
-    return permissions.some((p) => perms.includes(p))
+    return permissions.every((p) => perms.includes(p))
   }
 
   const hasRole = (role) => {
@@ -334,7 +364,7 @@ export const useAuthService = () => {
   }
 
   const hasAnyRole = (roles = []) => {
-    if(!roles || roles.length === 0) return true
+    if (!roles || roles.length === 0) return true
     const r = getRoles()
     return roles.some((x) => r.includes(x))
   }
@@ -354,18 +384,59 @@ export const useAuthService = () => {
 
     if (typeof rule === 'string') return hasPermission(rule)
 
-    if (Array.isArray(rule)) return hasAllPermissions(rule.all)
+    if (Array.isArray(rule)) return hasAllPermissions(rule)
 
     //  rule: { any, all, rolesAny, rolesAlll }
     const any = rule.any ? hasAnyPermissions(rule.any) : true
     const all = rule.all ? hasAllPermissions(rule.all) : true
 
-    const rolesAny = rule.any ? hasAnyRole(rule.rolesAny) : true
+    const rolesAny = rule.rolesAny ? hasAnyRole(rule.rolesAny) : true
     const rolesAll = rule.rolesAll
       ? (rule.rolesAll || []).every((x) => getRoles().includes(x))
       : true
 
     return any && all && rolesAny && rolesAll
+  }
+
+  const normalizeEmail = (email) => {
+    if (!email || typeof email !== 'string') return ''
+    return email.trim().toLowerCase()
+  }
+
+  const isSantoroEmail = (email) => {
+    return normalizeEmail(email).endsWith(SANTORO_DOMAIN)
+  }
+
+  const canAccessSantoroFlow = (userParam = currentUser.value) => {
+    const email = userParam?.email || ''
+    return isSantoroEmail(email)
+  }
+
+  const canAccessClientFlow = (userParam = currentUser.value) => {
+    return !!userParam
+  }
+
+  const getAllowedFlow = (userParam = currentUser.value) => {
+    return canAccessSantoroFlow(userParam) ? 'santoro' : 'client'
+  }
+
+  const sanitizeFlow = (flow, userParam = currentUser.value) => {
+    const allowedFlow = getAllowedFlow(userParam)
+
+    if (flow === 'santoro') {
+      return canAccessSantoroFlow(userParam) ? 'santoro' : 'client'
+    }
+
+    if (flow === 'client') {
+      return 'client'
+    }
+
+    return allowedFlow
+  }
+
+  const getCurrentFlow = () => {
+    const prefs = loadPrefs()
+    return sanitizeFlow(prefs.flow, currentUser.value)
   }
 
   const user = computed(() => currentUser.value)
@@ -397,7 +468,16 @@ export const useAuthService = () => {
     hasAllPermissions,
     hasRole,
     hasAnyRole,
-    can
+    can,
+
+    //  Flujo santoro/client
+    getCurrentFlow,
+    normalizeEmail,
+    isSantoroEmail,
+    canAccessSantoroFlow,
+    canAccessClientFlow,
+    getAllowedFlow,
+    sanitizeFlow,
   }
 }
 
@@ -437,6 +517,15 @@ export const authService = (() => {
     hasRole: service.hasRole,
     hasAnyRole: service.hasAnyRole,
     can: service.can,
+
+    //  Flujo santoro/client
+    normalizeEmail: service.normalizeEmail,
+    isSantoroEmail: service.isSantoroEmail,
+    canAccessSantoroFlow: service.canAccessSantoroFlow,
+    canAccessClientFlow: service.canAccessClientFlow,
+    getAllowedFlow: service.getAllowedFlow,
+    sanitizeFlow: service.sanitizeFlow,
+    getCurrentFlow: service.getCurrentFlow,
   }
 })()
 

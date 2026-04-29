@@ -1,57 +1,70 @@
 <template>
   <div class="login-page">
-    <!-- Geometric background pattern -->
-    <div class="background-pattern">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
-      <div class="shape shape-4"></div>
+    <!-- Fondo -->
+    <div class="login-bg">
+      <div class="bg-blur bg-blur--cyan"></div>
+      <div class="bg-blur bg-blur--purple"></div>
+      <div class="bg-grid"></div>
+      <div class="bg-orb orb-1"></div>
+      <div class="bg-orb orb-2"></div>
+      <div class="bg-orb orb-3"></div>
     </div>
 
-    <!-- Floating elements -->
-    <div class="floating-elements">
-      <div class="floating-circle circle-1"></div>
-      <div class="floating-circle circle-2"></div>
-      <div class="floating-circle circle-3"></div>
-    </div>
-
-    <!-- Main content wrapper -->
-    <div class="login-content-wrapper">
+    <div class="login-wrapper">
       <div class="login-container">
-        <!-- Login form card -->
         <div class="login-form-container">
-          <q-card class="login-card" flat>
-            <!-- Error de token inválido -->
+          <q-card flat bordered class="login-card">
+            <!-- Token inválido -->
             <div v-if="tokenInvalido" class="card-header-section">
               <div class="header-icon-container error">
                 <q-icon name="error_outline" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Invitación Inválida</h2>
+              <h2 class="card-title">Invitación inválida</h2>
               <p class="card-subtitle">
                 El token de invitación es inválido o ha caducado. Serás redirigido al login...
               </p>
             </div>
 
-            <!-- Card header normal -->
+            <!-- Token válido -->
             <div v-else class="card-header-section">
               <div class="header-icon-container">
                 <q-icon name="check" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Invitación Aceptada</h2>
+              <h2 class="card-title">Invitación aceptada</h2>
               <p class="card-subtitle">
-                Ingrese su contraseña y un nombre de usuario para acceder.
+                Ingresa tu contraseña y un nombre de usuario para acceder.
               </p>
             </div>
-            <div v-if="mensajeExito" class="flex justify-center q-pb-md">
+
+            <div v-if="mensajeExito" class="flex justify-center q-px-lg q-pb-md">
               <div class="status-message success-message">
                 <q-icon name="check_circle_outline" />
                 <span>{{ mensajeExito }}</span>
               </div>
             </div>
-            <!-- Form section (solo si token es válido) -->
+
+            <div class="form-section">
+              <label class="input-label">Código</label>
+              <div class="row justify-center items-center q-gutter-sm q-mt-md">
+                <q-input
+                  v-for="(n, i) in 6"
+                  :key="i"
+                  ref="inputs"
+                  v-model="codigo[i]"
+                  maxlength="1"
+                  type="text"
+                  outlined
+                  dense
+                  class="otp-input"
+                  input-class="text-center text-white text-h5"
+                  @keyup="moverFoco($event, i)"
+                  @keypress="(e) => !/[0-9]/.test(e.key) && e.preventDefault()"
+                />
+              </div>
+            </div>
+
             <q-card-section v-if="!tokenInvalido" class="form-section">
               <q-form @submit="submit">
-                <!-- Name field (registro only) -->
                 <div class="input-group">
                   <label class="input-label">Nombre de usuario</label>
                   <q-input
@@ -70,7 +83,7 @@
                     </template>
                   </q-input>
                 </div>
-                <!-- Password field -->
+
                 <div class="input-group">
                   <label class="input-label">Contraseña</label>
                   <q-input
@@ -103,9 +116,9 @@
                   </q-input>
                 </div>
 
-                <!-- Password strength (registro only) -->
                 <div v-if="acceptInvitation.password" class="password-strength-container">
-                  <div class="strength-header">Seguridad de la contraseña:</div>
+                  <div class="strength-header">Seguridad de la contraseña</div>
+
                   <div class="strength-indicators">
                     <div class="strength-item" :class="{ active: indicadores.longitud }">
                       <q-icon
@@ -113,18 +126,21 @@
                       />
                       <span>8+ caracteres</span>
                     </div>
+
                     <div class="strength-item" :class="{ active: indicadores.mayuscula }">
                       <q-icon
                         :name="indicadores.mayuscula ? 'check_circle' : 'radio_button_unchecked'"
                       />
                       <span>Mayúscula</span>
                     </div>
+
                     <div class="strength-item" :class="{ active: indicadores.numero }">
                       <q-icon
                         :name="indicadores.numero ? 'check_circle' : 'radio_button_unchecked'"
                       />
                       <span>Número</span>
                     </div>
+
                     <div class="strength-item" :class="{ active: indicadores.simbolos }">
                       <q-icon
                         :name="indicadores.simbolos ? 'check_circle' : 'radio_button_unchecked'"
@@ -134,7 +150,6 @@
                   </div>
                 </div>
 
-                <!-- Confirm password (registro only) -->
                 <div class="input-group">
                   <label class="input-label">Confirmar contraseña</label>
                   <q-input
@@ -166,11 +181,9 @@
                   </q-input>
                 </div>
 
-                <div class="row justify-center q-gutter-sm"></div>
-                <!-- Submit button -->
                 <q-btn
                   type="submit"
-                  label="Veríficar"
+                  label="Verificar"
                   class="submit-btn"
                   size="lg"
                   unelevated
@@ -179,7 +192,7 @@
                 >
                   <template v-slot:loading>
                     <q-spinner class="on-left" />
-                    Veríficando...
+                    Verificando...
                   </template>
                 </q-btn>
               </q-form>
@@ -187,7 +200,6 @@
           </q-card>
         </div>
 
-        <!-- Footer -->
         <div class="page-footer">
           <p>© 2025 Dashboard Logs. Todos los derechos reservados.</p>
         </div>
@@ -199,7 +211,7 @@
 <script setup>
 import { acceptInvite } from 'src/services/acceptInviteService'
 // import authService from 'src/services/authService'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 // import { generateAndDownloadTenantQR } from 'src/services/qrService'
@@ -215,47 +227,25 @@ const tokenInvalido = ref(false)
 const mostrarPassword = ref(false)
 const mostrarConfirmarPassword = ref(false)
 const mensajeExito = ref('')
+const codigo = ref(Array(6).fill(''))
+const inputs = ref([])
 
 const acceptInvitation = ref({
+  codigo: '',
   name: '',
   password: '',
   confirmarPassword: '',
   token: token.value,
 })
 
-// Validar token al montar
-onMounted(() => {
-  if (!token.value) {
-    tokenInvalido.value = true
-    $q.notify({
-      type: 'negative',
-      message: '❌ Token de invitación inválido o caducado',
-      position: 'top',
-      timeout: 5000,
-    })
-
-    setTimeout(() => {
-      router.push('/login')
-    }, 3000)
+const moverFoco = (event, index) => {
+  const key = event.key
+  if (key.match(/^[0-9]$/) && index < 5) {
+    nextTick(() => inputs.value[index + 1].focus())
+  } else if (key === 'Backspace' && index > 0) {
+    nextTick(() => inputs.value[index - 1].focus())
   }
-})
-
-// Validar token al montar
-onMounted(() => {
-  if (!token.value) {
-    tokenInvalido.value = true
-    $q.notify({
-      type: 'negative',
-      message: '❌ Token de invitación inválido o caducado',
-      position: 'top',
-      timeout: 5000,
-    })
-
-    setTimeout(() => {
-      router.push('/login')
-    }, 3000)
-  }
-})
+}
 
 // Password strength indicators
 const indicadores = ref({
@@ -278,6 +268,7 @@ const evaluarPassword = () => {
 
 const formularioValidado = computed(() => {
   return (
+    codigo.value.join('').length === 6 &&
     acceptInvitation.value.name.length >= 2 &&
     indicadores.value.longitud &&
     indicadores.value.simbolos &&
@@ -302,12 +293,15 @@ const submit = async () => {
   try {
     // Preparar payload con token de la URL
     const payload = {
-      token: token.value,
       name: acceptInvitation.value.name,
       password: acceptInvitation.value.password,
+      token: codigo.value.join(''),
     }
 
-    console.log('📤 Enviando invitación:', { token: payload.token, name: payload.name })
+    console.log('📤 Enviando invitación:', {
+      token: payload.token,
+      name: payload.name,
+    })
 
     // Aceptar invitación
     const response = await acceptInvite(payload)
@@ -328,15 +322,6 @@ const submit = async () => {
       position: 'top',
       timeout: 3000,
     })
-
-    // Generar y descargar QR con tenantId
-    // try {
-    //   await generateAndDownloadTenantQR(tenantId)
-    //   console.log('✅ QR generado y descargado')
-    // } catch (qrError) {
-    //   console.warn('⚠️ Error al generar QR:', qrError)
-    //   // No bloquear el flujo si falla el QR
-    // }
 
     // Redirigir al escritorio
     setTimeout(() => {
@@ -377,314 +362,418 @@ const submit = async () => {
 </script>
 
 <style lang="scss" scoped>
-$primary: #6366f1;
-$primary-dark: #4f46e5;
-$text-primary: #1e293b;
-$text-secondary: #64748b;
-$background: #0f172a;
-$border: #e2e8f0;
-$success: #10b981;
+$bg-1: #070b14;
+$bg-2: #0b1220;
+$bg-3: #111827;
+
+$text-main: #ffffff;
+$text-soft: rgba(255, 255, 255, 0.72);
+$text-muted: rgba(255, 255, 255, 0.5);
+
+$cyan: #22d3ee;
+$cyan-strong: #06b6d4;
+$purple: #a855f7;
+$pink: #ec4899;
+$green: #22c55e;
+$red: #ef4444;
 
 // === MAIN LAYOUT ===
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, $background 0%, #1e1b4b 30%, #312e81 70%, #4c1d95 100%);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.08), transparent 24%),
+    linear-gradient(135deg, $bg-1 0%, $bg-2 45%, $bg-3 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  overflow: hidden;
-  padding: 20px;
+  padding: 24px 20px;
 }
 
-// === BACKGROUND ELEMENTS ===
-.background-pattern {
+// === BACKGROUND ===
+.login-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   overflow: hidden;
-  z-index: 1;
-
-  .shape {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 50%;
-    animation: float 25s infinite linear;
-
-    &.shape-1 {
-      width: 400px;
-      height: 400px;
-      top: -200px;
-      left: -200px;
-    }
-
-    &.shape-2 {
-      width: 300px;
-      height: 300px;
-      top: 20%;
-      right: -150px;
-      animation-delay: -8s;
-    }
-
-    &.shape-3 {
-      width: 500px;
-      height: 500px;
-      bottom: -250px;
-      left: 20%;
-      animation-delay: -16s;
-    }
-
-    &.shape-4 {
-      width: 200px;
-      height: 200px;
-      top: 60%;
-      left: -100px;
-      animation-delay: -12s;
-    }
-  }
+  pointer-events: none;
 }
 
-// === FLOATING ELEMENTS ===
-.floating-elements {
+.bg-grid {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-
-  .floating-circle {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(99, 102, 241, 0.1);
-    animation: pulse 4s infinite ease-in-out;
-
-    &.circle-1 {
-      width: 60px;
-      height: 60px;
-      top: 15%;
-      left: 15%;
-    }
-
-    &.circle-2 {
-      width: 80px;
-      height: 80px;
-      top: 70%;
-      right: 20%;
-      animation-delay: -2s;
-    }
-
-    &.circle-3 {
-      width: 40px;
-      height: 40px;
-      bottom: 20%;
-      left: 70%;
-      animation-delay: -1s;
-    }
-  }
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent 95%);
 }
 
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
-  25% {
-    transform: translateY(-30px) rotate(90deg) scale(1.05);
-  }
-  50% {
-    transform: translateY(-15px) rotate(180deg) scale(0.95);
-  }
-  75% {
-    transform: translateY(-25px) rotate(270deg) scale(1.02);
-  }
+.bg-blur {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(90px);
+  opacity: 0.2;
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.3;
-  }
+.bg-blur--cyan {
+  width: 320px;
+  height: 320px;
+  background: $cyan;
+  top: -60px;
+  left: -60px;
 }
 
-// === CONTENT LAYOUT ===
+.bg-blur--purple {
+  width: 360px;
+  height: 360px;
+  background: $purple;
+  right: -100px;
+  bottom: -90px;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  animation: floatY 9s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 78px;
+  height: 78px;
+  top: 14%;
+  left: 10%;
+}
+
+.orb-2 {
+  width: 58px;
+  height: 58px;
+  top: 24%;
+  right: 12%;
+  animation-delay: -2s;
+}
+
+.orb-3 {
+  width: 92px;
+  height: 92px;
+  bottom: 12%;
+  left: 18%;
+  animation-delay: -5s;
+}
+
+// === CONTENT ===
 .login-content-wrapper {
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 480px;
+  display: flex;
+  justify-content: center;
 }
 
+.login-wrapper,
 .login-container {
   width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
 }
 
-// === FORM CARD ===
 .login-form-container {
-  margin-bottom: 2rem;
+  margin-bottom: 22px;
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 20px;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.018));
+  border-radius: 26px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
 }
 
-// === CARD HEADER ===
+// === HEADER ===
 .card-header-section {
   text-align: center;
-  padding-top: 2rem;
+  padding: 2.2rem 2rem 1rem;
+}
 
-  .header-icon-container {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, $primary, $primary-dark);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.25rem;
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+.header-icon-container {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.2rem;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
+  box-shadow: 0 14px 36px rgba(34, 211, 238, 0.18);
 
-    .header-icon {
-      color: white;
-    }
+  &.error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(190, 24, 93, 0.95));
+    box-shadow: 0 14px 36px rgba(239, 68, 68, 0.18);
   }
 
-  .card-title {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: $text-primary;
-    margin-bottom: 0.5rem;
+  .header-icon {
+    color: white;
   }
+}
 
-  .card-subtitle {
-    color: $text-secondary;
-    font-size: 0.95rem;
-    line-height: 1.4;
-  }
+.card-title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: $text-main;
+  margin: 0 0 0.6rem 0;
+  line-height: 1.2;
+}
+
+.card-subtitle {
+  color: $text-soft;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  margin: 0;
 }
 
 // === FORM SECTION ===
 .form-section {
-  padding: 0 2rem 1.5rem;
+  padding: 0 2rem 2rem;
+}
+
+.input-group {
+  margin-bottom: 1.1rem;
 }
 
 .input-label {
   display: block;
   font-weight: 600;
-  color: $text-primary;
+  color: $text-main;
   margin-bottom: 0.75rem;
   font-size: 0.95rem;
 }
 
-.otp-input {
-  width: 50px;
+.premium-input {
+  :deep(.q-field__control) {
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: white;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  :deep(.q-field__native),
+  :deep(.q-field__input) {
+    color: white;
+  }
+
+  :deep(.q-field__native::placeholder),
+  :deep(input::placeholder) {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  :deep(.q-field__control:hover) {
+    border-color: rgba(34, 211, 238, 0.2);
+    background: rgba(0, 0, 0, 0.42);
+  }
+
+  :deep(.q-field--focused .q-field__control) {
+    border-color: rgba(34, 211, 238, 0.55);
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.08);
+  }
+
+  :deep(.q-field__marginal) {
+    color: rgba(255, 255, 255, 0.55);
+  }
+}
+
+.input-icon,
+.visibility-btn {
+  color: rgba(255, 255, 255, 0.55);
 }
 
 // === PASSWORD STRENGTH ===
 .password-strength-container {
-  margin-top: 1.25rem;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-  border-radius: 14px;
-  border: 1px solid $border;
+  margin: 0.4rem 0 1.2rem;
+  padding: 1.1rem 1rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
 
-  .strength-header {
-    font-size: 0.9rem;
+.strength-header {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: $text-main;
+  margin-bottom: 0.9rem;
+}
+
+.strength-indicators {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.strength-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  color: $text-muted;
+  transition: all 0.25s ease;
+
+  &.active {
+    color: #86efac;
     font-weight: 600;
-    color: $text-primary;
-    margin-bottom: 1rem;
   }
 
-  .strength-indicators {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-
-    .strength-item {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 0.85rem;
-      color: $text-secondary;
-      transition: all 0.3s ease;
-
-      &.active {
-        color: $success;
-        font-weight: 500;
-      }
-
-      :deep(.q-icon) {
-        font-size: 1.1rem;
-      }
-    }
+  :deep(.q-icon) {
+    font-size: 1.05rem;
   }
 }
 
-// === STATUS MESSAGES ===
+// === STATUS ===
 .status-message {
+  width: 100%;
+  max-width: 460px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  border-radius: 12px;
-  margin-top: 1.25rem;
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  font-size: 0.94rem;
+  font-weight: 600;
 
   :deep(.q-icon) {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
   }
 }
 
 .success-message {
-  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-  color: $success;
-  border: 1px solid #bbf7d0;
+  background: rgba(34, 197, 94, 0.12);
+  color: #bbf7d0;
+  border: 1px solid rgba(34, 197, 94, 0.25);
 }
 
+// === BUTTON ===
 .submit-btn {
   width: 100%;
-  height: 52px;
-  background: linear-gradient(135deg, $primary, $primary-dark);
+  height: 56px;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #e97132 100%);
   color: white;
-  border-radius: 12px;
-  font-weight: 700;
+  border-radius: 16px;
+  font-weight: 800;
   font-size: 1rem;
-  margin-top: 25px;
-  transition: all 0.3s ease;
+  margin-top: 1.35rem;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
   text-transform: none;
+  box-shadow: 0 18px 38px rgba(34, 211, 238, 0.16);
 
   &:hover:not(.disabled) {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 44px rgba(34, 211, 238, 0.22);
   }
 }
 
-// === PAGE FOOTER ===
+// === FOOTER ===
 .page-footer {
   text-align: center;
+
   p {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.84rem;
     margin: 0;
+    letter-spacing: 0.04em;
   }
 }
 
-// === RESPONSIVE DESIGN ===
+@keyframes floatY {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+// === RESPONSIVE ===
+@media (max-width: 640px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-wrapper,
+  .login-container {
+    max-width: 100%;
+  }
+
+  .card-header-section {
+    padding: 1.9rem 1.35rem 1rem;
+  }
+
+  .form-section {
+    padding: 0 1.35rem 1.5rem;
+  }
+
+  .card-title {
+    font-size: 1.65rem;
+  }
+
+  .card-subtitle {
+    font-size: 0.94rem;
+  }
+
+  .strength-indicators {
+    grid-template-columns: 1fr;
+  }
+}
+
+.otp-input {
+  width: 50px;
+  :deep(.q-field__control) {
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: white;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  :deep(.q-field__native),
+  :deep(.q-field__input) {
+    color: white;
+  }
+
+  :deep(.q-field__native::placeholder),
+  :deep(input::placeholder) {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  :deep(.q-field__control:hover) {
+    border-color: rgba(34, 211, 238, 0.2);
+    background: rgba(0, 0, 0, 0.42);
+  }
+
+  :deep(.q-field--focused .q-field__control) {
+    border-color: rgba(34, 211, 238, 0.55);
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.08);
+  }
+
+  :deep(.q-field__marginal) {
+    color: rgba(255, 255, 255, 0.55);
+  }
+}
+
 @media (max-width: 480px) {
-  .otp-input {
-    width: 37px !important;
+  .login-card {
+    border-radius: 22px;
   }
 }
 </style>

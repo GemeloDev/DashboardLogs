@@ -1,346 +1,358 @@
-<template>
-  <q-card flat bordered class="q-pa-md text-white" style="background:#1e1e2f;border-radius:12px;">
-    <div class="row items-center q-mb-sm">
-      <q-icon name="map" class="q-mr-sm" color="primary" />
-      <div class="text-subtitle1">Mapa de Logs (geo)</div>
-      <q-space />
-      <q-chip v-if="pointsCount" color="primary" text-color="white" icon="place" size="sm">
-        {{ pointsCount }} puntos
-      </q-chip>
-    </div>
-
-    <div ref="mapEl" class="mapa-container"></div>
-  </q-card>
-</template>
-
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
-import 'leaflet.markercluster/dist/leaflet.markercluster.js'
-import 'leaflet.markercluster/dist/MarkerCluster.css'
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
+import { useI18n } from 'vue-i18n'
 
-// Fix icon paths (Vite)
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
-  iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
-  shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
-})
+const { t } = useI18n()
 
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
+maplibregl.setWorkerUrl?.(workerUrl)
+maplibregl.workerUrl = workerUrl
+
+// ---------------- PROPS ----------------
 const props = defineProps({
-  logs: { type: Array, default: () => [] },
-  // centro inicial
-  defaultCenter: { type: Array, default: () => [19.4326, -99.1332] }, // CDMX
-  defaultZoom: { type: Number, default: 5 },
-  // radio para click en mapa (km)
-  clickRadiusKm: { type: Number, default: 5 },
+  points: { type: Array, default: () => [] }, // [{ lat, lon, count }]
 })
 
-const emit = defineEmits([
-  'select-log',        // (log) -> click marcador
-  'select-cluster',    // (summary) -> click cluster
-  'select-area',       // (summary) -> click en mapa
-])
 
-const mapEl = ref(null)
-let map = null
-let markers = null
+// ---------------- STATE ----------------
+const mapEl   = ref(null)
+let map       = null
+let loaded    = false
+let popup     = null
+let clusterCountMarkers = new Map()
 
-// -------- Helpers --------
-const getDeep = (obj, path) =>
-  String(path || '').split('.').reduce((o, k) => (o ? o[k] : null), obj)
+const mode       = ref('points') // 'points' | 'heat'
+const projection = ref('mercator')
+const mapModeLabel = computed(() =>
+  mode.value === 'points' ? t('dashboard.mapType_points') : t('dashboard.mapType_heat'),
+)
+const mapModeIcon = computed(() => (mode.value === 'points' ? 'place' : 'local_fire_department'))
 
-function parseGeo(geo) {
-  if (!geo) return null
-
-  // GeoJSON Point
-  if (typeof geo === 'object' && geo?.type === 'Point' && Array.isArray(geo.coordinates)) {
-    const [lng, lat] = geo.coordinates.map(Number)
-    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng }
-  }
-
-  // {lat, lng} | {lat, lon} | {latitude, longitude}
-  if (typeof geo === 'object' && !Array.isArray(geo)) {
-    const lat =
-      geo.lat ?? geo.latitude ?? (geo.coords ? geo.coords.lat ?? geo.coords.latitude : undefined)
-    const lng =
-      geo.lng ??
-      geo.lon ??
-      geo.long ??
-      geo.longitude ??
-      (geo.coords ? geo.coords.lng ?? geo.coords.lon ?? geo.coords.longitude : undefined)
-
-    const la = Number(lat)
-    const lo = Number(lng)
-    if (Number.isFinite(la) && Number.isFinite(lo)) return { lat: la, lng: lo }
-  }
-
-  // Array [a,b]
-  if (Array.isArray(geo) && geo.length >= 2) {
-    const a = Number(geo[0])
-    const b = Number(geo[1])
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
-
-    // deducción por rangos
-    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
-    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
-    if (aIsLat) return { lat: a, lng: b }
-    if (bIsLat) return { lat: b, lng: a }
-    return null
-  }
-
-  // String "lat,lng"
-  if (typeof geo === 'string') {
-    const parts = geo.split(',').map((s) => Number(s.trim()))
-    if (parts.length !== 2 || parts.some((n) => !Number.isFinite(n))) return null
-
-    const [a, b] = parts
-    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
-    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
-    if (aIsLat) return { lat: a, lng: b }
-    if (bIsLat) return { lat: b, lng: a }
-  }
-
-  return null
+// ---------------- ESTILOS BASE ----------------
+const DARK_TILES = {
+  version: 8,
+  sources: {
+    'raster-tiles': {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      ],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: 19,
+      attribution: '© OpenStreetMap contributors',
+    },
+  },
+  layers: [{ id: 'raster-tiles', type: 'raster', source: 'raster-tiles' }],
 }
 
-function haversineKm(a, b) {
-  const R = 6371
-  const toRad = (x) => (x * Math.PI) / 180
-  const dLat = toRad(b.lat - a.lat)
-  const dLng = toRad(b.lng - a.lng)
-  const lat1 = toRad(a.lat)
-  const lat2 = toRad(b.lat)
-
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * (Math.sin(dLng / 2) ** 2)
-
-  return 2 * R * Math.asin(Math.sqrt(s))
+const MAP_STYLES = {
+  points: {
+    version: 8,
+    sources: {
+      osm: {
+        type: 'raster',
+        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+        tileSize: 256,
+      },
+    },
+    layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+  },
+  heat: DARK_TILES,
 }
 
-function buildSummary(logs, center, radiusKm) {
-  const rows = (logs || [])
-    .map((l) => ({ log: l, p: parseGeo(l?.geo) }))
-    .filter((x) => x.p)
+// ---------------- GEOJSON ----------------
+const geojson = computed(() => ({
+  type: 'FeatureCollection',
+  features: (props.points || []).map((p) => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+    properties: { count: p.weight || p.count || 1 },
+  })),
+}))
 
-  const inArea = rows
-    .filter(({ p }) => haversineKm(center, p) <= radiusKm)
-    .map(({ log }) => log)
+function clearClusterCountMarkers() {
+  for (const marker of clusterCountMarkers.values()) marker.remove()
+  clusterCountMarkers = new Map()
+}
 
-  const byStatus = {}
-  const byEventType = {}
-  const byDevice = {}
-  const users = new Set()
-
-  for (const l of inArea) {
-    const st = String(l?.status ?? 'N/A').toUpperCase()
-    byStatus[st] = (byStatus[st] || 0) + 1
-
-    const et = String(l?.eventType ?? 'N/A').toUpperCase()
-    byEventType[et] = (byEventType[et] || 0) + 1
-
-    const dev = String(getDeep(l, 'meta.device') ?? 'N/A')
-    byDevice[dev] = (byDevice[dev] || 0) + 1
-
-    const u = String(getDeep(l, 'actor.fullName') ?? '').trim()
-    if (u) users.add(u)
+function syncClusterCountMarkers() {
+  if (!map || !loaded || mode.value !== 'points' || !map.getLayer('clusters')) {
+    clearClusterCountMarkers()
+    return
   }
 
-  const top = (obj, n = 7) =>
-    Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n)
+  const features = map.queryRenderedFeatures({ layers: ['clusters'] })
+  const visibleKeys = new Set()
 
-  return {
-    center,
-    radiusKm,
-    total: inArea.length,
-    users: users.size,
-    byStatus,
-    byEventType,
-    topEventTypes: top(byEventType),
-    topDevices: top(byDevice),
-    sample: inArea.slice(0, 20),
+  for (const feature of features) {
+    const coords = feature.geometry?.coordinates
+    if (!Array.isArray(coords) || coords.length < 2) continue
+
+    const props = feature.properties || {}
+    const key = String(props.cluster_id ?? `${coords[0]},${coords[1]}`)
+    const count = String(props.sum ?? props.point_count ?? '')
+    if (!count) continue
+
+    visibleKeys.add(key)
+
+    let marker = clusterCountMarkers.get(key)
+    if (!marker) {
+      const el = document.createElement('div')
+      el.className = 'cgm-cluster-count'
+      el.textContent = count
+      marker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map)
+      clusterCountMarkers.set(key, marker)
+    } else {
+      marker.getElement().textContent = count
+      marker.setLngLat(coords)
+    }
+  }
+
+  for (const [key, marker] of clusterCountMarkers.entries()) {
+    if (!visibleKeys.has(key)) {
+      marker.remove()
+      clusterCountMarkers.delete(key)
+    }
   }
 }
 
-// color del marcador basado en status
-function statusColor(status) {
-  const s = String(status || '').toLowerCase()
-  if (s.includes('success') || s.includes('ok') || s.includes('exito')) return '#22c55e'
-  if (s.includes('warn') || s.includes('warning')) return '#f59e0b'
-  if (s.includes('error') || s.includes('fail') || s.includes('fall')) return '#ef4444'
-  return '#3b82f6'
-}
-
-function makeMarkerIcon(color) {
-  return L.divIcon({
-    html: `<div style="
-      background:${color};
-      border:2px solid #fff;
-      border-radius:50%;
-      width:22px;height:22px;
-      box-shadow:0 2px 8px rgba(0,0,0,.35);
-    "></div>`,
-    className: 'console-geo-marker',
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-  })
-}
-
-// -------- Map lifecycle --------
-const pointsCount = computed(() => {
-  let c = 0
-  for (const l of props.logs || []) if (parseGeo(l?.geo)) c++
-  return c
-})
-
+// ---------------- INIT ----------------
 async function initMap() {
   await nextTick()
   if (!mapEl.value || map) return
 
-  map = L.map(mapEl.value, { zoomControl: true }).setView(props.defaultCenter, props.defaultZoom)
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 18,
-  }).addTo(map)
-
-  // click en mapa -> resumen por radio
-  map.on('click', async (e) => {
-    const center = { lat: e.latlng.lat, lng: e.latlng.lng }
-    const summary = buildSummary(props.logs, center, props.clickRadiusKm)
-    emit('select-area', summary)
+  map = new maplibregl.Map({
+    container: mapEl.value,
+    style: MAP_STYLES[mode.value],
+    center: [-99.1332, 19.4326],
+    zoom: 5,
+    renderWorldCopies: false,
   })
 
-  markers = L.markerClusterGroup({
-    chunkedLoading: true,
-    maxClusterRadius: 60,
-    spiderfyOnMaxZoom: true,
-    showCoverageOnHover: false,
-    disableClusteringAtZoom: 15,
-    iconCreateFunction(cluster) {
-      const count = cluster.getChildCount()
-      return new L.DivIcon({
-        html: `<div style="
-          background: linear-gradient(135deg,#60a5fa 0%,#2563eb 100%);
-          border:2px solid #fff;
-          border-radius:50%;
-          width:38px;height:38px;
-          display:flex;align-items:center;justify-content:center;
-          color:#fff;font-weight:700;
-          box-shadow:0 4px 12px rgba(37,99,235,.35);
-        "><span>${count}</span></div>`,
-        className: 'console-geo-cluster',
-        iconSize: new L.Point(38, 38),
-      })
-    },
+  map.addControl(new maplibregl.NavigationControl(), 'top-left')
+  map.on('idle', syncClusterCountMarkers)
+  map.on('moveend', syncClusterCountMarkers)
+  map.on('zoomend', syncClusterCountMarkers)
+
+  map.on('load', () => {
+    loaded = true
+    map.setProjection({ type: projection.value })
+    addLayers()
+    fitBounds()
   })
-
-  // click en cluster -> resumen de logs del cluster
-  markers.on('clusterclick', (ev) => {
-    L.DomEvent.stopPropagation(ev)
-    const cluster = ev.layer
-    const childMarkers = cluster.getAllChildMarkers()
-    const clusterLogs = childMarkers.map((m) => m.__log).filter(Boolean)
-
-    const center = cluster.getLatLng()
-    const summary = {
-      ...buildSummary(clusterLogs, { lat: center.lat, lng: center.lng }, 0),
-      radiusKm: null,
-      mode: 'cluster',
-    }
-    emit('select-cluster', summary)
-  })
-
-  map.addLayer(markers)
-
-  // primera carga
-  refreshMarkers()
 }
 
-function refreshMarkers() {
-  if (!map || !markers) return
-  markers.clearLayers()
+// ---------------- LAYERS ----------------
+function addLayers() {
+  if (!map) return
 
-  const rows = (props.logs || [])
-    .map((log) => ({ log, p: parseGeo(log?.geo) }))
-    .filter((x) => x.p)
-
-  for (const { log, p } of rows) {
-    const color = statusColor(log?.status)
-    const icon = makeMarkerIcon(color)
-
-    const t = String(log?.eventType ?? 'N/A')
-    const st = String(log?.status ?? 'N/A')
-    const who = String(getDeep(log, 'actor.fullName') || getDeep(log, 'actor.username') || 'N/A')
-    const dev = String(getDeep(log, 'meta.device') || getDeep(log, 'meta.platform') || getDeep(log, 'meta.osVersion') || 'N/A')
-    const msg = String(log?.message ?? '')
-    const time = log?.eventTime ? new Date(log.eventTime).toLocaleString('es-MX') : 'N/A'
-
-    const marker = L.marker([p.lat, p.lng], { icon })
-    marker.__log = log
-
-    marker.bindPopup(`
-      <div style="min-width:220px">
-        <div style="font-weight:700;margin-bottom:6px">${t}</div>
-        <div><b>Status:</b> ${st}</div>
-        <div><b>Usuario:</b> ${who}</div>
-        <div><b>Device:</b> ${dev}</div>
-        <div><b>Fecha:</b> ${time}</div>
-        ${msg ? `<div style="margin-top:6px;opacity:.85">${msg}</div>` : ''}
-        <div style="margin-top:8px;opacity:.7;font-size:12px">Click en el marcador para abrir detalle</div>
-      </div>
-    `)
-
-    marker.on('click', (evt) => {
-      L.DomEvent.stopPropagation(evt)
-      emit('select-log', log)
+  if (mode.value === 'points') {
+    map.addSource('geo', {
+      type: 'geojson',
+      data: geojson.value,
+      cluster: true,
+      clusterMaxZoom: 10,
+      clusterRadius: 60,
+      clusterProperties: { sum: ['+', ['get', 'count']] },
     })
 
-    markers.addLayer(marker)
-  }
+    map.addLayer({
+      id: 'clusters',
+      type: 'circle',
+      source: 'geo',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color':        ['step', ['get', 'sum'], '#22c55e', 50, '#f59e0b', 200, '#ef4444'],
+        'circle-radius':       ['step', ['get', 'point_count'], 20, 5, 28, 20, 36],
+        'circle-opacity':      0.9,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#fff',
+      },
+    })
+    syncClusterCountMarkers()
+    map.once('idle', syncClusterCountMarkers)
 
-  // auto-encuadrar si hay puntos
-  if (rows.length) {
-    const bounds = L.latLngBounds(rows.map((r) => [r.p.lat, r.p.lng]))
-    map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 })
+    map.addLayer({
+      id: 'unclustered-point',
+      type: 'circle',
+      source: 'geo',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color':        ['step', ['get', 'count'], '#22c55e', 5, '#f59e0b', 20, '#ef4444'],
+        'circle-radius':       ['step', ['get', 'count'], 6, 5, 10, 20, 14, 100, 18],
+        'circle-opacity':      0.9,
+        'circle-stroke-width': 1.5,
+        'circle-stroke-color': '#fff',
+      },
+    })
+
+    if (popup) popup.remove()
+    popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false })
+
+    map.on('mousemove', 'unclustered-point', (e) => {
+      const f = e.features?.[0]
+      if (!f) return
+      const [lon, lat] = f.geometry.coordinates
+      const count = f.properties.count
+      popup
+        .setLngLat([lon, lat])
+        .setHTML(
+          `<div style="background:rgba(17,24,39,0.9);color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;backdrop-filter:blur(6px)">
+            <strong>${t('common.ubication')}</strong><br/>
+            ${lat.toFixed(5)}, ${lon.toFixed(5)}<br/>
+            ${t('dashboard.eventsSeriesLabel')}: <b>${count}</b>
+          </div>`,
+        )
+        .addTo(map)
+    })
+    map.on('mouseleave', 'unclustered-point', () => popup?.remove())
+    map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'default' })
+    map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = '' })
+  } else {
+    map.addSource('geo', { type: 'geojson', data: geojson.value })
+
+    map.addLayer({
+      id: 'heat-layer',
+      type: 'heatmap',
+      source: 'geo',
+      paint: {
+        'heatmap-weight':    ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
+        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1.8, 9, 5.5, 14, 7.5],
+        'heatmap-radius':    ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
+        'heatmap-opacity':   0.95,
+        'heatmap-color': [
+          'interpolate', ['linear'], ['heatmap-density'],
+          0.0,  'rgba(34,197,94,0)',
+          0.25, '#22c55e',
+          0.6,  '#f59e0b',
+          1.0,  '#ef4444',
+        ],
+      },
+    })
   }
 }
 
+// ---------------- MODE TOGGLE ----------------
+function updateMode() {
+  if (!map) return
+  loaded = false
+  clearClusterCountMarkers()
+  map.setStyle(MAP_STYLES[mode.value])
+  map.once('style.load', () => {
+    loaded = true
+    map.setProjection({ type: projection.value })
+    addLayers()
+    fitBounds()
+  })
+}
+
+function toggleMapMode() {
+  mode.value = mode.value === 'points' ? 'heat' : 'points'
+}
+
+// ---------------- PROJECTION ----------------
+function toggleProjection() {
+  projection.value = projection.value === 'globe' ? 'mercator' : 'globe'
+  map.setProjection({ type: projection.value })
+}
+
+// ---------------- DATA UPDATES ----------------
+watch(geojson, (data) => {
+  if (!map || !loaded) return
+  map.getSource('geo')?.setData(data)
+  map.once('idle', syncClusterCountMarkers)
+})
+
+// ---------------- FIT BOUNDS ----------------
+function fitBounds() {
+  if (!map) return
+  const pts = (props.points || []).map((p) => [p.lon, p.lat])
+  if (!pts.length) return
+  const bounds = new maplibregl.LngLatBounds()
+  pts.forEach((c) => bounds.extend(c))
+  map.fitBounds(bounds, { padding: 50, maxZoom: 12 })
+}
+
+// ---------------- WATCH MODE ----------------
+watch(mode, updateMode)
+
+// ---------------- LIFECYCLE ----------------
 onMounted(initMap)
 
-watch(
-  () => props.logs,
-  async () => {
-    await nextTick()
-    refreshMarkers()
-  },
-  { deep: false }
-)
-
 onBeforeUnmount(() => {
-  try {
-    if (markers) markers.clearLayers()
-    if (map) map.remove()
-  } finally {
-    markers = null
-    map = null
-  }
+  popup?.remove()
+  clearClusterCountMarkers()
+  if (map) map.remove()
 })
 </script>
 
-<style scoped>
-.mapa-container {
-  height: 420px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+<template>
+  <div>
+    <div class="row q-mb-sm items-center">
+      <div class="toplist-title">{{ t('dashboard.dinamicMap') }}</div>
+      <q-space />
+
+      <q-btn
+        dense
+        unelevated
+        no-caps
+        color="primary"
+        text-color="white"
+        :icon="mapModeIcon"
+        :label="mapModeLabel"
+        class="q-mr-sm"
+        @click="toggleMapMode"
+      />
+      <q-chip
+        clickable
+        v-ripple
+        color="orange"
+        text-color="white"
+        icon="public"
+        size="md"
+        class="q-mr-sm"
+        @click="toggleProjection"
+      >
+        {{ projection === 'globe' ? t('dashboard.mapProjection_Globe') : t('dashboard.mapProjection_Plano') }}
+      </q-chip>
+    </div>
+
+    <div ref="mapEl" style="width: 100%; height: 520px; border-radius: 12px" />
+  </div>
+</template>
+
+<style lang="scss" scoped>
+.toplist-title {
+  font-size: 18px;
+  font-weight: 700;
 }
 
-:deep(.leaflet-control-attribution) {
-  font-size: 10px;
-  opacity: 0.8;
+:global(.cgm-cluster-count) {
+  align-items: center;
+  color: #fff;
+  display: flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  transform: translateY(-1px);
+  user-select: none;
+  width: 32px;
+}
+
+@media (max-width: 420px) {
+  :deep(.q-btn__content) {
+    font-size: 12px;
+  }
 }
 </style>

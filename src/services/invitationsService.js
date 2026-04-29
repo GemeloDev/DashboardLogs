@@ -4,7 +4,7 @@
  */
 
 import { axiosInstance } from './axiosConfig'
-import { SERVER_CONFIG } from '../config/serverConfig'
+import { ADMIN } from './endpoints'
 
 /**
  * Envía una invitación a un nuevo usuario
@@ -12,12 +12,13 @@ import { SERVER_CONFIG } from '../config/serverConfig'
  * @param {string} inviteData.email - Email del invitado
  * @param {Array<string>} inviteData.roles - Roles asignados
  * @param {number} inviteData.ttlHours - Horas hasta expiración
+ * @param {Object} inviteData.logFilters - Valores por los que se filtraran los logs
  * @returns {Promise<Object>}
  */
 export const sendInvitation = async (inviteData) => {
     try {
         const response = await axiosInstance.post(
-            `${SERVER_CONFIG.BASE_URL}/admin/invites`,
+            `${ADMIN.INVITES}`,
             inviteData
         )
 

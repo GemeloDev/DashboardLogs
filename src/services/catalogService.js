@@ -1,96 +1,65 @@
-import { endpoints } from './endpoints'
 import { axiosInstance } from './axiosConfig'
+import { EVA } from './endpoints'
 
 export class CatalogService {
 
-  // --- 1. MÉTODO PRINCIPAL DE CARGA (Una sola consulta) ---
-
-  /**
-   * Realiza la petición a la API una sola vez y distribuye la data
-   * para generar todos los catálogos derivados.
-   */
   static async fetchCatalogs() {
     try {
-      // Ejecutamos las peticiones principales en paralelo
-      // 1. Logs (de donde sacaremos oficinas, estatus, dispositivos, etc.)
-      // 2. Personas (endpoint separado según tu código original)
-      const [logsResponse, personsResponse] = await Promise.all([
-        axiosInstance.get(endpoints.catalogEvents),
-        axiosInstance.get(endpoints.catalogPersons).catch(() => ({ data: { data: { data: [] } } })) // Fallback si falla personas
+      // Cargar sistemas y salud en paralelo
+      const [catalogResponse, healthResponse] = await Promise.allSettled([
+        axiosInstance.get(EVA.CATALOGS_SYSTEMS),
+        axiosInstance.get('/api/logs/dashboard/systems-health'),
       ])
 
-      const items = logsResponse.data.data.items || []
-      const personasRaw = personsResponse.data.data.data || []
+      // Debug temporal
+      // console.log('[CatalogService] catalog status:', catalogResponse.status)
+      // console.log('[CatalogService] health status:', healthResponse.status)
+      // if (healthResponse.status === 'fulfilled') {
+      //   console.log('[CatalogService] health data:', healthResponse.value.data)
+      // } else {
+      //   console.error('[CatalogService] health error:', healthResponse.reason?.response?.status, healthResponse.reason?.message)
+      // }
 
-      console.log(`ℹ️ Datos cargados: ${items.length} eventos y ${personasRaw.length} personas.`)
+      const items = catalogResponse.status === 'fulfilled'
+              ? (catalogResponse.value.data?.data || []) : []
 
-      // Retornamos un objeto consolidado procesando la data en memoria
+      const healthList = healthResponse.status === 'fulfilled'
+              ? (healthResponse.value.data?.data || []) : []
+
+      // Crear mapa de salud por sistema
+      const healthMap = {}
+      healthList.forEach(h => {
+        if (h?.system) healthMap[h.system] = h
+      })
+
+      console.log('[CatalogService] healthMap:', healthMap)
+      console.log(`[CatalogService] Catalogo cargado: ${items.length} sistemas.`)
+
       return {
-        oficinas: this._extractOficinas(items),
-        dispositivos: this._extractCampoSimple(items, 'channel'),
-        estatus: this._extractCampoSimple(items, 'status'),
-        tiposProcesos: this._extractCampoSimple(items, 'operationType'),
-        personas: this._formatPersonas(personasRaw)
+        sistemas:       this._extractSistemas(items, healthMap),
+        sistemasSimple: this._extractNombresSimples(items),
+        healthMap,
       }
 
     } catch (error) {
-      console.error('❌ Error crítico cargando catálogos:', error.message)
-      return {
-        oficinas: [],
-        dispositivos: [],
-        estatus: [],
-        tiposProcesos: [],
-        personas: []
-      }
+      console.error('[CatalogService] Error critico:', error.message)
+      return { sistemas: [], sistemasSimple: [], healthMap: {} }
     }
   }
 
-  // --- 2. MÉTODOS EXTRACTORES (Lógica pura, sin llamadas API) ---
-
-  /**
-   * Extrae oficinas únicas basándose en el ID para evitar duplicados.
-   */
-  static _extractOficinas(items) {
-    const oficinasMap = new Map()
-
-    items.forEach(item => {
-      if (item.office && item.office.officeId) {
-        oficinasMap.set(item.office.officeId, {
-          value: item.office.officeId,
-          label: item.office.officeName || 'Sin Nombre'
-        })
-      }
-    })
-
-    return Array.from(oficinasMap.values())
+  static _extractSistemas(items, healthMap = {}) {
+    return items
+      .map(item => item.name)
+      .filter(Boolean)
+      .map(name => ({
+        value:     name,
+        label:     name,
+        status:    healthMap[name]?.status    || 'INACTIVE',
+        errorRate: healthMap[name]?.errorRate || 0,
+      }))
   }
 
-  /**
-   * Método genérico para extraer valores únicos de campos simples (strings).
-   * Sirve para: channel, status, operationType, etc.
-   */
-  static _extractCampoSimple(items, fieldName) {
-    // 1. Mapear al valor
-    // 2. Crear Set para únicos
-    // 3. Filtrar nulos/vacíos
-    const uniqueValues = [...new Set(items.map(item => item[fieldName]))].filter(Boolean)
-
-    return uniqueValues.map(val => ({
-      value: val,
-      label: val
-    }))
-  }
-
-  /**
-   * Formatea la respuesta del endpoint de personas.
-   */
-  static _formatPersonas(personasData) {
-    return personasData.map(persona => {
-      const nombreCompleto = [persona.name].filter(Boolean).join(' ')
-      return {
-        value: persona.id,
-        label: persona.email ? `${nombreCompleto} (${persona.email})` : nombreCompleto
-      }
-    })
+  static _extractNombresSimples(items) {
+    return items.map(item => item.name).filter(Boolean)
   }
 }

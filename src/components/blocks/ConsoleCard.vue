@@ -1,6 +1,6 @@
 <template>
   <q-card
-    class="log-card fit cursor-pointer log-card-info"
+    class="log-card fit cursor-pointer log-card-santoro"
     bordered
     flat
     @click="$emit('click', log)"
@@ -16,7 +16,7 @@
             :icon="statusIcon"
             class="text-weight-bold"
           >
-            {{ log.status || 'INFO' }}
+            {{ log.status || t('consoleSimple.defaultInfoStatus') }}
           </q-chip>
         </div>
 
@@ -52,22 +52,22 @@
           <div class="section-header">
             <q-icon name="person" color="green-4" size="20px" class="q-mr-sm" />
             <div class="text-weight-bold text-green-4 section-title">
-              Actor | Usuario del Sistema
+              {{ t('consoleSimple.actorSectionTitle') }}
             </div>
           </div>
           <div class="section-content">
             <div v-if="log.actor.fullName" class="detail-item">
-              <span class="detail-label">Nombre:</span>
+              <span class="detail-label">{{ t('consoleSimple.actorName') }}</span>
               <span class="detail-value">{{ log.actor.fullName }}</span>
             </div>
             <div v-if="log.actor.username" class="detail-item">
-              <span class="detail-label">Username:</span>
+              <span class="detail-label">{{ t('consoleSimple.actorUsername') }}</span>
               <span class="detail-value">{{ log.actor.username }}</span>
             </div>
 
             <!-- Información adicional del usuario si está disponible -->
             <div v-if="log.actor.type" class="detail-item justify-between">
-              <span class="detail-label">Rol:</span>
+              <span class="detail-label">{{ t('consoleSimple.actorRole') }}</span>
               <q-chip outline dense color="green-6" text-color="white" size="sm">
                 {{ log.actor.type }}
               </q-chip>
@@ -76,26 +76,26 @@
         </div>
 
         <!-- Información de la oficina mejorada -->
-        <div v-if="log.location" class="enhanced-section">
+        <div v-if="log.location?.id" class="enhanced-section">
           <div class="section-header">
             <q-icon name="business" color="orange-4" size="20px" class="q-mr-sm" />
-            <div class="text-weight-bold text-orange-4 section-title">Ubicación | Locación</div>
+            <div class="text-weight-bold text-orange-4 section-title">{{ t('consoleSimple.locationSectionTitle') }}</div>
           </div>
           <div class="section-content">
             <div v-if="log.location.name" class="detail-item">
-              <span class="detail-label">Oficina:</span>
+              <span class="detail-label">{{ t('consoleSimple.officeLabel') }}</span>
               <span class="detail-value">
                 {{ log.location.name }}
               </span>
             </div>
             <div v-if="log.location.city" class="detail-item">
-              <span class="detail-label">Dirección:</span>
+              <span class="detail-label">{{ t('consoleSimple.addressLabel') }}</span>
               <span class="detail-value">{{ log.location.city }}</span>
             </div>
 
             <!-- Información adicional de ubicación -->
             <div v-if="log.location.country" class="detail-item justify-between">
-              <span class="detail-label">Código:</span>
+              <span class="detail-label">{{ t('consoleSimple.codeLabel') }}</span>
               <q-chip dense color="orange-6" text-color="white" size="sm">
                 {{ log.location.country }}
               </q-chip>
@@ -108,25 +108,25 @@
       <div v-if="log.meta" class="log-device-section enhanced-section q-mt-sm">
         <div class="section-header">
           <q-icon name="devices" color="purple-4" size="20px" class="q-mr-sm" />
-          <div class="text-weight-bold text-purple-4 section-title">Sistema & Dispositivos</div>
+          <div class="text-weight-bold text-purple-4 section-title">{{ t('consoleSimple.systemDevicesTitle') }}</div>
         </div>
         <div class="section-content">
           <div v-if="deviceLabel" class="detail-item">
-            <span class="detail-label">Dispositivo:</span>
+            <span class="detail-label">{{ t('consoleSimple.deviceLabel') }}</span>
             <span class="detail-value">{{ deviceLabel }}</span>
           </div>
           <div v-if="log.meta.sourceApp" class="detail-item">
-            <span class="detail-label">Sistema:</span>
-            <span class="detail-value">{{ log.meta?.sourceApp || 'N/A' }}</span>
+            <span class="detail-label">{{ t('consoleSimple.systemLabel') }}</span>
+            <span class="detail-value">{{ log.meta?.sourceApp || t('consoleSimple.notAvailable') }}</span>
           </div>
           <div v-if="log.meta?.ip" class="detail-item">
-            <span class="detail-label">IP:</span>
-            <span class="detail-value">{{ log.meta?.ip || 'N/A' }}</span>
+            <span class="detail-label">{{ t('consoleSimple.ipLabel') }}</span>
+            <span class="detail-value">{{ log.meta?.ip || t('consoleSimple.notAvailable') }}</span>
           </div>
           <div v-if="log.meta?.requestId" class="detail-item">
-            <span class="detail-label">:</span>
+            <span class="detail-label">{{ t('consoleSimple.requestIdLabel') }}</span>
             <q-chip dense color="purple" text-color="white" size="sm" class="log-id-chip">
-              {{ log.correlation?.requestId || 'N/A' }}
+              {{ log.correlation?.requestId || t('consoleSimple.notAvailable') }}
             </q-chip>
           </div>
         </div>
@@ -147,19 +147,19 @@
 
         <div class="row items-center q-mt-xs">
           <div class="text-caption text-grey-5 q-mr-sm">
-            Status:
+            {{ t('consoleSimple.httpStatusLabel') }}
             <span :class="getHttpColorClass(log.http.statusCode)">
               {{ log.http.statusCode }}
             </span>
           </div>
-          <div class="text-caption text-grey-6">⏱ {{ log.http.latencyMs }}ms</div>
+          <div class="text-caption text-grey-6">{{ t('consoleSimple.detailLatency', { value: log.http.latencyMs }) }}</div>
         </div>
       </div>
       <!-- Información del mensaje obligatorio -->
       <div class="q-mt-sm">
         <div class="row items-center q-mb-xs q-ml-sm">
           <q-icon name="message" color="amber-4" size="18px" class="q-mr-sm" />
-          <div class="text-weight-medium text-amber-4">Mensaje</div>
+          <div class="text-weight-medium text-amber-4">{{ t('consoleSimple.messageTitle') }}</div>
         </div>
         <div class="error-content q-ml-md text-caption ellipsis-2-lines">
           {{ log.message }}
@@ -169,7 +169,7 @@
       <div v-if="log.tags" class="q-mt-sm">
         <div class="row items-center q-mb-xs q-ml-sm">
           <q-icon name="cloud" color="pink" size="18px" class="q-mr-sm" />
-          <div class="text-weight-medium text-pink-4">Etiquetas | Tags</div>
+          <div class="text-weight-medium text-pink-4">{{ t('consoleSimple.tagsTitle') }}</div>
         </div>
         <q-chip
           v-for="(tag, index) in log.tags"
@@ -190,13 +190,14 @@
 
 <script setup>
 import { computed } from 'vue'
-import { date } from 'quasar'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   log: { type: Object, required: true },
 })
 
 defineEmits(['click'])
+const { t, locale } = useI18n()
 
 // UTILIDAD PARA EXTRAER DATOS ANIDADOS
 const getValue = (path) => {
@@ -262,7 +263,13 @@ const statusIcon = computed(() => {
 
 const formatDate = (isoDate) => {
   if (!isoDate) return ''
-  return date.formatDate(isoDate, 'DD/MM/YYYY HH:mm')
+  return new Intl.DateTimeFormat(locale.value, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(isoDate))
 }
 
 const getHttpColorClass = (code) => {
@@ -280,7 +287,7 @@ const deviceLabel = computed(() => {
 
 <style lang="scss" scoped>
 .log-card {
-  background: #2b2b3d;
+  background: rgba(255, 255, 255, 0.070);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -368,7 +375,7 @@ const deviceLabel = computed(() => {
           padding: 1px 4px;
           border-radius: 3px;
           flex: 1;
-          font-size: 0.7rem;
+          font-size: 0.9rem;
         }
 
         .q-icon {
@@ -390,6 +397,9 @@ const deviceLabel = computed(() => {
   }
   &.log-card-info {
     border-left: 4px solid #2196f3;
+  }
+  &.log-card-santoro {
+    border-left: 4px solid var(--santoro);
   }
 }
 

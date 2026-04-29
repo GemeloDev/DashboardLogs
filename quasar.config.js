@@ -12,7 +12,7 @@ export default defineConfig((/* ctx */) => {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
-    boot: ['pinia'],
+    boot: ['pinia', 'i18n'],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
     css: ['app.scss'],
@@ -39,12 +39,28 @@ export default defineConfig((/* ctx */) => {
       },
 
       vueRouterMode: 'hash', // available values: 'hash', 'history'
-      // Configuración para producción
+
+      // ═══════════════════════════════════════════════════════════════
+      // INYECCIÓN DE VARIABLES DE ENTORNO
+      // ═══════════════════════════════════════════════════════════════
+      // Quasar lee automáticamente archivos .env según el modo:
+      //   - quasar dev   → lee .env + .env.development
+      //   - quasar build → lee .env + .env.production
+      //
+      // Aquí re-exponemos las variables para que estén disponibles
+      // en el código del cliente vía process.env
+      // ═══════════════════════════════════════════════════════════════
       env: {
-        API_BASE_URL: process.env.NODE_ENV === 'production'
-          ? 'http://187.188.66.56:8040/api'
-          : '/api'
+        API_BASE_URL: process.env.API_BASE_URL,
+        WS_BASE_URL: process.env.WS_BASE_URL,
+        NODE_ENV: process.env.NODE_ENV,
+        DEBUG_MODE: process.env.DEBUG_MODE,
+        APP_NAME: process.env.APP_NAME,
+        APP_VERSION: process.env.APP_VERSION,
+        API_TIMEOUT: process.env.API_TIMEOUT,
+        SOCKET_TOPIC: process.env.SOCKET_TOPIC,
       },
+
       // vueRouterBase,
       // vueDevtools,
       // vueOptionsAPI: false,
@@ -88,29 +104,33 @@ export default defineConfig((/* ctx */) => {
           secure: false,
           logLevel: 'debug',
           onProxyReq: (proxyReq, req) => {
-            console.log('🔄 Proxy request:', req.method, req.url, '-> ', proxyReq.host + proxyReq.path)
+            console.log(
+              '🔄 Proxy request:',
+              req.method,
+              req.url,
+              '-> ',
+              proxyReq.host + proxyReq.path,
+            )
           },
           onProxyRes: (proxyRes, req) => {
             console.log('✅ Proxy response:', proxyRes.statusCode, req.url)
           },
           onError: (err, req) => {
             console.error('❌ Proxy error:', err.message, req.url)
-          }
+          },
         },
         // 🚨 NUEVA REGLA PARA SOCKET.IO
         '/ws': {
           target: 'http://187.188.66.56:8040', // Apunta al servidor
           ws: true, // 🚨 Habilitar soporte para WebSockets
           changeOrigin: true,
-          secure: false // Ignora problemas de SSL en el backend si los hubiera
-        }
+          secure: false, // Ignora problemas de SSL en el backend si los hubiera
+        },
       },
       https: {
-        key: fs.readFileSync('certs/server.key'),
-        cert: fs.readFileSync('certs/server.crt')
-      },
-      server: {
-        type: 'http',
+        key: fs.readFileSync('certs/cpanel/clave.key'),
+        cert: fs.readFileSync('certs/cpanel/cert.crt'),
+        ca: fs.readFileSync('certs/cpanel/csb.cabundle'),
       },
       host: '0.0.0.0',
       port: 9000,
