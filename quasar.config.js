@@ -4,7 +4,51 @@
 import { defineConfig } from '#q-app/wrappers'
 import fs from 'fs'
 
-export default defineConfig((/* ctx */) => {
+function parseEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return {}
+
+  return fs
+    .readFileSync(filePath, 'utf8')
+    .split(/\r?\n/)
+    .reduce((env, line) => {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) return env
+
+      const separatorIndex = trimmed.indexOf('=')
+      if (separatorIndex === -1) return env
+
+      const key = trimmed.slice(0, separatorIndex).trim()
+      const value = trimmed.slice(separatorIndex + 1).trim()
+      env[key] = value.replace(/^['"]|['"]$/g, '')
+      return env
+    }, {})
+}
+
+function loadAppEnv(ctx) {
+  const modeFile = ctx.prod ? '.env.production' : '.env.development'
+
+  return {
+    ...parseEnvFile('.env'),
+    ...parseEnvFile(modeFile),
+    ...process.env,
+  }
+}
+
+function envValue(env, key, fallback = '') {
+  return String(env[key] ?? fallback)
+}
+
+function resolveApiBaseUrl(ctx, env) {
+  return ctx.dev ? '/api' : envValue(env, 'API_BASE_URL')
+}
+
+function resolveWsBaseUrl(ctx, env) {
+  return ctx.dev ? '/ws' : envValue(env, 'WS_BASE_URL')
+}
+
+export default defineConfig((ctx) => {
+  const appEnv = loadAppEnv(ctx)
+
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -51,14 +95,14 @@ export default defineConfig((/* ctx */) => {
       // en el código del cliente vía process.env
       // ═══════════════════════════════════════════════════════════════
       env: {
-        API_BASE_URL: process.env.API_BASE_URL,
-        WS_BASE_URL: process.env.WS_BASE_URL,
-        NODE_ENV: process.env.NODE_ENV,
-        DEBUG_MODE: process.env.DEBUG_MODE,
-        APP_NAME: process.env.APP_NAME,
-        APP_VERSION: process.env.APP_VERSION,
-        API_TIMEOUT: process.env.API_TIMEOUT,
-        SOCKET_TOPIC: process.env.SOCKET_TOPIC,
+        API_BASE_URL: resolveApiBaseUrl(ctx, appEnv),
+        WS_BASE_URL: resolveWsBaseUrl(ctx, appEnv),
+        NODE_ENV: envValue(appEnv, 'NODE_ENV', ctx.prod ? 'production' : 'development'),
+        DEBUG_MODE: envValue(appEnv, 'DEBUG_MODE', ctx.prod ? 'false' : 'true'),
+        APP_NAME: envValue(appEnv, 'APP_NAME', 'Dashboard Logs Santoro'),
+        APP_VERSION: envValue(appEnv, 'APP_VERSION', '1.0.0'),
+        API_TIMEOUT: envValue(appEnv, 'API_TIMEOUT', '30000'),
+        SOCKET_TOPIC: envValue(appEnv, 'SOCKET_TOPIC', '/topic/qr-login'),
       },
 
       // vueRouterBase,
@@ -160,17 +204,10 @@ export default defineConfig((/* ctx */) => {
     animations: [],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#sourcefiles
-    // sourceFiles: {
-    //   rootComponent: 'src/App.vue',
-    //   router: 'src/router/index',
-    //   store: 'src/store/index',
-    //   pwaRegisterServiceWorker: 'src-pwa/register-service-worker',
-    //   pwaServiceWorker: 'src-pwa/custom-service-worker',
-    //   pwaManifestFile: 'src-pwa/manifest.json',
-    //   electronMain: 'src-electron/electron-main',
-    //   electronPreload: 'src-electron/electron-preload'
-    //   bexManifestFile: 'src-bex/manifest.json
-    // },
+    sourceFiles: {
+      electronMain: 'src-electron/electron-main',
+      electronPreload: 'src-electron/electron-preload',
+    },
 
     // https://v2.quasar.dev/quasar-cli-vite/developing-ssr/configuring-ssr
     ssr: {
@@ -224,7 +261,10 @@ export default defineConfig((/* ctx */) => {
       // extendElectronMainConf (esbuildConf) {},
       // extendElectronPreloadConf (esbuildConf) {},
 
-      // extendPackageJson (json) {},
+      extendPackageJson(json) {
+        json.name = 'dashboard-logs'
+        json.productName = 'DashboardLogs'
+      },
 
       // Electron preload scripts (if any) from /src-electron, WITHOUT file extension
       preloadScripts: ['electron-preload'],
@@ -236,19 +276,30 @@ export default defineConfig((/* ctx */) => {
 
       packager: {
         // https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#options
+        name: 'DashboardLogs',
+        executableName: 'DashboardLogs',
+        icon: 'src-electron/icons/icon',
+        asar: true,
         // OS X / Mac App Store
         // appBundleId: '',
         // appCategoryType: '',
         // osxSign: '',
         // protocol: 'myapp://path',
         // Windows only
-        // win32metadata: { ... }
+        win32metadata: {
+          CompanyName: 'Grupo Santoro',
+          FileDescription: 'DashboardLogs Desktop',
+          OriginalFilename: 'DashboardLogs.exe',
+          ProductName: 'DashboardLogs',
+          InternalName: 'DashboardLogs',
+        },
       },
 
       builder: {
         // https://www.electron.build/configuration/configuration
 
-        appId: 'santoro-logs',
+        appId: 'mx.gruposantoro.dashboardlogs',
+        productName: 'DashboardLogs',
       },
     },
 

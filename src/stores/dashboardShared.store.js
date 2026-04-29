@@ -33,6 +33,8 @@ let syncPollTimer = null
 let focusSyncAttached = false
 let lastAppliedSignature = ''
 let syncInitialized = false
+let desktopSyncUnsubscribe = null
+let desktopWindowClosedUnsubscribe = null
 
 const getPopupRegistry = () => {
   if (typeof window === 'undefined') return null
@@ -143,6 +145,19 @@ export const useDashboardSharedStore = defineStore('dashboardShared', {
         })
         window.addEventListener('message', (event) => store.handleWindowMessage(event))
         focusSyncAttached = true
+      }
+
+      if (window.desktopApp?.isElectron && !desktopSyncUnsubscribe) {
+        desktopSyncUnsubscribe = window.desktopApp.onDashboardSync((payload) => {
+          store.applyIncomingPayload(payload)
+        })
+      }
+
+      if (window.desktopApp?.isElectron && !desktopWindowClosedUnsubscribe) {
+        desktopWindowClosedUnsubscribe = window.desktopApp.onDashboardWindowClosed((payload) => {
+          if (!payload?.sectionId) return
+          store.markSectionPopoutClosed(payload.sectionId)
+        })
       }
 
       if (!syncPollTimer) {
@@ -320,6 +335,12 @@ export const useDashboardSharedStore = defineStore('dashboardShared', {
         channel?.postMessage(payload)
       } catch (error) {
         console.error('[dashboardShared] Error publicando BroadcastChannel:', error)
+      }
+
+      try {
+        window.desktopApp?.broadcastDashboardSync?.(payload)
+      } catch (error) {
+        console.error('[dashboardShared] Error publicando sync por Electron:', error)
       }
     },
   },

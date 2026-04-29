@@ -57,6 +57,17 @@ function openWindow() {
     'noopener=no',
   ]
 
+  if (window.desktopApp?.isElectron) {
+    window.desktopApp.openDashboardSectionWindow({
+      sectionId: props.sectionId,
+      url: new URL(route.href, window.location.href).toString(),
+      width: section.width || 1180,
+      height: section.height || 860,
+    })
+    dashboardStore.markSectionPopoutOpen(props.sectionId)
+    return
+  }
+
   const popup = window.open(
     route.href,
     `dashboard-section-${props.sectionId}`,

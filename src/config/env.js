@@ -30,8 +30,8 @@ export const isProduction = NODE_ENV === 'production'
 export const isDebug = process.env.DEBUG_MODE === 'true' || isDevelopment
 
 // ─── URLs del Backend ─────────────────────────────────────────────
-export const API_BASE_URL = process.env.API_BASE_URL || '/api'
-export const WS_BASE_URL = process.env.WS_BASE_URL || getDefaultWebSocketURL()
+export const API_BASE_URL = normalizeBasePath(process.env.API_BASE_URL || '/api')
+export const WS_BASE_URL = normalizeWebSocketURL(process.env.WS_BASE_URL || getDefaultWebSocketURL())
 
 // ─── Configuración de la Aplicación ──────────────────────────────
 export const APP_NAME = process.env.APP_NAME || 'Dashboard Logs'
@@ -40,6 +40,22 @@ export const API_TIMEOUT = parseInt(process.env.API_TIMEOUT || '30000', 10)
 
 // ─── WebSocket ────────────────────────────────────────────────────
 export const SOCKET_TOPIC = process.env.SOCKET_TOPIC || '/topic/qr-login'
+
+function normalizeBasePath(value) {
+  const base = String(value || '').trim() || '/api'
+  return base.length > 1 ? base.replace(/\/+$/, '') : base
+}
+
+function normalizeWebSocketURL(value) {
+  const base = String(value || '').trim()
+
+  if (base.startsWith('/')) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${window.location.host}${base}`
+  }
+
+  return base.length > 1 ? base.replace(/\/+$/, '') : base
+}
 
 /**
  * Genera la URL de WebSocket basándose en el API_BASE_URL
