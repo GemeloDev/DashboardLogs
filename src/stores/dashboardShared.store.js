@@ -12,6 +12,8 @@ const EMPTY_FILTERS = () => ({
   values: {},
 })
 
+const PERSISTED_STORE_KEY = 'dashboardShared'
+
 const normalizeOpenSections = (sections = {}) => {
   if (!sections || typeof sections !== 'object' || Array.isArray(sections)) return {}
 
@@ -297,6 +299,22 @@ export const useDashboardSharedStore = defineStore('dashboardShared', {
 
     isSectionPopoutOpen(sectionId) {
       return !!this.openPopoutSections?.[sectionId]
+    },
+
+    resetDashboardState({ publish = true } = {}) {
+      this.filtros = EMPTY_FILTERS()
+      this.externalRefreshTick = 0
+      this.openPopoutSections = {}
+      lastAppliedSignature = ''
+
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(DASHBOARD_SYNC_CHANNEL)
+        localStorage.removeItem(PERSISTED_STORE_KEY)
+      }
+
+      if (publish) {
+        this.publishState('hydrate')
+      }
     },
 
     publishState(type) {

@@ -15,6 +15,7 @@ import { WS_BASE_URL, isDebug } from 'src/config/env'
 
 let stompClient = null
 let connected = false
+const connectListeners = new Set()
 
 // URL del WebSocket desde configuración central
 const brokerURL = WS_BASE_URL
@@ -30,12 +31,29 @@ function eventToDestination(eventName) {
   return `/topic/${eventName}`
 }
 
+function notifyConnectListeners() {
+  connectListeners.forEach((listener) => {
+    try {
+      listener(stompClient)
+    } catch (err) {
+      console.error('[STOMP] Error en listener de conexión:', err)
+    }
+  })
+}
+
+export function onSocketConnect(listener) {
+  if (typeof listener !== 'function') return () => {}
+  connectListeners.add(listener)
+  return () => connectListeners.delete(listener)
+}
+
 /**
  * Conecta el STOMP sin suscribirse a ningún topic específico.
  * Útil para inicializar la conexión en el dashboard.
  */
 export function connectSocket({ endpoint = brokerURL, debug = isDebug, reconnectDelay = 3000 } = {}) {
-  if (stompClient && connected) return // ya conectado
+  if (stompClient?.connected && connected) return stompClient
+  if (stompClient?.active) return stompClient
 
   stompClient = new Client({
     brokerURL: endpoint,
@@ -43,6 +61,7 @@ export function connectSocket({ endpoint = brokerURL, debug = isDebug, reconnect
     debug: (msg) => { if (debug) console.log('[STOMP DEBUG]', msg) },
     onConnect: () => {
       connected = true
+      notifyConnectListeners()
       console.log('✅ STOMP dashboard conectado.')
     },
     onStompError: (frame) => {
@@ -58,6 +77,21 @@ export function connectSocket({ endpoint = brokerURL, debug = isDebug, reconnect
   })
 
   stompClient.activate()
+  return stompClient
+}
+
+export function isSocketConnected() {
+  return !!stompClient?.connected && connected
+}
+
+export function ensureSocketConnected(options = {}) {
+  if (isSocketConnected()) return stompClient
+
+  if (!stompClient || !stompClient.active) {
+    return connectSocket(options)
+  }
+
+  return stompClient
 }
 
 /**
@@ -78,6 +112,7 @@ export function initializeSocket(
     },
     onConnect: () => {
       connected = true
+      notifyConnectListeners()
       console.log('✅ STOMP conectado exitosamente.')
 
       const topic = eventToDestination(subscribeTopic)
@@ -139,8 +174,25 @@ export function subscribeToAlerts(tenantId, onAlert = () => {}) {
  */
 export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}) {
   if (!stompClient || !connected) {
-    setTimeout(() => subscribeToNewLogs(tenantId, system, onNewLogs), 2000)
-    return null
+    ensureSocketConnected()
+    let cancelled = false
+    let subscription = null
+    const retry = () => {
+      if (cancelled) return
+      if (!isSocketConnected()) {
+        setTimeout(retry, 2000)
+        return
+      }
+      subscription = subscribeToNewLogs(tenantId, system, onNewLogs)
+    }
+
+    setTimeout(retry, 2000)
+    return {
+      unsubscribe() {
+        cancelled = true
+        subscription?.unsubscribe?.()
+      },
+    }
   }
 
   const topic = `/topic/dashboard/${tenantId}/${system}`

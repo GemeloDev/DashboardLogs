@@ -21,6 +21,7 @@ const mapEl   = ref(null)
 let map       = null
 let loaded    = false
 let popup     = null
+let clusterCountMarkers = new Map()
 
 const mode       = ref('points') // 'points' | 'heat'
 const projection = ref('mercator')
@@ -53,7 +54,6 @@ const DARK_TILES = {
 const MAP_STYLES = {
   points: {
     version: 8,
-    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
       osm: {
         type: 'raster',
@@ -76,6 +76,52 @@ const geojson = computed(() => ({
   })),
 }))
 
+function clearClusterCountMarkers() {
+  for (const marker of clusterCountMarkers.values()) marker.remove()
+  clusterCountMarkers = new Map()
+}
+
+function syncClusterCountMarkers() {
+  if (!map || !loaded || mode.value !== 'points' || !map.getLayer('clusters')) {
+    clearClusterCountMarkers()
+    return
+  }
+
+  const features = map.queryRenderedFeatures({ layers: ['clusters'] })
+  const visibleKeys = new Set()
+
+  for (const feature of features) {
+    const coords = feature.geometry?.coordinates
+    if (!Array.isArray(coords) || coords.length < 2) continue
+
+    const props = feature.properties || {}
+    const key = String(props.cluster_id ?? `${coords[0]},${coords[1]}`)
+    const count = String(props.sum ?? props.point_count ?? '')
+    if (!count) continue
+
+    visibleKeys.add(key)
+
+    let marker = clusterCountMarkers.get(key)
+    if (!marker) {
+      const el = document.createElement('div')
+      el.className = 'cgm-cluster-count'
+      el.textContent = count
+      marker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map)
+      clusterCountMarkers.set(key, marker)
+    } else {
+      marker.getElement().textContent = count
+      marker.setLngLat(coords)
+    }
+  }
+
+  for (const [key, marker] of clusterCountMarkers.entries()) {
+    if (!visibleKeys.has(key)) {
+      marker.remove()
+      clusterCountMarkers.delete(key)
+    }
+  }
+}
+
 // ---------------- INIT ----------------
 async function initMap() {
   await nextTick()
@@ -90,6 +136,9 @@ async function initMap() {
   })
 
   map.addControl(new maplibregl.NavigationControl(), 'top-left')
+  map.on('idle', syncClusterCountMarkers)
+  map.on('moveend', syncClusterCountMarkers)
+  map.on('zoomend', syncClusterCountMarkers)
 
   map.on('load', () => {
     loaded = true
@@ -126,19 +175,8 @@ function addLayers() {
         'circle-stroke-color': '#fff',
       },
     })
-
-    map.addLayer({
-      id: 'cluster-count',
-      type: 'symbol',
-      source: 'geo',
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field':  ['to-string', ['get', 'sum']],
-        'text-size':   12,
-        'text-font':   ['Open Sans Bold'],
-      },
-      paint: { 'text-color': '#fff' },
-    })
+    syncClusterCountMarkers()
+    map.once('idle', syncClusterCountMarkers)
 
     map.addLayer({
       id: 'unclustered-point',
@@ -204,6 +242,7 @@ function addLayers() {
 function updateMode() {
   if (!map) return
   loaded = false
+  clearClusterCountMarkers()
   map.setStyle(MAP_STYLES[mode.value])
   map.once('style.load', () => {
     loaded = true
@@ -227,6 +266,7 @@ function toggleProjection() {
 watch(geojson, (data) => {
   if (!map || !loaded) return
   map.getSource('geo')?.setData(data)
+  map.once('idle', syncClusterCountMarkers)
 })
 
 // ---------------- FIT BOUNDS ----------------
@@ -247,6 +287,7 @@ onMounted(initMap)
 
 onBeforeUnmount(() => {
   popup?.remove()
+  clearClusterCountMarkers()
   if (map) map.remove()
 })
 </script>
@@ -290,6 +331,23 @@ onBeforeUnmount(() => {
 .toplist-title {
   font-size: 18px;
   font-weight: 700;
+}
+
+:global(.cgm-cluster-count) {
+  align-items: center;
+  color: #fff;
+  display: flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  transform: translateY(-1px);
+  user-select: none;
+  width: 32px;
 }
 
 @media (max-width: 420px) {

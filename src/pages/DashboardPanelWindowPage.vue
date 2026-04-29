@@ -3,16 +3,20 @@
     <DashboardDataProvider>
       <div class="dashboard-panel-window__shell">
         <section class="dashboard-panel-window__hero">
-          <div>
-            <div class="dashboard-panel-window__eyebrow">{{ t('dashboard.openWindowLabel') }}</div>
+          <div class="dashboard-panel-window__hero-row">
             <h1 class="dashboard-panel-window__title">{{ sectionTitle }}</h1>
-            <p class="dashboard-panel-window__subtitle">
-              {{ t('dashboard.popupSyncSubtitle') }}
-            </p>
+            <q-btn
+              flat
+              dense
+              round
+              icon="filter_list"
+              class="dashboard-panel-window__filters-btn"
+              @click="showFiltersDialog = true"
+            >
+              <q-tooltip>{{ t('layout.quickFilters') }}</q-tooltip>
+            </q-btn>
           </div>
         </section>
-
-        <ChartDrivenFilters class="q-mb-lg" />
 
         <DashboardSectionRenderer
           v-if="sectionDefinition"
@@ -26,12 +30,23 @@
           <div class="text-grey-5">{{ t('dashboard.windowUnavailableSubtitle') }}</div>
         </q-card>
       </div>
+
+      <q-dialog
+        v-model="showFiltersDialog"
+        position="top"
+        transition-show="slide-down"
+        transition-hide="slide-up"
+      >
+        <div class="dashboard-panel-window__filters-dialog q-pa-sm">
+          <ChartDrivenFilters />
+        </div>
+      </q-dialog>
     </DashboardDataProvider>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DashboardDataProvider from 'src/components/dashboard/DashboardDataProvider.vue'
@@ -46,6 +61,7 @@ import {
 const route = useRoute()
 const { t } = useI18n()
 const dashboardStore = useDashboardSharedStore()
+const showFiltersDialog = ref(false)
 
 const sectionId = computed(() => {
   const directSection = String(route.params.section || '').trim()
@@ -98,31 +114,37 @@ onBeforeUnmount(() => {
   margin-bottom: 24px;
   padding: 26px 28px;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
 }
 
-.dashboard-panel-window__eyebrow {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.dashboard-panel-window__hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .dashboard-panel-window__title {
-  margin: 10px 0 8px;
+  margin: 0;
   font-size: clamp(2rem, 5vw, 3.4rem);
   line-height: 1.02;
   font-weight: 900;
 }
 
-.dashboard-panel-window__subtitle {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.68);
-  max-width: 760px;
-  line-height: 1.6;
+.q-dialog__inner--minimized > div {
+  max-width: 900px;
+}
+
+.dashboard-panel-window__filters-btn {
+  color: #86efac;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(233, 113, 50, 0.12);
+}
+
+.dashboard-panel-window__filters-dialog {
+  width: min(1900px, 99vw);
+  max-height: calc(100vh - 80px);
+  overflow: auto;
 }
 
 .dashboard-panel-window__error {
@@ -138,6 +160,10 @@ onBeforeUnmount(() => {
   .dashboard-panel-window__hero {
     padding: 20px;
     border-radius: 20px;
+  }
+
+  .dashboard-panel-window__hero-row {
+    align-items: flex-start;
   }
 }
 </style>
