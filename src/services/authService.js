@@ -7,6 +7,7 @@ import { ref, computed } from 'vue'
 import { AUTH, REQUEST_CONFIG } from './endpoints.js'
 import { storeJWTInCookie, deleteJWTFromCookie } from './cookieService.js'
 import { axiosInstance } from './axiosConfig.js'
+import { API_BASE_URL, isDebug } from 'src/config/env'
 
 const currentUser = ref(null)
 const isAuthenticated = ref(false)
@@ -15,6 +16,29 @@ const DEFAULT_PREFS = { flow: 'client', system: 'DASHBOARD' }
 const SANTORO_DOMAIN = '@grupo-santoro.com.mx'
 const DASHBOARD_SYNC_CHANNEL = 'dashboard-multipanel-sync-v1'
 const DASHBOARD_SHARED_STORE_KEY = 'dashboardShared'
+
+function logAuthDiagnostic(label, payload = {}) {
+  if (!isDebug) return
+
+  console.log(`[AuthDiagnostic] ${label}`, {
+    apiBaseUrl: API_BASE_URL,
+    loginUrl: AUTH.LOGIN,
+    pageOrigin: window.location.origin,
+    pageProtocol: window.location.protocol,
+    ...payload,
+  })
+}
+
+async function readResponseBody(response) {
+  const text = await response.text()
+  if (!text) return null
+
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
+}
 
 export const useAuthService = () => {
   const clearSession = () => {
@@ -66,7 +90,16 @@ export const useAuthService = () => {
           password: userData.password,
         }),
       })
-      const data = await response.json()
+      const data = await readResponseBody(response)
+      logAuthDiagnostic('register:response', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        responseType: response.type,
+        redirected: response.redirected,
+        hasData: data !== null,
+        dataMessage: typeof data === 'object' ? data?.message : null,
+      })
       console.log(' Respuesta del registro:', data)
       return {
         success: data.status === true,
@@ -87,6 +120,8 @@ export const useAuthService = () => {
 
   const login = async (credentials, mantenerSesion = true) => {
     try {
+      logAuthDiagnostic('login:start')
+
       // Crear headers con X-Tenant
       const headers = {
         ...REQUEST_CONFIG.headers,
@@ -100,10 +135,19 @@ export const useAuthService = () => {
           password: credentials.password,
         }),
       })
-      const data = await response.json()
+      const data = await readResponseBody(response)
+      logAuthDiagnostic('login:response', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        responseType: response.type,
+        redirected: response.redirected,
+        hasData: data !== null,
+        dataMessage: typeof data === 'object' ? data?.message : null,
+      })
       console.log('📥 Respuesta del login:', data)
 
-      if (data.ok && data.data) {
+      if (response.ok && data?.ok && data.data) {
         const userData = {
           id: data.data.user.id,
           name: data.data.user.name,
@@ -166,6 +210,11 @@ export const useAuthService = () => {
         return { success: false, message: data.message || 'Credenciales inválidas', user: null }
       }
     } catch (error) {
+      logAuthDiagnostic('login:error', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+      })
       console.error(' Error en login:', error)
       return {
         success: false,

@@ -3,6 +3,10 @@
   "appName": "logs",
   "webDir": "www",
   "bundledWebRuntime": false,
+  "server": {},
+  "android": {
+    "allowMixedContent": true
+  },
   "plugins": {
     "StatusBar": {
       "overlaysWebView": false,

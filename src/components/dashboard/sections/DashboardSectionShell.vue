@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-section-shell" :class="{ 'dashboard-section-shell--popup': popupMode }">
-    <div v-if="showPopout" class="dashboard-section-shell__action">
+    <div v-if="canShowPopout" class="dashboard-section-shell__action">
       <DashboardPopoutButton :section-id="sectionId" />
     </div>
     <slot />
@@ -8,9 +8,11 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useQuasar } from 'quasar'
 import DashboardPopoutButton from 'src/components/dashboard/DashboardPopoutButton.vue'
 
-defineProps({
+const props = defineProps({
   sectionId: {
     type: String,
     required: true,
@@ -24,6 +26,9 @@ defineProps({
     default: true,
   },
 })
+
+const $q = useQuasar()
+const canShowPopout = computed(() => props.showPopout && !$q.platform.is.mobile)
 </script>
 
 <style scoped lang="scss">

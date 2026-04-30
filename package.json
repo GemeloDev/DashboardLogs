@@ -17,7 +17,14 @@
     "postinstall": "quasar prepare",
     "mobileInstall": "quasar mode add capacitor",
     "mobile-build": "quasar build -m capacitor -T android",
-    "mobile": "quasar dev -m capacitor -T android"
+    "mobile-build-dev": "node scripts/mobile-build-dev.mjs",
+    "mobile-sync": "cd src-capacitor && npx cap sync android",
+    "mobile-open": "cd src-capacitor && npx cap open android",
+    "mobile-device": "npm run mobile-build-dev && cd src-capacitor && npx cap run android --target RZCXB11DAYX --no-sync",
+    "mobile-device-prod": "npm run mobile-build && cd src-capacitor && npx cap run android --target RZCXB11DAYX --no-sync",
+    "mobile-dev": "node scripts/mobile-dev.mjs",
+    "mobile-live": "npm run mobile-dev",
+    "mobile": "npm run mobile-device"
   },
   "dependencies": {
     "@capacitor/android": "^7.5.0",

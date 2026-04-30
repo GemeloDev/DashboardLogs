@@ -23,15 +23,22 @@
  * ════════════════════════════════════════════════════════════════
  */
 
+import { Capacitor } from '@capacitor/core'
+
 // ─── Detección de Ambiente ───────────────────────────────────────
 export const NODE_ENV = process.env.NODE_ENV || 'development'
 export const isDevelopment = NODE_ENV === 'development'
 export const isProduction = NODE_ENV === 'production'
 export const isDebug = process.env.DEBUG_MODE === 'true' || isDevelopment
 
+const isBrowserRuntime = typeof window !== 'undefined'
+const isLiveReloadRuntime =
+  isDevelopment && isBrowserRuntime && window.location.port === '9000'
+const isPackagedNativeRuntime = Capacitor.isNativePlatform() && !isLiveReloadRuntime
+
 // ─── URLs del Backend ─────────────────────────────────────────────
-export const API_BASE_URL = process.env.API_BASE_URL || '/api'
-export const WS_BASE_URL = process.env.WS_BASE_URL || getDefaultWebSocketURL()
+export const API_BASE_URL = resolveApiBaseURL()
+export const WS_BASE_URL = resolveWebSocketURL()
 
 // ─── Configuración de la Aplicación ──────────────────────────────
 export const APP_NAME = process.env.APP_NAME || 'Dashboard Logs'
@@ -45,16 +52,32 @@ export const SOCKET_TOPIC = process.env.SOCKET_TOPIC || '/topic/qr-login'
  * Genera la URL de WebSocket basándose en el API_BASE_URL
  * Si no se proporciona WS_BASE_URL, se calcula automáticamente
  */
-function getDefaultWebSocketURL() {
+function resolveApiBaseURL() {
+  if (isDevelopment && !isPackagedNativeRuntime) {
+    return '/api'
+  }
+
+  return process.env.API_BASE_URL || '/api'
+}
+
+function resolveWebSocketURL() {
+  if (isDevelopment && !isPackagedNativeRuntime) {
+    return getDefaultWebSocketURL('/api')
+  }
+
+  return process.env.WS_BASE_URL || getDefaultWebSocketURL(API_BASE_URL)
+}
+
+function getDefaultWebSocketURL(apiBaseURL) {
   // Si API_BASE_URL es relativa, usar el host actual
-  if (API_BASE_URL.startsWith('/')) {
+  if (apiBaseURL.startsWith('/')) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     return `${protocol}//${window.location.host}/ws`
   }
 
   try {
     // Si API_BASE_URL es absoluta, extraer el host y construir WS URL
-    const apiUrl = new URL(API_BASE_URL)
+    const apiUrl = new URL(apiBaseURL)
     const wsProtocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:'
     return `${wsProtocol}//${apiUrl.host}/ws`
   } catch {

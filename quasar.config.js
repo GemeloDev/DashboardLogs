@@ -4,7 +4,65 @@
 import { defineConfig } from '#q-app/wrappers'
 import fs from 'fs'
 
-export default defineConfig((/* ctx */) => {
+const readEnvFile = (filePath) => {
+  if (!fs.existsSync(filePath)) {
+    return {}
+  }
+
+  return fs
+    .readFileSync(filePath, 'utf8')
+    .split(/\r?\n/)
+    .reduce((env, line) => {
+      const trimmed = line.trim()
+
+      if (!trimmed || trimmed.startsWith('#')) {
+        return env
+      }
+
+      const separatorIndex = trimmed.indexOf('=')
+
+      if (separatorIndex === -1) {
+        return env
+      }
+
+      const key = trimmed.slice(0, separatorIndex).trim()
+      const value = trimmed.slice(separatorIndex + 1).trim().replace(/^['"]|['"]$/g, '')
+
+      if (key) {
+        env[key] = value
+      }
+
+      return env
+    }, {})
+}
+
+const resolveClientEnv = (ctx) => {
+  const mode = ctx.prod ? 'production' : 'development'
+  const fileEnv = {
+    ...readEnvFile('.env'),
+    ...readEnvFile(`.env.${mode}`),
+  }
+  const env = {
+    ...fileEnv,
+    ...process.env,
+  }
+
+  return {
+    API_BASE_URL: env.API_BASE_URL,
+    WS_BASE_URL: env.WS_BASE_URL,
+    NODE_ENV: env.NODE_ENV || mode,
+    DEBUG_MODE: env.DEBUG_MODE,
+    APP_NAME: env.APP_NAME,
+    APP_VERSION: env.APP_VERSION,
+    API_TIMEOUT: env.API_TIMEOUT,
+    SOCKET_TOPIC: env.SOCKET_TOPIC,
+  }
+}
+
+export default defineConfig((ctx) => {
+  const clientEnv = resolveClientEnv(ctx)
+  const isMobileDev = process.env.QUASAR_MOBILE_DEV === 'true'
+
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -12,7 +70,7 @@ export default defineConfig((/* ctx */) => {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
-    boot: ['pinia', 'i18n'],
+    boot: ['pinia', 'i18n', 'capacitor'],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
     css: ['app.scss'],
@@ -50,16 +108,7 @@ export default defineConfig((/* ctx */) => {
       // Aquí re-exponemos las variables para que estén disponibles
       // en el código del cliente vía process.env
       // ═══════════════════════════════════════════════════════════════
-      env: {
-        API_BASE_URL: process.env.API_BASE_URL,
-        WS_BASE_URL: process.env.WS_BASE_URL,
-        NODE_ENV: process.env.NODE_ENV,
-        DEBUG_MODE: process.env.DEBUG_MODE,
-        APP_NAME: process.env.APP_NAME,
-        APP_VERSION: process.env.APP_VERSION,
-        API_TIMEOUT: process.env.API_TIMEOUT,
-        SOCKET_TOPIC: process.env.SOCKET_TOPIC,
-      },
+      env: clientEnv,
 
       // vueRouterBase,
       // vueDevtools,
@@ -96,7 +145,7 @@ export default defineConfig((/* ctx */) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
       // https: true,
-      open: true, // opens browser window automatically
+      open: !isMobileDev, // opens browser window automatically
       proxy: {
         '/api': {
           target: 'http://187.188.66.56:8040',
@@ -127,11 +176,13 @@ export default defineConfig((/* ctx */) => {
           secure: false, // Ignora problemas de SSL en el backend si los hubiera
         },
       },
-      https: {
-        key: fs.readFileSync('certs/cpanel/clave.key'),
-        cert: fs.readFileSync('certs/cpanel/cert.crt'),
-        ca: fs.readFileSync('certs/cpanel/csb.cabundle'),
-      },
+      https: isMobileDev
+        ? false
+        : {
+            key: fs.readFileSync('certs/cpanel/clave.key'),
+            cert: fs.readFileSync('certs/cpanel/cert.crt'),
+            ca: fs.readFileSync('certs/cpanel/csb.cabundle'),
+          },
       host: '0.0.0.0',
       port: 9000,
     },
