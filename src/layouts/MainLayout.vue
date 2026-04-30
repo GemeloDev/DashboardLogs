@@ -444,7 +444,12 @@ import EvaWidget from 'src/components/ai/EvaWidget.vue'
 import EscritorioConsolaSimple from '../components/escritorio/EscritorioConsolaSimple.vue'
 import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleModal.vue'
 
-import { subscribeToAlerts, connectSocket } from 'src/services/socketService'
+import {
+  subscribeToAlerts,
+  connectSocket,
+  ensureSocketConnected,
+  disconnectSocket,
+} from 'src/services/socketService'
 import authService from '../services/authService.js'
 
 import QRScannerModal from 'src/components/QRScannerModal.vue'
@@ -539,14 +544,21 @@ const {
   httpData,
   geoData,
   devicesData,
+  hasFetchedOnce: dashboardHasFetchedOnce,
   fetchAll,
   subscribeSystem,
   unsubscribeSystem,
+  resetDashboardData,
   refreshTick: dashboardRefreshTick,
 } = useDashboardData()
 
+const DASHBOARD_RECOVERY_COOLDOWN_MS = 10000
+let lastDashboardRecoveryAt = 0
+let dashboardRecoveryInFlight = false
+
 provide('dashboardLoading', dashboardLoading)
 provide('dashboardRefreshing', dashboardRefreshing)
+provide('dashboardHasFetchedOnce', dashboardHasFetchedOnce)
 provide('dashboardRefreshTick', dashboardRefreshTick)
 provide('dashboardStatsData', statsData)
 provide('dashboardSeriesData', seriesData)
@@ -786,7 +798,32 @@ function openConsole(selection = null) {
   consolaRef.value.abrirConsola()
 }
 
+function resetClientDashboardState() {
+  unsubscribeSystem()
+  resetDashboardData()
+  disconnectSocket()
+
+  eventosRaw.value = []
+  logsGlobales.value = []
+  systems.value = []
+  healthMap.value = {}
+  apiKeysPorExpirar.value = []
+  showDinamicFilters.value = false
+  modalVisible.value = false
+
+  filtros.value = {
+    system: '',
+    rangoFechas: { from: '', to: '' },
+    busqueda: '',
+    visibleFields: [],
+    values: {},
+  }
+
+  dashboardStore.resetDashboardState()
+}
+
 function logout() {
+  resetClientDashboardState()
   const result = authService.logout()
 
   if (result.success) {
@@ -861,6 +898,58 @@ watch(
   { immediate: true },
 )
 
+async function handleDashboardRealtimeRefresh() {
+  await Promise.all([
+    cargarEventosDelSistema(),
+    refreshSystemsCatalog(),
+  ])
+  dashboardStore.announceRealtimeRefresh()
+  console.log('[Dashboard] Auto-refresh completado desde WebSocket')
+}
+
+function subscribeDashboardSystem(sys = selectedSystem.value) {
+  if (!isClientFlow.value || !sys) return
+  ensureSocketConnected()
+  subscribeSystem(
+    sys,
+    () => filtros.value,
+    handleDashboardRealtimeRefresh,
+  )
+}
+
+async function recoverDashboardConnection(reason = 'focus') {
+  if (!isClientFlow.value || !filtros.value.system || dashboardRecoveryInFlight) return
+
+  const now = Date.now()
+  if (now - lastDashboardRecoveryAt < DASHBOARD_RECOVERY_COOLDOWN_MS) return
+
+  lastDashboardRecoveryAt = now
+  dashboardRecoveryInFlight = true
+
+  try {
+    ensureSocketConnected()
+    subscribeDashboardSystem(filtros.value.system)
+    await Promise.all([
+      fetchAll(filtros.value, { preserveExistingData: true }),
+      cargarEventosDelSistema(),
+    ])
+  } catch (err) {
+    console.error(`[Dashboard] Error al recuperar conexión WebSocket (${reason}):`, err)
+  } finally {
+    dashboardRecoveryInFlight = false
+  }
+}
+
+function handleWindowFocusRecovery() {
+  recoverDashboardConnection('focus')
+}
+
+function handleVisibilityRecovery() {
+  if (document.visibilityState === 'visible') {
+    recoverDashboardConnection('visibility')
+  }
+}
+
 // 1) Cuando cambia system: SÍ pega al backend Y se suscribe al WebSocket
 watch(
   selectedSystem,
@@ -880,18 +969,7 @@ watch(
       cargarEventosDelSistema()
 
       // 📡 Suscribirse al WebSocket para auto-refresh del dashboard
-      subscribeSystem(
-        sys,
-        () => filtros.value,  // getFilters
-        async () => {
-          await Promise.all([
-            cargarEventosDelSistema(),
-            refreshSystemsCatalog(),
-          ])
-          dashboardStore.announceRealtimeRefresh()
-          console.log('[Dashboard] Auto-refresh completado desde WebSocket')
-        },
-      )
+      subscribeDashboardSystem(sys)
     }
   },
   { immediate: true },
@@ -928,6 +1006,8 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  window.removeEventListener('focus', handleWindowFocusRecovery)
+  document.removeEventListener('visibilitychange', handleVisibilityRecovery)
   unsubscribeSystem()
 })
 
@@ -980,6 +1060,9 @@ function handleCritAlert(alert) {
 }
 
 onMounted(async () => {
+  window.addEventListener('focus', handleWindowFocusRecovery)
+  document.addEventListener('visibilitychange', handleVisibilityRecovery)
+
   const defaultFlow = authService.getAllowedFlow()
   const defaultRoute = defaultFlow === 'santoro' ? '/santoro/empresas' : '/client/escritorio'
 

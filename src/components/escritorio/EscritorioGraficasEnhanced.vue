@@ -297,7 +297,7 @@
   >
     <div
       v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY)"
-      :class="halfColumnClass"
+      :class="severityColumnClass"
     >
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
@@ -308,7 +308,7 @@
           </div>
           <q-space />
           <DashboardPopoutButton
-            v-if="showInternalPopouts"
+            v-if="showInternalPopouts && !hasVisibleHttpPanel"
             :section-id="DASHBOARD_SECTION_IDS.SEVERITY_HTTP"
           />
         </div>
@@ -319,7 +319,7 @@
     </div>
 
     <div
-      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData"
+      v-if="hasVisibleHttpPanel"
       :class="halfColumnClass"
     >
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
@@ -535,6 +535,10 @@ const thirdColumnClass = computed(() => (props.popupMode ? 'col-12' : 'col-12 co
 
 // Flags derivados de la API
 const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
+const hasVisibleHttpPanel = computed(() => shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData.value)
+const severityColumnClass = computed(() =>
+  props.popupMode || !hasVisibleHttpPanel.value ? 'col-12' : 'col-12 col-md-6',
+)
 const hasGeoData = computed(() => !!geoData.value?.points?.length)
 const normalizeDeviceFilterValue = (value) =>
   String(value ?? '')

@@ -1,8 +1,7 @@
-import { useQuasar } from 'quasar'
+import { Notify } from 'quasar'
 import { axiosInstance } from './axiosConfig'
 import { BASE_URL, CATALOGS } from './endpoints'
 
-const $q = useQuasar()
 
 export class ApiKeyService {
   /**
@@ -74,7 +73,7 @@ export class ApiKeyService {
       return response.data
     } catch (error) {
       console.error('❌ Error al eliminar API Key:', error)
-      $q.notify({
+      Notify.create({
         type: 'negative',
         message: '❌ Error al eliminar la API Key.',
       })
