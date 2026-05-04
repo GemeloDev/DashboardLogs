@@ -1280,7 +1280,7 @@ async function renderStatusLine() {
   })
 }
 
-// Series temporales: dÃ­a / semana / mes
+// Series temporales: día / semana / mes
 const eventsDayCanvas = ref(null)
 const eventsWeekCanvas = ref(null)
 const eventsMonthCanvas = ref(null)
@@ -1313,7 +1313,7 @@ function buildSimpleSeries(items = [], color = '#22d3ee') {
   }
 }
 
-// Helpers de rango de fechas para click en series â”€
+// Helpers de rango de fechas para click en series
 function dayRange(dateStr) {
   return { from: dateStr, to: dateStr }
 }
@@ -1328,7 +1328,7 @@ function weekRange(dateStr) {
     const year = parseInt(match[2])
     // El 4 de enero siempre cae en la semana 1 ISO
     const jan4 = new Date(year, 0, 4)
-    const dow = jan4.getDay() || 7 // 1=Lun â€¦ 7=Dom
+    const dow = jan4.getDay() || 7 // Lunes=1, Domingo=7
     const week1Mon = new Date(jan4)
     week1Mon.setDate(jan4.getDate() - (dow - 1))
     const start = new Date(week1Mon)
@@ -1416,7 +1416,7 @@ async function renderSeriesCharts() {
   )
 }
 
-// redrawCharts: punto Ãºnico de re-render â”€â”€â”€
+// redrawCharts: Punto Común para renderizar/actualizar todos los charts del dashboard
 async function redrawCharts() {
   renderCoverageDonutChart()
   renderSeverityPieChart()
@@ -1524,6 +1524,8 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
   gap: 22px;
   align-items: stretch;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .dashboard-hero--popup {
@@ -1534,6 +1536,7 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 22px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .dashboard-hero__title-card,
@@ -1553,6 +1556,9 @@ onBeforeUnmount(() => {
 .dashboard-hero__events-card {
   border-radius: 26px;
   padding: 24px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .dashboard-hero__donut-card {
@@ -1561,6 +1567,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .hero-badge {
@@ -1668,11 +1677,13 @@ onBeforeUnmount(() => {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 14px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .func-subcard__head {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) minmax(72px, auto);
   gap: 10px;
   align-items: center;
   margin-bottom: 12px;
@@ -1682,12 +1693,16 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 0.95rem;
   font-weight: 700;
+  min-width: 0;
 }
 
 .func-subcard__count {
   color: #fff;
   font-size: 1.05rem;
   font-weight: 800;
+  min-width: 72px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .func-subcard__meta {
@@ -1697,6 +1712,13 @@ onBeforeUnmount(() => {
   margin-top: 10px;
   color: rgba(255, 255, 255, 0.58);
   font-size: 0.78rem;
+  min-width: 0;
+}
+
+.func-subcard__meta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .func-dot {
@@ -1932,11 +1954,17 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 760px) {
+  .dashboard-hero {
+    width: 100%;
+    overflow: hidden;
+  }
+
   .dashboard-hero__title-card,
   .dashboard-hero__events-card,
   .dashboard-hero__donut-card {
     padding: 18px;
     border-radius: 22px;
+    width: 100%;
   }
 
   .dashboard-hero__section-head {
@@ -1950,6 +1978,25 @@ onBeforeUnmount(() => {
 
   .dashboard-hero__events-grid {
     grid-template-columns: 1fr;
+  }
+
+  .func-subcard__head {
+    grid-template-columns: auto minmax(0, 1fr) minmax(52px, auto);
+    gap: 8px;
+  }
+
+  .func-subcard__title {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.15;
+  }
+
+  .func-subcard__count {
+    min-width: 0;
+    max-width: 34vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 1rem;
   }
 
   .dashboard-hero__donut-wrap {

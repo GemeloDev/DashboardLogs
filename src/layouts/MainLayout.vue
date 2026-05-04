@@ -553,8 +553,10 @@ const {
 } = useDashboardData()
 
 const DASHBOARD_RECOVERY_COOLDOWN_MS = 10000
+const DASHBOARD_SESSION_OWNER_KEY = 'dashboardSessionOwner'
 let lastDashboardRecoveryAt = 0
 let dashboardRecoveryInFlight = false
+const dashboardReady = ref(false)
 
 provide('dashboardLoading', dashboardLoading)
 provide('dashboardRefreshing', dashboardRefreshing)
@@ -810,6 +812,7 @@ function openConsole(selection = null) {
 }
 
 function resetClientDashboardState() {
+  dashboardReady.value = false
   unsubscribeSystem()
   resetDashboardData()
   disconnectSocket()
@@ -831,6 +834,7 @@ function resetClientDashboardState() {
   }
 
   dashboardStore.resetDashboardState()
+  localStorage.removeItem(DASHBOARD_SESSION_OWNER_KEY)
 }
 
 function logout() {
@@ -842,7 +846,7 @@ function logout() {
       message: t('notifications.successLogout'),
       color: 'positive',
       icon: 'logout',
-      position: 'top',
+      position: $q.platform.is.mobile ? 'bottom' : 'top',
     })
     router.push('/login')
   } else {
@@ -850,7 +854,7 @@ function logout() {
       message: t('notifications.errorLogout'),
       color: 'negative',
       icon: 'error',
-      position: 'top',
+      position: $q.platform.is.mobile ? 'bottom' : 'top',
     })
   }
 }
@@ -962,7 +966,32 @@ function handleVisibilityRecovery() {
 }
 
 async function initializeClientDashboard() {
+  dashboardReady.value = false
   checkApiKeysExpirations()
+
+  const sessionOwner =
+    authService.user?.id ||
+    authService.user?.email ||
+    authService.user?.organization?.id ||
+    ''
+  const previousOwner = localStorage.getItem(DASHBOARD_SESSION_OWNER_KEY)
+
+  if (sessionOwner && previousOwner !== sessionOwner) {
+    resetDashboardData()
+    eventosRaw.value = []
+    logsGlobales.value = []
+    systems.value = []
+    healthMap.value = {}
+    filtros.value = {
+      system: '',
+      rangoFechas: { from: '', to: '' },
+      busqueda: '',
+      visibleFields: [],
+      values: {},
+    }
+    dashboardStore.resetDashboardState({ publish: false })
+    localStorage.setItem(DASHBOARD_SESSION_OWNER_KEY, sessionOwner)
+  }
 
   await refreshSystemsCatalog()
 
@@ -977,6 +1006,8 @@ async function initializeClientDashboard() {
       cargarEventosDelSistema(),
     ])
   }
+
+  dashboardReady.value = true
 
   connectSocket()
   subscribeDashboardSystem(nextSystem)
@@ -1000,6 +1031,8 @@ async function initializeClientDashboard() {
 watch(
   selectedSystem,
   (sys) => {
+    if (!dashboardReady.value) return
+
     filtros.value.system = sys || ''
 
     if (!sys) {
@@ -1025,7 +1058,7 @@ watch(
 watch(
   () => `${filtros.value.rangoFechas?.from || ''}|${filtros.value.rangoFechas?.to || ''}`,
   () => {
-    if (isClientFlow.value) {
+    if (isClientFlow.value && dashboardReady.value) {
       aplicarFiltroRangoFechas()
     }
   },
@@ -1035,6 +1068,7 @@ watch(
 watch(
   dashboardQueryKey,
   () => {
+    if (!dashboardReady.value) return
     if (!filtros.value.system) return
     fetchAll(filtros.value)
   },
@@ -1560,6 +1594,16 @@ onMounted(async () => {
   }
 
   .app-page-container {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .q-dialog__inner--maximized {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .fullscreen-safe-shell {
+    padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 

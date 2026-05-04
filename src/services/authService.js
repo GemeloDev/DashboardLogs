@@ -15,10 +15,12 @@ const DEFAULT_PREFS = { flow: 'client', system: 'DASHBOARD' }
 const SANTORO_DOMAIN = '@grupo-santoro.com.mx'
 const DASHBOARD_SYNC_CHANNEL = 'dashboard-multipanel-sync-v1'
 const DASHBOARD_SHARED_STORE_KEY = 'dashboardShared'
+const DASHBOARD_SESSION_OWNER_KEY = 'dashboardSessionOwner'
 
 const clearDashboardSharedState = () => {
   localStorage.removeItem(DASHBOARD_SYNC_CHANNEL)
   localStorage.removeItem(DASHBOARD_SHARED_STORE_KEY)
+  localStorage.removeItem(DASHBOARD_SESSION_OWNER_KEY)
 }
 
 export const useAuthService = () => {
