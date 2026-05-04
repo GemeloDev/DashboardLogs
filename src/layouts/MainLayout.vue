@@ -476,7 +476,6 @@ const showDinamicFilters = ref(false)
 const consolaRef = ref(null)
 
 const apiKeysPorExpirar = ref([])
-const prefs = authService.loadPrefs()
 const dashboardStore = useDashboardSharedStore()
 
 dashboardStore.initSync()
@@ -521,6 +520,7 @@ const filterAuthorizedSystems = (catalogSystems = []) => {
 
 const resolveSelectedSystem = (candidate = selectedSystem.value) => {
   const availableSystems = systems.value.map((system) => system.value)
+  const prefs = authService.loadPrefs()
 
   if (candidate && availableSystems.includes(candidate)) {
     return candidate
@@ -596,6 +596,12 @@ const aplicarFiltroRangoFechas = () => {
 }
 
 const cargarEventosDelSistema = async () => {
+  if (!selectedSystem.value) {
+    eventosRaw.value = []
+    logsGlobales.value = []
+    return
+  }
+
   loadingLogs.value = true
   try {
     const resp = await ChartDataService.getLogsEvents({
@@ -620,6 +626,11 @@ const refreshSystemsCatalog = async () => {
     const catalogs = await CatalogService.fetchCatalogs()
     systems.value = filterAuthorizedSystems(catalogs.sistemas)
     healthMap.value = catalogs.healthMap || {}
+
+    const nextSystem = resolveSelectedSystem()
+    if (nextSystem !== selectedSystem.value) {
+      selectedSystem.value = nextSystem
+    }
   } catch (e) {
     console.error('❌ Error al refrescar sistemas: ', e)
   }
@@ -950,6 +961,41 @@ function handleVisibilityRecovery() {
   }
 }
 
+async function initializeClientDashboard() {
+  checkApiKeysExpirations()
+
+  await refreshSystemsCatalog()
+
+  const nextSystem = resolveSelectedSystem()
+  if (nextSystem) {
+    selectedSystem.value = nextSystem
+    filtros.value.system = nextSystem
+    authService.savePrefs(currentFlow.value, nextSystem)
+
+    await Promise.all([
+      fetchAll(filtros.value),
+      cargarEventosDelSistema(),
+    ])
+  }
+
+  connectSocket()
+  subscribeDashboardSystem(nextSystem)
+
+  // Esperar un momento para que la conexion se establezca
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  await requestNotificationPermission()
+
+  const tenantId =
+    authService.user?.tenantId ||
+    authService.user?.authz?.tenantId ||
+    authService.user?.organization?.id
+
+  if (tenantId) {
+    subscribeToAlerts(tenantId, handleCritAlert)
+  }
+}
+
 // 1) Cuando cambia system: SÍ pega al backend Y se suscribe al WebSocket
 watch(
   selectedSystem,
@@ -1073,26 +1119,7 @@ onMounted(async () => {
   if (isClientFlow.value) {
     window.addEventListener('santoro-abrir-consola', (e) => openConsole(e?.detail || null))
     window.addEventListener('santoro-mostrar-filtros', () => (showDinamicFilters.value = true))
-    checkApiKeysExpirations()
-
-    // Cargar sistemas desde la API
-    await refreshSystemsCatalog()
-
-    connectSocket()
-
-    // Esperar un momento para que la conexión se establezca
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    await requestNotificationPermission()
-
-    const tenantId =
-      authService.user?.tenantId ||
-      authService.user?.authz?.tenantId ||
-      authService.user?.organization?.id
-
-    if (tenantId) {
-      subscribeToAlerts(tenantId, handleCritAlert)
-    }
+    await initializeClientDashboard()
   }
 })
 </script>
@@ -1520,6 +1547,22 @@ onMounted(async () => {
 
 /* MÓVIL */
 @media (max-width: 599px) {
+  .app-header {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .app-toolbar {
+    min-height: 64px;
+  }
+
+  .app-drawer {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .app-page-container {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   .mobile-scroll-row {
     flex-wrap: nowrap !important;
     overflow-x: auto;
