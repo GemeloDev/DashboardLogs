@@ -537,11 +537,13 @@ function handleMessageAction(action) {
 .eva-workspace {
   background: linear-gradient(180deg, #08111f 0%, #0b1526 100%);
   color: #eaf0ff;
+  min-height: 100dvh;
 }
 
 .eva-workspace-header {
   min-height: 72px;
   background: rgba(255,255,255,0.03);
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
 }
 
 .eva-workspace-title {
@@ -557,9 +559,10 @@ function handleMessageAction(action) {
 }
 
 .eva-workspace-body {
-  height: calc(100vh - 73px);
+  height: calc(100dvh - 73px - env(safe-area-inset-top, 0px));
   padding: 16px;
   overflow: hidden;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
 .eva-workspace-grid {
@@ -630,6 +633,31 @@ function handleMessageAction(action) {
   .eva-workspace-chat,
   .eva-workspace-context {
     min-height: 420px;
+  }
+}
+
+@media (max-width: 599px) {
+  .eva-workspace-header {
+    align-items: flex-start;
+    min-height: calc(86px + env(safe-area-inset-top, 0px));
+  }
+
+  .eva-workspace-title {
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  .eva-workspace-body {
+    height: calc(100dvh - 87px - env(safe-area-inset-top, 0px));
+    padding: 14px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+  }
+
+  .eva-workspace-chat,
+  .eva-workspace-context {
+    min-height: min(520px, calc(100dvh - 160px));
+    padding: 14px;
   }
 }
 </style>

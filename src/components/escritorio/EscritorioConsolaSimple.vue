@@ -677,7 +677,7 @@ defineExpose({
 <style lang="scss" scoped>
 .console-modal-card {
   background: rgb(29, 29, 43);
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   .card-title {
@@ -690,7 +690,7 @@ defineExpose({
 .console-body {
   flex: 1;
   overflow-y: auto;
-  max-height: calc(100vh - 200px);
+  max-height: calc(100dvh - 200px);
 }
 
 // Grid Responsivo
@@ -796,8 +796,20 @@ defineExpose({
 
 // Ajustes Responsivos
 @media (max-width: 768px) {
+  .console-modal-card {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .console-header {
+    padding-top: 18px;
+  }
+
+  .console-body {
+    max-height: calc(100dvh - 220px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+
   .pagination-section {
-    padding: 12px 16px; // Reducir padding en móviles
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); // Reducir padding en móviles
 
     .row {
       flex-direction: column-reverse; // Pone la paginación arriba del texto en móviles
