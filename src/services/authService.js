@@ -16,6 +16,11 @@ const SANTORO_DOMAIN = '@grupo-santoro.com.mx'
 const DASHBOARD_SYNC_CHANNEL = 'dashboard-multipanel-sync-v1'
 const DASHBOARD_SHARED_STORE_KEY = 'dashboardShared'
 
+const clearDashboardSharedState = () => {
+  localStorage.removeItem(DASHBOARD_SYNC_CHANNEL)
+  localStorage.removeItem(DASHBOARD_SHARED_STORE_KEY)
+}
+
 export const useAuthService = () => {
   const clearSession = () => {
     localStorage.removeItem(SESSION_KEY)
@@ -120,6 +125,8 @@ export const useAuthService = () => {
 
         const initialFlow = getAllowedFlow(userData)
         console.log(initialFlow)
+
+        clearDashboardSharedState()
 
         if (userData?.authz?.systems && userData?.authz?.systems.length !== 0) {
           localStorage.setItem(
@@ -252,6 +259,8 @@ export const useAuthService = () => {
 
     const initialFlow = getAllowedFlow(userData)
 
+    clearDashboardSharedState()
+
     if (userData?.authz?.systems && userData?.authz?.systems.length !== 0) {
       localStorage.setItem(
         'dashboardFlow',
@@ -280,8 +289,7 @@ export const useAuthService = () => {
       localStorage.removeItem(SESSION_KEY)
       sessionStorage.removeItem(SESSION_KEY)
       localStorage.removeItem('dashboardFlow')
-      localStorage.removeItem(DASHBOARD_SYNC_CHANNEL)
-      localStorage.removeItem(DASHBOARD_SHARED_STORE_KEY)
+      clearDashboardSharedState()
       deleteJWTFromCookie()
       currentUser.value = null
       isAuthenticated.value = false
