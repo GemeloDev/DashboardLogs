@@ -12,96 +12,118 @@
   >
     <q-card class="qr-scanner-modal">
       <!-- Header -->
-      <q-card-section class="modal-header">
-        <div class="header-content">
-          <q-icon name="qr_code_scanner" size="32px" color="primary" />
-          <div class="header-text">
-            <h3>{{ t('qrScanner.title') }}</h3>
-            <p>{{ t('qrScanner.subtitle') }}</p>
+      <div class="scanner-shell">
+        <div class="modal-header">
+          <div class="header-content">
+            <div class="scanner-icon">
+              <q-icon name="qr_code_scanner" size="26px" color="white" />
+            </div>
+            <div class="header-text">
+              <h3>{{ t('qrScanner.title') }}</h3>
+              <p>{{ t('qrScanner.subtitle') }}</p>
+            </div>
           </div>
+          <q-btn icon="close" flat round dense class="dialog-close-btn" v-close-popup />
         </div>
-        <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
 
-      <!-- Camera Tab -->
-      <div name="camera" class="camera-panel">
-        <!-- Advertencia de HTTPS en móviles -->
-        <q-banner v-if="isMobile && !isSecureContext" class="bg-warning text-white" rounded dense>
-          <template v-slot:avatar>
-            <q-icon name="warning" color="white" />
-          </template>
-          <strong>{{ t('qrScanner.insecureTitle') }}</strong><br />
-          {{ t('qrScanner.insecureBody') }}
-        </q-banner>
+        <!-- Camera Tab -->
+        <div name="camera" class="camera-panel">
+          <!-- Advertencia de HTTPS en móviles -->
+          <q-banner v-if="isMobile && !isSecureContext" class="secure-warning" rounded dense>
+            <template v-slot:avatar>
+              <q-icon name="warning" color="orange" />
+            </template>
+            <strong>{{ t('qrScanner.insecureTitle') }}</strong
+            ><br />
+            {{ t('qrScanner.insecureBody') }}
+          </q-banner>
 
-        <div class="camera-container">
-          <video
-            ref="videoElement"
-            class="camera-video"
-            autoplay
-            playsinline
-            muted
-            webkit-playsinline
-          ></video>
+          <div class="scanner-stage">
+            <div class="camera-container" :class="{ 'camera-container--active': cameraActive }">
+              <video
+                ref="videoElement"
+                class="camera-video"
+                autoplay
+                playsinline
+                muted
+                webkit-playsinline
+              ></video>
 
-          <div v-if="!cameraActive" class="camera-placeholder">
-            <q-icon name="videocam_off" size="64px" color="grey-5" />
-            <p>{{ t('qrScanner.cameraNotStarted') }}</p>
-            <div class="help-section">
-              <p class="hint-text">📱 <strong>{{ t('qrScanner.firstTimeTitle') }}</strong></p>
-              <p class="hint-text">{{ t('qrScanner.firstTimeStep1') }}</p>
-              <p class="hint-text">{{ t('qrScanner.firstTimeStep2') }}</p>
-              <p class="hint-text">{{ t('qrScanner.firstTimeStep3') }}</p>
-              <q-separator spaced />
-              <p class="hint-text-small">
-                {{ t('qrScanner.firstTimeHint') }}
-              </p>
+              <div v-if="!cameraActive" class="camera-placeholder">
+                <div class="placeholder-icon">
+                  <q-icon name="videocam_off" size="42px" />
+                </div>
+                <p class="placeholder-title">{{ t('qrScanner.cameraNotStarted') }}</p>
+                <div class="help-section">
+                  <p class="hint-text">
+                    <q-icon name="smartphone" size="16px" />
+                    <strong>{{ t('qrScanner.firstTimeTitle') }}</strong>
+                  </p>
+                  <p class="hint-text">{{ t('qrScanner.firstTimeStep1') }}</p>
+                  <p class="hint-text">{{ t('qrScanner.firstTimeStep2') }}</p>
+                  <p class="hint-text">{{ t('qrScanner.firstTimeStep3') }}</p>
+                  <q-separator spaced class="hint-separator" />
+                  <p class="hint-text-small">
+                    {{ t('qrScanner.firstTimeHint') }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Overlay de escaneo -->
+              <div v-if="cameraActive" class="scan-overlay">
+                <div class="scan-frame">
+                  <span class="corner corner--top-left"></span>
+                  <span class="corner corner--top-right"></span>
+                  <span class="corner corner--bottom-left"></span>
+                  <span class="corner corner--bottom-right"></span>
+                  <span class="scan-line"></span>
+                </div>
+                <p class="scan-instruction">{{ t('qrScanner.scanInstruction') }}</p>
+              </div>
+
+              <!-- Loading -->
+              <div v-if="scanning" class="scan-loading">
+                <q-spinner-dots size="50px" color="cyan" />
+                <p>{{ t('qrScanner.scanning') }}</p>
+              </div>
             </div>
           </div>
 
-          <!-- Overlay de escaneo -->
-          <div v-if="cameraActive" class="scan-overlay">
-            <div class="scan-frame"></div>
-            <p class="scan-instruction">{{ t('qrScanner.scanInstruction') }}</p>
-          </div>
+          <!-- Controles de cámara -->
+          <div class="scanner-bottom-sheet">
+            <div class="scanner-status">
+              <q-icon :name="cameraActive ? 'center_focus_strong' : 'qr_code_2'" size="20px" />
+              <span>{{
+                cameraActive ? t('qrScanner.scanInstruction') : t('qrScanner.footerInfo')
+              }}</span>
+            </div>
 
-          <!-- Loading -->
-          <div v-if="scanning" class="scan-loading">
-            <q-spinner-dots size="50px" color="primary" />
-            <p>{{ t('qrScanner.scanning') }}</p>
+            <div class="camera-controls">
+              <q-btn
+                v-if="!cameraActive"
+                @click="startCamera"
+                icon="videocam"
+                :label="t('qrScanner.startCamera')"
+                size="lg"
+                unelevated
+                no-caps
+                :loading="initializingCamera"
+                class="start-camera-btn"
+              />
+              <q-btn
+                v-else
+                @click="stopCamera"
+                icon="videocam_off"
+                :label="t('qrScanner.stopCamera')"
+                size="lg"
+                flat
+                no-caps
+                class="stop-camera-btn"
+              />
+            </div>
           </div>
-        </div>
-
-        <!-- Controles de cámara -->
-        <div class="camera-controls">
-          <q-btn
-            v-if="!cameraActive"
-            @click="startCamera"
-            color="primary"
-            icon="videocam"
-            :label="t('qrScanner.startCamera')"
-            size="lg"
-            unelevated
-            :loading="initializingCamera"
-            class="start-camera-btn"
-          />
-          <q-btn
-            v-else
-            @click="stopCamera"
-            color="negative"
-            icon="videocam_off"
-            :label="t('qrScanner.stopCamera')"
-            size="lg"
-            flat
-          />
         </div>
       </div>
-
-      <!-- Footer con info -->
-      <q-card-section class="modal-footer">
-        <q-icon name="info" size="20px" color="info" />
-        <span>{{ t('qrScanner.footerInfo') }}</span>
-      </q-card-section>
     </q-card>
   </q-dialog>
 </template>
@@ -149,8 +171,8 @@ watch(
   () => props.modelValue,
   (val) => {
     isOpen.value = val
-    socketInstance.value = initializeSocket();
-  }
+    socketInstance.value = initializeSocket()
+  },
 )
 
 watch(isOpen, (val) => {
@@ -208,7 +230,7 @@ const startCamera = async () => {
         })
         scanning.value = false
         throw error
-      }
+      },
     )
 
     cameraActive.value = true
@@ -244,7 +266,7 @@ const stopCamera = () => {
  */
 const onQRScanned = async (qrData) => {
   console.log('🎯 QR detectado:', qrData)
-  if(qrData === '') throw new Error(t('qrScanner.emptyQrError'))
+  if (qrData === '') throw new Error(t('qrScanner.emptyQrError'))
 
   const token = qrData.split('/qr-login/')[1]
 
@@ -252,12 +274,12 @@ const onQRScanned = async (qrData) => {
   console.log('ℹ️ Token QR: ', token)
 
   const payload = {
-    qrToken: token
+    qrToken: token,
   }
 
-  const loginByQR = await authService.loginByQR(payload);
+  const loginByQR = await authService.loginByQR(payload)
 
-  console.log('Respuesta de loginByQR',loginByQR)
+  console.log('Respuesta de loginByQR', loginByQR)
 
   isOpen.value = false
 }
@@ -271,77 +293,125 @@ const onClose = () => {
   imagePreview.value = null
 
   // Cerrar el socket
-  disconnectSocket();
+  disconnectSocket()
   socketInstance.value = null
 }
 </script>
 
 <style lang="scss" scoped>
-$primary: #6366f1;
-$primary-dark: #4f46e5;
-$text-primary: #1e293b;
-$text-secondary: #64748b;
-$border-color: #e2e8f0;
-$bg-light: #f8fafc;
+$cyan: #22d3ee;
+$purple: #7c3aed;
+$pink: #ec4899;
+$orange: #e97132;
+$panel-dark: #0c0503;
+$panel-soft: #120904;
+$text-soft: rgba(255, 255, 255, 0.72);
+$text-muted: rgba(255, 255, 255, 0.52);
+$border-soft: rgba(255, 255, 255, 0.08);
+$border-warm: rgba(233, 113, 50, 0.16);
 
 .qr-scanner-modal {
-  background: white;
+  height: 100%;
+  color: white;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(233, 113, 50, 0.2), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(124, 58, 237, 0.16), transparent 30%),
+    linear-gradient(180deg, $panel-soft 0%, $panel-dark 100%);
+}
+
+.scanner-shell {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
+  padding: 18px;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 20px;
-  border-bottom: 1px solid $border-color;
+  align-items: center;
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: 8px 0 18px;
 
   .header-content {
     display: flex;
-    gap: 16px;
-    align-items: flex-start;
+    gap: 14px;
+    align-items: center;
+    min-width: 0;
   }
 
   .header-text {
+    min-width: 0;
+
     h3 {
       margin: 0 0 4px 0;
-      font-size: 20px;
-      font-weight: 600;
-      color: $text-primary;
+      font-size: 1.28rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
     }
 
     p {
       margin: 0;
-      font-size: 14px;
-      color: $text-secondary;
+      color: $text-soft;
+      font-size: 0.9rem;
+      line-height: 1.35;
     }
   }
 }
 
-.scanner-panels {
-  flex: 1;
-  overflow: auto;
+.scanner-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, $purple 0%, $pink 55%, $orange 100%);
+  box-shadow: 0 16px 34px rgba(233, 113, 50, 0.2);
+}
+
+.dialog-close-btn {
+  color: rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
 }
 
 .camera-panel {
-  padding: 20px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  min-height: 500px;
+  justify-content: center;
+  gap: 16px;
+  width: min(960px, 100%);
+  min-height: 0;
+  margin: 0 auto;
+}
+
+.scanner-stage {
+  display: flex;
+  justify-content: center;
+  min-height: 0;
 }
 
 .camera-container {
   position: relative;
   width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  aspect-ratio: 4/3;
-  background: black;
-  border-radius: 12px;
+  max-width: 540px;
+  aspect-ratio: 9/16;
+  max-height: min(68vh, 760px);
   overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid $border-warm;
+  background: radial-gradient(circle at center, rgba(34, 211, 238, 0.08), transparent 28%), #050505;
+  box-shadow:
+    0 28px 64px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.camera-container--active {
+  background: #000;
 }
 
 .camera-video {
@@ -352,36 +422,34 @@ $bg-light: #f8fafc;
 
 .camera-placeholder {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #000;
+  padding: 28px;
   color: white;
-  padding: 20px;
   text-align: center;
-
-  p {
-    margin-top: 16px;
-    color: #999;
-  }
+  background:
+    radial-gradient(circle at center, rgba(124, 58, 237, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(18, 9, 4, 0.94), rgba(5, 5, 5, 0.98));
 
   .help-section {
-    margin-top: 24px;
+    width: min(360px, 100%);
+    margin-top: 22px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    max-width: 320px;
+    border-radius: 18px;
+    border: 1px solid $border-soft;
+    background: rgba(255, 255, 255, 0.045);
   }
 
   .hint-text {
-    font-size: 13px;
-    color: #bbb;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
     margin: 8px 0;
+    color: $text-soft;
+    font-size: 13px;
     line-height: 1.5;
     text-align: left;
 
@@ -391,101 +459,266 @@ $bg-light: #f8fafc;
   }
 
   .hint-text-small {
-    font-size: 11px;
-    color: #888;
     margin-top: 12px;
+    color: $text-muted;
+    font-size: 11px;
     line-height: 1.4;
     text-align: left;
   }
 }
 
+.placeholder-icon {
+  width: 78px;
+  height: 78px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  border: 1px solid $border-soft;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(124, 58, 237, 0.16));
+}
+
+.placeholder-title {
+  margin: 18px 0 0;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.hint-separator {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .scan-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   pointer-events: none;
 }
 
 .scan-frame {
-  width: 250px;
-  height: 250px;
-  border: 3px solid $primary;
-  border-radius: 12px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
-  animation: pulse 2s ease-in-out infinite;
+  position: relative;
+  width: min(72vw, 300px);
+  max-width: 66%;
+  aspect-ratio: 1;
+  border-radius: 24px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.46);
 }
 
-@keyframes pulse {
+.corner {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-color: #fff;
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.48));
+}
+
+.corner--top-left {
+  top: 0;
+  left: 0;
+  border-top: 4px solid;
+  border-left: 4px solid;
+  border-top-left-radius: 22px;
+}
+
+.corner--top-right {
+  top: 0;
+  right: 0;
+  border-top: 4px solid;
+  border-right: 4px solid;
+  border-top-right-radius: 22px;
+}
+
+.corner--bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 4px solid;
+  border-left: 4px solid;
+  border-bottom-left-radius: 22px;
+}
+
+.corner--bottom-right {
+  right: 0;
+  bottom: 0;
+  border-right: 4px solid;
+  border-bottom: 4px solid;
+  border-bottom-right-radius: 22px;
+}
+
+.scan-line {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 22px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, $cyan, $orange, transparent);
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.72);
+  animation: scan-line 2.1s ease-in-out infinite;
+}
+
+@keyframes scan-line {
   0%,
   100% {
-    border-color: $primary;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    transform: translateY(0);
+    opacity: 0.35;
   }
   50% {
-    border-color: #a5b4fc;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
+    transform: translateY(254px);
+    opacity: 1;
   }
 }
 
 .scan-instruction {
-  margin-top: 280px;
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 48px;
+  max-width: 360px;
+  margin: 0 auto;
   color: white;
   font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .scan-loading {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(100, 100, 100, 0.041);
   color: white;
+  background: rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(2px);
 
   p {
     margin-top: 16px;
   }
 }
 
+.scanner-bottom-sheet {
+  width: min(540px, 100%);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 24px;
+  border: 1px solid $border-soft;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.scanner-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: $text-soft;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+
+  .q-icon {
+    flex-shrink: 0;
+    color: $cyan;
+  }
+}
+
 .camera-controls {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
+
+  .start-camera-btn,
+  .stop-camera-btn {
+    min-height: 50px;
+    min-width: 190px;
+    padding: 0 18px;
+    border-radius: 16px;
+    font-weight: 800;
+  }
 
   .start-camera-btn {
-    min-width: 200px;
+    color: white;
+    background: linear-gradient(90deg, $purple 0%, $pink 55%, $orange 100%);
+    box-shadow: 0 18px 38px rgba(233, 113, 50, 0.18);
   }
 
-  .alt-btn {
+  .stop-camera-btn {
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    background: rgba(239, 68, 68, 0.1);
+  }
+}
+
+.secure-warning {
+  width: min(540px, 100%);
+  margin: 0 auto;
+  color: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(233, 113, 50, 0.24);
+  background: rgba(233, 113, 50, 0.14);
+}
+
+@media (max-width: 768px) {
+  .scanner-shell {
+    padding: 14px;
+  }
+
+  .modal-header {
+    padding-bottom: 14px;
+  }
+
+  .scanner-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+  }
+
+  .modal-header .header-text {
+    h3 {
+      font-size: 1.12rem;
+    }
+
+    p {
+      font-size: 0.82rem;
+    }
+  }
+
+  .camera-container {
+    max-height: 64vh;
+    border-radius: 24px;
+  }
+
+  .scanner-bottom-sheet {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .camera-controls,
+  .camera-controls .start-camera-btn,
+  .camera-controls .stop-camera-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .camera-placeholder {
+    padding: 20px;
+  }
+
+  .scan-instruction {
+    bottom: 30px;
     font-size: 13px;
   }
-}
-
-.modal-footer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: $bg-light;
-  border-top: 1px solid $border-color;
-  font-size: 14px;
-  color: $text-secondary;
-}
-
-// Banner de advertencia HTTPS
-.camera-panel .q-banner {
-  margin-bottom: 16px;
 }
 </style>
