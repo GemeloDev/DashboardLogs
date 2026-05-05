@@ -171,7 +171,7 @@ export function subscribeToAlerts(tenantId, onAlert = () => {}) {
 /**
  * Suscribirse a nuevos logs de un sistema específico.
  */
-export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}, _retries = 0) {
+export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {} /* , _retries = 0 */) {
   // Máximo 5 reintentos (10 segundos) para evitar loops
   if (!stompClient || !connected) {
     ensureSocketConnected()
