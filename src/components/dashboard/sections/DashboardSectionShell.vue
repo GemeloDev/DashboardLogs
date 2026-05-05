@@ -34,6 +34,10 @@ const canShowPopout = computed(() => props.showPopout && !$q.platform.is.mobile)
 <style scoped lang="scss">
 .dashboard-section-shell {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .dashboard-section-shell__action {

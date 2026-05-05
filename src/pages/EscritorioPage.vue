@@ -29,14 +29,20 @@ const { t } = useI18n()
 <style lang="scss" scoped>
 .escritorio-page {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .dashboard-header__wrap,
 .container {
-  max-width: 1400px;
+  width: 100%;
+  max-width: min(1400px, 100%);
+  min-width: 0;
   margin: 0 auto;
   padding-left: 16px;
   padding-right: 16px;
+  box-sizing: border-box;
 }
 
 .dashboard-hero__title-card {
@@ -53,6 +59,13 @@ const { t } = useI18n()
 
 /* En móvil reduce márgenes/padding un poco */
 @media (max-width: 599px) {
+  .dashboard-header__wrap,
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+    overflow-x: hidden;
+  }
+
   .dashboard-hero__title-card {
     background: transparent;
   }

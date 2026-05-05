@@ -64,7 +64,7 @@
             round
             icon="notifications"
             size="sm"
-            class="toolbar-icon-btn"
+            class="toolbar-icon-btn toolbar-icon-btn--utility"
           >
             <q-badge color="negative" floating v-if="apiKeysPorExpirar.length > 0">
               {{ apiKeysPorExpirar.length }}
@@ -75,10 +75,12 @@
               anchor="bottom left"
               self="top left"
               class="glass-menu"
-              style="max-width: 350px;"
+              style="max-width: 350px"
             >
               <q-list style="min-width: 300px">
-                <q-item-label header class="menu-header-label"> {{ t('layout.APIalerts') }} </q-item-label>
+                <q-item-label header class="menu-header-label">
+                  {{ t('layout.APIalerts') }}
+                </q-item-label>
 
                 <q-separator class="menu-separator" />
 
@@ -119,7 +121,11 @@
                   <q-item-section side top>
                     <q-badge
                       :color="key.tipoAlerta === 'ROTA' ? 'orange' : 'negative'"
-                      :label="key.tipoAlerta === 'ROTA' ? t('apiKeys.rennovateKey') : t('apiKeys.expiringSoon')"
+                      :label="
+                        key.tipoAlerta === 'ROTA'
+                          ? t('apiKeys.rennovateKey')
+                          : t('apiKeys.expiringSoon')
+                      "
                     />
                   </q-item-section>
                 </q-item>
@@ -128,45 +134,51 @@
           </q-btn>
 
           <!-- Selector de idioma -->
-          <q-btn-dropdown
+          <q-btn
             flat
             dense
             round
             icon="language"
-            class="toolbar-icon-btn"
-            dropdown-icon=""
-            style="padding: 8px"
+            class="toolbar-icon-btn toolbar-icon-btn--utility"
           >
-            <q-list class="language-dropdown-menu" style="min-width: 180px">
-              <q-item-label header class="menu-header-label">{{ t('common.language') }}</q-item-label>
+            <q-menu fit anchor="bottom middle" self="top middle" class="glass-menu">
+                <q-list class="language-dropdown-menu" style="min-width: 180px">
+                  <q-item-label header class="menu-header-label">{{
+                    t('common.language')
+                  }}</q-item-label>
 
-              <q-separator class="menu-separator" />
+                  <q-separator class="menu-separator" />
 
-              <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('es')">
-                <q-item-section avatar style="min-width: 32px">
-                  <span style="font-size: 20px">🇲🇽</span>
-                </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-white">{{ t('layout.languageSpanish') }}</q-item-label>
-                  </q-item-section>
-                <q-item-section side top v-if="locale === 'es'">
-                  <q-icon name="check" color="positive" />
-                </q-item-section>
-              </q-item>
+                  <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('es')">
+                    <q-item-section avatar style="min-width: 32px">
+                      <span style="font-size: 20px">🇲🇽</span>
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white">{{
+                        t('layout.languageSpanish')
+                      }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side top v-if="locale === 'es'">
+                      <q-icon name="check" color="positive" />
+                    </q-item-section>
+                  </q-item>
 
-              <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('en')">
-                <q-item-section avatar style="min-width: 32px">
-                  <span style="font-size: 20px">🇺🇸</span>
-                </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-white">{{ t('layout.languageEnglish') }}</q-item-label>
-                  </q-item-section>
-                <q-item-section side top v-if="locale === 'en'">
-                  <q-icon name="check" color="positive" />
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
+                  <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('en')">
+                    <q-item-section avatar style="min-width: 32px">
+                      <span style="font-size: 20px">🇺🇸</span>
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white">{{
+                        t('layout.languageEnglish')
+                      }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side top v-if="locale === 'en'">
+                      <q-icon name="check" color="positive" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+            </q-menu>
+          </q-btn>
 
           <!-- Sistemas en línea -->
           <q-btn-dropdown
@@ -313,7 +325,9 @@
             </q-item>
 
             <q-separator dark spaced class="drawer-separator" />
-            <q-item-label header class="drawer-section-label">{{ t('layout.toolsSection') }}</q-item-label>
+            <q-item-label header class="drawer-section-label">{{
+              t('layout.toolsSection')
+            }}</q-item-label>
 
             <q-item clickable v-ripple to="/client/diagnostico" class="drawer-item">
               <q-item-section avatar>
@@ -436,6 +450,8 @@
 import { ref, provide, onMounted, computed, watch, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
+import { Capacitor } from '@capacitor/core'
+import { App as CapacitorApp } from '@capacitor/app'
 
 // Importanto la IA
 import EvaFloatingButton from 'src/components/ai/EvaFloatingButton.vue'
@@ -448,6 +464,7 @@ import {
   subscribeToAlerts,
   connectSocket,
   ensureSocketConnected,
+  restartSocketConnection,
   disconnectSocket,
 } from 'src/services/socketService'
 import authService from '../services/authService.js'
@@ -556,6 +573,7 @@ const DASHBOARD_RECOVERY_COOLDOWN_MS = 10000
 const DASHBOARD_SESSION_OWNER_KEY = 'dashboardSessionOwner'
 let lastDashboardRecoveryAt = 0
 let dashboardRecoveryInFlight = false
+let removeNativeAppStateListener = null
 const dashboardReady = ref(false)
 
 provide('dashboardLoading', dashboardLoading)
@@ -567,7 +585,6 @@ provide('dashboardSeriesData', seriesData)
 provide('dashboardHttpData', httpData)
 provide('dashboardGeoData', geoData)
 provide('dashboardDevicesData', devicesData)
-
 
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
@@ -646,9 +663,7 @@ const isSantoroUser = computed(() => authService.canAccessSantoroFlow())
 const currentFlow = computed(() => route.meta?.flow || authService.getAllowedFlow())
 const isSantoroFlow = computed(() => currentFlow.value === 'santoro')
 const isClientFlow = computed(() => currentFlow.value === 'client')
-const isClientDashboard = computed(() =>
-  isClientFlow.value && route.path === '/client/escritorio'
-)
+const isClientDashboard = computed(() => isClientFlow.value && route.path === '/client/escritorio')
 
 const diffDias = (fechaISO, hoy) => {
   if (!fechaISO) return null
@@ -884,7 +899,9 @@ watch(
         from: nextFilters?.rangoFechas?.from || '',
         to: nextFilters?.rangoFechas?.to || '',
       },
-      visibleFields: Array.isArray(nextFilters?.visibleFields) ? [...nextFilters.visibleFields] : [],
+      visibleFields: Array.isArray(nextFilters?.visibleFields)
+        ? [...nextFilters.visibleFields]
+        : [],
       values: { ...(nextFilters?.values || {}) },
     }
   },
@@ -914,10 +931,7 @@ watch(
 )
 
 async function handleDashboardRealtimeRefresh() {
-  await Promise.all([
-    cargarEventosDelSistema(),
-    refreshSystemsCatalog(),
-  ])
+  await Promise.all([cargarEventosDelSistema(), refreshSystemsCatalog()])
   dashboardStore.announceRealtimeRefresh()
   console.log('[Dashboard] Auto-refresh completado desde WebSocket')
 }
@@ -925,24 +939,26 @@ async function handleDashboardRealtimeRefresh() {
 function subscribeDashboardSystem(sys = selectedSystem.value) {
   if (!isClientFlow.value || !sys) return
   ensureSocketConnected()
-  subscribeSystem(
-    sys,
-    () => filtros.value,
-    handleDashboardRealtimeRefresh,
-  )
+  subscribeSystem(sys, () => filtros.value, handleDashboardRealtimeRefresh)
 }
 
-async function recoverDashboardConnection(reason = 'focus') {
+async function recoverDashboardConnection(reason = 'focus', options = {}) {
   if (!isClientFlow.value || !filtros.value.system || dashboardRecoveryInFlight) return
 
   const now = Date.now()
-  if (now - lastDashboardRecoveryAt < DASHBOARD_RECOVERY_COOLDOWN_MS) return
+  if (!options.bypassCooldown && now - lastDashboardRecoveryAt < DASHBOARD_RECOVERY_COOLDOWN_MS)
+    return
 
   lastDashboardRecoveryAt = now
   dashboardRecoveryInFlight = true
 
   try {
-    ensureSocketConnected()
+    if (options.restartSocket) {
+      await restartSocketConnection()
+    } else {
+      ensureSocketConnected()
+    }
+
     subscribeDashboardSystem(filtros.value.system)
     await Promise.all([
       fetchAll(filtros.value, { preserveExistingData: true }),
@@ -965,15 +981,30 @@ function handleVisibilityRecovery() {
   }
 }
 
+async function setupNativeAppStateRecovery() {
+  if (!Capacitor.isNativePlatform()) return
+
+  const handle = await CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+    if (!isActive) return
+
+    recoverDashboardConnection('capacitor-app-state', {
+      restartSocket: true,
+      bypassCooldown: true,
+    })
+  })
+
+  removeNativeAppStateListener = () => {
+    handle.remove()
+    removeNativeAppStateListener = null
+  }
+}
+
 async function initializeClientDashboard() {
   dashboardReady.value = false
   checkApiKeysExpirations()
 
   const sessionOwner =
-    authService.user?.id ||
-    authService.user?.email ||
-    authService.user?.organization?.id ||
-    ''
+    authService.user?.id || authService.user?.email || authService.user?.organization?.id || ''
   const previousOwner = localStorage.getItem(DASHBOARD_SESSION_OWNER_KEY)
 
   if (sessionOwner && previousOwner !== sessionOwner) {
@@ -1001,10 +1032,7 @@ async function initializeClientDashboard() {
     filtros.value.system = nextSystem
     authService.savePrefs(currentFlow.value, nextSystem)
 
-    await Promise.all([
-      fetchAll(filtros.value),
-      cargarEventosDelSistema(),
-    ])
+    await Promise.all([fetchAll(filtros.value), cargarEventosDelSistema()])
   }
 
   dashboardReady.value = true
@@ -1076,21 +1104,18 @@ watch(
 )
 
 // Limpiar suscripción al WebSocket si se sale del flujo de cliente
-watch(
-  isClientFlow,
-  (isClient) => {
-    if (!isClient) {
-      unsubscribeSystem()
-    }
-  },
-)
+watch(isClientFlow, (isClient) => {
+  if (!isClient) {
+    unsubscribeSystem()
+  }
+})
 
 onBeforeUnmount(() => {
   window.removeEventListener('focus', handleWindowFocusRecovery)
   document.removeEventListener('visibilitychange', handleVisibilityRecovery)
+  removeNativeAppStateListener?.()
   unsubscribeSystem()
 })
-
 
 // ── Notificaciones del browser para alertas CRIT ──────────────────────────────
 async function requestNotificationPermission() {
@@ -1142,6 +1167,7 @@ function handleCritAlert(alert) {
 onMounted(async () => {
   window.addEventListener('focus', handleWindowFocusRecovery)
   document.addEventListener('visibilitychange', handleVisibilityRecovery)
+  await setupNativeAppStateRecovery()
 
   const defaultFlow = authService.getAllowedFlow()
   const defaultRoute = defaultFlow === 'santoro' ? '/santoro/empresas' : '/client/escritorio'
@@ -1263,6 +1289,18 @@ onMounted(async () => {
 
 .toolbar-icon-btn--purple {
   color: #c084fc;
+}
+
+.toolbar-utility-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.toolbar-icon-btn--utility {
+  min-width: 34px;
+  min-height: 34px;
 }
 
 /* USER + SYSTEM */
@@ -1611,8 +1649,40 @@ onMounted(async () => {
     flex-wrap: nowrap !important;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-left: 8px;
-    padding-right: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .mobile-scroll-row > * {
+    margin-left: 4px !important;
+  }
+
+  .toolbar-utility-group {
+    flex: 0 0 auto;
+    gap: 2px;
+    padding: 2px 4px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .toolbar-icon-btn--utility {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
+  }
+
+  .system-dropdown {
+    flex: 0 0 auto;
+    max-width: 210px;
+  }
+
+  .system-dropdown .q-btn__content {
+    min-width: 0;
+    overflow: hidden;
   }
 
   .mobile-scroll-row::-webkit-scrollbar {

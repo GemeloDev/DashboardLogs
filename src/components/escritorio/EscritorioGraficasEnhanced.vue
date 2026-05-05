@@ -5,9 +5,24 @@
   </div>
   <!-- Hero superior -->
   <div
-    v-if="!loading && (shouldShowPanel(DASHBOARD_PANEL_IDS.EVENT_TYPES) || shouldShowPanel(DASHBOARD_PANEL_IDS.COVERAGE))"
-    class="q-mb-lg"
+    v-if="
+      !loading &&
+      (shouldShowPanel(DASHBOARD_PANEL_IDS.EVENT_TYPES) ||
+        shouldShowPanel(DASHBOARD_PANEL_IDS.COVERAGE))
+    "
+    class="dashboard-hero-block q-mb-lg"
   >
+    <div v-if="$q.platform.is.mobile && !popupMode" class="mobile-dashboard-refresh">
+      <q-btn
+        unelevated
+        rounded
+        icon="refresh"
+        label="Recargar panel"
+        class="mobile-dashboard-refresh__btn"
+        @click="reloadDashboardPage"
+      />
+    </div>
+
     <section class="dashboard-hero" :class="{ 'dashboard-hero--popup': popupMode }">
       <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENT_TYPES)" class="dashboard-hero__left">
         <q-card flat bordered class="dashboard-hero__events-card text-white">
@@ -124,11 +139,9 @@
   <div
     v-if="
       !loading &&
-      (
-        (shouldShowPanel(DASHBOARD_PANEL_IDS.OFFICES) && topOffices.items.length) ||
+      ((shouldShowPanel(DASHBOARD_PANEL_IDS.OFFICES) && topOffices.items.length) ||
         (shouldShowPanel(DASHBOARD_PANEL_IDS.TAGS) && topTags.items.length) ||
-        (shouldShowPanel(DASHBOARD_PANEL_IDS.OUTCOMES) && topOutcomes.items.length)
-      )
+        (shouldShowPanel(DASHBOARD_PANEL_IDS.OUTCOMES) && topOutcomes.items.length))
     "
     class="row q-col-gutter-md q-mb-md items-stretch"
   >
@@ -288,17 +301,12 @@
   <div
     v-if="
       !loading &&
-      (
-        shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY) ||
-        (shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData)
-      )
+      (shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY) ||
+        (shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData))
     "
     class="row q-col-gutter-md q-mb-md items-stretch"
   >
-    <div
-      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY)"
-      :class="severityColumnClass"
-    >
+    <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY)" :class="severityColumnClass">
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
           <q-icon name="warning" color="orange" size="18px" class="q-mr-sm" />
@@ -318,10 +326,7 @@
       </q-card>
     </div>
 
-    <div
-      v-if="hasVisibleHttpPanel"
-      :class="halfColumnClass"
-    >
+    <div v-if="hasVisibleHttpPanel" :class="halfColumnClass">
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
           <q-icon name="http" color="cyan" size="18px" class="q-mr-sm" />
@@ -346,18 +351,13 @@
   <div
     v-show="
       !loading &&
-      (
-        shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_DAY) ||
+      (shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_DAY) ||
         shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_WEEK) ||
-        shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_MONTH)
-      )
+        shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_MONTH))
     "
     class="row q-col-gutter-md q-mb-md"
   >
-    <div
-      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_DAY)"
-      :class="thirdColumnClass"
-    >
+    <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_DAY)" :class="thirdColumnClass">
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="timeline" color="cyan" size="18px" class="q-mr-sm" />
@@ -376,10 +376,7 @@
       </q-card>
     </div>
 
-    <div
-      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_WEEK)"
-      :class="thirdColumnClass"
-    >
+    <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_WEEK)" :class="thirdColumnClass">
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="date_range" color="purple" size="18px" class="q-mr-sm" />
@@ -398,10 +395,7 @@
       </q-card>
     </div>
 
-    <div
-      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_MONTH)"
-      :class="thirdColumnClass"
-    >
+    <div v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.EVENTS_MONTH)" :class="thirdColumnClass">
       <q-card flat bordered class="toplist-card q-pa-lg text-white">
         <div class="row items-center q-mb-md">
           <q-icon name="calendar_month" color="pink" size="18px" class="q-mr-sm" />
@@ -444,16 +438,13 @@
         text-color="grey-5"
         toggle-color="orange-9"
         :options="[
-          { label: t('dashboard.mapType'), value: 'logs'    },
+          { label: t('dashboard.mapType'), value: 'logs' },
           { label: t('dashboard.mapType_devices'), value: 'devices' },
         ]"
       />
     </div>
 
-    <ConsoleGeoMap
-      v-if="mapView === 'logs'"
-      :points="geoPoints"
-    />
+    <ConsoleGeoMap v-if="mapView === 'logs'" :points="geoPoints" />
 
     <ConsoleDevicesMap
       v-if="mapView === 'devices'"
@@ -509,6 +500,10 @@ const props = defineProps({
 })
 
 // Injects â”€â”€
+function reloadDashboardPage() {
+  window.location.reload()
+}
+
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
 const openConsole = inject('openConsole', null)
 const logsGlobales = inject('logsGlobales', ref([]))
@@ -528,14 +523,15 @@ const activityWidgetRef = ref(null)
 const visiblePanelSet = computed(() =>
   props.visiblePanels?.length ? new Set(props.visiblePanels) : null,
 )
-const shouldShowPanel = (panelId) =>
-  !visiblePanelSet.value || visiblePanelSet.value.has(panelId)
+const shouldShowPanel = (panelId) => !visiblePanelSet.value || visiblePanelSet.value.has(panelId)
 const halfColumnClass = computed(() => (props.popupMode ? 'col-12' : 'col-12 col-md-6'))
 const thirdColumnClass = computed(() => (props.popupMode ? 'col-12' : 'col-12 col-md-4'))
 
 // Flags derivados de la API
 const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
-const hasVisibleHttpPanel = computed(() => shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData.value)
+const hasVisibleHttpPanel = computed(
+  () => shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData.value,
+)
 const severityColumnClass = computed(() =>
   props.popupMode || !hasVisibleHttpPanel.value ? 'col-12' : 'col-12 col-md-6',
 )
@@ -745,7 +741,9 @@ function matchLogsForDevice(device = {}) {
 
   for (const matcher of matchers) {
     const logs = (logsGlobales.value || []).filter((log) =>
-      matcher.logPaths.some((path) => normalizeCompareValue(getDeep(log, path)) === matcher.normalizedValue),
+      matcher.logPaths.some(
+        (path) => normalizeCompareValue(getDeep(log, path)) === matcher.normalizedValue,
+      ),
     )
 
     if (logs.length) {
@@ -1477,6 +1475,14 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+.dashboard-hero-block {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
 @media (max-width: 640px) {
   .dashboard-refresh-indicator {
     left: 12px;
@@ -1524,8 +1530,31 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
   gap: 22px;
   align-items: stretch;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.mobile-dashboard-refresh {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.mobile-dashboard-refresh__btn {
+  max-width: 100%;
+  color: #fff;
+  background: linear-gradient(135deg, #0ea5e9, #22c55e);
+  box-shadow: 0 14px 30px rgba(14, 165, 233, 0.22);
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .dashboard-hero--popup {
@@ -1535,8 +1564,11 @@ onBeforeUnmount(() => {
 .dashboard-hero__left {
   display: grid;
   gap: 22px;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .dashboard-hero__title-card,
@@ -1546,6 +1578,9 @@ onBeforeUnmount(() => {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .dashboard-hero__title-card {
@@ -1954,9 +1989,24 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 760px) {
+  .dashboard-hero-block {
+    overflow-x: hidden;
+  }
+
   .dashboard-hero {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     overflow: hidden;
+  }
+
+  .mobile-dashboard-refresh {
+    justify-content: stretch;
+  }
+
+  .mobile-dashboard-refresh__btn {
+    width: 100%;
+    min-width: 0;
   }
 
   .dashboard-hero__title-card,
@@ -1965,6 +2015,8 @@ onBeforeUnmount(() => {
     padding: 18px;
     border-radius: 22px;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .dashboard-hero__section-head {
@@ -2004,7 +2056,8 @@ onBeforeUnmount(() => {
   }
 
   .dashboard-hero__donut-visual {
-    width: min(220px, 68vw);
+    width: min(220px, calc(100vw - 112px));
+    max-width: 100%;
   }
 
   .donut-center-overlay {

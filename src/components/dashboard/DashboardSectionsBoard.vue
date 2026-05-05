@@ -37,5 +37,9 @@ const visibleSectionOrder = computed(() =>
 .dashboard-sections-board {
   display: grid;
   gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 </style>

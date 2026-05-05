@@ -100,6 +100,7 @@ export const DASHBOARD = {
   SERIES: `${BASE_URL}/logs/dashboard/series`,
   HTTP: `${BASE_URL}/logs/dashboard/http`,
   GEO: `${BASE_URL}/logs/dashboard/geo`,
+  SYSTEMS_HEALTH: `${BASE_URL}/logs/dashboard/systems-health`,
 }
 
 export const DEVICES = {

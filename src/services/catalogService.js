@@ -1,5 +1,6 @@
 import { axiosInstance } from './axiosConfig'
-import { EVA } from './endpoints'
+import { DASHBOARD, EVA } from './endpoints'
+import { isDebug } from 'src/config/env'
 
 export class CatalogService {
 
@@ -8,17 +9,16 @@ export class CatalogService {
       // Cargar sistemas y salud en paralelo
       const [catalogResponse, healthResponse] = await Promise.allSettled([
         axiosInstance.get(EVA.CATALOGS_SYSTEMS),
-        axiosInstance.get('/api/logs/dashboard/systems-health'),
+        axiosInstance.get(DASHBOARD.SYSTEMS_HEALTH),
       ])
 
-      // Debug temporal
-      // console.log('[CatalogService] catalog status:', catalogResponse.status)
-      // console.log('[CatalogService] health status:', healthResponse.status)
-      // if (healthResponse.status === 'fulfilled') {
-      //   console.log('[CatalogService] health data:', healthResponse.value.data)
-      // } else {
-      //   console.error('[CatalogService] health error:', healthResponse.reason?.response?.status, healthResponse.reason?.message)
-      // }
+      if (isDebug && healthResponse.status === 'rejected') {
+        console.error('[CatalogService] Error cargando salud de sistemas:', {
+          url: DASHBOARD.SYSTEMS_HEALTH,
+          status: healthResponse.reason?.response?.status,
+          message: healthResponse.reason?.message,
+        })
+      }
 
       const items = catalogResponse.status === 'fulfilled'
               ? (catalogResponse.value.data?.data || []) : []
@@ -32,8 +32,10 @@ export class CatalogService {
         if (h?.system) healthMap[h.system] = h
       })
 
-      console.log('[CatalogService] healthMap:', healthMap)
-      console.log(`[CatalogService] Catalogo cargado: ${items.length} sistemas.`)
+      if (isDebug) {
+        console.log('[CatalogService] healthMap:', healthMap)
+        console.log(`[CatalogService] Catalogo cargado: ${items.length} sistemas.`)
+      }
 
       return {
         sistemas:       this._extractSistemas(items, healthMap),

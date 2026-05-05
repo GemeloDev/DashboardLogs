@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { onSocketConnect, subscribeToNewLogs } from './socketService'
 import DashboardService from 'src/services/dashboardService'
 import authService from './authService'
+import { isDebug } from 'src/config/env'
 
 // ─── Datos de los 5 endpoints ────────────────────────────────────────────────
 const statsData   = ref(null)
@@ -164,9 +165,25 @@ function resubscribeActiveDashboardTopic() {
   clearDashboardSubscription()
 
   const { tenantId, system, getFilters, onRefreshExtra } = activeDashboardSubscription
-  if (!tenantId || !system) return
+  if (!tenantId || !system) {
+    if (isDebug) {
+      console.warn('[Dashboard WS] Suscripcion omitida por datos incompletos:', {
+        tenantId,
+        system,
+      })
+    }
+    return
+  }
+
+  if (isDebug) {
+    console.log('[Dashboard WS] Preparando suscripcion:', { tenantId, system })
+  }
 
   wsSubscription = subscribeToNewLogs(tenantId, system, (payload) => {
+    if (isDebug) {
+      console.log('[Dashboard WS] Nuevos logs recibidos:', payload)
+    }
+
     newLogsCount.value += payload.count || 1
 
     if (refreshDebounce) clearTimeout(refreshDebounce)

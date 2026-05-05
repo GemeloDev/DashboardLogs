@@ -47,11 +47,6 @@ async function readResponseBody(response) {
   }
 }
 
-const clearDashboardSharedState = () => {
-  localStorage.removeItem(DASHBOARD_SYNC_CHANNEL)
-  localStorage.removeItem(DASHBOARD_SHARED_STORE_KEY)
-}
-
 export const useAuthService = () => {
   const clearSession = () => {
     localStorage.removeItem(SESSION_KEY)
