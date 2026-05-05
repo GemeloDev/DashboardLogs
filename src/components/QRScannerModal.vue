@@ -1,15 +1,6 @@
-/**
- * Modal de Escaneo de Código QR
- * Soporta escaneo desde cámara y upload de imagen
- */
+/** * Modal de Escaneo de Código QR * Soporta escaneo desde cámara y upload de imagen */
 <template>
-  <q-dialog
-    v-model="isOpen"
-    @hide="onClose"
-    maximized
-    transition-show="slide-up"
-    transition-hide="slide-down"
-  >
+  <q-dialog v-model="isOpen" @hide="onClose" transition-show="scale" transition-hide="scale">
     <q-card class="qr-scanner-modal">
       <!-- Header -->
       <div class="scanner-shell">
@@ -82,7 +73,7 @@
               </div>
 
               <!-- Loading -->
-              <div v-if="scanning" class="scan-loading">
+              <div v-if="scanning && !cameraActive" class="scan-loading">
                 <q-spinner-dots size="50px" color="cyan" />
                 <p>{{ t('qrScanner.scanning') }}</p>
               </div>
@@ -234,6 +225,7 @@ const startCamera = async () => {
     )
 
     cameraActive.value = true
+    scanning.value = false
     $q.notify({
       type: 'positive',
       message: t('qrScanner.cameraStarted'),
@@ -311,20 +303,25 @@ $border-soft: rgba(255, 255, 255, 0.08);
 $border-warm: rgba(233, 113, 50, 0.16);
 
 .qr-scanner-modal {
-  height: 100%;
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100dvh - 112px);
   color: white;
   overflow: hidden;
+  border: 1px solid $border-warm;
+  border-radius: 28px;
   background:
     radial-gradient(circle at top right, rgba(233, 113, 50, 0.2), transparent 28%),
     radial-gradient(circle at bottom left, rgba(124, 58, 237, 0.16), transparent 30%),
     linear-gradient(180deg, $panel-soft 0%, $panel-dark 100%);
+  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.48);
 }
 
 .scanner-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  max-height: calc(100dvh - 112px);
   padding: 18px;
+  overflow-y: auto;
 }
 
 .modal-header {
@@ -379,7 +376,6 @@ $border-warm: rgba(233, 113, 50, 0.16);
 }
 
 .camera-panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -400,7 +396,7 @@ $border-warm: rgba(233, 113, 50, 0.16);
   width: 100%;
   max-width: 540px;
   aspect-ratio: 9/16;
-  max-height: min(68vh, 760px);
+  max-height: min(54vh, 620px);
   overflow: hidden;
   border-radius: 30px;
   border: 1px solid $border-warm;
@@ -594,8 +590,7 @@ $border-warm: rgba(233, 113, 50, 0.16);
   align-items: center;
   justify-content: center;
   color: white;
-  background: rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.16);
 
   p {
     margin-top: 16px;
@@ -695,7 +690,7 @@ $border-warm: rgba(233, 113, 50, 0.16);
   }
 
   .camera-container {
-    max-height: 64vh;
+    max-height: 52vh;
     border-radius: 24px;
   }
 
@@ -712,6 +707,16 @@ $border-warm: rgba(233, 113, 50, 0.16);
 }
 
 @media (max-width: 420px) {
+  .qr-scanner-modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 92px);
+    border-radius: 24px;
+  }
+
+  .scanner-shell {
+    max-height: calc(100dvh - 92px);
+  }
+
   .camera-placeholder {
     padding: 20px;
   }
