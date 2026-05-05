@@ -30,6 +30,7 @@
           />
 
           <q-btn
+            v-if="canMountRateLimit"
             unelevated
             no-caps
             icon="settings"
@@ -309,7 +310,7 @@
       </q-card>
     </q-dialog>
 
-    <rate-limit-config v-model="rateLimitDialog" />
+    <rate-limit-config v-if="canMountRateLimit" v-model="rateLimitDialog" />
   </q-page>
 </template>
 
@@ -320,6 +321,7 @@ import RateLimitConfig from 'src/components/blocks/RateLimitConfig.vue'
 import { timeAgoIntl, formatearFecha } from 'src/helpers'
 import { ApiKeyService } from 'src/services/apiKeys'
 import { useI18n } from 'vue-i18n'
+import { useAuthService } from 'src/services/authService'
 
 const $q = useQuasar()
 
@@ -336,6 +338,9 @@ const ttlDays = 35
 const rotateDays = 30
 
 const t = useI18n().t
+const authService = useAuthService()
+
+const canMountRateLimit = computed(() => !authService.hasRole('ORG_ADMIN'))
 
 const form = ref({
   name: '',
@@ -565,6 +570,7 @@ const abrirModalCrear = () => {
 }
 
 const abrirModalRateLimit = () => {
+  if (!canMountRateLimit.value) return
   rateLimitDialog.value = true
 }
 

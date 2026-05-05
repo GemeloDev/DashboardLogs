@@ -476,7 +476,6 @@ const showDinamicFilters = ref(false)
 const consolaRef = ref(null)
 
 const apiKeysPorExpirar = ref([])
-const prefs = authService.loadPrefs()
 const dashboardStore = useDashboardSharedStore()
 
 dashboardStore.initSync()
@@ -521,6 +520,7 @@ const filterAuthorizedSystems = (catalogSystems = []) => {
 
 const resolveSelectedSystem = (candidate = selectedSystem.value) => {
   const availableSystems = systems.value.map((system) => system.value)
+  const prefs = authService.loadPrefs()
 
   if (candidate && availableSystems.includes(candidate)) {
     return candidate
@@ -553,8 +553,10 @@ const {
 } = useDashboardData()
 
 const DASHBOARD_RECOVERY_COOLDOWN_MS = 10000
+const DASHBOARD_SESSION_OWNER_KEY = 'dashboardSessionOwner'
 let lastDashboardRecoveryAt = 0
 let dashboardRecoveryInFlight = false
+const dashboardReady = ref(false)
 
 provide('dashboardLoading', dashboardLoading)
 provide('dashboardRefreshing', dashboardRefreshing)
@@ -596,6 +598,12 @@ const aplicarFiltroRangoFechas = () => {
 }
 
 const cargarEventosDelSistema = async () => {
+  if (!selectedSystem.value) {
+    eventosRaw.value = []
+    logsGlobales.value = []
+    return
+  }
+
   loadingLogs.value = true
   try {
     const resp = await ChartDataService.getLogsEvents({
@@ -620,6 +628,11 @@ const refreshSystemsCatalog = async () => {
     const catalogs = await CatalogService.fetchCatalogs()
     systems.value = filterAuthorizedSystems(catalogs.sistemas)
     healthMap.value = catalogs.healthMap || {}
+
+    const nextSystem = resolveSelectedSystem()
+    if (nextSystem !== selectedSystem.value) {
+      selectedSystem.value = nextSystem
+    }
   } catch (e) {
     console.error('❌ Error al refrescar sistemas: ', e)
   }
@@ -799,6 +812,7 @@ function openConsole(selection = null) {
 }
 
 function resetClientDashboardState() {
+  dashboardReady.value = false
   unsubscribeSystem()
   resetDashboardData()
   disconnectSocket()
@@ -820,6 +834,7 @@ function resetClientDashboardState() {
   }
 
   dashboardStore.resetDashboardState()
+  localStorage.removeItem(DASHBOARD_SESSION_OWNER_KEY)
 }
 
 function logout() {
@@ -831,7 +846,7 @@ function logout() {
       message: t('notifications.successLogout'),
       color: 'positive',
       icon: 'logout',
-      position: 'top',
+      position: $q.platform.is.mobile ? 'bottom' : 'top',
     })
     router.push('/login')
   } else {
@@ -839,7 +854,7 @@ function logout() {
       message: t('notifications.errorLogout'),
       color: 'negative',
       icon: 'error',
-      position: 'top',
+      position: $q.platform.is.mobile ? 'bottom' : 'top',
     })
   }
 }
@@ -950,10 +965,74 @@ function handleVisibilityRecovery() {
   }
 }
 
+async function initializeClientDashboard() {
+  dashboardReady.value = false
+  checkApiKeysExpirations()
+
+  const sessionOwner =
+    authService.user?.id ||
+    authService.user?.email ||
+    authService.user?.organization?.id ||
+    ''
+  const previousOwner = localStorage.getItem(DASHBOARD_SESSION_OWNER_KEY)
+
+  if (sessionOwner && previousOwner !== sessionOwner) {
+    resetDashboardData()
+    eventosRaw.value = []
+    logsGlobales.value = []
+    systems.value = []
+    healthMap.value = {}
+    filtros.value = {
+      system: '',
+      rangoFechas: { from: '', to: '' },
+      busqueda: '',
+      visibleFields: [],
+      values: {},
+    }
+    dashboardStore.resetDashboardState({ publish: false })
+    localStorage.setItem(DASHBOARD_SESSION_OWNER_KEY, sessionOwner)
+  }
+
+  await refreshSystemsCatalog()
+
+  const nextSystem = resolveSelectedSystem()
+  if (nextSystem) {
+    selectedSystem.value = nextSystem
+    filtros.value.system = nextSystem
+    authService.savePrefs(currentFlow.value, nextSystem)
+
+    await Promise.all([
+      fetchAll(filtros.value),
+      cargarEventosDelSistema(),
+    ])
+  }
+
+  dashboardReady.value = true
+
+  connectSocket()
+  subscribeDashboardSystem(nextSystem)
+
+  // Esperar un momento para que la conexion se establezca
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  await requestNotificationPermission()
+
+  const tenantId =
+    authService.user?.tenantId ||
+    authService.user?.authz?.tenantId ||
+    authService.user?.organization?.id
+
+  if (tenantId) {
+    subscribeToAlerts(tenantId, handleCritAlert)
+  }
+}
+
 // 1) Cuando cambia system: SÍ pega al backend Y se suscribe al WebSocket
 watch(
   selectedSystem,
   (sys) => {
+    if (!dashboardReady.value) return
+
     filtros.value.system = sys || ''
 
     if (!sys) {
@@ -979,7 +1058,7 @@ watch(
 watch(
   () => `${filtros.value.rangoFechas?.from || ''}|${filtros.value.rangoFechas?.to || ''}`,
   () => {
-    if (isClientFlow.value) {
+    if (isClientFlow.value && dashboardReady.value) {
       aplicarFiltroRangoFechas()
     }
   },
@@ -989,6 +1068,7 @@ watch(
 watch(
   dashboardQueryKey,
   () => {
+    if (!dashboardReady.value) return
     if (!filtros.value.system) return
     fetchAll(filtros.value)
   },
@@ -1073,26 +1153,7 @@ onMounted(async () => {
   if (isClientFlow.value) {
     window.addEventListener('santoro-abrir-consola', (e) => openConsole(e?.detail || null))
     window.addEventListener('santoro-mostrar-filtros', () => (showDinamicFilters.value = true))
-    checkApiKeysExpirations()
-
-    // Cargar sistemas desde la API
-    await refreshSystemsCatalog()
-
-    connectSocket()
-
-    // Esperar un momento para que la conexión se establezca
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    await requestNotificationPermission()
-
-    const tenantId =
-      authService.user?.tenantId ||
-      authService.user?.authz?.tenantId ||
-      authService.user?.organization?.id
-
-    if (tenantId) {
-      subscribeToAlerts(tenantId, handleCritAlert)
-    }
+    await initializeClientDashboard()
   }
 })
 </script>
@@ -1520,6 +1581,32 @@ onMounted(async () => {
 
 /* MÓVIL */
 @media (max-width: 599px) {
+  .app-header {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .app-toolbar {
+    min-height: 64px;
+  }
+
+  .app-drawer {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .app-page-container {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .q-dialog__inner--maximized {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .fullscreen-safe-shell {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   .mobile-scroll-row {
     flex-wrap: nowrap !important;
     overflow-x: auto;
