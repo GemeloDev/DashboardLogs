@@ -41,24 +41,22 @@ export default defineConfig((/* ctx */) => {
       vueRouterMode: 'hash', // available values: 'hash', 'history'
 
       // ═══════════════════════════════════════════════════════════════
-      // INYECCIÓN DE VARIABLES DE ENTORNO
+      // INYECCIÓN DE VARIABLES DE ENTORNO - VITE DEFINE
       // ═══════════════════════════════════════════════════════════════
-      // Quasar lee automáticamente archivos .env según el modo:
-      //   - quasar dev   → lee .env + .env.development
-      //   - quasar build → lee .env + .env.production
-      //
-      // Aquí re-exponemos las variables para que estén disponibles
-      // en el código del cliente vía process.env
+      // Usamos rawDefine para inyectar las variables directamente en el
+      // código en tiempo de build (requerido para Vite)
       // ═══════════════════════════════════════════════════════════════
-      env: {
-        API_BASE_URL: process.env.API_BASE_URL,
-        WS_BASE_URL: process.env.WS_BASE_URL,
-        NODE_ENV: process.env.NODE_ENV,
-        DEBUG_MODE: process.env.DEBUG_MODE,
-        APP_NAME: process.env.APP_NAME,
-        APP_VERSION: process.env.APP_VERSION,
-        API_TIMEOUT: process.env.API_TIMEOUT,
-        SOCKET_TOPIC: process.env.SOCKET_TOPIC,
+      rawDefine: {
+        'process.env': {
+          API_BASE_URL: JSON.stringify(process.env.API_BASE_URL || '/api'),
+          WS_BASE_URL: JSON.stringify(process.env.WS_BASE_URL),
+          NODE_ENV: JSON.stringify(process.env.NODE_ENV || 'production'),
+          DEBUG_MODE: JSON.stringify(process.env.DEBUG_MODE || 'false'),
+          APP_NAME: JSON.stringify(process.env.APP_NAME || 'Dashboard Logs'),
+          APP_VERSION: JSON.stringify(process.env.APP_VERSION || '1.0.0'),
+          API_TIMEOUT: JSON.stringify(process.env.API_TIMEOUT || '30000'),
+          SOCKET_TOPIC: JSON.stringify(process.env.SOCKET_TOPIC || '/topic/qr-login'),
+        },
       },
 
       // vueRouterBase,

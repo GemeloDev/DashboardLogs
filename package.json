@@ -14,7 +14,7 @@
     "build": "quasar build",
     "build:prod": "quasar build",
     "start": "quasar dev",
-    "postinstall": "quasar prepare"
+    "prepare": "echo 'No prepare needed'"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",
@@ -43,6 +43,7 @@
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@quasar/app-vite": "^2.1.0",
+    "@quasar/cli": "^2.0.0",
     "@vue/eslint-config-prettier": "^10.1.0",
     "autoprefixer": "^10.4.2",
     "eslint": "^9.14.0",
