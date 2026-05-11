@@ -277,8 +277,13 @@
             :section-id="DASHBOARD_SECTION_IDS.STATUS"
           />
         </div>
-        <div class="status-line-wrap">
-          <canvas ref="statusLineCanvas"></canvas>
+        <div class="status-line-wrap" :class="{ 'status-line-wrap--popup': popupMode }">
+          <apexchart
+            type="line"
+            height="100%"
+            :options="statusApexOptions"
+            :series="statusApexSeries"
+          />
         </div>
       </q-card>
     </div>
@@ -371,7 +376,12 @@
           />
         </div>
         <div class="chart-wrap">
-          <canvas ref="eventsDayCanvas"></canvas>
+          <apexchart
+            type="line"
+            height="100%"
+            :options="eventsDayApexOptions"
+            :series="eventsDayApexSeries"
+          />
         </div>
       </q-card>
     </div>
@@ -393,7 +403,12 @@
           />
         </div>
         <div class="chart-wrap">
-          <canvas ref="eventsWeekCanvas"></canvas>
+          <apexchart
+            type="line"
+            height="100%"
+            :options="eventsWeekApexOptions"
+            :series="eventsWeekApexSeries"
+          />
         </div>
       </q-card>
     </div>
@@ -415,7 +430,12 @@
           />
         </div>
         <div class="chart-wrap">
-          <canvas ref="eventsMonthCanvas"></canvas>
+          <apexchart
+            type="line"
+            height="100%"
+            :options="eventsMonthApexOptions"
+            :series="eventsMonthApexSeries"
+          />
         </div>
       </q-card>
     </div>
@@ -475,6 +495,7 @@
 
 <script setup>
 import { ref, computed, inject, watch, nextTick, onBeforeUnmount } from 'vue'
+import VueApexCharts from 'vue3-apexcharts'
 import ConsoleGeoMap from '../blocks/ConsoleGeoMap.vue'
 import ConsoleDevicesMap from '../blocks/ConsoleDevicesMap.vue'
 import Chart from 'chart.js/auto'
@@ -487,6 +508,7 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const $q = useQuasar()
+const apexchart = VueApexCharts
 const DEVICE_CONSOLE_RADIUS_KM = 5
 
 const props = defineProps({
@@ -586,6 +608,11 @@ function onEventTypeCardClick(eventType) {
 function openConsoleWithFilter(fieldKey, value) {
   if (typeof openConsole === 'function') return openConsole({ fieldKey, value })
   window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail: { fieldKey, value } }))
+}
+
+function openConsoleWithSelection(selection) {
+  if (typeof openConsole === 'function') return openConsole(selection)
+  window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail: selection }))
 }
 
 const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
@@ -1203,115 +1230,240 @@ async function renderHttpRadar() {
   })
 }
 
-// Status over time (Chart.js line)
-const statusLineCanvas = ref(null)
-let statusLineChart = null
+// Series temporales: día / semana / mes
+const SERIES_COLORS = { day: '#22d3ee', week: '#a78bfa', month: '#ff5c8a', year: '#fbbf24' }
+const STATUS_COLORS = {
+  SUCCESS: '#22c55e',
+  OK: '#22c55e',
+  COMPLETED: '#22c55e',
+  FAILED: '#ef4444',
+  ERROR: '#ef4444',
+  WARNING: '#ff9f43',
+  WARN: '#ff9f43',
+  PENDING: '#fbbf24',
+  INFO: '#22d3ee',
+}
+const STATUS_FALLBACK_COLORS = ['#22d3ee', '#a78bfa', '#ff5c8a', '#fbbf24', '#29d3c2', '#94a3b8']
 
-function buildStatusSeriesFromApi(items = []) {
-  const map = {}
+function statusColor(status, index) {
+  return (
+    STATUS_COLORS[String(status || '').toUpperCase()] ||
+    STATUS_FALLBACK_COLORS[index % STATUS_FALLBACK_COLORS.length]
+  )
+}
+
+function buildStatusApexData(items = []) {
+  const map = new Map()
   const dates = new Set()
   const statuses = new Set()
 
   items.forEach(({ date, status, count }) => {
+    if (!date || !status) return
     dates.add(date)
     statuses.add(status)
-    if (!map[status]) map[status] = {}
-    map[status][date] = count
+    const statusMap = map.get(status) || new Map()
+    statusMap.set(date, Number(count || 0))
+    map.set(status, statusMap)
   })
 
   const labels = Array.from(dates).sort()
-  const datasets = Array.from(statuses).map((status) => ({
-    label: status,
-    data: labels.map((d) => map[status]?.[d] || 0),
-    tension: 0.35,
-    fill: false,
-    pointRadius: 3,
-    pointHoverRadius: 5,
-  }))
-
-  return { labels, datasets }
+  const statusList = Array.from(statuses)
+  return {
+    labels,
+    colors: statusList.map((status, index) => statusColor(status, index)),
+    series: statusList.map((status) => ({
+      name: status,
+      data: labels.map((date) => map.get(status)?.get(date) || 0),
+    })),
+  }
 }
 
-async function renderStatusLine() {
-  await nextTick()
-  const el = statusLineCanvas.value
-  if (!el) return
+const statusApexData = computed(() => buildStatusApexData(filteredStatusOverTime.value))
+const statusApexSeries = computed(() => statusApexData.value.series)
 
-  if (statusLineChart) {
-    statusLineChart.destroy()
-    statusLineChart = null
+function buildSingleApexSeries(items = []) {
+  return [
+    {
+      name: t('dashboard.eventsSeriesLabel'),
+      data: items.map((item) => Number(item?.count || 0)),
+    },
+  ]
+}
+
+const eventsDayApexLabels = computed(() => filteredByDay.value.map((item) => item.date))
+const eventsWeekApexLabels = computed(() => filteredByWeek.value.map((item) => item.date))
+const eventsMonthApexLabels = computed(() => filteredByMonth.value.map((item) => item.date))
+const eventsDayApexSeries = computed(() => buildSingleApexSeries(filteredByDay.value))
+const eventsWeekApexSeries = computed(() => buildSingleApexSeries(filteredByWeek.value))
+const eventsMonthApexSeries = computed(() => buildSingleApexSeries(filteredByMonth.value))
+
+function buildBaseApexOptions({
+  id,
+  categories,
+  colors,
+  showLegend = false,
+  onPointClick,
+  xLabelStep = 1,
+}) {
+  const selectPoint = (config) => {
+    const category = categories?.[config?.dataPointIndex]
+    const seriesName = config?.w?.config?.series?.[config?.seriesIndex]?.name
+    if (category) onPointClick?.({ category, seriesName })
   }
 
-  if (!filteredStatusOverTime.value?.length) return
-
-  statusLineChart = new Chart(el, {
-    type: 'line',
-    data: buildStatusSeriesFromApi(filteredStatusOverTime.value),
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
-        tooltip: {
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          callbacks: {
-            label: (ctx) =>
-              `${ctx.dataset.label}: ${ctx.parsed.y} ${t('dashboard.eventsSeriesLabel').toLowerCase()}`,
-          },
+  return {
+    chart: {
+      id,
+      type: 'line',
+      background: 'transparent',
+      foreColor: '#cfe3ff',
+      animations: { enabled: false },
+      parentHeightOffset: 0,
+      toolbar: {
+        show: true,
+        autoSelected: 'pan',
+        tools: {
+          download: true,
+          selection: true,
+          zoom: true,
+          zoomin: true,
+          zoomout: true,
+          pan: true,
+          reset: true,
+        },
+        export: {
+          csv: { filename: id },
+          svg: { filename: id },
+          png: { filename: id },
         },
       },
-      onClick: (_, elements) => {
-        if (!elements.length) return
-        const el = elements[0]
-        const ds = statusLineChart.data.datasets[el.datasetIndex]
-        const date = statusLineChart.data.labels[el.index]
-        openConsole?.([
-          { fieldKey: 'status', value: ds.label },
-          { fieldKey: 'rangoFechas', value: { from: date, to: date } },
-        ])
+      zoom: {
+        enabled: true,
+        type: 'x',
+        autoScaleYaxis: true,
       },
-      scales: {
-        x: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-        y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      events: {
+        markerClick: (_, __, config) => selectPoint(config),
+        dataPointSelection: (_, __, config) => selectPoint(config),
+        click: (_, __, config) => selectPoint(config),
       },
     },
-  })
-}
-
-// Series temporales: día / semana / mes
-const eventsDayCanvas = ref(null)
-const eventsWeekCanvas = ref(null)
-const eventsMonthCanvas = ref(null)
-let eventsDayChart = null
-let eventsWeekChart = null
-let eventsMonthChart = null
-
-const SERIES_COLORS = { day: '#22d3ee', week: '#a78bfa', month: '#ff5c8a', year: '#fbbf24' }
-
-const LINE_SCALE_OPTS = {
-  x: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-  y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-}
-
-function buildSimpleSeries(items = [], color = '#22d3ee') {
-  return {
-    labels: items.map((i) => i.date),
-    datasets: [
-      {
-        label: t('dashboard.eventsSeriesLabel'),
-        data: items.map((i) => i.count),
-        borderColor: color,
-        backgroundColor: color + '33',
-        tension: 0.35,
-        fill: false,
-        pointRadius: 3,
-        pointHoverRadius: 5,
+    colors,
+    dataLabels: { enabled: false },
+    stroke: {
+      curve: 'smooth',
+      width: 3,
+    },
+    markers: {
+      size: 3,
+      strokeWidth: 0,
+      hover: { size: 5 },
+    },
+    fill: {
+      type: 'solid',
+      opacity: 1,
+    },
+    grid: {
+      borderColor: 'rgba(255,255,255,0.05)',
+      strokeDashArray: 0,
+      padding: { top: 0, right: 12, bottom: 0, left: 8 },
+    },
+    legend: {
+      show: showLegend,
+      position: 'bottom',
+      labels: { colors: '#cfe3ff' },
+      markers: { size: 8 },
+    },
+    tooltip: {
+      theme: 'dark',
+      shared: false,
+      intersect: true,
+      marker: { show: true },
+      y: {
+        formatter: (value) => `${Number(value || 0)} ${t('dashboard.eventsSeriesLabel').toLowerCase()}`,
       },
-    ],
+    },
+    xaxis: {
+      categories,
+      tickAmount: Math.max(1, Math.ceil((categories?.length || 1) / xLabelStep)),
+      labels: {
+        trim: true,
+        rotate: -35,
+        style: { colors: '#9ca3af', fontSize: '11px' },
+        formatter: (value, timestamp, opts) => {
+          const index = opts?.i
+          if (xLabelStep <= 1 || index == null) return value
+          return index % xLabelStep === 0 ? value : ''
+        },
+      },
+      axisBorder: { color: 'rgba(255,255,255,0.16)' },
+      axisTicks: { color: 'rgba(255,255,255,0.16)' },
+      tooltip: { enabled: false },
+    },
+    yaxis: {
+      min: 0,
+      forceNiceScale: true,
+      labels: {
+        style: { colors: '#9ca3af' },
+        formatter: (value) => Math.round(Number(value || 0)),
+      },
+    },
+    noData: {
+      text: t('dashboard.noData'),
+      align: 'center',
+      verticalAlign: 'middle',
+      style: { color: '#9ca3af', fontSize: '13px' },
+    },
   }
 }
+
+const statusApexOptions = computed(() =>
+  buildBaseApexOptions({
+    id: 'dashboard-status',
+    categories: statusApexData.value.labels,
+    colors: statusApexData.value.colors,
+    showLegend: true,
+    onPointClick: ({ category, seriesName }) => {
+      if (!seriesName) return
+      openConsoleWithSelection([
+        { fieldKey: 'status', value: seriesName },
+        { fieldKey: 'rangoFechas', value: { from: category, to: category } },
+      ])
+    },
+  }),
+)
+
+const eventsDayApexOptions = computed(() =>
+  buildBaseApexOptions({
+    id: 'dashboard-events-day',
+    categories: eventsDayApexLabels.value,
+    colors: [SERIES_COLORS.day],
+    xLabelStep: Math.max(1, Math.ceil(eventsDayApexLabels.value.length / 8)),
+    onPointClick: ({ category }) =>
+      openConsoleWithSelection([{ fieldKey: 'rangoFechas', value: dayRange(category) }]),
+  }),
+)
+
+const eventsWeekApexOptions = computed(() =>
+  buildBaseApexOptions({
+    id: 'dashboard-events-week',
+    categories: eventsWeekApexLabels.value,
+    colors: [SERIES_COLORS.week],
+    xLabelStep: Math.max(1, Math.ceil(eventsWeekApexLabels.value.length / 8)),
+    onPointClick: ({ category }) =>
+      openConsoleWithSelection([{ fieldKey: 'rangoFechas', value: weekRange(category) }]),
+  }),
+)
+
+const eventsMonthApexOptions = computed(() =>
+  buildBaseApexOptions({
+    id: 'dashboard-events-month',
+    categories: eventsMonthApexLabels.value,
+    colors: [SERIES_COLORS.month],
+    onPointClick: ({ category }) =>
+      openConsoleWithSelection([{ fieldKey: 'rangoFechas', value: monthRange(category) }]),
+  }),
+)
 
 // Helpers de rango de fechas para click en series
 function dayRange(dateStr) {
@@ -1356,72 +1508,10 @@ function monthRange(dateStr) {
   return { from, to }
 }
 
-async function renderSimpleLineChart(canvasRef, existingChart, rows, color, onClickFn = null) {
-  await nextTick()
-  const el = canvasRef.value
-  if (!el) return null
-  if (existingChart) {
-    existingChart.destroy()
-  }
-  if (!rows?.length) return null
-
-  const clickOpts = onClickFn
-    ? {
-        onHover: (event, activeEls) => {
-          const t = event?.native?.target
-          if (t) t.style.cursor = activeEls?.length ? 'pointer' : 'default'
-        },
-        onClick: (_, activeEls, chart) => {
-          if (!activeEls?.length) return
-          const date = chart.data.labels?.[activeEls[0].index]
-          if (date) onClickFn(date)
-        },
-      }
-    : {}
-
-  return new Chart(el, {
-    type: 'line',
-    data: buildSimpleSeries(rows, color),
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: LINE_SCALE_OPTS,
-      ...clickOpts,
-    },
-  })
-}
-
-async function renderSeriesCharts() {
-  eventsDayChart = await renderSimpleLineChart(
-    eventsDayCanvas,
-    eventsDayChart,
-    filteredByDay.value,
-    SERIES_COLORS.day,
-    (date) => openConsole?.([{ fieldKey: 'rangoFechas', value: dayRange(date) }]),
-  )
-  eventsWeekChart = await renderSimpleLineChart(
-    eventsWeekCanvas,
-    eventsWeekChart,
-    filteredByWeek.value,
-    SERIES_COLORS.week,
-    (date) => openConsole?.([{ fieldKey: 'rangoFechas', value: weekRange(date) }]),
-  )
-  eventsMonthChart = await renderSimpleLineChart(
-    eventsMonthCanvas,
-    eventsMonthChart,
-    filteredByMonth.value,
-    SERIES_COLORS.month,
-    (date) => openConsole?.([{ fieldKey: 'rangoFechas', value: monthRange(date) }]),
-  )
-}
-
 // redrawCharts: Punto Común para renderizar/actualizar todos los charts del dashboard
 async function redrawCharts() {
   renderCoverageDonutChart()
   renderSeverityPieChart()
-  renderStatusLine()
-  renderSeriesCharts()
   if (hasHttpData.value) renderHttpRadar()
 }
 
@@ -1448,11 +1538,7 @@ watch(
 onBeforeUnmount(() => {
   coverageDonutChart?.destroy()
   severityPieChart?.destroy()
-  statusLineChart?.destroy()
   httpRadarChart?.destroy()
-  eventsDayChart?.destroy()
-  eventsWeekChart?.destroy()
-  eventsMonthChart?.destroy()
 })
 </script>
 
@@ -1895,9 +1981,20 @@ onBeforeUnmount(() => {
 .status-line-wrap {
   height: 260px;
 }
-.status-line-wrap canvas {
+
+.status-line-wrap--popup {
+  height: clamp(560px, calc(100vh - 420px), 760px);
+}
+
+.status-line-wrap canvas,
+.status-line-wrap :deep(.vue-apexcharts),
+.status-line-wrap :deep(.apexcharts-canvas),
+.status-line-wrap :deep(svg) {
   width: 100% !important;
   height: 100% !important;
+}
+
+.status-line-wrap :deep(.apexcharts-canvas) {
   cursor: pointer;
 }
 
@@ -1920,10 +2017,55 @@ onBeforeUnmount(() => {
 .chart-wrap {
   height: 280px;
 }
-.chart-wrap canvas {
+
+.chart-wrap canvas,
+.chart-wrap :deep(.vue-apexcharts),
+.chart-wrap :deep(.apexcharts-canvas),
+.chart-wrap :deep(svg) {
   width: 100% !important;
   height: 100% !important;
+}
+
+.chart-wrap :deep(.apexcharts-canvas) {
   cursor: pointer;
+}
+
+.status-line-wrap,
+.chart-wrap {
+  :deep(.apexcharts-toolbar) {
+    top: -4px !important;
+    right: 0 !important;
+    z-index: 4;
+  }
+
+  :deep(.apexcharts-menu) {
+    background: rgba(12, 18, 31, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #dbeafe;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.42);
+  }
+
+  :deep(.apexcharts-menu-item) {
+    color: #dbeafe;
+    background: transparent;
+  }
+
+  :deep(.apexcharts-menu-item:hover) {
+    color: #ffffff;
+    background: rgba(34, 211, 238, 0.16);
+  }
+
+  :deep(.apexcharts-toolbar svg) {
+    fill: #9ca3af;
+  }
+
+  :deep(.apexcharts-toolbar .apexcharts-selected svg),
+  :deep(.apexcharts-toolbar .apexcharts-pan-icon.apexcharts-selected svg),
+  :deep(.apexcharts-toolbar .apexcharts-zoom-icon.apexcharts-selected svg),
+  :deep(.apexcharts-toolbar > div:hover svg) {
+    fill: #e5e7eb;
+  }
 }
 
 .fade-enter-active,

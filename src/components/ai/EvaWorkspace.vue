@@ -537,10 +537,14 @@ function handleMessageAction(action) {
 .eva-workspace {
   background: linear-gradient(180deg, #08111f 0%, #0b1526 100%);
   color: #eaf0ff;
-  min-height: 100dvh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .eva-workspace-header {
+  flex: 0 0 auto;
   min-height: 72px;
   background: rgba(255,255,255,0.03);
   padding-top: calc(16px + env(safe-area-inset-top, 0px));
@@ -559,7 +563,8 @@ function handleMessageAction(action) {
 }
 
 .eva-workspace-body {
-  height: calc(100dvh - 73px - env(safe-area-inset-top, 0px));
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 16px;
   overflow: hidden;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -648,7 +653,6 @@ function handleMessageAction(action) {
   }
 
   .eva-workspace-body {
-    height: calc(100dvh - 87px - env(safe-area-inset-top, 0px));
     padding: 14px;
     padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
