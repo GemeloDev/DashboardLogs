@@ -78,6 +78,7 @@ import { parseEvaCommand } from 'src/services/eva-command-parser'
 import { getEvaSuggestions } from 'src/services/eva-suggestions'
 import { loadEvaSystems } from 'src/composables/useEvaSystems'
 import { buildChartTitle, buildChartSummary, buildAlertsSummary, buildAlertsTitle } from 'src/services/eva-context-labels'
+import { buildExecutivePresentation } from 'src/services/eva-summary-presenter'
 
 import EvaQuickActions from './EvaQuickActions.vue'
 import EvaMessageBubble from './EvaMessageBubble.vue'
@@ -201,18 +202,14 @@ async function handleQuickAction(action) {
       })
 
       const payload = res?.data?.data || res?.data || {}
-      const base = payload?.base || null
-      const pretty = payload?.pretty || null
+      const presentation = buildExecutivePresentation(payload, 'No se obtuvo resumen.')
 
-      const summaryText =
-        pretty?.executiveNarrative ||
-        (Array.isArray(base?.executiveSummary) ? base.executiveSummary.join(' ') : null) ||
-        'No se obtuvo resumen.'
-
-      eva.addAssistantMessage(summaryText, 'insight', {
+      eva.addAssistantMessage(presentation.narrative, 'insight', {
         raw: payload,
         meta: {
-          bullets: pretty?.executiveBullets || base?.executiveSummary || [],
+          bullets: presentation.bullets,
+          highlights: presentation.bullets,
+          recommendations: presentation.recommendations,
           actions: [
             { key: 'open-context', label: 'Ver panel', icon: 'right_panel_open' }
           ]

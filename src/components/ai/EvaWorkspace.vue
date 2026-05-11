@@ -95,6 +95,7 @@ import { parseEvaCommand, extractContext } from 'src/services/eva-command-parser
 import { getEvaSuggestions } from 'src/services/eva-suggestions'
 import { loadEvaSystems } from 'src/composables/useEvaSystems'
 import { useEvaStream } from 'src/services/useEvaStream'
+import { buildExecutivePresentation } from 'src/services/eva-summary-presenter'
 import {
   buildChartTitle,
   buildChartSummary,
@@ -259,18 +260,14 @@ async function handleQuickAction(action) {
       })
 
       const payload = res?.data?.data || res?.data || {}
-      const base = payload?.base || null
-      const pretty = payload?.pretty || null
+      const presentation = buildExecutivePresentation(payload, t('evaWorkspace.noExecutiveSummary'))
 
-      const summaryText =
-        pretty?.executiveNarrative ||
-        (Array.isArray(base?.executiveSummary) ? base.executiveSummary.join(' ') : null) ||
-        t('evaWorkspace.noExecutiveSummary')
-
-      eva.addAssistantMessage(summaryText, 'insight', {
+      eva.addAssistantMessage(presentation.narrative, 'insight', {
         raw: payload,
         meta: {
-          bullets: pretty?.executiveBullets || base?.executiveSummary || [],
+          bullets: presentation.bullets,
+          highlights: presentation.bullets,
+          recommendations: presentation.recommendations,
           actions: [
             { key: 'open-context', label: t('common.seeData'), icon: 'right_panel_open' },
             { key: 'refresh-daily-summary', label: t('common.update'), icon: 'refresh' },
@@ -572,7 +569,7 @@ function handleMessageAction(action) {
 
 .eva-workspace-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: minmax(380px, 0.78fr) minmax(640px, 1.55fr);
   gap: 16px;
   height: 100%;
   min-height: 0;
