@@ -206,7 +206,6 @@ export default defineConfig((ctx) => {
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#sourcefiles
     sourceFiles: {
       electronMain: 'src-electron/electron-main',
-      electronPreload: 'src-electron/electron-preload',
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/developing-ssr/configuring-ssr
