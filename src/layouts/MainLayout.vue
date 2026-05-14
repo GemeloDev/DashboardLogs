@@ -95,7 +95,7 @@
                   clickable
                   v-close-popup
                   class="glass-menu-item"
-                  @click="router.push('/myApiKeys')"
+                  @click="router.push('/client/myApiKeys')"
                 >
                   <q-item-section avatar>
                     <q-icon
