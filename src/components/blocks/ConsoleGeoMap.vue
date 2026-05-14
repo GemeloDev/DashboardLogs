@@ -15,14 +15,15 @@ const props = defineProps({
   points: { type: Array, default: () => [] }, // [{ lat, lon, count }]
 })
 
-
 // ---------------- STATE ----------------
-const mapEl   = ref(null)
-let map       = null
-let loaded    = false
-let popup     = null
+const mapEl = ref(null)
+let map = null
+let loaded = false
+let popup = null
+let clusterCountMarkers = new Map()
+let resizeObserver = null
 
-const mode       = ref('points') // 'points' | 'heat'
+const mode = ref('points') // 'points' | 'heat'
 const projection = ref('mercator')
 const mapModeLabel = computed(() =>
   mode.value === 'points' ? t('dashboard.mapType_points') : t('dashboard.mapType_heat'),
@@ -53,7 +54,6 @@ const DARK_TILES = {
 const MAP_STYLES = {
   points: {
     version: 8,
-    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
       osm: {
         type: 'raster',
@@ -76,6 +76,52 @@ const geojson = computed(() => ({
   })),
 }))
 
+function clearClusterCountMarkers() {
+  for (const marker of clusterCountMarkers.values()) marker.remove()
+  clusterCountMarkers = new Map()
+}
+
+function syncClusterCountMarkers() {
+  if (!map || !loaded || mode.value !== 'points' || !map.getLayer('clusters')) {
+    clearClusterCountMarkers()
+    return
+  }
+
+  const features = map.queryRenderedFeatures({ layers: ['clusters'] })
+  const visibleKeys = new Set()
+
+  for (const feature of features) {
+    const coords = feature.geometry?.coordinates
+    if (!Array.isArray(coords) || coords.length < 2) continue
+
+    const props = feature.properties || {}
+    const key = String(props.cluster_id ?? `${coords[0]},${coords[1]}`)
+    const count = String(props.sum ?? props.point_count ?? '')
+    if (!count) continue
+
+    visibleKeys.add(key)
+
+    let marker = clusterCountMarkers.get(key)
+    if (!marker) {
+      const el = document.createElement('div')
+      el.className = 'cgm-cluster-count'
+      el.textContent = count
+      marker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map)
+      clusterCountMarkers.set(key, marker)
+    } else {
+      marker.getElement().textContent = count
+      marker.setLngLat(coords)
+    }
+  }
+
+  for (const [key, marker] of clusterCountMarkers.entries()) {
+    if (!visibleKeys.has(key)) {
+      marker.remove()
+      clusterCountMarkers.delete(key)
+    }
+  }
+}
+
 // ---------------- INIT ----------------
 async function initMap() {
   await nextTick()
@@ -90,13 +136,23 @@ async function initMap() {
   })
 
   map.addControl(new maplibregl.NavigationControl(), 'top-left')
+  map.on('idle', syncClusterCountMarkers)
+  map.on('moveend', syncClusterCountMarkers)
+  map.on('zoomend', syncClusterCountMarkers)
 
   map.on('load', () => {
     loaded = true
     map.setProjection({ type: projection.value })
     addLayers()
     fitBounds()
+    map.resize()
   })
+
+  resizeObserver = new ResizeObserver(() => {
+    if (!map) return
+    requestAnimationFrame(() => map?.resize())
+  })
+  resizeObserver.observe(mapEl.value)
 }
 
 // ---------------- LAYERS ----------------
@@ -119,26 +175,15 @@ function addLayers() {
       source: 'geo',
       filter: ['has', 'point_count'],
       paint: {
-        'circle-color':        ['step', ['get', 'sum'], '#22c55e', 50, '#f59e0b', 200, '#ef4444'],
-        'circle-radius':       ['step', ['get', 'point_count'], 20, 5, 28, 20, 36],
-        'circle-opacity':      0.9,
+        'circle-color': ['step', ['get', 'sum'], '#22c55e', 50, '#f59e0b', 200, '#ef4444'],
+        'circle-radius': ['step', ['get', 'point_count'], 20, 5, 28, 20, 36],
+        'circle-opacity': 0.9,
         'circle-stroke-width': 2,
         'circle-stroke-color': '#fff',
       },
     })
-
-    map.addLayer({
-      id: 'cluster-count',
-      type: 'symbol',
-      source: 'geo',
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field':  ['to-string', ['get', 'sum']],
-        'text-size':   12,
-        'text-font':   ['Open Sans Bold'],
-      },
-      paint: { 'text-color': '#fff' },
-    })
+    syncClusterCountMarkers()
+    map.once('idle', syncClusterCountMarkers)
 
     map.addLayer({
       id: 'unclustered-point',
@@ -146,9 +191,9 @@ function addLayers() {
       source: 'geo',
       filter: ['!', ['has', 'point_count']],
       paint: {
-        'circle-color':        ['step', ['get', 'count'], '#22c55e', 5, '#f59e0b', 20, '#ef4444'],
-        'circle-radius':       ['step', ['get', 'count'], 6, 5, 10, 20, 14, 100, 18],
-        'circle-opacity':      0.9,
+        'circle-color': ['step', ['get', 'count'], '#22c55e', 5, '#f59e0b', 20, '#ef4444'],
+        'circle-radius': ['step', ['get', 'count'], 6, 5, 10, 20, 14, 100, 18],
+        'circle-opacity': 0.9,
         'circle-stroke-width': 1.5,
         'circle-stroke-color': '#fff',
       },
@@ -174,8 +219,12 @@ function addLayers() {
         .addTo(map)
     })
     map.on('mouseleave', 'unclustered-point', () => popup?.remove())
-    map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'default' })
-    map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = '' })
+    map.on('mouseenter', 'unclustered-point', () => {
+      map.getCanvas().style.cursor = 'default'
+    })
+    map.on('mouseleave', 'unclustered-point', () => {
+      map.getCanvas().style.cursor = ''
+    })
   } else {
     map.addSource('geo', { type: 'geojson', data: geojson.value })
 
@@ -184,16 +233,22 @@ function addLayers() {
       type: 'heatmap',
       source: 'geo',
       paint: {
-        'heatmap-weight':    ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
+        'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
         'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1.8, 9, 5.5, 14, 7.5],
-        'heatmap-radius':    ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
-        'heatmap-opacity':   0.95,
+        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
+        'heatmap-opacity': 0.95,
         'heatmap-color': [
-          'interpolate', ['linear'], ['heatmap-density'],
-          0.0,  'rgba(34,197,94,0)',
-          0.25, '#22c55e',
-          0.6,  '#f59e0b',
-          1.0,  '#ef4444',
+          'interpolate',
+          ['linear'],
+          ['heatmap-density'],
+          0.0,
+          'rgba(34,197,94,0)',
+          0.25,
+          '#22c55e',
+          0.6,
+          '#f59e0b',
+          1.0,
+          '#ef4444',
         ],
       },
     })
@@ -204,6 +259,7 @@ function addLayers() {
 function updateMode() {
   if (!map) return
   loaded = false
+  clearClusterCountMarkers()
   map.setStyle(MAP_STYLES[mode.value])
   map.once('style.load', () => {
     loaded = true
@@ -227,6 +283,7 @@ function toggleProjection() {
 watch(geojson, (data) => {
   if (!map || !loaded) return
   map.getSource('geo')?.setData(data)
+  map.once('idle', syncClusterCountMarkers)
 })
 
 // ---------------- FIT BOUNDS ----------------
@@ -247,53 +304,122 @@ onMounted(initMap)
 
 onBeforeUnmount(() => {
   popup?.remove()
+  clearClusterCountMarkers()
+  resizeObserver?.disconnect()
+  resizeObserver = null
   if (map) map.remove()
 })
 </script>
 
 <template>
-  <div>
-    <div class="row q-mb-sm items-center">
-      <div class="toplist-title">{{ t('dashboard.dinamicMap') }}</div>
-      <q-space />
+  <div class="cgm-root">
+    <div ref="mapEl" class="cgm-map" />
 
-      <q-btn
-        dense
-        unelevated
-        no-caps
-        color="primary"
-        text-color="white"
-        :icon="mapModeIcon"
-        :label="mapModeLabel"
-        class="q-mr-sm"
-        @click="toggleMapMode"
-      />
+    <div class="cgm-controls">
       <q-chip
         clickable
         v-ripple
-        color="orange"
+        color="blue"
+        text-color="white"
+        :icon="mapModeIcon"
+        size="md"
+        class="cgm-control-chip"
+        @click="toggleMapMode"
+      >
+        {{ mapModeLabel }}
+      </q-chip>
+      <q-chip
+        clickable
+        v-ripple
+        color="green"
         text-color="white"
         icon="public"
         size="md"
-        class="q-mr-sm"
+        class="cgm-control-chip"
         @click="toggleProjection"
       >
-        {{ projection === 'globe' ? t('dashboard.mapProjection_Globe') : t('dashboard.mapProjection_Plano') }}
+        {{
+          projection === 'globe'
+            ? t('dashboard.mapProjection_Globe')
+            : t('dashboard.mapProjection_Plano')
+        }}
       </q-chip>
     </div>
-
-    <div ref="mapEl" style="width: 100%; height: 520px; border-radius: 12px" />
   </div>
 </template>
 
 <style lang="scss" scoped>
-.toplist-title {
-  font-size: 18px;
-  font-weight: 700;
+.cgm-root {
+  width: 100%;
+  min-width: 0;
 }
 
-@media (max-width: 420px) {
-  :deep(.q-btn__content) {
+.cgm-map {
+  width: 100%;
+  height: clamp(360px, 56vh, 620px);
+  min-height: 320px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.cgm-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin: 12px auto 0;
+  padding: 0 8px;
+}
+
+.cgm-control-chip {
+  max-width: 100%;
+  margin: 0;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.cgm-control-chip :deep(.q-chip__content) {
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+:global(.cgm-cluster-count) {
+  align-items: center;
+  color: #fff;
+  display: flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  transform: translateY(-1px);
+  user-select: none;
+  width: 32px;
+}
+
+@media (max-width: 600px) {
+  .cgm-map {
+    height: clamp(320px, 62vh, 480px);
+    border-radius: 12px;
+  }
+
+  .cgm-controls {
+    gap: 8px;
+    padding: 0;
+  }
+
+  .cgm-control-chip {
+    flex: 1 1 180px;
+  }
+
+  .cgm-control-chip :deep(.q-chip__content) {
     font-size: 12px;
   }
 }

@@ -1,14 +1,14 @@
 <template>
-  <div v-if="system" class="q-mb-lg">
+  <div v-if="system" class="activity-widget q-mb-lg">
     <q-card flat bordered class="today-card text-white q-pa-lg">
       <!-- Header -->
-      <div class="row items-center q-mb-md">
+      <div class="today-header q-mb-md">
         <div class="today-pulse q-mr-sm" :class="hasActivity ? 'today-pulse--active' : ''" />
-        <div class="col">
+        <div class="today-header__text">
           <div class="today-title">{{ t('dashboard.activityToday') }}</div>
           <div class="today-subtitle text-grey-5">{{ t('dashboard.activitySubtitle') }} · {{ system }}</div>
         </div>
-        <div class="col-auto">
+        <div class="today-header__actions">
           <DashboardPopoutButton
             v-if="showPopout"
             :section-id="DASHBOARD_SECTION_IDS.ACTIVITY"
@@ -78,8 +78,8 @@
           <div class="today-feed__dot" :class="dotClass(log.status)" />
 
           <!-- Contenido -->
-          <div class="col today-feed__content">
-            <div class="row items-center no-wrap">
+          <div class="today-feed__content">
+            <div class="today-feed__meta">
               <span class="today-feed__type q-mr-xs">{{ log.eventType }}</span>
               <q-chip
                 dense
@@ -345,21 +345,61 @@ defineExpose({ fetchToday })
 </script>
 
 <style lang="scss" scoped>
+.activity-widget {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .today-card {
   background: linear-gradient(160deg, rgba(34, 211, 238, 0.06), rgba(255, 255, 255, 0.02));
   border-radius: 22px;
   border: 1px solid rgba(34, 211, 238, 0.18) !important;
   box-shadow: 0 8px 26px rgba(34, 211, 238, 0.08);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.today-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.today-header__text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.today-header__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 
 .today-title {
   font-size: 18px;
   font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .today-subtitle {
   font-size: 12px;
   margin-top: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 // Indicador pulsante
@@ -369,6 +409,9 @@ defineExpose({ fetchToday })
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
+  align-self: center;
+  justify-self: center;
+  margin-top: 0;
 
   &--active {
     background: #22c55e;
@@ -396,19 +439,25 @@ defineExpose({ fetchToday })
   border-radius: 14px;
   padding: 12px 14px;
   text-align: center;
+  min-width: 0;
+  overflow: hidden;
 
   &__label {
     font-size: 10px;
     color: rgba(255, 255, 255, 0.45);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    overflow-wrap: anywhere;
   }
 
   &__value {
-    font-size: 22px;
+    font-size: clamp(18px, 5vw, 22px);
     font-weight: 800;
     margin-top: 4px;
     color: #fff;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -430,9 +479,37 @@ defineExpose({ fetchToday })
     border-radius: 10px;
     cursor: pointer;
     transition: background 120ms ease;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
 
     &:hover {
       background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  &__content {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+
+    :deep(.q-chip) {
+      max-width: 100%;
+    }
+
+    :deep(.q-chip__content) {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 
@@ -461,19 +538,29 @@ defineExpose({ fetchToday })
     font-size: 12px;
     font-weight: 700;
     color: #22d3ee;
-    white-space: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   &__msg {
     font-size: 11px;
     margin-top: 2px;
     line-height: 1.4;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   &__time {
     font-size: 11px;
-    white-space: nowrap;
-    flex-shrink: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 28%;
+    text-align: right;
+    overflow-wrap: anywhere;
     margin-top: 3px;
   }
 }
@@ -485,5 +572,54 @@ defineExpose({ fetchToday })
   justify-content: center;
   padding: 20px 0;
   font-size: 13px;
+  min-width: 0;
+  text-align: center;
+
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 640px) {
+  .today-card {
+    padding: 16px !important;
+  }
+
+  .today-header {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+  }
+
+  .today-header__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding-top: 4px;
+  }
+
+  .today-feed__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .today-feed__time {
+    grid-column: 2;
+    max-width: 100%;
+    text-align: left;
+    margin-top: -2px;
+  }
+}
+
+@media (max-width: 380px) {
+  .today-kpi {
+    padding: 10px 8px;
+  }
+
+  .today-kpi__label {
+    font-size: 9px;
+    letter-spacing: 0.2px;
+  }
 }
 </style>

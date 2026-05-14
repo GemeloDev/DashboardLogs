@@ -39,6 +39,7 @@ const {
   httpData,
   geoData,
   devicesData,
+  hasFetchedOnce: dashboardHasFetchedOnce,
   fetchAll,
   subscribeSystem,
   unsubscribeSystem,
@@ -48,6 +49,7 @@ const dashboardRefreshTick = computed(() => dashboardStore.externalRefreshTick)
 
 provide('dashboardLoading', dashboardLoading)
 provide('dashboardRefreshing', dashboardRefreshing)
+provide('dashboardHasFetchedOnce', dashboardHasFetchedOnce)
 provide('dashboardRefreshTick', dashboardRefreshTick)
 provide('dashboardStatsData', statsData)
 provide('dashboardSeriesData', seriesData)

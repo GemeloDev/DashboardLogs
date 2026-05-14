@@ -13,7 +13,7 @@
       </div>
 
       <div
-        v-if="isAssistant && message.meta?.bullets?.length"
+        v-if="showContextChips"
         class="eva-context-chips"
       >
         <div
@@ -87,6 +87,10 @@ const messageLabel = computed(() => {
   if (props.message?.type === 'trend')   return 'Tendencias'
   if (props.message?.type === 'ticket')  return 'Ticket'
   return null
+})
+
+const showContextChips = computed(() => {
+  return isAssistant.value && props.message?.type !== 'insight' && props.message?.meta?.bullets?.length
 })
 </script>
 

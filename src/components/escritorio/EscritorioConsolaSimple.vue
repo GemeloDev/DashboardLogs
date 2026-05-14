@@ -103,6 +103,7 @@
                 :datos-origen="rawLogs"
                 @campos-seleccionados="onFiltrosPayload"
                 @camposSeleccionados="onFiltrosPayload"
+                @clear-filters="onClearFiltersAbsolute"
               />
             </q-expansion-item>
           </div>
@@ -207,6 +208,7 @@ const filtroRef = ref(null)
 
 // ─── DATOS ────────────────────────────────────────────────────────────────────
 const baseLogs = ref([])       // lo que regresa el backend (ya filtrado por server params)
+const initialScopedLogs = ref([]) // subconjunto inicial cuando se abre desde mapa/grafica
 const rawLogs = ref([])        // fuente para DinamicFilters (= baseLogs, ya no se filtra rango en cliente)
 const logs = ref([])           // vista final tras filtros client-side
 const lastPayload = ref(null)  // último payload de DinamicFilters
@@ -267,7 +269,7 @@ function mergeUniqueById(target, incoming) {
  * Extrae los parámetros server-side desde el payload de DinamicFilters.
  * Retorna { serverParams, clientPayload }.
  */
-function splitPayload(payload) {
+function splitPayload(payload, { includeServerKeysInClient = false } = {}) {
   if (!payload) return { serverParams: {}, clientPayload: null }
 
   const { busqueda = '', rangoFechas, _visibleFields, ...values } = payload
@@ -278,7 +280,9 @@ function splitPayload(payload) {
   for (const [k, v] of Object.entries(values)) {
     if (SERVER_FILTER_KEYS.has(k) && v != null && v !== '') {
       serverParams[k] = v
-    } else {
+    }
+
+    if (includeServerKeysInClient || !SERVER_FILTER_KEYS.has(k)) {
       clientValues[k] = v
     }
   }
@@ -297,7 +301,7 @@ function splitPayload(payload) {
 /**
  * Filtra items SOLO con las claves que el backend NO maneja.
  */
-function aplicarFiltrosClientSide(items, payload) {
+function aplicarFiltrosClientSide(items, payload, { skipServerKeys = true } = {}) {
   if (!payload) return items || []
 
   const { busqueda = '', _visibleFields, ...values } = payload
@@ -308,7 +312,7 @@ function aplicarFiltrosClientSide(items, payload) {
   out = out.filter((log) => {
     for (const [k, v] of Object.entries(values)) {
       if (!v) continue
-      if (SERVER_FILTER_KEYS.has(k)) continue
+      if (skipServerKeys && SERVER_FILTER_KEYS.has(k)) continue
 
       const actual = getDeep(log, k)
 
@@ -331,12 +335,28 @@ function aplicarFiltrosClientSide(items, payload) {
 
 // ─── VISTA ────────────────────────────────────────────────────────────────────
 function recomputarVista({ resetPage = true } = {}) {
-  rawLogs.value = baseLogs.value
+  rawLogs.value = isChartDataMode.value ? initialScopedLogs.value : baseLogs.value
 
-  const { clientPayload } = splitPayload(lastPayload.value)
-  logs.value = aplicarFiltrosClientSide(rawLogs.value, clientPayload)
+  const { clientPayload } = splitPayload(lastPayload.value, {
+    includeServerKeysInClient: isChartDataMode.value,
+  })
+  logs.value = aplicarFiltrosClientSide(rawLogs.value, clientPayload, {
+    skipServerKeys: !isChartDataMode.value,
+  })
 
   if (resetPage) paginaActual.value = 1
+}
+
+function resetActiveServerParams() {
+  activeServerParams.value = {
+    fromDate: '',
+    toDate: '',
+    eventType: '',
+    status: '',
+    severity: '',
+    outcome: '',
+    sortDir: 'DESC',
+  }
 }
 
 function resetServerPaging() {
@@ -434,7 +454,8 @@ function applyServerParams(newParams) {
 const abrirConsola = async (dataGrafica = null) => {
   if (Array.isArray(dataGrafica) && dataGrafica.length > 0) {
     isChartDataMode.value = true
-    baseLogs.value = [...dataGrafica]
+    initialScopedLogs.value = [...dataGrafica]
+    baseLogs.value = []
     serverTotalElements.value = dataGrafica.length
     serverTotalPages.value = 1
     serverPage.value = 0
@@ -442,6 +463,7 @@ const abrirConsola = async (dataGrafica = null) => {
     recomputarVista()
   } else {
     isChartDataMode.value = false
+    initialScopedLogs.value = []
     await cargarPaginaInicial()
   }
 
@@ -474,6 +496,7 @@ const abrirConsolaConFiltros = async (selections = []) => {
   }
 
   isChartDataMode.value = false
+  initialScopedLogs.value = []
 
   // Pre-aplicar server params antes de la primera carga
   const preServerParams = { ...activeServerParams.value }
@@ -582,6 +605,15 @@ const onFiltrosPayload = async (payload) => {
 }
 
 // ─── PAGINACIÓN UI ────────────────────────────────────────────────────────────
+const onClearFiltersAbsolute = async () => {
+  lastPayload.value = null
+  isChartDataMode.value = false
+  initialScopedLogs.value = []
+  paginaActual.value = 1
+  resetActiveServerParams()
+  await cargarPaginaInicial()
+}
+
 const onPageChanged = async () => {
   scrollArriba()
 
@@ -618,13 +650,11 @@ const cerrarConsola = () => {
   logs.value = []
   rawLogs.value = []
   baseLogs.value = []
+  initialScopedLogs.value = []
   lastPayload.value = null
   isChartDataMode.value = false
   resetServerPaging()
-  activeServerParams.value = {
-    fromDate: '', toDate: '', eventType: '', status: '',
-    severity: '', outcome: '', sortDir: 'DESC',
-  }
+  resetActiveServerParams()
 }
 
 const mostrarDetalleLog = (log) => {
@@ -677,7 +707,7 @@ defineExpose({
 <style lang="scss" scoped>
 .console-modal-card {
   background: rgb(29, 29, 43);
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   .card-title {
@@ -690,7 +720,7 @@ defineExpose({
 .console-body {
   flex: 1;
   overflow-y: auto;
-  max-height: calc(100vh - 200px);
+  max-height: calc(100dvh - 200px);
 }
 
 // Grid Responsivo
@@ -796,8 +826,20 @@ defineExpose({
 
 // Ajustes Responsivos
 @media (max-width: 768px) {
+  .console-modal-card {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .console-header {
+    padding-top: 18px;
+  }
+
+  .console-body {
+    max-height: calc(100dvh - 220px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+
   .pagination-section {
-    padding: 12px 16px; // Reducir padding en móviles
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); // Reducir padding en móviles
 
     .row {
       flex-direction: column-reverse; // Pone la paginación arriba del texto en móviles

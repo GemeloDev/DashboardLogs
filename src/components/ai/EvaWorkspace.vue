@@ -95,6 +95,7 @@ import { parseEvaCommand, extractContext } from 'src/services/eva-command-parser
 import { getEvaSuggestions } from 'src/services/eva-suggestions'
 import { loadEvaSystems } from 'src/composables/useEvaSystems'
 import { useEvaStream } from 'src/services/useEvaStream'
+import { buildExecutivePresentation } from 'src/services/eva-summary-presenter'
 import {
   buildChartTitle,
   buildChartSummary,
@@ -259,18 +260,14 @@ async function handleQuickAction(action) {
       })
 
       const payload = res?.data?.data || res?.data || {}
-      const base = payload?.base || null
-      const pretty = payload?.pretty || null
+      const presentation = buildExecutivePresentation(payload, t('evaWorkspace.noExecutiveSummary'))
 
-      const summaryText =
-        pretty?.executiveNarrative ||
-        (Array.isArray(base?.executiveSummary) ? base.executiveSummary.join(' ') : null) ||
-        t('evaWorkspace.noExecutiveSummary')
-
-      eva.addAssistantMessage(summaryText, 'insight', {
+      eva.addAssistantMessage(presentation.narrative, 'insight', {
         raw: payload,
         meta: {
-          bullets: pretty?.executiveBullets || base?.executiveSummary || [],
+          bullets: presentation.bullets,
+          highlights: presentation.bullets,
+          recommendations: presentation.recommendations,
           actions: [
             { key: 'open-context', label: t('common.seeData'), icon: 'right_panel_open' },
             { key: 'refresh-daily-summary', label: t('common.update'), icon: 'refresh' },
@@ -537,11 +534,17 @@ function handleMessageAction(action) {
 .eva-workspace {
   background: linear-gradient(180deg, #08111f 0%, #0b1526 100%);
   color: #eaf0ff;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .eva-workspace-header {
+  flex: 0 0 auto;
   min-height: 72px;
   background: rgba(255,255,255,0.03);
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
 }
 
 .eva-workspace-title {
@@ -557,14 +560,16 @@ function handleMessageAction(action) {
 }
 
 .eva-workspace-body {
-  height: calc(100vh - 73px);
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 16px;
   overflow: hidden;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
 .eva-workspace-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: minmax(380px, 0.78fr) minmax(640px, 1.55fr);
   gap: 16px;
   height: 100%;
   min-height: 0;
@@ -630,6 +635,30 @@ function handleMessageAction(action) {
   .eva-workspace-chat,
   .eva-workspace-context {
     min-height: 420px;
+  }
+}
+
+@media (max-width: 599px) {
+  .eva-workspace-header {
+    align-items: flex-start;
+    min-height: calc(86px + env(safe-area-inset-top, 0px));
+  }
+
+  .eva-workspace-title {
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  .eva-workspace-body {
+    padding: 14px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+  }
+
+  .eva-workspace-chat,
+  .eva-workspace-context {
+    min-height: min(520px, calc(100dvh - 160px));
+    padding: 14px;
   }
 }
 </style>
