@@ -657,9 +657,9 @@ function handleMessageAction(action) {
     min-height: 420px;
   }
 }
-<<<<<<< HEAD
+<<<<<<<<< Temporary merge branch 1
 </style>
-=======
+=========
 
 @media (max-width: 599px) {
   .eva-workspace-header {
@@ -685,4 +685,3 @@ function handleMessageAction(action) {
   }
 }
 </style>
->>>>>>> dev-jossu
