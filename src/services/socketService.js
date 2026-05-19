@@ -94,6 +94,22 @@ export function ensureSocketConnected(options = {}) {
   return stompClient
 }
 
+export async function restartSocketConnection(options = {}) {
+  if (stompClient) {
+    const previousClient = stompClient
+    stompClient = null
+    connected = false
+
+    try {
+      await previousClient.deactivate({ force: true })
+    } catch (err) {
+      console.warn('[STOMP] No se pudo cerrar la conexion previa:', err)
+    }
+  }
+
+  return connectSocket(options)
+}
+
 /**
  * Inicializa STOMP sobre WebSocket
  */

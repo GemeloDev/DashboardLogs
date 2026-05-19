@@ -15,15 +15,15 @@ const props = defineProps({
   points: { type: Array, default: () => [] }, // [{ lat, lon, count }]
 })
 
-
 // ---------------- STATE ----------------
-const mapEl   = ref(null)
-let map       = null
-let loaded    = false
-let popup     = null
+const mapEl = ref(null)
+let map = null
+let loaded = false
+let popup = null
 let clusterCountMarkers = new Map()
+let resizeObserver = null
 
-const mode       = ref('points') // 'points' | 'heat'
+const mode = ref('points') // 'points' | 'heat'
 const projection = ref('mercator')
 const mapModeLabel = computed(() =>
   mode.value === 'points' ? t('dashboard.mapType_points') : t('dashboard.mapType_heat'),
@@ -145,7 +145,14 @@ async function initMap() {
     map.setProjection({ type: projection.value })
     addLayers()
     fitBounds()
+    map.resize()
   })
+
+  resizeObserver = new ResizeObserver(() => {
+    if (!map) return
+    requestAnimationFrame(() => map?.resize())
+  })
+  resizeObserver.observe(mapEl.value)
 }
 
 // ---------------- LAYERS ----------------
@@ -168,9 +175,9 @@ function addLayers() {
       source: 'geo',
       filter: ['has', 'point_count'],
       paint: {
-        'circle-color':        ['step', ['get', 'sum'], '#22c55e', 50, '#f59e0b', 200, '#ef4444'],
-        'circle-radius':       ['step', ['get', 'point_count'], 20, 5, 28, 20, 36],
-        'circle-opacity':      0.9,
+        'circle-color': ['step', ['get', 'sum'], '#22c55e', 50, '#f59e0b', 200, '#ef4444'],
+        'circle-radius': ['step', ['get', 'point_count'], 20, 5, 28, 20, 36],
+        'circle-opacity': 0.9,
         'circle-stroke-width': 2,
         'circle-stroke-color': '#fff',
       },
@@ -184,9 +191,9 @@ function addLayers() {
       source: 'geo',
       filter: ['!', ['has', 'point_count']],
       paint: {
-        'circle-color':        ['step', ['get', 'count'], '#22c55e', 5, '#f59e0b', 20, '#ef4444'],
-        'circle-radius':       ['step', ['get', 'count'], 6, 5, 10, 20, 14, 100, 18],
-        'circle-opacity':      0.9,
+        'circle-color': ['step', ['get', 'count'], '#22c55e', 5, '#f59e0b', 20, '#ef4444'],
+        'circle-radius': ['step', ['get', 'count'], 6, 5, 10, 20, 14, 100, 18],
+        'circle-opacity': 0.9,
         'circle-stroke-width': 1.5,
         'circle-stroke-color': '#fff',
       },
@@ -212,8 +219,12 @@ function addLayers() {
         .addTo(map)
     })
     map.on('mouseleave', 'unclustered-point', () => popup?.remove())
-    map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'default' })
-    map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = '' })
+    map.on('mouseenter', 'unclustered-point', () => {
+      map.getCanvas().style.cursor = 'default'
+    })
+    map.on('mouseleave', 'unclustered-point', () => {
+      map.getCanvas().style.cursor = ''
+    })
   } else {
     map.addSource('geo', { type: 'geojson', data: geojson.value })
 
@@ -222,16 +233,22 @@ function addLayers() {
       type: 'heatmap',
       source: 'geo',
       paint: {
-        'heatmap-weight':    ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
+        'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
         'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1.8, 9, 5.5, 14, 7.5],
-        'heatmap-radius':    ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
-        'heatmap-opacity':   0.95,
+        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 14, 9, 55, 14, 85],
+        'heatmap-opacity': 0.95,
         'heatmap-color': [
-          'interpolate', ['linear'], ['heatmap-density'],
-          0.0,  'rgba(34,197,94,0)',
-          0.25, '#22c55e',
-          0.6,  '#f59e0b',
-          1.0,  '#ef4444',
+          'interpolate',
+          ['linear'],
+          ['heatmap-density'],
+          0.0,
+          'rgba(34,197,94,0)',
+          0.25,
+          '#22c55e',
+          0.6,
+          '#f59e0b',
+          1.0,
+          '#ef4444',
         ],
       },
     })
@@ -288,49 +305,86 @@ onMounted(initMap)
 onBeforeUnmount(() => {
   popup?.remove()
   clearClusterCountMarkers()
+  resizeObserver?.disconnect()
+  resizeObserver = null
   if (map) map.remove()
 })
 </script>
 
 <template>
-  <div>
-    <div class="row q-mb-sm items-center">
-      <div class="toplist-title">{{ t('dashboard.dinamicMap') }}</div>
-      <q-space />
+  <div class="cgm-root">
+    <div ref="mapEl" class="cgm-map" />
 
-      <q-btn
-        dense
-        unelevated
-        no-caps
-        color="primary"
-        text-color="white"
-        :icon="mapModeIcon"
-        :label="mapModeLabel"
-        class="q-mr-sm"
-        @click="toggleMapMode"
-      />
+    <div class="cgm-controls">
       <q-chip
         clickable
         v-ripple
-        color="orange"
+        color="blue"
+        text-color="white"
+        :icon="mapModeIcon"
+        size="md"
+        class="cgm-control-chip"
+        @click="toggleMapMode"
+      >
+        {{ mapModeLabel }}
+      </q-chip>
+      <q-chip
+        clickable
+        v-ripple
+        color="green"
         text-color="white"
         icon="public"
         size="md"
-        class="q-mr-sm"
+        class="cgm-control-chip"
         @click="toggleProjection"
       >
-        {{ projection === 'globe' ? t('dashboard.mapProjection_Globe') : t('dashboard.mapProjection_Plano') }}
+        {{
+          projection === 'globe'
+            ? t('dashboard.mapProjection_Globe')
+            : t('dashboard.mapProjection_Plano')
+        }}
       </q-chip>
     </div>
-
-    <div ref="mapEl" style="width: 100%; height: 520px; border-radius: 12px" />
   </div>
 </template>
 
 <style lang="scss" scoped>
-.toplist-title {
-  font-size: 18px;
-  font-weight: 700;
+.cgm-root {
+  width: 100%;
+  min-width: 0;
+}
+
+.cgm-map {
+  width: 100%;
+  height: clamp(360px, 56vh, 620px);
+  min-height: 320px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.cgm-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin: 12px auto 0;
+  padding: 0 8px;
+}
+
+.cgm-control-chip {
+  max-width: 100%;
+  margin: 0;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.cgm-control-chip :deep(.q-chip__content) {
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
 }
 
 :global(.cgm-cluster-count) {
@@ -350,8 +404,22 @@ onBeforeUnmount(() => {
   width: 32px;
 }
 
-@media (max-width: 420px) {
-  :deep(.q-btn__content) {
+@media (max-width: 600px) {
+  .cgm-map {
+    height: clamp(320px, 62vh, 480px);
+    border-radius: 12px;
+  }
+
+  .cgm-controls {
+    gap: 8px;
+    padding: 0;
+  }
+
+  .cgm-control-chip {
+    flex: 1 1 180px;
+  }
+
+  .cgm-control-chip :deep(.q-chip__content) {
     font-size: 12px;
   }
 }
