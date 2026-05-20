@@ -6,9 +6,6 @@ export class DiagnosticService {
 
   static async getCaseId(tokenSesion, system) {
     try {
-      console.log(`🔍 Consultando sesión del sistema ${system} por id: ${tokenSesion}`)
-      console.log(`🌐 URL: ${LOGS.TIMELINE}`)
-
       //  Obtener el 'system' para realizar la petición
       const response = await axiosInstance.get(`${LOGS.TIMELINE}`, {
         params: {
@@ -16,9 +13,6 @@ export class DiagnosticService {
           caseId: tokenSesion
         }
       })
-
-      console.log('✅ Datos de "caseId" obtenidos:', response.data)
-      console.log('📊 Status:', response.status)
 
       return response.data
     } catch (error) {
@@ -44,8 +38,6 @@ export class DiagnosticService {
   // 🛠️ Enviar solicitud de soporte
   static async sendSupportRequest(code, device, user) {
     try {
-      console.log(`🛠️ Enviando solicitud de soporte:`, { code, device, user })
-
       const params = new URLSearchParams()
       if (code) params.append('code', code)
       if (device) params.append('device', device)

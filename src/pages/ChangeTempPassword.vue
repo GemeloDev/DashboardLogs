@@ -263,8 +263,6 @@ const submit = async () => {
     // // Aceptar invitación
     const response = await changePassword(payload)
 
-    console.log('✅ Respuesta de aceptación:', response)
-
     // Verificar respuesta exitosa
     if (!response.ok || !response.data) {
       throw new Error(response.message || 'Error al cambiar la contraseña, intente nuevamente')
