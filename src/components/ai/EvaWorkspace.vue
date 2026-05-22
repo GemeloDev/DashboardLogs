@@ -262,27 +262,7 @@ async function handleQuickAction(action) {
       const payload = res?.data?.data || res?.data || {}
       const presentation = buildExecutivePresentation(payload, t('evaWorkspace.noExecutiveSummary'))
 
-<<<<<<< HEAD
-      const narrative = pretty?.executiveNarrative
-      const narrativeValida = narrative && narrative !== 'string' && narrative.trim().length > 15
-
-      const summaryText =
-        (narrativeValida ? narrative : null) ||
-        (Array.isArray(base?.executiveSummary) && base.executiveSummary.length > 0
-          ? base.executiveSummary.join('\n')
-          : null) ||
-        (Array.isArray(pretty?.executiveBullets) && pretty.executiveBullets.length > 0
-          ? pretty.executiveBullets.join('\n')
-          : null) ||
-        'No se obtuvo resumen.'
-        pretty?.executiveNarrative ||
-        (Array.isArray(base?.executiveSummary) ? base.executiveSummary.join(' ') : null) ||
-        t('evaWorkspace.noExecutiveSummary')
-
-      eva.addAssistantMessage(summaryText, 'insight', {
-=======
       eva.addAssistantMessage(presentation.narrative, 'insight', {
->>>>>>> dev-jossu
         raw: payload,
         meta: {
           bullets: presentation.bullets,
@@ -657,9 +637,6 @@ function handleMessageAction(action) {
     min-height: 420px;
   }
 }
-<<<<<<<<< Temporary merge branch 1
-</style>
-=========
 
 @media (max-width: 599px) {
   .eva-workspace-header {
