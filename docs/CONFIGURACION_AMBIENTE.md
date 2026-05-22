@@ -171,7 +171,8 @@ En desarrollo (`quasar dev`), la configuración se imprime automáticamente en c
 
 ## 📝 Notas
 
-- Los archivos `.env.development` y `.env.production` **SÍ se suben a git**
-- Los archivos `.env*.local` **NO se suben a git**
-- Nunca pongas credenciales sensibles en archivos que se suben a git
-- Para CI/CD, usa variables de entorno del sistema o secrets de GitLab/GitHub
+- Los archivos `.env.development` y `.env.production` no deben contener credenciales, tokens, llaves privadas ni secretos reales.
+- Los archivos `.env*.local` **NO se suben a git** y deben usarse para overrides locales.
+- Los certificados reales, llaves privadas y bundles de proveedor no se versionan.
+- Antes de subir cambios ejecuta `npm run security:scan-secrets`.
+- Para CI/CD, usa variables de entorno del sistema o secrets de GitLab/GitHub.

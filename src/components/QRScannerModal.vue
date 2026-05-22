@@ -194,7 +194,6 @@ const startCamera = async () => {
     scannerControls = await startQRScanner(
       videoElement.value,
       (qrData) => {
-        console.log('✅ QR escaneado:', qrData)
         onQRScanned(qrData)
       },
       (error) => {
@@ -265,21 +264,15 @@ const stopCamera = () => {
  * Callback cuando se escanea un QR
  */
 const onQRScanned = async (qrData) => {
-  console.log('🎯 QR detectado:', qrData)
   if (qrData === '') throw new Error(t('qrScanner.emptyQrError'))
 
   const token = qrData.split('/qr-login/')[1]
-
-  // console.log('ℹ️ Estatus del socket: ', socketInstance.value)
-  console.log('ℹ️ Token QR: ', token)
 
   const payload = {
     qrToken: token,
   }
 
-  const loginByQR = await authService.loginByQR(payload)
-
-  console.log('Respuesta de loginByQR', loginByQR)
+  await authService.loginByQR(payload)
 
   isOpen.value = false
 }

@@ -22,7 +22,6 @@ export const sendInvitation = async (inviteData) => {
             inviteData
         )
 
-        console.log('✅ Invitación enviada:', response.data)
         return response.data
     } catch (error) {
         console.error('❌ Error al enviar invitación:', error)

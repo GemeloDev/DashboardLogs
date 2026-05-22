@@ -298,15 +298,8 @@ const submit = async () => {
       token: codigo.value.join(''),
     }
 
-    console.log('📤 Enviando invitación:', {
-      token: payload.token,
-      name: payload.name,
-    })
-
     // Aceptar invitación
     const response = await acceptInvite(payload)
-
-    console.log('✅ Respuesta de aceptación:', response)
 
     // Verificar respuesta exitosa
     if (!response.ok || !response.data) {

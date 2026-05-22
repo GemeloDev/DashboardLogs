@@ -196,8 +196,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import authService from '../services/authService.js'
-import { generateNewContent, loadQRCodeLibrary } from 'src/services/qrService.js'
+import { generateNewContent, getQRCodeDataUrl } from 'src/services/qrService.js'
 import { disconnectSocket, initializeSocket } from 'src/services/socketService.js'
+import { clearStoredSession, readSession } from 'src/services/sessionStorage.js'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -271,8 +272,6 @@ const onSubmit = async () => {
 
     const loginResult = await authService.login(credentials, formData.value.mantenerSesion)
 
-    console.log(loginResult)
-
     if (loginResult.success) {
       if (loginResult.mustChangePassword) return router.push('/new-password')
       mensajeExito.value = loginResult.message || 'Acceso concedido. Redirigiendo...'
@@ -300,8 +299,6 @@ const clearTimers = () => {
 }
 
 const handleLoginSuccess = async (data) => {
-  console.log('Data del login por QR: ', data)
-
   if (data.payload && data.payload.status === 'APPROVED') {
     const buildSession = authService.buildSession(data)
 
@@ -336,23 +333,17 @@ const handleLoginSuccess = async (data) => {
 }
 
 const drawQrCode = async (content) => {
-  await loadQRCodeLibrary()
-
   const container = document.getElementById('qrcode-container')
   if (container) container.innerHTML = ''
 
-  if (window.QRCode && container) {
-    new window.QRCode(container, {
-      text: content,
-      width: 225,
-      height: 225,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
-      correctLevel: window.QRCode.CorrectLevel.H,
-    })
-  } else {
-    console.error('La librería qrcode.js no está disponible o el contenedor no existe.')
-  }
+  if (!container) return
+
+  const image = document.createElement('img')
+  image.src = await getQRCodeDataUrl(content)
+  image.alt = 'QR login'
+  image.width = 225
+  image.height = 225
+  container.appendChild(image)
 }
 
 const regenerateQr = async () => {
@@ -378,20 +369,17 @@ const startCountdown = () => {
 }
 
 onMounted(async () => {
-  const savedSession =
-    localStorage.getItem('dashboardLogsSession') || sessionStorage.getItem('dashboardLogsSession')
+  const savedSession = readSession()
 
   if (savedSession) {
     try {
-      const session = JSON.parse(savedSession)
-      if (session.isAuthenticated) {
+      if (savedSession.isAuthenticated) {
         router.push('/dashboard')
         return
       }
     } catch (error) {
       console.error('Error al comprobar la sesión: ', error)
-      localStorage.removeItem('dashboardLogsSession')
-      sessionStorage.removeItem('dashboardLogsSession')
+      clearStoredSession()
     }
   }
 

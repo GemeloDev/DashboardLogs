@@ -21,7 +21,6 @@ export const storeJWTInCookie = (token, expirationDays = 7) => {
         // SameSite=Strict para mayor seguridad
         document.cookie = `${JWT_COOKIE_NAME}=${token}; ${expires}; path=/; SameSite=Strict`
 
-        console.log('✅ JWT almacenado en cookie')
         return true
     } catch (error) {
         console.error('❌ Error al almacenar JWT en cookie:', error)
@@ -61,8 +60,6 @@ export const getJWTData = (token) => {
 
   try {
     const decoded = jwtDecode(token);
-    console.log('Datos decodificados:', decoded)
-
     return decoded;
   } catch (error) {
     console.error('Error al decodificar el JWT:', error)
@@ -76,7 +73,6 @@ export const getJWTData = (token) => {
 export const deleteJWTFromCookie = () => {
     try {
         document.cookie = `${JWT_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict`
-        console.log('✅ JWT eliminado de cookie')
         return true
     } catch (error) {
         console.error('❌ Error al eliminar JWT de cookie:', error)

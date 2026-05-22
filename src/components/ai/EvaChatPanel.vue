@@ -144,8 +144,6 @@ async function handleQuickAction(action) {
             maxTickets: 5
         })
 
-        console.log('EvaChatPanel -> daily-summary response:', res)
-
         const payload = res?.data?.data || res?.data || {}
         const presentation = buildExecutivePresentation(payload, t('evaWorkspace.summaryObtained'))
 

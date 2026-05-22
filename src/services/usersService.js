@@ -117,12 +117,11 @@ export const editUser = async (formData) => {
 
 export const deleteUser = async (idUser) => {
   try {
-    console.log('🗑️ Eliminando registro de usuario: ', idUser)
     const response = await axiosInstance.delete(`${CORE.USERS}/${idUser}`)
 
     return response
   } catch(error) {
-    console.log(`❌ Error al eliminar el usuario: ${idUser}`, error.message)
+    console.error(`Error al eliminar el usuario: ${idUser}`, error.message)
     throw error
   }
 }

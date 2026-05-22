@@ -13,8 +13,8 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title v-if="!$q.platform.is.mobile" class="text-weight-bold app-toolbar-title">
-          {{ isSantoroFlow ? t('layout.santoroPanel') : userInfo.organization }}
+        <q-toolbar-title class="text-weight-bold app-toolbar-title">
+          {{ toolbarOrganizationName }}
         </q-toolbar-title>
 
         <!-- Botones de herramientas rápidas -->
@@ -196,7 +196,15 @@
                   'system-dot--' + (healthMap[selectedSystem]?.status || 'inactive').toLowerCase()
                 "
               />
-              <span class="q-ml-sm">{{ selectedSystem }}</span>
+              <span class="system-selected">
+                <span class="system-selected__name">{{ selectedSystem }}</span>
+                <span
+                  class="system-selected__status"
+                  :class="errorRateTextClass(healthMap[selectedSystem]?.status)"
+                >
+                  {{ selectedSystemStatusLabel }}
+                </span>
+              </span>
             </template>
 
             <q-list class="system-dropdown-menu">
@@ -214,11 +222,16 @@
                     :class="'system-dot--' + (sys.status || 'inactive').toLowerCase()"
                   />
                 </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-white">{{ sys.label }}</q-item-label>
+                <q-item-section class="system-option-content">
+                  <q-item-label class="text-white system-option-name">{{ sys.label }}</q-item-label>
+                  <q-item-label caption class="system-option-status">
+                    <span :class="errorRateTextClass(sys.status)">
+                      {{ formatSystemStatusText(sys.status, sys.errorRate) }}
+                    </span>
+                  </q-item-label>
                 </q-item-section>
-                <q-item-section side>
-                  <span style="font-size: 10px" :class="errorRateTextClass(sys.status)">
+                <q-item-section side class="system-option-rate">
+                  <span :class="errorRateTextClass(sys.status)">
                     {{
                       !sys.status || sys.status === 'INACTIVE'
                         ? t('layout.noActivity')
@@ -530,6 +543,15 @@ const userInfo = computed(() => ({
   roles: authService.user?.authz?.roles || [],
 }))
 
+const toolbarOrganizationName = computed(() =>
+  isSantoroFlow.value ? t('layout.santoroPanel') : userInfo.value.organization,
+)
+
+const selectedSystemStatusLabel = computed(() => {
+  const health = healthMap.value[selectedSystem.value] || {}
+  return formatSystemStatusText(health.status, health.errorRate)
+})
+
 const filterAuthorizedSystems = (catalogSystems = []) => {
   const allowed = new Set(allowedSystemNames.value)
   return catalogSystems.filter((system) => allowed.has(system?.value))
@@ -756,6 +778,14 @@ function errorRateTextClass(status) {
 
 function formatSystemErrorRate(rate) {
   return `${((rate || 0) * 100).toFixed(1)}${t('layout.errorRateShort')}`
+}
+
+function formatSystemStatusText(status, rate) {
+  if (!status || status === 'INACTIVE') return t('layout.noActivity')
+  if (status === 'HEALTHY') return `OK · ${formatSystemErrorRate(rate)}`
+  if (status === 'WARN') return `Alerta · ${formatSystemErrorRate(rate)}`
+  if (status === 'CRIT') return `Critico · ${formatSystemErrorRate(rate)}`
+  return formatSystemErrorRate(rate)
 }
 
 function formatApiKeyRotationText(days) {
@@ -1246,6 +1276,7 @@ onMounted(async () => {
   min-height: 64px;
   padding-left: 12px;
   padding-right: 12px;
+  gap: 8px;
 }
 
 .app-toolbar-title {
@@ -1253,6 +1284,10 @@ onMounted(async () => {
   letter-spacing: 0.01em;
   font-size: 1.1rem;
   font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-toolbar-title::after {
@@ -1318,10 +1353,71 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(233, 113, 50, 0.14);
   color: white;
+  min-width: 0;
 }
 
 .system-dropdown:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.system-dropdown .q-btn__content {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.system-selected {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: 8px;
+  line-height: 1.05;
+}
+
+.system-selected__name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.system-selected__status {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.system-option-content {
+  min-width: 0;
+}
+
+.system-option-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.system-option-status {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.system-option-rate {
+  flex: 0 0 auto;
+  padding-left: 10px;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .glass-tooltip {
@@ -1350,6 +1446,11 @@ onMounted(async () => {
   border-radius: 18px;
   box-shadow: 0 20px 44px rgba(0, 0, 0, 0.38);
   backdrop-filter: blur(18px);
+}
+
+.system-dropdown-menu {
+  min-width: min(330px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
 }
 
 .menu-header-label {
@@ -1625,6 +1726,20 @@ onMounted(async () => {
 
   .app-toolbar {
     min-height: 64px;
+    padding-left: 6px;
+    padding-right: 6px;
+    gap: 4px;
+  }
+
+  .app-toolbar > .toolbar-icon-btn {
+    flex: 0 0 auto;
+  }
+
+  .app-toolbar-title {
+    flex: 0 0 calc(50vw - 10px);
+    max-width: calc(50vw - 10px);
+    font-size: 0.84rem;
+    line-height: 1.15;
   }
 
   .app-drawer {
@@ -1649,11 +1764,12 @@ onMounted(async () => {
     flex-wrap: nowrap !important;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-width: 0;
     gap: 4px;
-    padding-left: 6px;
-    padding-right: 6px;
+    padding-left: 2px;
+    padding-right: 2px;
+    touch-action: pan-x;
   }
 
   .mobile-scroll-row > * {
@@ -1676,13 +1792,27 @@ onMounted(async () => {
   }
 
   .system-dropdown {
-    flex: 0 0 auto;
-    max-width: 210px;
+    flex: 0 0 clamp(184px, 58vw, 240px);
+    max-width: clamp(184px, 58vw, 240px);
   }
 
   .system-dropdown .q-btn__content {
     min-width: 0;
     overflow: hidden;
+  }
+
+  .system-dropdown .q-btn {
+    width: 100%;
+    padding-left: 10px;
+    padding-right: 8px;
+  }
+
+  .system-selected__status {
+    font-size: 9px;
+  }
+
+  .system-option-rate {
+    display: none;
   }
 
   .mobile-scroll-row::-webkit-scrollbar {
