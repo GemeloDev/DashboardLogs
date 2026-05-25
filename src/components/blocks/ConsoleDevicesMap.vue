@@ -19,12 +19,13 @@ const props = defineProps({
 const emit = defineEmits(['select-device'])
 
 const mapEl = ref(null)
+const tooltip = ref({ visible: false, x: 0, y: 0, device: null })
 let map = null
-let popup = null
 let spiderfy = null
 let resizeObserver = null
 let loaded = false
 let clusterCountMarkers = new Map()
+let pendingSourceUpdateFrame = null
 
 const DEVICE_SOURCE_ID = 'devices-src'
 const CLUSTER_LAYER_ID = 'devices-clusters'
@@ -89,6 +90,51 @@ function emitDeviceSelection(properties = {}) {
     lat: Number(properties.lat),
     lon: Number(properties.lon),
   })
+}
+
+function buildTooltipDevice(properties = {}) {
+  const isOnline = properties.status === 'ONLINE'
+  return {
+    color: isOnline ? '#22c55e' : '#ef4444',
+    deviceId: properties.deviceId || '-',
+    ip: properties.ip || '-',
+    lastSeen: properties.lastSeen ? new Date(properties.lastSeen).toLocaleString() : '-',
+    locationName: properties.locationName || '',
+    name: properties.hostname || properties.deviceId || '-',
+    statusLabel: isOnline ? t('dashboard.devicesMapOnline') : t('dashboard.devicesMapOffline'),
+  }
+}
+
+function getTooltipPoint(feature, event) {
+  if (event?.point) return event.point
+  const coords = feature?.geometry?.coordinates
+  if (map && Array.isArray(coords)) return map.project(coords)
+  return null
+}
+
+function showDeviceTooltip(point, properties) {
+  if (!point) return
+  tooltip.value = {
+    visible: true,
+    x: point.x,
+    y: point.y,
+    device: buildTooltipDevice(properties),
+  }
+}
+
+function hideDeviceTooltip() {
+  tooltip.value = { visible: false, x: 0, y: 0, device: null }
+}
+
+function closeActiveSpiderfy() {
+  if (!spiderfy) return
+  if (typeof spiderfy._clearSpiderifiedCluster === 'function') {
+    spiderfy._clearSpiderifiedCluster()
+    return
+  }
+
+  spiderfy.unspiderfyAll?.()
+  initSpiderfy()
 }
 
 function createCircleImage(fill, { size = 40, stroke = '#fff', ring = false } = {}) {
@@ -229,20 +275,23 @@ function initSpiderfy() {
     spiderLegsWidth: 2,
     circleOptions: { leavesSeparation: 54 },
     spiralOptions: { legLengthStart: 32, legLengthFactor: 2.4, leavesSeparation: 32 },
+    renderMethod: '3D',
     spiderLeavesLayout: {
       'icon-image': ['case', ['==', ['get', 'status'], 'ONLINE'], 'device-online', 'device-offline'],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
       'icon-size': 1,
     },
-    onLeafClick: (feature) => emitDeviceSelection(feature?.properties || {}),
-    onLeafHover: (feature) => {
+    onLeafClick: (feature) => {
+      hideDeviceTooltip()
+      emitDeviceSelection(feature?.properties || {})
+    },
+    onLeafHover: (feature, event) => {
       if (!feature) {
-        popup?.remove()
+        hideDeviceTooltip()
         return
       }
-      const coords = feature.geometry?.coordinates
-      if (Array.isArray(coords)) showDevicePopup(coords, feature.properties || {})
+      showDeviceTooltip(getTooltipPoint(feature, event), feature.properties || {})
     },
   })
   spiderfy.applyTo(CLUSTER_LAYER_ID)
@@ -253,19 +302,21 @@ function bindMapEvents() {
 
   map.on('click', POINT_LAYER_ID, (event) => {
     const feature = event.features?.[0]
-    if (feature) emitDeviceSelection(feature.properties || {})
+    if (feature) {
+      hideDeviceTooltip()
+      emitDeviceSelection(feature.properties || {})
+    }
   })
 
   map.on('mousemove', POINT_LAYER_ID, (event) => {
     map.getCanvas().style.cursor = 'pointer'
     const feature = event.features?.[0]
-    const coords = feature?.geometry?.coordinates
-    if (feature && Array.isArray(coords)) showDevicePopup(coords, feature.properties || {})
+    if (feature) showDeviceTooltip(getTooltipPoint(feature, event), feature.properties || {})
   })
 
   map.on('mouseleave', POINT_LAYER_ID, () => {
     map.getCanvas().style.cursor = ''
-    popup?.remove()
+    hideDeviceTooltip()
   })
 
   map.on('mouseenter', CLUSTER_LAYER_ID, () => {
@@ -276,49 +327,11 @@ function bindMapEvents() {
     map.getCanvas().style.cursor = ''
   })
 
+  map.on('movestart', hideDeviceTooltip)
+  map.on('zoomstart', hideDeviceTooltip)
   map.on('idle', syncClusterCountMarkers)
   map.on('moveend', syncClusterCountMarkers)
   map.on('zoomend', syncClusterCountMarkers)
-}
-
-function showDevicePopup(coordinates, properties) {
-  if (!map) return
-  const isOnline = properties.status === 'ONLINE'
-  const color = isOnline ? '#22c55e' : '#ef4444'
-  const statusLabel = isOnline ? t('dashboard.devicesMapOnline') : t('dashboard.devicesMapOffline')
-  const lastSeen = properties.lastSeen ? new Date(properties.lastSeen).toLocaleString() : '-'
-  const name = properties.hostname || properties.deviceId || '-'
-
-  if (!popup) popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false })
-  popup
-    .setLngLat(coordinates)
-    .setHTML(
-      `<div class="cdm-popup">
-        <div class="cdm-popup__header">
-          <span class="cdm-popup__dot" style="background:${color}"></span>
-          <strong class="cdm-popup__name">${name}</strong>
-        </div>
-        <div class="cdm-popup__id">${properties.deviceId || '-'}</div>
-        <div class="cdm-popup__row">
-          <span class="cdm-popup__label">${t('dashboard.devicesMapIp')}:</span>
-          ${properties.ip || '-'}
-        </div>
-        ${
-          properties.locationName
-            ? `<div class="cdm-popup__row">
-                <span class="cdm-popup__label">${t('dashboard.devicesMapLocation')}:</span>
-                ${properties.locationName}
-              </div>`
-            : ''
-        }
-        <div class="cdm-popup__row">
-          <span class="cdm-popup__label">${t('dashboard.devicesMapLastSeen')}:</span>
-          ${lastSeen}
-        </div>
-        <div class="cdm-popup__status" style="color:${color}">${statusLabel}</div>
-      </div>`,
-    )
-    .addTo(map)
 }
 
 function clearClusterCountMarkers() {
@@ -368,12 +381,20 @@ function syncClusterCountMarkers() {
 
 function updateSourceData() {
   if (!map || !loaded) return
-  const source = map.getSource(DEVICE_SOURCE_ID)
-  source?.setData(devicesGeojson.value)
-  spiderfy?.unspiderfyAll?.()
-  map.once('idle', () => {
+
+  if (pendingSourceUpdateFrame) cancelAnimationFrame(pendingSourceUpdateFrame)
+  pendingSourceUpdateFrame = requestAnimationFrame(() => {
+    pendingSourceUpdateFrame = null
+    if (!map || !loaded) return
+
+    const source = map.getSource(DEVICE_SOURCE_ID)
+    if (!source) return
+
+    hideDeviceTooltip()
+    closeActiveSpiderfy()
+    source.setData(devicesGeojson.value)
     syncClusterCountMarkers()
-    fitBounds()
+    map.once('idle', syncClusterCountMarkers)
   })
 }
 
@@ -425,10 +446,13 @@ watch(devicesGeojson, updateSourceData)
 onMounted(initMap)
 
 onBeforeUnmount(() => {
+  if (pendingSourceUpdateFrame) {
+    cancelAnimationFrame(pendingSourceUpdateFrame)
+    pendingSourceUpdateFrame = null
+  }
   resizeObserver?.disconnect()
   resizeObserver = null
-  popup?.remove()
-  popup = null
+  hideDeviceTooltip()
   spiderfy?.unspiderfyAll?.()
   spiderfy = null
   clearClusterCountMarkers()
@@ -441,12 +465,42 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div>
+  <div class="cdm-map-shell">
     <div ref="mapEl" class="cdm-map" />
+    <div
+      v-if="tooltip.visible && tooltip.device"
+      class="cdm-popup"
+      :style="{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }"
+    >
+      <div class="cdm-popup__header">
+        <span class="cdm-popup__dot" :style="{ background: tooltip.device.color }"></span>
+        <strong class="cdm-popup__name">{{ tooltip.device.name }}</strong>
+      </div>
+      <div class="cdm-popup__id">{{ tooltip.device.deviceId }}</div>
+      <div class="cdm-popup__row">
+        <span class="cdm-popup__label">{{ t('dashboard.devicesMapIp') }}:</span>
+        {{ tooltip.device.ip }}
+      </div>
+      <div v-if="tooltip.device.locationName" class="cdm-popup__row">
+        <span class="cdm-popup__label">{{ t('dashboard.devicesMapLocation') }}:</span>
+        {{ tooltip.device.locationName }}
+      </div>
+      <div class="cdm-popup__row">
+        <span class="cdm-popup__label">{{ t('dashboard.devicesMapLastSeen') }}:</span>
+        {{ tooltip.device.lastSeen }}
+      </div>
+      <div class="cdm-popup__status" :style="{ color: tooltip.device.color }">
+        {{ tooltip.device.statusLabel }}
+      </div>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
+.cdm-map-shell {
+  position: relative;
+}
+
 .cdm-map {
   width: 100%;
   height: 520px;
@@ -472,17 +526,6 @@ onBeforeUnmount(() => {
   width: 46px;
 }
 
-.maplibregl-popup-content {
-  background: transparent !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-.maplibregl-popup-tip {
-  border-top-color: rgba(10, 14, 26, 0.96) !important;
-}
-
 .cdm-popup {
   background: rgba(10, 14, 26, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -492,6 +535,10 @@ onBeforeUnmount(() => {
   font-size: 12px;
   min-width: 170px;
   padding: 12px 14px;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 18px));
+  z-index: 5;
 
   &__header {
     display: flex;
