@@ -125,11 +125,21 @@ export default defineConfig((/* ctx */) => {
           secure: false, // Ignora problemas de SSL en el backend si los hubiera
         },
       },
-      https: {
-        key: fs.readFileSync('certs/cpanel/clave.key'),
-        cert: fs.readFileSync('certs/cpanel/cert.crt'),
-        ca: fs.readFileSync('certs/cpanel/csb.cabundle'),
-      },
+      https: (() => {
+        const keyPath = 'certs/cpanel/clave.key'
+        const certPath = 'certs/cpanel/cert.crt'
+        const caPath = 'certs/cpanel/csb.cabundle'
+
+        if (fs.existsSync(keyPath) && fs.existsSync(certPath) && fs.existsSync(caPath)) {
+          return {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath),
+            ca: fs.readFileSync(caPath),
+          }
+        }
+
+        return undefined
+      })(),
       host: '0.0.0.0', // Acepta conexiones desde cualquier IP (PC y celular)
       port: 9000,
       allowedHosts: 'all', // Permite acceso con cualquier hostname
