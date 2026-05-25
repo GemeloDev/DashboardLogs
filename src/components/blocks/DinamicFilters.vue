@@ -219,7 +219,7 @@ const props = defineProps({
   autoEmitOnMounted: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['filtrar', 'camposSeleccionados', 'campos-seleccionados'])
+const emit = defineEmits(['filtrar', 'camposSeleccionados', 'campos-seleccionados', 'clear-filters'])
 
 const loading = ref(false)
 const logsGlobales = inject('logsGlobales', ref([]))
@@ -295,14 +295,24 @@ const generarOpcionesDesdeDatos = (items) => {
   })
 }
 
+const obtenerClavesDesdeColeccion = (items = []) => {
+  const claves = new Set()
+  const sample = Array.isArray(items) ? items.slice(0, 500) : []
+
+  sample.forEach((item) => {
+    obtenerClavesProfundas(item).forEach((key) => claves.add(key))
+  })
+
+  return Array.from(claves)
+}
+
 const reconstruirDesdeLogs = (items) => {
   if (!items || !items.length) {
     configFiltros.value = []
     return
   }
 
-  const primerLog = items[0]
-  const claves = obtenerClavesProfundas(primerLog)
+  const claves = obtenerClavesDesdeColeccion(items)
 
   // No queremos filtros que ya existen fuera (system) o que explotan cardinalidad (eventTime, payload, ids)
   const ignoradasExactas = new Set([
@@ -329,16 +339,22 @@ const reconstruirDesdeLogs = (items) => {
   }))
 
   generarOpcionesDesdeDatos(items)
+  configFiltros.value = configFiltros.value.filter((f) => f.options.length)
 
   // Mantener campos visibles si aún existen
-  const setKeys = new Set(clavesFiltrables)
+  const setKeys = new Set(configFiltros.value.map((f) => f.key))
   camposVisibles.value = camposVisibles.value.filter((k) => setKeys.has(k))
 
   // Defaults si quedó vacío
   if (camposVisibles.value.length === 0) {
-    camposVisibles.value = ['status', 'severity', 'location.country', 'eventType'].filter((k) =>
-      setKeys.has(k),
-    )
+    camposVisibles.value = [
+      'status',
+      'severity',
+      'location.name',
+      'location.country',
+      'eventType',
+      'outcome',
+    ].filter((k) => setKeys.has(k))
   }
 
   // Limpiar selecciones inválidas (si el valor ya no existe en options)
@@ -501,7 +517,7 @@ const limpiarFiltros = () => {
 
   filtrosSeleccionados.value = base
 
-  emitirFiltros()
+  emit('clear-filters')
   $q.notify({ type: 'info', message: t('consoleSimple.filtersCleared'), position: 'top' })
 }
 

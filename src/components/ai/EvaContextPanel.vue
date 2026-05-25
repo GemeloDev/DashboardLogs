@@ -323,6 +323,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useEvaStore } from 'src/stores/eva-store'
 import { EvaService } from 'src/services/eva.service'
+import { buildExecutivePresentation } from 'src/services/eva-summary-presenter'
 
 const apexchart = VueApexCharts
 const eva = useEvaStore()
@@ -343,47 +344,14 @@ watch(localGranularity, (val) => eva.setSelectedGranularity(val))
 
 const payloadData = computed(() => eva.contextPanel.payload || {})
 const evaContext = computed(() => payloadData.value?.evaContext || {})
+const insightPresentation = computed(() => buildExecutivePresentation(payloadData.value, t('evaWorkspace.noSummary')))
 
 const insightNarrative = computed(() => {
-  const narrative = payloadData.value?.pretty?.executiveNarrative
-
-  // Ignorar si es un placeholder de tipo o demasiado corto
-  if (narrative && narrative !== 'string' && narrative.trim().length > 15) {
-    return narrative
-  }
-
-  // Fallback: usar los bullets del executiveSummary como narrativa
-  const bullets =
-    payloadData.value?.base?.executiveSummary ||
-    payloadData.value?.pretty?.executiveSummary ||
-    payloadData.value?.executiveSummary
-
-  if (Array.isArray(bullets) && bullets.length > 0) {
-    return bullets.join('\n')
-  }
-
-  // Fallback final: construir desde los puntos clave si existen
-  const keyPoints = insightBullets.value
-  if (keyPoints.length > 0) {
-    return keyPoints.join('\n')
-  }
-
-  // return 'Sin resumen disponible.'
-  return (
-    payloadData.value?.pretty?.executiveNarrative ||
-    (Array.isArray(payloadData.value?.base?.executiveSummary)
-      ? payloadData.value.base.executiveSummary.join(' ')
-      : null) ||
-    t('evaWorkspace.noSummary')
-  )
+  return insightPresentation.value.narrative
 })
 
 const insightBullets = computed(() => {
-  return (
-    payloadData.value?.pretty?.executiveBullets ||
-    payloadData.value?.base?.executiveSummary ||
-    []
-  )
+  return insightPresentation.value.bullets
 })
 
 const aiDeepAnalysis = computed(() => payloadData.value?.base?.aiDeepAnalysis || null)

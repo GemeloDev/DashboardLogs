@@ -103,6 +103,7 @@
                 :datos-origen="rawLogs"
                 @campos-seleccionados="onFiltrosPayload"
                 @camposSeleccionados="onFiltrosPayload"
+                @clear-filters="onClearFiltersAbsolute"
               />
             </q-expansion-item>
           </div>
@@ -152,19 +153,41 @@
             </div>
           </div>
 
-          <div class="col-12 col-sm-6 col-md-4 text-center">
+          <div class="col-12 col-sm pagination-actions">
             <q-pagination
               v-model="paginaActual"
+              class="console-pagination"
               :max="totalPaginas"
-              :max-pages="7"
+              :max-pages="paginationMaxPages"
               direction-links
               color="primary"
-              active-design="flat"
-              active-color="white"
-              active-text-color="primary"
+              active-design="unelevated"
+              active-color="blue-7"
+              active-text-color="white"
               size="sm"
               @update:model-value="onPageChanged"
             />
+
+            <q-select
+              v-model="sortDir"
+              class="console-sort-select"
+              :options="sortOptions"
+              :label="t('consoleSimple.sortLabel')"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              borderless
+              rounded
+              dark
+              dense
+              color="primary"
+              @update:model-value="onSortDirChanged"
+            >
+              <template v-slot:prepend>
+                <q-icon name="sort" color="cyan-4" />
+              </template>
+            </q-select>
           </div>
         </div>
       </div>
@@ -207,6 +230,7 @@ const filtroRef = ref(null)
 
 // ─── DATOS ────────────────────────────────────────────────────────────────────
 const baseLogs = ref([])       // lo que regresa el backend (ya filtrado por server params)
+const initialScopedLogs = ref([]) // subconjunto inicial cuando se abre desde mapa/grafica
 const rawLogs = ref([])        // fuente para DinamicFilters (= baseLogs, ya no se filtra rango en cliente)
 const logs = ref([])           // vista final tras filtros client-side
 const lastPayload = ref(null)  // último payload de DinamicFilters
@@ -243,6 +267,8 @@ const totalPaginas = computed(() => {
   return Math.ceil(logs.value.length / registrosPorPagina.value) || 1
 })
 
+const paginationMaxPages = computed(() => ($q.screen.lt.sm ? 5 : 7))
+
 const hasMore = computed(() => serverPage.value + 1 < serverTotalPages.value)
 
 const currentSystem = computed(() => filtrosGlobales?.value?.system || '')
@@ -250,6 +276,21 @@ const currentSystem = computed(() => filtrosGlobales?.value?.system || '')
 const logsToExport = computed(() => {
   return Array.isArray(logs.value) ? logs.value : []
 })
+
+const sortDir = computed({
+  get: () => activeServerParams.value.sortDir || 'DESC',
+  set: (value) => {
+    activeServerParams.value = {
+      ...activeServerParams.value,
+      sortDir: value || 'DESC',
+    }
+  },
+})
+
+const sortOptions = computed(() => [
+  { label: t('consoleSimple.sortNewestFirst'), value: 'DESC' },
+  { label: t('consoleSimple.sortOldestFirst'), value: 'ASC' },
+])
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
@@ -267,7 +308,7 @@ function mergeUniqueById(target, incoming) {
  * Extrae los parámetros server-side desde el payload de DinamicFilters.
  * Retorna { serverParams, clientPayload }.
  */
-function splitPayload(payload) {
+function splitPayload(payload, { includeServerKeysInClient = false } = {}) {
   if (!payload) return { serverParams: {}, clientPayload: null }
 
   const { busqueda = '', rangoFechas, _visibleFields, ...values } = payload
@@ -278,7 +319,9 @@ function splitPayload(payload) {
   for (const [k, v] of Object.entries(values)) {
     if (SERVER_FILTER_KEYS.has(k) && v != null && v !== '') {
       serverParams[k] = v
-    } else {
+    }
+
+    if (includeServerKeysInClient || !SERVER_FILTER_KEYS.has(k)) {
       clientValues[k] = v
     }
   }
@@ -297,7 +340,7 @@ function splitPayload(payload) {
 /**
  * Filtra items SOLO con las claves que el backend NO maneja.
  */
-function aplicarFiltrosClientSide(items, payload) {
+function aplicarFiltrosClientSide(items, payload, { skipServerKeys = true } = {}) {
   if (!payload) return items || []
 
   const { busqueda = '', _visibleFields, ...values } = payload
@@ -308,7 +351,7 @@ function aplicarFiltrosClientSide(items, payload) {
   out = out.filter((log) => {
     for (const [k, v] of Object.entries(values)) {
       if (!v) continue
-      if (SERVER_FILTER_KEYS.has(k)) continue
+      if (skipServerKeys && SERVER_FILTER_KEYS.has(k)) continue
 
       const actual = getDeep(log, k)
 
@@ -329,14 +372,44 @@ function aplicarFiltrosClientSide(items, payload) {
   return out
 }
 
+function getLogTimestamp(log) {
+  const raw = log?.eventTime || log?.fechaHoraDia || log?.createdAt || log?.timestamp || ''
+  const time = new Date(raw).getTime()
+  return Number.isFinite(time) ? time : 0
+}
+
+function ordenarLogs(items) {
+  const direction = sortDir.value === 'ASC' ? 1 : -1
+  return [...(Array.isArray(items) ? items : [])].sort(
+    (a, b) => (getLogTimestamp(a) - getLogTimestamp(b)) * direction,
+  )
+}
+
 // ─── VISTA ────────────────────────────────────────────────────────────────────
 function recomputarVista({ resetPage = true } = {}) {
-  rawLogs.value = baseLogs.value
+  rawLogs.value = isChartDataMode.value ? initialScopedLogs.value : baseLogs.value
 
-  const { clientPayload } = splitPayload(lastPayload.value)
-  logs.value = aplicarFiltrosClientSide(rawLogs.value, clientPayload)
+  const { clientPayload } = splitPayload(lastPayload.value, {
+    includeServerKeysInClient: isChartDataMode.value,
+  })
+  const filtered = aplicarFiltrosClientSide(rawLogs.value, clientPayload, {
+    skipServerKeys: !isChartDataMode.value,
+  })
+  logs.value = ordenarLogs(filtered)
 
   if (resetPage) paginaActual.value = 1
+}
+
+function resetActiveServerParams() {
+  activeServerParams.value = {
+    fromDate: '',
+    toDate: '',
+    eventType: '',
+    status: '',
+    severity: '',
+    outcome: '',
+    sortDir: 'DESC',
+  }
 }
 
 function resetServerPaging() {
@@ -434,7 +507,8 @@ function applyServerParams(newParams) {
 const abrirConsola = async (dataGrafica = null) => {
   if (Array.isArray(dataGrafica) && dataGrafica.length > 0) {
     isChartDataMode.value = true
-    baseLogs.value = [...dataGrafica]
+    initialScopedLogs.value = [...dataGrafica]
+    baseLogs.value = []
     serverTotalElements.value = dataGrafica.length
     serverTotalPages.value = 1
     serverPage.value = 0
@@ -442,6 +516,7 @@ const abrirConsola = async (dataGrafica = null) => {
     recomputarVista()
   } else {
     isChartDataMode.value = false
+    initialScopedLogs.value = []
     await cargarPaginaInicial()
   }
 
@@ -474,6 +549,7 @@ const abrirConsolaConFiltros = async (selections = []) => {
   }
 
   isChartDataMode.value = false
+  initialScopedLogs.value = []
 
   // Pre-aplicar server params antes de la primera carga
   const preServerParams = { ...activeServerParams.value }
@@ -582,6 +658,15 @@ const onFiltrosPayload = async (payload) => {
 }
 
 // ─── PAGINACIÓN UI ────────────────────────────────────────────────────────────
+const onClearFiltersAbsolute = async () => {
+  lastPayload.value = null
+  isChartDataMode.value = false
+  initialScopedLogs.value = []
+  paginaActual.value = 1
+  resetActiveServerParams()
+  await cargarPaginaInicial()
+}
+
 const onPageChanged = async () => {
   scrollArriba()
 
@@ -595,6 +680,17 @@ const onPageChanged = async () => {
 }
 
 // ─── EXPORTACIÓN ──────────────────────────────────────────────────────────────
+const onSortDirChanged = async () => {
+  paginaActual.value = 1
+
+  if (isChartDataMode.value) {
+    recomputarVista({ resetPage: true })
+    return
+  }
+
+  await cargarPaginaInicial()
+}
+
 function exportLogs(format) {
   try {
     const items = logsToExport.value
@@ -618,13 +714,11 @@ const cerrarConsola = () => {
   logs.value = []
   rawLogs.value = []
   baseLogs.value = []
+  initialScopedLogs.value = []
   lastPayload.value = null
   isChartDataMode.value = false
   resetServerPaging()
-  activeServerParams.value = {
-    fromDate: '', toDate: '', eventType: '', status: '',
-    severity: '', outcome: '', sortDir: 'DESC',
-  }
+  resetActiveServerParams()
 }
 
 const mostrarDetalleLog = (log) => {
@@ -689,6 +783,7 @@ defineExpose({
 
 .console-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   max-height: calc(100dvh - 200px);
 }
@@ -792,6 +887,115 @@ defineExpose({
       }
     }
   }
+
+  .pagination-current-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 3px 10px;
+    border: 1px solid rgba(79, 172, 254, 0.5);
+    border-radius: 999px;
+    background: rgba(42, 82, 152, 0.3);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    box-shadow: 0 0 18px rgba(79, 172, 254, 0.22);
+  }
+
+  .console-pagination {
+    :deep(.q-btn) {
+      min-width: 32px;
+      min-height: 32px;
+      border-radius: 10px;
+      font-weight: 700;
+      opacity: 0.82;
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        opacity 0.18s ease,
+        background 0.18s ease;
+    }
+
+    :deep(.q-btn:hover:not(.disabled)) {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    :deep(.q-btn.q-btn--active),
+    :deep(.q-btn[aria-current='true']) {
+      opacity: 1;
+      transform: translateY(-1px) scale(1.12);
+      border: 1px solid rgba(125, 211, 252, 0.85);
+      box-shadow:
+        0 0 0 2px rgba(79, 172, 254, 0.28),
+        0 8px 18px rgba(42, 82, 152, 0.45);
+    }
+  }
+
+  .pagination-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .console-sort-select {
+    flex: 0 0 260px;
+    width: 260px;
+    max-width: 100%;
+
+    :deep(.q-field__control) {
+      min-height: 42px;
+      height: 42px;
+      border: 1px solid rgba(79, 172, 254, 0.24);
+      border-radius: 999px;
+      padding: 0 14px;
+      background: rgba(42, 82, 152, 0.18);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+      transition:
+        border-color 0.18s ease,
+        background 0.18s ease,
+        box-shadow 0.18s ease;
+    }
+
+    :deep(.q-field__control:hover),
+    :deep(.q-field--focused .q-field__control) {
+      border-color: rgba(79, 172, 254, 0.56);
+      background: rgba(42, 82, 152, 0.28);
+      box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.12);
+    }
+
+    :deep(.q-field__native),
+    :deep(.q-field__prefix),
+    :deep(.q-field__suffix),
+    :deep(.q-field__input) {
+      min-height: 42px;
+      font-weight: 700;
+    }
+
+    :deep(.q-field__control-container) {
+      justify-content: center;
+      padding-top: 0;
+    }
+
+    :deep(.q-field__native) {
+      align-items: center;
+      padding-top: 8px;
+      padding-bottom: 0;
+    }
+
+    :deep(.q-field__marginal) {
+      height: 42px;
+    }
+
+    :deep(.q-field__label) {
+      font-size: 12px;
+      font-weight: 700;
+      top: 5px;
+    }
+  }
 }
 
 // Ajustes Responsivos
@@ -805,7 +1009,7 @@ defineExpose({
   }
 
   .console-body {
-    max-height: calc(100dvh - 220px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: none;
   }
 
   .pagination-section {
@@ -819,6 +1023,88 @@ defineExpose({
         text-align: center;
         padding: 0; // Resetear gutter
       }
+
+      .console-sort-select {
+        flex-basis: min(260px, 100%);
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .pagination-actions {
+        flex-direction: column;
+        justify-content: center;
+        gap: 10px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .pagination-section {
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+
+    .row {
+      gap: 8px;
+    }
+
+    .pagination-info {
+      margin-bottom: 0;
+      white-space: normal;
+    }
+
+    .console-pagination {
+      max-width: 100%;
+      overflow-x: auto;
+      padding: 2px 4px;
+
+      :deep(.q-btn) {
+        min-width: 27px;
+        min-height: 27px;
+        padding: 4px 6px;
+        border-radius: 9px;
+        font-size: 12px;
+      }
+
+      :deep(.q-btn.q-btn--active),
+      :deep(.q-btn[aria-current='true']) {
+        transform: translateY(-1px) scale(1.06);
+      }
+    }
+
+    .console-sort-select {
+      flex-basis: min(250px, 100%);
+      width: min(250px, 100%);
+
+      :deep(.q-field__control) {
+        min-height: 38px;
+        height: 38px;
+        padding: 0 12px;
+      }
+
+      :deep(.q-field__native),
+      :deep(.q-field__prefix),
+      :deep(.q-field__suffix),
+      :deep(.q-field__input) {
+        min-height: 38px;
+        font-size: 13px;
+      }
+
+      :deep(.q-field__native) {
+        padding-top: 7px;
+      }
+
+      :deep(.q-field__marginal) {
+        height: 38px;
+      }
+
+      :deep(.q-field__label) {
+        top: 4px;
+        font-size: 10px;
+      }
+    }
+
+    .pagination-actions {
+      gap: 8px;
     }
   }
 }

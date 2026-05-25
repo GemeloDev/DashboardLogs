@@ -4,20 +4,17 @@ import { SANTORO } from './endpoints'
 export class DashboardSantoro {
   static async getStats() {
     try {
-      const response = await axiosInstance.get(`${SANTORO.STATS}`)
-      console.log('ℹ️ Estadísticas consultadas: ', response.data)
+      const response = await axiosInstance.get(SANTORO.STATS)
       return response.data
     } catch (error) {
-      console.error('❌ Error al consultar estadísticas', error.message)
+      console.error('Error al consultar estadisticas', error.message)
       return
     }
   }
 
-  //  Empresas / Organizations
   static async getEmpresas() {
     try {
-      const response = await axiosInstance.get(`${SANTORO.EMPRESAS}`)
-      console.log('✅ Empresas obtenidas correctamente: ', response.data)
+      const response = await axiosInstance.get(SANTORO.EMPRESAS)
       return response.data
     } catch (error) {
       return error.message
@@ -27,7 +24,6 @@ export class DashboardSantoro {
   static async getEmpresasById(id) {
     try {
       const response = await axiosInstance.get(`${SANTORO.EMPRESAS}/${id}`)
-      console.log('✅ Empresa obtenida correctamente: ', response.data)
       return response.data
     } catch (error) {
       return error.message
@@ -36,11 +32,10 @@ export class DashboardSantoro {
 
   static async createEmpresas(payload) {
     try {
-      const response = await axiosInstance.post(`${SANTORO.EMPRESAS}`, payload)
-
+      const response = await axiosInstance.post(SANTORO.EMPRESAS, payload)
       return response.data
     } catch (error) {
-      console.error('❌ Error en createEmpresa()', error.message)
+      console.error('Error en createEmpresa()', error.message)
       return error
     }
   }
@@ -54,27 +49,27 @@ export class DashboardSantoro {
       })
       return response.data
     } catch (error) {
-      console.error('❌ Error en statusEmpresa()', error.message)
+      console.error('Error en statusEmpresa()', error.message)
       return error
     }
   }
 
   static async getUsers() {
     try {
-      const response = await axiosInstance.get(`${SANTORO.USUARIOS}`)
+      const response = await axiosInstance.get(SANTORO.USUARIOS)
       return response.data
     } catch (error) {
-      console.error('❌ Error al obtener usuarios getUsers(): ', error)
+      console.error('Error al obtener usuarios getUsers(): ', error.message || error)
       return error
     }
   }
 
   static async getAPIKeys() {
     try {
-      const response = await axiosInstance.get(`${SANTORO.API_KEYS}`)
+      const response = await axiosInstance.get(SANTORO.API_KEYS)
       return response.data
     } catch (error) {
-      console.log('❌ Error al obtener api keys getAPIKeys(): ', error.message)
+      console.error('Error al obtener api keys getAPIKeys(): ', error.message)
       return error.message
     }
   }
@@ -87,7 +82,7 @@ export class DashboardSantoro {
       )
       return response.data
     } catch (error) {
-      console.error('❌ Error al cambiar el estado de la API key: ', error.message)
+      console.error('Error al cambiar el estado de la API key: ', error.message)
       return error
     }
   }
@@ -98,7 +93,7 @@ export class DashboardSantoro {
       const sevenDaysAgo = new Date(now - 7 * 86_400_000)
       const sevenDaysLater = new Date(now.getTime() + 7 * 86_400_000)
 
-      const response = await axiosInstance.get(`${SANTORO.API_KEYS}`)
+      const response = await axiosInstance.get(SANTORO.API_KEYS)
       const keys = response.data.data.content
 
       return {
@@ -110,7 +105,7 @@ export class DashboardSantoro {
         recentKeys: keys.filter((k) => new Date(k.createdAt) >= sevenDaysAgo),
       }
     } catch (error) {
-      console.error('❌ Error al crear alertas y seguimiento de API Keys: ', error.message)
+      console.error('Error al crear alertas y seguimiento de API Keys: ', error.message)
       return error
     }
   }

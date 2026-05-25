@@ -1,6 +1,5 @@
 /**
- * Servicio de Aceptación de Invitaciones
- * Maneja la aceptación de invitaciones de usuario
+ * Servicio de aceptacion de invitaciones.
  */
 
 import axios from 'axios'
@@ -9,30 +8,20 @@ import { AUTH } from './endpoints'
 
 export const acceptInvite = async (payload) => {
   try {
-    console.log('📤 Enviando petición de aceptación:', {
-      url: AUTH.ACCEPT_INVITE,
-      token: payload.token?.substring(0, 20) + '...',
-      name: payload.name,
-    })
-
     const { data } = await axios.post(AUTH.ACCEPT_INVITE, payload)
-
-    console.log('✅ Respuesta de aceptación:', data)
     return data
   } catch (error) {
-    console.error('❌ Error al aceptar invitación:', error.response?.data || error)
+    console.error('Error al aceptar invitacion:', error.response?.data || error)
     throw error
   }
 }
 
 export const changePassword = async (payload) => {
   try {
-    console.log('📤 Cambiando contraseña:', payload)
-
-    const response = await axiosInstance.post(`${AUTH.RESET_PASSWORD}`, payload)
+    const response = await axiosInstance.post(AUTH.RESET_PASSWORD, payload)
     return response.data
   } catch (error) {
-    console.error('❌ Error al resetear contraseña: ', error.message)
+    console.error('Error al resetear contrasena:', error.message)
     return error
   }
 }

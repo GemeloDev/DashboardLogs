@@ -8,6 +8,7 @@ import { boot } from 'quasar/wrappers'
 import { getJWTFromCookie } from './cookieService'
 import { useAuthStore } from 'src/stores/auth'
 import { AUTH } from './endpoints'
+import { getStoredUser } from './sessionStorage'
 
 // Crear instancia de axios
 export const axiosInstance = axios.create({
@@ -57,21 +58,12 @@ axiosInstance.interceptors.request.use(
     if (token) {
       // Agregar Bearer Token en Authorization header
       config.headers.Authorization = `Bearer ${token}`
-      console.log('🔐 Token JWT agregado al header:', `Bearer ${token.substring(0, 20)}...`)
     }
 
     // Obtener tenantId del localStorage
-    const sessionData = localStorage.getItem('dashboardLogsSession')
-    if (sessionData) {
-      try {
-        const session = JSON.parse(sessionData)
-        if (session.user?.tenantId) {
-          config.headers['X-Tenant'] = session.user.tenantId
-          console.log('🏢 Tenant ID agregado al header:', session.user.tenantId)
-        }
-      } catch (error) {
-        console.warn('⚠️ Error al parsear sesión:', error)
-      }
+    const user = getStoredUser()
+    if (user?.tenantId) {
+      config.headers['X-Tenant'] = user.tenantId
     }
 
     return config
@@ -85,13 +77,6 @@ axiosInstance.interceptors.request.use(
 // Response Interceptor - Maneja errores globalmente
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Log de respuestas exitosas
-    console.log('✅ Respuesta recibida:', {
-      url: response.config.url,
-      status: response.status,
-      data: response.data,
-    })
-
     return response
   },
   async (error) => {
@@ -107,7 +92,6 @@ axiosInstance.interceptors.response.use(
         status: error.response?.status,
         message: error.response?.data?.message || error.message,
       })
-      console.log('Refrescando token...')
       if (isRefreshing) {
         // Si ya refrescó, se manda como petición fallida a la cola
         return new Promise((resolve, reject) => {

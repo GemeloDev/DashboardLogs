@@ -301,10 +301,6 @@ watch(
       modoSeleccionado.value === 'mobile' &&
       (newDates[0] !== oldDates[0] || newDates[1] !== oldDates[1])
     ) {
-      console.log('📅 Fechas cambiadas en mobile, actualizando gráficas:', {
-        old: oldDates,
-        new: newDates,
-      })
       await actualizarContadoresYGraficas(newDates[0], newDates[1])
     }
   },
@@ -329,19 +325,15 @@ async function onFilter() {
       fechaFin: end_date,
     }
     try {
-      console.log('Payload enviado:', payload)
       // 🔸 Usuarios Offline
       const respuesta = await getUsuariosOffline(payload)
-      console.log('Respuesta offline:', respuesta)
       if (Array.isArray(respuesta) && respuesta.length > 0) {
         counters.value.Offline = respuesta[0].total
-        console.log('Nuevo valor offline:', counters.value.Offline)
       } else {
         counters.value.Offline = 0
       }
       // 🔸 Usuarios por dispositivo (solo con la fecha de inicio)
       const respuestaDispositivos = await getUsuariosDispositivosDia()
-      console.log('Respuesta dispositivos (sin filtrar):', respuestaDispositivos)
       const datosFiltrados = respuestaDispositivos.filter((item) => {
         const fechaItem = new Date(item.fecha)
         return fechaItem >= new Date(start_date) && fechaItem <= new Date(end_date)
@@ -376,8 +368,6 @@ async function actualizarContadoresYGraficas(start_date, end_date) {
   loadingCharts.value = true
 
   try {
-    console.log('🔄 Actualizando contadores y gráficas con fechas:', { start_date, end_date })
-
     // Actualizar contadores
     await Promise.all([
       cargarValidadosTFLITE(),
@@ -415,8 +405,6 @@ async function actualizarContadoresYGraficas(start_date, end_date) {
 // Función separada para actualizar gráficas con fechas específicas
 async function actualizarGraficasConFechas(start_date, end_date) {
   try {
-    console.log('🔄 Actualizando gráficas con fechas específicas:', { start_date, end_date })
-
     await Promise.all([
       cargarTiempoRespuestaPromedio(start_date, end_date),
       cargarOvalAlineado(start_date, end_date),
@@ -450,7 +438,6 @@ async function cargarValidadosTFLITE() {
       fechaInicio: start_date,
       fechaFin: end_date,
     })
-    console.log('Respuesta validados TFLITE:', respuestaValidados)
     validadosTFLITE.value =
       Array.isArray(respuestaValidados) && respuestaValidados.length > 0
         ? respuestaValidados[0].total
@@ -472,7 +459,6 @@ async function cargarPorcentajeOffline() {
       fechaInicio: start_date,
       fechaFin: end_date,
     })
-    console.log('Respuesta porcentaje offline:', respuesta)
     porcentajeOffline.value =
       Array.isArray(respuesta) && respuesta.length > 0 ? Number(respuesta[0].porcentaje) : 0
   } catch (e) {
@@ -488,7 +474,6 @@ async function cargarTiempoRespuestaPromedio(start_date, end_date) {
       fechaInicio: start_date,
       fechaFin: end_date,
     })
-    console.log('Respuesta tiempo promedio cruda:', data)
     // Fuerza a convertir a array real por si viene como objeto numerado
     const valores = Array.isArray(data) ? data : Object.values(data)
     tiempoPromedioData.value = valores
@@ -592,7 +577,6 @@ async function cargarOvalAlineado(start_date, end_date) {
       fechaInicio: start_date,
       fechaFin: end_date,
     })
-    console.log('Respuesta oval alineado:', data)
     // Aseguramos que sea un array válido
     const valores = Array.isArray(data) ? data : Object.values(data)
     ovalAlineadoData.value = valores

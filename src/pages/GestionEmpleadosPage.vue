@@ -428,13 +428,10 @@ const fetchUsers = async () => {
       selectedRole.value,
     )
 
-    console.log('✅ Usuarios encontrados: ', response)
-
     users.value = response.data.data || []
     totalUsers.value = response.data.total || 0
     totalPages.value = Math.ceil(totalUsers.value / pageSize.value)
 
-    console.log('✅ Usuarios cargados:', totalUsers.value)
   } catch (error) {
     console.error('❌ Error al cargar usuarios:', error)
     $q.notify({
@@ -458,7 +455,6 @@ const fetchRoles = async () => {
     availableRoles.value = allRoles
     filteredRoleOptions.value = [t('userManagement.allRoles'), ...allRoles]
 
-    console.log('✅ Roles disponibles:', allRoles)
   } catch (error) {
     console.error('❌ Error al cargar roles:', error)
     // En caso de error, usar solo roles predeterminados

@@ -13,8 +13,8 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title v-if="!$q.platform.is.mobile" class="text-weight-bold app-toolbar-title">
-          {{ isSantoroFlow ? t('layout.santoroPanel') : userInfo.organization }}
+        <q-toolbar-title class="text-weight-bold app-toolbar-title">
+          {{ toolbarOrganizationName }}
         </q-toolbar-title>
 
         <!-- Botones de herramientas rápidas -->
@@ -64,7 +64,7 @@
             round
             icon="notifications"
             size="sm"
-            class="toolbar-icon-btn"
+            class="toolbar-icon-btn toolbar-icon-btn--utility"
           >
             <q-badge color="negative" floating v-if="apiKeysPorExpirar.length > 0">
               {{ apiKeysPorExpirar.length }}
@@ -75,10 +75,12 @@
               anchor="bottom left"
               self="top left"
               class="glass-menu"
-              style="max-width: 350px;"
+              style="max-width: 350px"
             >
               <q-list style="min-width: 300px">
-                <q-item-label header class="menu-header-label"> {{ t('layout.APIalerts') }} </q-item-label>
+                <q-item-label header class="menu-header-label">
+                  {{ t('layout.APIalerts') }}
+                </q-item-label>
 
                 <q-separator class="menu-separator" />
 
@@ -119,7 +121,11 @@
                   <q-item-section side top>
                     <q-badge
                       :color="key.tipoAlerta === 'ROTA' ? 'orange' : 'negative'"
-                      :label="key.tipoAlerta === 'ROTA' ? t('apiKeys.rennovateKey') : t('apiKeys.expiringSoon')"
+                      :label="
+                        key.tipoAlerta === 'ROTA'
+                          ? t('apiKeys.rennovateKey')
+                          : t('apiKeys.expiringSoon')
+                      "
                     />
                   </q-item-section>
                 </q-item>
@@ -128,45 +134,51 @@
           </q-btn>
 
           <!-- Selector de idioma -->
-          <q-btn-dropdown
+          <q-btn
             flat
             dense
             round
             icon="language"
-            class="toolbar-icon-btn"
-            dropdown-icon=""
-            style="padding: 8px"
+            class="toolbar-icon-btn toolbar-icon-btn--utility"
           >
-            <q-list class="language-dropdown-menu" style="min-width: 180px">
-              <q-item-label header class="menu-header-label">{{ t('common.language') }}</q-item-label>
+            <q-menu fit anchor="bottom middle" self="top middle" class="glass-menu">
+                <q-list class="language-dropdown-menu" style="min-width: 180px">
+                  <q-item-label header class="menu-header-label">{{
+                    t('common.language')
+                  }}</q-item-label>
 
-              <q-separator class="menu-separator" />
+                  <q-separator class="menu-separator" />
 
-              <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('es')">
-                <q-item-section avatar style="min-width: 32px">
-                  <span style="font-size: 20px">🇲🇽</span>
-                </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-white">{{ t('layout.languageSpanish') }}</q-item-label>
-                  </q-item-section>
-                <q-item-section side top v-if="locale === 'es'">
-                  <q-icon name="check" color="positive" />
-                </q-item-section>
-              </q-item>
+                  <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('es')">
+                    <q-item-section avatar style="min-width: 32px">
+                      <span style="font-size: 20px">🇲🇽</span>
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white">{{
+                        t('layout.languageSpanish')
+                      }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side top v-if="locale === 'es'">
+                      <q-icon name="check" color="positive" />
+                    </q-item-section>
+                  </q-item>
 
-              <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('en')">
-                <q-item-section avatar style="min-width: 32px">
-                  <span style="font-size: 20px">🇺🇸</span>
-                </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-white">{{ t('layout.languageEnglish') }}</q-item-label>
-                  </q-item-section>
-                <q-item-section side top v-if="locale === 'en'">
-                  <q-icon name="check" color="positive" />
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
+                  <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('en')">
+                    <q-item-section avatar style="min-width: 32px">
+                      <span style="font-size: 20px">🇺🇸</span>
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-white">{{
+                        t('layout.languageEnglish')
+                      }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side top v-if="locale === 'en'">
+                      <q-icon name="check" color="positive" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+            </q-menu>
+          </q-btn>
 
           <!-- Sistemas en línea -->
           <q-btn-dropdown
@@ -184,7 +196,15 @@
                   'system-dot--' + (healthMap[selectedSystem]?.status || 'inactive').toLowerCase()
                 "
               />
-              <span class="q-ml-sm">{{ selectedSystem }}</span>
+              <span class="system-selected">
+                <span class="system-selected__name">{{ selectedSystem }}</span>
+                <span
+                  class="system-selected__status"
+                  :class="errorRateTextClass(healthMap[selectedSystem]?.status)"
+                >
+                  {{ selectedSystemStatusLabel }}
+                </span>
+              </span>
             </template>
 
             <q-list class="system-dropdown-menu">
@@ -202,11 +222,16 @@
                     :class="'system-dot--' + (sys.status || 'inactive').toLowerCase()"
                   />
                 </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-white">{{ sys.label }}</q-item-label>
+                <q-item-section class="system-option-content">
+                  <q-item-label class="text-white system-option-name">{{ sys.label }}</q-item-label>
+                  <q-item-label caption class="system-option-status">
+                    <span :class="errorRateTextClass(sys.status)">
+                      {{ formatSystemStatusText(sys.status, sys.errorRate) }}
+                    </span>
+                  </q-item-label>
                 </q-item-section>
-                <q-item-section side>
-                  <span style="font-size: 10px" :class="errorRateTextClass(sys.status)">
+                <q-item-section side class="system-option-rate">
+                  <span :class="errorRateTextClass(sys.status)">
                     {{
                       !sys.status || sys.status === 'INACTIVE'
                         ? t('layout.noActivity')
@@ -313,7 +338,9 @@
             </q-item>
 
             <q-separator dark spaced class="drawer-separator" />
-            <q-item-label header class="drawer-section-label">{{ t('layout.toolsSection') }}</q-item-label>
+            <q-item-label header class="drawer-section-label">{{
+              t('layout.toolsSection')
+            }}</q-item-label>
 
             <q-item clickable v-ripple to="/client/diagnostico" class="drawer-item">
               <q-item-section avatar>
@@ -436,6 +463,8 @@
 import { ref, provide, onMounted, computed, watch, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
+import { Capacitor } from '@capacitor/core'
+import { App as CapacitorApp } from '@capacitor/app'
 
 // Importanto la IA
 import EvaFloatingButton from 'src/components/ai/EvaFloatingButton.vue'
@@ -448,6 +477,7 @@ import {
   subscribeToAlerts,
   connectSocket,
   ensureSocketConnected,
+  restartSocketConnection,
   disconnectSocket,
 } from 'src/services/socketService'
 import authService from '../services/authService.js'
@@ -513,6 +543,15 @@ const userInfo = computed(() => ({
   roles: authService.user?.authz?.roles || [],
 }))
 
+const toolbarOrganizationName = computed(() =>
+  isSantoroFlow.value ? t('layout.santoroPanel') : userInfo.value.organization,
+)
+
+const selectedSystemStatusLabel = computed(() => {
+  const health = healthMap.value[selectedSystem.value] || {}
+  return formatSystemStatusText(health.status, health.errorRate)
+})
+
 const filterAuthorizedSystems = (catalogSystems = []) => {
   const allowed = new Set(allowedSystemNames.value)
   return catalogSystems.filter((system) => allowed.has(system?.value))
@@ -556,6 +595,7 @@ const DASHBOARD_RECOVERY_COOLDOWN_MS = 10000
 const DASHBOARD_SESSION_OWNER_KEY = 'dashboardSessionOwner'
 let lastDashboardRecoveryAt = 0
 let dashboardRecoveryInFlight = false
+let removeNativeAppStateListener = null
 const dashboardReady = ref(false)
 
 provide('dashboardLoading', dashboardLoading)
@@ -567,7 +607,6 @@ provide('dashboardSeriesData', seriesData)
 provide('dashboardHttpData', httpData)
 provide('dashboardGeoData', geoData)
 provide('dashboardDevicesData', devicesData)
-
 
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
@@ -646,9 +685,7 @@ const isSantoroUser = computed(() => authService.canAccessSantoroFlow())
 const currentFlow = computed(() => route.meta?.flow || authService.getAllowedFlow())
 const isSantoroFlow = computed(() => currentFlow.value === 'santoro')
 const isClientFlow = computed(() => currentFlow.value === 'client')
-const isClientDashboard = computed(() =>
-  isClientFlow.value && route.path === '/client/escritorio'
-)
+const isClientDashboard = computed(() => isClientFlow.value && route.path === '/client/escritorio')
 
 const diffDias = (fechaISO, hoy) => {
   if (!fechaISO) return null
@@ -741,6 +778,14 @@ function errorRateTextClass(status) {
 
 function formatSystemErrorRate(rate) {
   return `${((rate || 0) * 100).toFixed(1)}${t('layout.errorRateShort')}`
+}
+
+function formatSystemStatusText(status, rate) {
+  if (!status || status === 'INACTIVE') return t('layout.noActivity')
+  if (status === 'HEALTHY') return `OK · ${formatSystemErrorRate(rate)}`
+  if (status === 'WARN') return `Alerta · ${formatSystemErrorRate(rate)}`
+  if (status === 'CRIT') return `Critico · ${formatSystemErrorRate(rate)}`
+  return formatSystemErrorRate(rate)
 }
 
 function formatApiKeyRotationText(days) {
@@ -884,7 +929,9 @@ watch(
         from: nextFilters?.rangoFechas?.from || '',
         to: nextFilters?.rangoFechas?.to || '',
       },
-      visibleFields: Array.isArray(nextFilters?.visibleFields) ? [...nextFilters.visibleFields] : [],
+      visibleFields: Array.isArray(nextFilters?.visibleFields)
+        ? [...nextFilters.visibleFields]
+        : [],
       values: { ...(nextFilters?.values || {}) },
     }
   },
@@ -914,10 +961,7 @@ watch(
 )
 
 async function handleDashboardRealtimeRefresh() {
-  await Promise.all([
-    cargarEventosDelSistema(),
-    refreshSystemsCatalog(),
-  ])
+  await Promise.all([cargarEventosDelSistema(), refreshSystemsCatalog()])
   dashboardStore.announceRealtimeRefresh()
   console.log('[Dashboard] Auto-refresh completado desde WebSocket')
 }
@@ -925,24 +969,26 @@ async function handleDashboardRealtimeRefresh() {
 function subscribeDashboardSystem(sys = selectedSystem.value) {
   if (!isClientFlow.value || !sys) return
   ensureSocketConnected()
-  subscribeSystem(
-    sys,
-    () => filtros.value,
-    handleDashboardRealtimeRefresh,
-  )
+  subscribeSystem(sys, () => filtros.value, handleDashboardRealtimeRefresh)
 }
 
-async function recoverDashboardConnection(reason = 'focus') {
+async function recoverDashboardConnection(reason = 'focus', options = {}) {
   if (!isClientFlow.value || !filtros.value.system || dashboardRecoveryInFlight) return
 
   const now = Date.now()
-  if (now - lastDashboardRecoveryAt < DASHBOARD_RECOVERY_COOLDOWN_MS) return
+  if (!options.bypassCooldown && now - lastDashboardRecoveryAt < DASHBOARD_RECOVERY_COOLDOWN_MS)
+    return
 
   lastDashboardRecoveryAt = now
   dashboardRecoveryInFlight = true
 
   try {
-    ensureSocketConnected()
+    if (options.restartSocket) {
+      await restartSocketConnection()
+    } else {
+      ensureSocketConnected()
+    }
+
     subscribeDashboardSystem(filtros.value.system)
     await Promise.all([
       fetchAll(filtros.value, { preserveExistingData: true }),
@@ -965,15 +1011,30 @@ function handleVisibilityRecovery() {
   }
 }
 
+async function setupNativeAppStateRecovery() {
+  if (!Capacitor.isNativePlatform()) return
+
+  const handle = await CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+    if (!isActive) return
+
+    recoverDashboardConnection('capacitor-app-state', {
+      restartSocket: true,
+      bypassCooldown: true,
+    })
+  })
+
+  removeNativeAppStateListener = () => {
+    handle.remove()
+    removeNativeAppStateListener = null
+  }
+}
+
 async function initializeClientDashboard() {
   dashboardReady.value = false
   checkApiKeysExpirations()
 
   const sessionOwner =
-    authService.user?.id ||
-    authService.user?.email ||
-    authService.user?.organization?.id ||
-    ''
+    authService.user?.id || authService.user?.email || authService.user?.organization?.id || ''
   const previousOwner = localStorage.getItem(DASHBOARD_SESSION_OWNER_KEY)
 
   if (sessionOwner && previousOwner !== sessionOwner) {
@@ -1001,10 +1062,7 @@ async function initializeClientDashboard() {
     filtros.value.system = nextSystem
     authService.savePrefs(currentFlow.value, nextSystem)
 
-    await Promise.all([
-      fetchAll(filtros.value),
-      cargarEventosDelSistema(),
-    ])
+    await Promise.all([fetchAll(filtros.value), cargarEventosDelSistema()])
   }
 
   dashboardReady.value = true
@@ -1076,21 +1134,18 @@ watch(
 )
 
 // Limpiar suscripción al WebSocket si se sale del flujo de cliente
-watch(
-  isClientFlow,
-  (isClient) => {
-    if (!isClient) {
-      unsubscribeSystem()
-    }
-  },
-)
+watch(isClientFlow, (isClient) => {
+  if (!isClient) {
+    unsubscribeSystem()
+  }
+})
 
 onBeforeUnmount(() => {
   window.removeEventListener('focus', handleWindowFocusRecovery)
   document.removeEventListener('visibilitychange', handleVisibilityRecovery)
+  removeNativeAppStateListener?.()
   unsubscribeSystem()
 })
-
 
 // ── Notificaciones del browser para alertas CRIT ──────────────────────────────
 async function requestNotificationPermission() {
@@ -1142,6 +1197,7 @@ function handleCritAlert(alert) {
 onMounted(async () => {
   window.addEventListener('focus', handleWindowFocusRecovery)
   document.addEventListener('visibilitychange', handleVisibilityRecovery)
+  await setupNativeAppStateRecovery()
 
   const defaultFlow = authService.getAllowedFlow()
   const defaultRoute = defaultFlow === 'santoro' ? '/santoro/empresas' : '/client/escritorio'
@@ -1220,6 +1276,7 @@ onMounted(async () => {
   min-height: 64px;
   padding-left: 12px;
   padding-right: 12px;
+  gap: 8px;
 }
 
 .app-toolbar-title {
@@ -1227,6 +1284,10 @@ onMounted(async () => {
   letter-spacing: 0.01em;
   font-size: 1.1rem;
   font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-toolbar-title::after {
@@ -1265,6 +1326,18 @@ onMounted(async () => {
   color: #c084fc;
 }
 
+.toolbar-utility-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.toolbar-icon-btn--utility {
+  min-width: 34px;
+  min-height: 34px;
+}
+
 /* USER + SYSTEM */
 .system-dropdown,
 .user-dropdown {
@@ -1280,10 +1353,71 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(233, 113, 50, 0.14);
   color: white;
+  min-width: 0;
 }
 
 .system-dropdown:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.system-dropdown .q-btn__content {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.system-selected {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: 8px;
+  line-height: 1.05;
+}
+
+.system-selected__name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.system-selected__status {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.system-option-content {
+  min-width: 0;
+}
+
+.system-option-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.system-option-status {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.system-option-rate {
+  flex: 0 0 auto;
+  padding-left: 10px;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .glass-tooltip {
@@ -1312,6 +1446,11 @@ onMounted(async () => {
   border-radius: 18px;
   box-shadow: 0 20px 44px rgba(0, 0, 0, 0.38);
   backdrop-filter: blur(18px);
+}
+
+.system-dropdown-menu {
+  min-width: min(330px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
 }
 
 .menu-header-label {
@@ -1587,6 +1726,20 @@ onMounted(async () => {
 
   .app-toolbar {
     min-height: 64px;
+    padding-left: 6px;
+    padding-right: 6px;
+    gap: 4px;
+  }
+
+  .app-toolbar > .toolbar-icon-btn {
+    flex: 0 0 auto;
+  }
+
+  .app-toolbar-title {
+    flex: 0 0 calc(50vw - 10px);
+    max-width: calc(50vw - 10px);
+    font-size: 0.84rem;
+    line-height: 1.15;
   }
 
   .app-drawer {
@@ -1611,8 +1764,55 @@ onMounted(async () => {
     flex-wrap: nowrap !important;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-left: 8px;
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 4px;
+    padding-left: 2px;
+    padding-right: 2px;
+    touch-action: pan-x;
+  }
+
+  .mobile-scroll-row > * {
+    margin-left: 4px !important;
+  }
+
+  .toolbar-utility-group {
+    flex: 0 0 auto;
+    gap: 2px;
+    padding: 2px 4px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .toolbar-icon-btn--utility {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
+  }
+
+  .system-dropdown {
+    flex: 0 0 clamp(184px, 58vw, 240px);
+    max-width: clamp(184px, 58vw, 240px);
+  }
+
+  .system-dropdown .q-btn__content {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .system-dropdown .q-btn {
+    width: 100%;
+    padding-left: 10px;
     padding-right: 8px;
+  }
+
+  .system-selected__status {
+    font-size: 9px;
+  }
+
+  .system-option-rate {
+    display: none;
   }
 
   .mobile-scroll-row::-webkit-scrollbar {

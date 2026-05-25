@@ -3,6 +3,7 @@
 node_modules
 .github
 .env
+
 # Quasar core related directories
 .quasar
 /dist
@@ -19,6 +20,13 @@ node_modules
 /src-capacitor/www
 /src-capacitor/node_modules
 
+# Certificate and private key files
+certs/
+*.key
+*.pem
+*.p12
+*.pfx
+
 # Log files
 npm-debug.log*
 yarn-debug.log*
@@ -31,15 +39,13 @@ yarn-error.log*
 *.njsproj
 *.sln
 
-# ════════════════════════════════════════════════════════════════
-# Variables de Entorno
-# ════════════════════════════════════════════════════════════════
- .env                   → Se sube (valores por defecto)
- .env.development       → Se sube (config de desarrollo)
-.env.production        → Se sube (config de producción)
- .env.local             → NO se sube (overrides locales)
- .env.*.local           → NO se sube (overrides locales por ambiente)
-
+# Environment files
+# .env                  -> No incluir credenciales ni secretos
+.env.development      -> No incluir credenciales ni secretos
+# .env.production       -> No incluir credenciales ni secretos
+# .env.local            -> NO se sube (overrides locales)
+# .env.*.local          -> NO se sube (overrides locales por ambiente)
 .env.local
 .env.*.local
+
 *.pyc

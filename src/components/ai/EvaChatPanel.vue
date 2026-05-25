@@ -49,6 +49,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useEvaStore } from 'src/stores/eva-store'
 import { EvaService } from 'src/services/eva.service'
+import { buildExecutivePresentation } from 'src/services/eva-summary-presenter'
 import EvaMessageBubble from './EvaMessageBubble.vue'
 import EvaQuickActions from './EvaQuickActions.vue'
 import EvaVoiceButton from './EvaVoiceButton.vue'
@@ -75,10 +76,17 @@ async function sendMessage() {
             maxTickets: 5
         })
 
-        const pretty = res?.data?.pretty || res?.pretty
-        const narrative = pretty?.executiveNarrative || t('evaWorkspace.noExecutiveSummary')
-        eva.addAssistantMessage(narrative, 'text', { raw: res })
-        eva.setContextPanel('insight', t('evaWorkspace.refreshDailySummary'), res)
+        const payload = res?.data?.data || res?.data || res
+        const presentation = buildExecutivePresentation(payload, t('evaWorkspace.noExecutiveSummary'))
+        eva.addAssistantMessage(presentation.narrative, 'insight', {
+            raw: payload,
+            meta: {
+                bullets: presentation.bullets,
+                highlights: presentation.bullets,
+                recommendations: presentation.recommendations
+            }
+        })
+        eva.setContextPanel('insight', t('evaWorkspace.refreshDailySummary'), payload)
         } else if (lower.includes('gráfica') || lower.includes('grafica')) {
         const res = await EvaService.getMetricsSeries({
             granularity: eva.selectedGranularity,
@@ -136,17 +144,20 @@ async function handleQuickAction(action) {
             maxTickets: 5
         })
 
-        console.log('EvaChatPanel -> daily-summary response:', res)
-
-        const payload = res?.data || {}
-        const pretty = payload?.pretty || null
-        const base = payload?.base || null
+        const payload = res?.data?.data || res?.data || {}
+        const presentation = buildExecutivePresentation(payload, t('evaWorkspace.summaryObtained'))
 
         eva.addAssistantMessage(
-            pretty?.executiveNarrative || 
-                (Array.isArray(base?.executiveSummary) ? base.executiveSummary.join(' ') : t('evaWorkspace.summaryObtained')),
-            'text',
-            { raw: res }
+            presentation.narrative,
+            'insight',
+            {
+                raw: payload,
+                meta: {
+                    bullets: presentation.bullets,
+                    highlights: presentation.bullets,
+                    recommendations: presentation.recommendations
+                }
+            }
         )
         eva.setContextPanel('insight', t('evaWorkspace.refreshDailySummary'), payload)
         return
