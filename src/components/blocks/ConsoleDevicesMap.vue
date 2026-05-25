@@ -12,6 +12,7 @@ maplibregl.workerUrl = workerUrl
 
 const { t } = useI18n()
 
+
 const props = defineProps({
   devices: { type: Array, default: () => [] },
 })
