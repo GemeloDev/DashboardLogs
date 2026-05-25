@@ -186,9 +186,9 @@ export function subscribeToAlerts(tenantId, onAlert = () => {}) {
 
 /**
  * Suscribirse a nuevos logs de un sistema específico.
- * El backend envía mensajes a este topic cuando llegan logs nuevos.
  */
-export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}) {
+export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {} /* , _retries = 0 */) {
+  // Máximo 5 reintentos (10 segundos) para evitar loops
   if (!stompClient || !connected) {
     ensureSocketConnected()
     let cancelled = false
@@ -225,7 +225,7 @@ export function subscribeToNewLogs(tenantId, system, onNewLogs = () => {}) {
     }
   })
 
-  return subscription // guardar para poder desuscribirse al cambiar de sistema
+  return subscription
 }
 
 /**
