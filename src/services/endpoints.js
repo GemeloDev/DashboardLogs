@@ -110,6 +110,7 @@ export const DEVICES = {
 
 export const CATALOGS = {
   API_KEYS: `${BASE_URL}/catalogs/api-keys`,
+  HEALT: `${BASE_URL}/logs/dashboard/systems-health`,
 }
 
 // ─── Panel Santoro (admin interno) ───────────────────────────────────────────
