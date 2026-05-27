@@ -42,25 +42,20 @@ const proccessQueue = (error, token = null) => {
 // Request Interceptor - Inyecta JWT automáticamente
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Obtener JWT de la cookie
-    const token = getJWTFromCookie()
-
-    // Si la petición no es la de refresco, se añade el token
     if (config.url !== AUTH.REFRESH_TOKEN) {
       const authStore = useAuthStore()
-      const token = authStore.getAccessToken
+      const storeToken = authStore.getAccessToken
 
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+      if (storeToken) {
+        config.headers.Authorization = `Bearer ${storeToken}`
+      } else {
+        const cookieToken = getJWTFromCookie()
+        if (cookieToken) {
+          config.headers.Authorization = `Bearer ${cookieToken}`
+        }
       }
     }
 
-    if (token) {
-      // Agregar Bearer Token en Authorization header
-      config.headers.Authorization = `Bearer ${token}`
-    }
-
-    // Obtener tenantId del localStorage
     const user = getStoredUser()
     if (user?.tenantId) {
       config.headers['X-Tenant'] = user.tenantId
