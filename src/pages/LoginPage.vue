@@ -325,7 +325,12 @@ const onSubmit = async () => {
     if (loginResult.success) {
       if (loginResult.mustChangePassword) return router.push('/new-password')
       mensajeExito.value = loginResult.message || 'Acceso concedido. Redirigiendo...'
-      setTimeout(() => router.push('/'), 1500)
+      const targetRoute =
+        authService.getAllowedFlow(loginResult.user) === 'santoro'
+          ? '/santoro/inicio'
+          : '/client/escritorio'
+
+      setTimeout(() => router.push(targetRoute), 1500)
     } else {
       mensajeError.value = loginResult.message || 'Credenciales inválidas. Verifica tus datos.'
       cargando.value = false

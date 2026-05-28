@@ -40,9 +40,11 @@ export default defineRouter(function () {
     const defaultRoute = getDefaultRoute(user)
     const canAccessSantoro = authService.canAccessSantoroFlow(user)
 
-    const isAdmin =
+    const hasAdminRole =
       user?.authz?.roles?.includes('ORG_ADMIN') ||
       user?.authz?.roles?.includes('ORG_OWNER')
+
+    const canAccessAdminRoute = hasAdminRole || (to.meta.flow === 'santoro' && canAccessSantoro)
 
     // Bloqueo de acceso a flujo santoro
     if (to.meta.flow === 'santoro' && !canAccessSantoro) {
@@ -51,7 +53,12 @@ export default defineRouter(function () {
     }
 
     // Si además requiere admin
-    if (to.meta.requiresAdmin && !isAdmin) {
+    if (to.meta.requiresAdmin && !canAccessAdminRoute) {
+      if (to.path === defaultRoute) {
+        next(false)
+        return
+      }
+
       next(defaultRoute)
       return
     }
