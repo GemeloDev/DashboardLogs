@@ -154,19 +154,23 @@ export const useAuthService = () => {
     }
   }
 
-  const loginByQR = async (credentials /* mantenerSesion = true */) => {
+  const loginByQR = async (credentials) => {
     try {
+      console.log('Iniciando login por QR con token:', credentials)
       const response = await axiosInstance.post(AUTH.LOGIN_QR, {
         qrToken: credentials.qrToken,
       })
-
-      return response
+      return {
+        success: true,
+        data: response.data,
+        message: response.data?.message || 'Login QR exitoso',
+      }
     } catch (error) {
-      console.error(' Error en login:', error)
+      console.error(' Error en login QR:', error?.response?.data || error)
       return {
         success: false,
-        message: 'Error de conexión. Verifica tu conexión a internet.',
-        user: null,
+        message: error?.response?.data?.message || error?.message || 'Error en login QR',
+        status: error?.response?.status || 500,
       }
     }
   }
