@@ -60,15 +60,18 @@ export const generateMultipleQRs = async (tenantIds) => {
 export const generateNewContent = async () => {
   try {
     const response = await axios.get(AUTH.QR_TOKEN)
+    const qrToken = response.data?.data?.qrToken
+
+    if (!qrToken) {
+      throw new Error('Respuesta inválida al generar el token QR')
+    }
+
     return {
-      url: `${AUTH.LOGIN_QR}/${response.data.data.qrToken}`,
-      expireTime: response.data.data.expiresInSeconds ?? '',
+      url: `${AUTH.LOGIN_QR}/${qrToken}`,
+      expireTime: response.data.data.expiresInSeconds ?? 60,
     }
   } catch (error) {
     console.error('Error durante la peticion del QR:', error?.message || error)
-    return {
-      url: `${AUTH.LOGIN_QR}`,
-      expireTime: 120,
-    }
+    throw new Error(error?.response?.data?.message || error?.message || 'No se pudo generar el código QR')
   }
 }

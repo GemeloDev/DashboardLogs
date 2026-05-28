@@ -1,5 +1,5 @@
 import { axiosInstance } from './axiosConfig'
-import { EVA } from './endpoints'
+import { CATALOGS, EVA } from './endpoints'
 
 export class CatalogService {
 
@@ -8,7 +8,7 @@ export class CatalogService {
       // Cargar sistemas y salud en paralelo
       const [catalogResponse, healthResponse] = await Promise.allSettled([
         axiosInstance.get(EVA.CATALOGS_SYSTEMS),
-        axiosInstance.get('/api/logs/dashboard/systems-health'),
+        axiosInstance.get(CATALOGS.HEALT),
       ])
 
       // Debug temporal

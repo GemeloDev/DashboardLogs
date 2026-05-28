@@ -76,7 +76,6 @@
         >
           <!-- Indicador de status -->
           <div class="today-feed__dot" :class="dotClass(log.status)" />
-
           <!-- Contenido -->
           <div class="today-feed__content">
             <div class="today-feed__meta">
@@ -289,16 +288,16 @@ const errorRateColor = computed(() => {
 
 // ── Helpers de UI ─────────────────────────────────────────────────────────────
 function dotClass(status) {
-  if (status === 'ERROR') return 'today-feed__dot--red'
-  if (status === 'WARN') return 'today-feed__dot--orange'
-  if (status === 'OK') return 'today-feed__dot--green'
+  if (status === 'ERROR' || status === 'FAILED' || status === 'REJECTED') return 'today-feed__dot--red'
+  if (status === 'WARN' || status === 'WARNING' || status === 'ALERT') return 'today-feed__dot--orange'
+  if (status === 'OK' || status === 'APPROVED' || status === 'SUCCESS') return 'today-feed__dot--green'
   return 'today-feed__dot--grey'
 }
 
 function statusColor(status) {
-  if (status === 'ERROR') return 'red-8'
-  if (status === 'WARN') return 'orange-8'
-  if (status === 'OK') return 'green-8'
+  if (status === 'ERROR' || status === 'FAILED' || status === 'REJECTED') return 'red-8'
+  if (status === 'WARN' || status === 'WARNING' || status === 'ALERT') return 'orange-8'
+  if (status === 'OK' || status === 'APPROVED' || status === 'SUCCESS') return 'green-8'
   return 'grey-7'
 }
 
