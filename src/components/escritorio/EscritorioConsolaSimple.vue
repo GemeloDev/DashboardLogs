@@ -25,12 +25,6 @@
                 {{ t('consoleSimple.eventsCounter', { visible: logs.length, total: serverTotalElements }) }}
               </q-chip>
             </div>
-            <div class="text-subtitle2 text-grey-4 q-mt-sm">
-              <span v-if="logs.length !== rawLogs.length" class="text-amber">
-                <q-icon name="filter_alt" /> {{ t('consoleSimple.activeFilters') }}
-              </span>
-              <span v-else>{{ t('consoleSimple.showingAllRecords') }}</span>
-            </div>
           </div>
 
           <div class="col-auto">
@@ -785,7 +779,6 @@ defineExpose({
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  max-height: calc(100dvh - 200px);
 }
 
 // Grid Responsivo
@@ -841,33 +834,28 @@ defineExpose({
 
 // Paginación "Sticky" (Fijada abajo)
 .pagination-section {
-  // Posicionamiento
   position: sticky;
   bottom: 0;
   left: 0;
   width: 100%;
-  z-index: 100; // Asegura que flote sobre los items de la lista
+  max-width: 100%;
+  box-sizing: border-box;
+  z-index: 100;
+  flex-shrink: 0;
 
-  // Estilos visuales
   padding: 16px 24px;
-  background: rgba(29, 29, 43, 0.95); // Fondo semitransparente oscuro (ajusta al color de tu tema)
-  backdrop-filter: blur(8px); // Efecto de desenfoque estilo "Glass"
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4); // Sombra hacia arriba para dar profundidad
+  background: rgba(29, 29, 43, 0.95);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
 
   .pagination-info {
     color: rgba(255, 255, 255, 0.6);
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
-
-    @media (max-width: 767px) {
-      text-align: center;
-      margin-bottom: 8px;
-    }
   }
 
   .q-pagination {
-    // Estilos personalizados para los botones de paginación
     .q-btn {
       font-weight: 600;
       opacity: 0.8;
@@ -877,7 +865,7 @@ defineExpose({
         opacity: 1;
         transform: scale(1.1);
         font-weight: 700;
-        background: rgba(255, 255, 255, 0.15); // Fondo sutil para el activo
+        background: rgba(255, 255, 255, 0.15);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
 
@@ -1013,38 +1001,20 @@ defineExpose({
   }
 
   .pagination-section {
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); // Reducir padding en móviles
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    position: relative;
+    bottom: auto;
+    overflow: visible;
 
     .row {
-      flex-direction: column-reverse; // Pone la paginación arriba del texto en móviles
-      gap: 12px;
+      flex-direction: column-reverse;
+      gap: 8px;
+      min-height: max-content;
 
       .col-12 {
         text-align: center;
-        padding: 0; // Resetear gutter
+        padding: 0;
       }
-
-      .console-sort-select {
-        flex-basis: min(260px, 100%);
-        margin-right: auto;
-        margin-left: auto;
-      }
-
-      .pagination-actions {
-        flex-direction: column;
-        justify-content: center;
-        gap: 10px;
-      }
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .pagination-section {
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
-
-    .row {
-      gap: 8px;
     }
 
     .pagination-info {
@@ -1053,9 +1023,14 @@ defineExpose({
     }
 
     .console-pagination {
+      display: flex;
+      justify-content: center;
+      width: 100%;
       max-width: 100%;
+      min-height: 36px;
       overflow-x: auto;
-      padding: 2px 4px;
+      overflow-y: visible;
+      padding: 4px 4px 8px;
 
       :deep(.q-btn) {
         min-width: 27px;
@@ -1071,9 +1046,23 @@ defineExpose({
       }
     }
 
+    .pagination-actions {
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 100%;
+      min-height: max-content;
+      overflow: visible;
+    }
+
     .console-sort-select {
+      flex: 0 1 auto;
       flex-basis: min(250px, 100%);
       width: min(250px, 100%);
+      max-width: 100%;
+      margin-right: auto;
+      margin-left: auto;
 
       :deep(.q-field__control) {
         min-height: 38px;
@@ -1101,10 +1090,6 @@ defineExpose({
         top: 4px;
         font-size: 10px;
       }
-    }
-
-    .pagination-actions {
-      gap: 8px;
     }
   }
 }

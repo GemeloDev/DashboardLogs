@@ -45,7 +45,7 @@
 
             <div class="form-section">
               <label class="input-label">Código</label>
-              <div class="row justify-center items-center q-gutter-sm q-mt-md">
+              <div class="otp-row q-mt-md">
                 <q-input
                   v-for="(n, i) in 6"
                   :key="i"
@@ -53,12 +53,16 @@
                   v-model="codigo[i]"
                   maxlength="1"
                   type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  pattern="[0-9]*"
                   outlined
                   dense
                   class="otp-input"
                   input-class="text-center text-white text-h5"
-                  @keyup="moverFoco($event, i)"
-                  @keypress="(e) => !/[0-9]/.test(e.key) && e.preventDefault()"
+                  @update:model-value="actualizarCodigo($event, i)"
+                  @keydown="manejarTeclaCodigo($event, i)"
+                  @paste="pegarCodigo($event, i)"
                 />
               </div>
             </div>
@@ -238,13 +242,59 @@ const acceptInvitation = ref({
   token: token.value,
 })
 
-const moverFoco = (event, index) => {
-  const key = event.key
-  if (key.match(/^[0-9]$/) && index < 5) {
-    nextTick(() => inputs.value[index + 1].focus())
-  } else if (key === 'Backspace' && index > 0) {
-    nextTick(() => inputs.value[index - 1].focus())
+const obtenerDigitos = (valor) => String(valor ?? '').replace(/\D/g, '').slice(0, 6).split('')
+
+const enfocarInput = (index) => {
+  const input = inputs.value[index]
+
+  if (input) {
+    nextTick(() => input.focus())
   }
+}
+
+const distribuirCodigo = (valor, index = 0) => {
+  const digitos = obtenerDigitos(valor)
+
+  if (!digitos.length) {
+    codigo.value[index] = ''
+    return
+  }
+
+  digitos.forEach((digito, offset) => {
+    const posicion = index + offset
+    if (posicion < codigo.value.length) {
+      codigo.value[posicion] = digito
+    }
+  })
+
+  const siguienteIndex = Math.min(index + digitos.length, codigo.value.length - 1)
+  enfocarInput(siguienteIndex)
+}
+
+const actualizarCodigo = (valor, index) => {
+  distribuirCodigo(valor, index)
+}
+
+const manejarTeclaCodigo = (event, index) => {
+  const teclasPermitidas = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End']
+  const esAtajo = event.ctrlKey || event.metaKey
+
+  if (esAtajo || teclasPermitidas.includes(event.key)) {
+    if (event.key === 'Backspace' && !codigo.value[index] && index > 0) {
+      codigo.value[index - 1] = ''
+      enfocarInput(index - 1)
+    }
+    return
+  }
+
+  if (!/^\d$/.test(event.key)) {
+    event.preventDefault()
+  }
+}
+
+const pegarCodigo = (event, index) => {
+  event.preventDefault()
+  distribuirCodigo(event.clipboardData?.getData('text') ?? '', index)
 }
 
 // Password strength indicators
@@ -726,6 +776,14 @@ $red: #ef4444;
   }
 }
 
+.otp-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
 .otp-input {
   width: 50px;
   :deep(.q-field__control) {
@@ -767,6 +825,14 @@ $red: #ef4444;
 @media (max-width: 480px) {
   .login-card {
     border-radius: 22px;
+  }
+
+  .otp-row {
+    gap: 8px;
+  }
+
+  .otp-input {
+    width: clamp(38px, 12.5vw, 50px);
   }
 }
 </style>
