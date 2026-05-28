@@ -572,7 +572,7 @@ export default {
     unavailable: '—',
     usersLoaded: 'Usuarios obtenidos correctamente.',
     controlCenterTitle: 'Centro de Control',
-    santoroTitle: 'Centro de Control Santoro',
+    santoroTitle: 'Centro de Control Santorini',
     santoroSubtitle: 'Administra usuarios, empresas y API Keys desde una consola central con visibilidad operativa y accesos rápidos.',
     newCompanyButton: 'Nueva empresa',
     systemSummaryTitle: 'Resumen del sistema',
