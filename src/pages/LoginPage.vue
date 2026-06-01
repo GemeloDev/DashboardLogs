@@ -61,9 +61,9 @@
 
               <div class="password-row">
                 <label class="input-label">Contraseña</label>
-                <!-- <a href="/login?#/olvide-password" class="forgot-link">
+                <router-link to="/olvide-password" class="forgot-link">
                   ¿Olvidaste tu contraseña?
-                </a> -->
+                </router-link>
               </div>
 
               <div class="input-group">

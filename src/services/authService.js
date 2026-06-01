@@ -175,6 +175,89 @@ export const useAuthService = () => {
     }
   }
 
+  const forgotPassword = async (email) => {
+    try {
+      const normalizedEmail = normalizeEmail(email)
+
+      const response = await fetch(AUTH.FORGOT_PASSWORD, {
+        method: 'POST',
+        headers: REQUEST_CONFIG.headers,
+        body: JSON.stringify({ email: normalizedEmail }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+      const message =
+        data.message || 'Si el correo está registrado, recibirás instrucciones en breve.'
+
+      if (!response.ok || data.ok === false) {
+        return {
+          success: false,
+          message,
+          status: response.status,
+          data,
+        }
+      }
+
+      return {
+        success: data.ok !== false,
+        message,
+        status: response.status,
+        data,
+      }
+    } catch (error) {
+      console.error(' Error en forgot password:', error)
+      return {
+        success: false,
+        message: 'Error de conexión. Verifica tu conexión a internet.',
+        status: error?.response?.status || 0,
+        data: null,
+      }
+    }
+  }
+
+  const resetPassword = async ({ email, code, newPassword }) => {
+    try {
+      const normalizedEmail = normalizeEmail(email)
+
+      const response = await fetch(AUTH.RESET_PASSWORD, {
+        method: 'POST',
+        headers: REQUEST_CONFIG.headers,
+        body: JSON.stringify({
+          email: normalizedEmail,
+          code,
+          newPassword,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+      const message = data.message || 'Contraseña actualizada correctamente.'
+
+      if (!response.ok || data.ok === false) {
+        return {
+          success: false,
+          message,
+          status: response.status,
+          data,
+        }
+      }
+
+      return {
+        success: data.ok !== false,
+        message,
+        status: response.status,
+        data,
+      }
+    } catch (error) {
+      console.error(' Error en reset password:', error)
+      return {
+        success: false,
+        message: 'Error de conexión. Verifica tu conexión a internet.',
+        status: error?.response?.status || 0,
+        data: null,
+      }
+    }
+  }
+
   const loadPrefs = () => {
     try {
       const raw = localStorage.getItem('dashboardFlow')
@@ -416,6 +499,8 @@ export const useAuthService = () => {
     register,
     login,
     loginByQR,
+    forgotPassword,
+    resetPassword,
     logout,
     buildSession,
     initializeAuth,
@@ -464,6 +549,8 @@ export const authService = (() => {
     register: service.register,
     login: service.login,
     loginByQR: service.loginByQR,
+    forgotPassword: service.forgotPassword,
+    resetPassword: service.resetPassword,
     logout: service.logout,
     initializeAuth: service.initializeAuth,
     buildSession: service.buildSession,

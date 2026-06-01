@@ -11,12 +11,18 @@ const routes = [
     component: () => import('pages/VerificarCuentaPage.vue'),
     meta: { hideLayout: true }
   },
-  // {
-  //   path: '/olvide-password',
-  //   name: 'olvidePassword',
-  //   component: () => import('pages/PasswordOlvidadoPage.vue'),
-  //   meta: { hideLayout: true }
-  // },
+  {
+    path: '/olvide-password',
+    name: 'olvidePassword',
+    component: () => import('pages/PasswordOlvidadoPage.vue'),
+    meta: { hideLayout: true }
+  },
+  {
+    path: '/reset-password',
+    name: 'resetPassword',
+    component: () => import('pages/ResetPasswordPage.vue'),
+    meta: { hideLayout: true }
+  },
   {
     path: '/accept-invite',
     name: 'acceptInvite',
