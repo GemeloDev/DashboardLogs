@@ -18,7 +18,7 @@ export const acceptInvite = async (payload) => {
 
 export const changePassword = async (payload) => {
   try {
-    const response = await axiosInstance.post(AUTH.RESET_PASSWORD, payload)
+    const response = await axiosInstance.post(AUTH.CHANGE_PASSWORD, payload)
     return response.data
   } catch (error) {
     console.error('Error al resetear contrasena:', error.message)
