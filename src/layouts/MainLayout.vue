@@ -432,6 +432,8 @@
           :label="t('layout.support')"
           class="footer-btn"
           href="https://ticket.grupo-santoro.com.mx/login"
+          target="_blank"
+          rel="noopener noreferrer"
         />
       </div>
     </q-drawer>
