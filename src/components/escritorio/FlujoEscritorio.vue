@@ -7,7 +7,10 @@
       <EscritorioGraficasEnhanced @detalle="mostrarDetalle" />
     </div>
 
-    <div class="row justify-center q-mb-lg">
+    <div
+      v-if="!dashboardStore.isSectionPopoutOpen(DASHBOARD_SECTION_IDS.GEO_DEVICES)"
+      class="row justify-center q-mb-lg"
+    >
       <div class="col-12 col-md-6">
         <!-- Mapa de Quintana Roo (al final del panel principal, una sola vez) -->
         <q-card flat bordered class="quintana-roo-map-card q-pa-md text-white">
@@ -21,6 +24,8 @@
                 {{ t('dashboard.quintanaRooMapSubtitle') }}
               </div>
             </div>
+            <q-space />
+            <DashboardPopoutButton :section-id="DASHBOARD_SECTION_IDS.GEO_DEVICES" />
           </div>
           <QuintanaRooMap />
         </q-card>
@@ -36,11 +41,15 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EscritorioGraficasEnhanced from './EscritorioGraficasEnhanced.vue'
+import DashboardPopoutButton from 'src/components/dashboard/DashboardPopoutButton.vue'
 import QuintanaRooMap from 'src/components/blocks/QuintanaRooMap.vue'
+import { DASHBOARD_SECTION_IDS } from 'src/constants/dashboardSections'
+import { useDashboardSharedStore } from 'src/stores/dashboardShared.store'
 // import EscritorioConsola from './EscritorioConsola.vue'
 import EscritorioDetalleModal from './EscritorioDetalleModal.vue'
 
 const { t } = useI18n()
+const dashboardStore = useDashboardSharedStore()
 const modalDetalle = ref(false)
 const detalleSeleccionado = ref([])
 

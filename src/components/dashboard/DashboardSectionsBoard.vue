@@ -8,8 +8,11 @@
       :show-popout="true"
     />
 
-    <div class="row justify-center">
-      <div class="col-12 col-md-6">
+    <div
+      v-if="!dashboardStore.isSectionPopoutOpen(DASHBOARD_SECTION_IDS.GEO_DEVICES)"
+      class="row justify-center"
+    >
+      <div class="col-12">
         <!-- Mapa de Quintana Roo (al final del panel principal, una sola vez) -->
         <q-card flat bordered class="toplist-card quintana-roo-map-card q-pa-md text-white">
           <div class="row items-center q-mb-md">
@@ -20,6 +23,8 @@
                 {{ t('dashboard.quintanaRooMapSubtitle') }}
               </div>
             </div>
+            <q-space />
+            <DashboardPopoutButton :section-id="DASHBOARD_SECTION_IDS.GEO_DEVICES" />
           </div>
           <QuintanaRooMap />
         </q-card>
@@ -32,6 +37,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DashboardSectionRenderer from './DashboardSectionRenderer.vue'
+import DashboardPopoutButton from 'src/components/dashboard/DashboardPopoutButton.vue'
 import QuintanaRooMap from 'src/components/blocks/QuintanaRooMap.vue'
 import { DASHBOARD_SECTION_IDS } from 'src/constants/dashboardSections'
 import { useDashboardSharedStore } from 'src/stores/dashboardShared.store'
@@ -46,7 +52,6 @@ const sectionOrder = [
   DASHBOARD_SECTION_IDS.STATUS,
   DASHBOARD_SECTION_IDS.SEVERITY_HTTP,
   DASHBOARD_SECTION_IDS.TIME_SERIES,
-  DASHBOARD_SECTION_IDS.GEO_DEVICES,
 ]
 
 const visibleSectionOrder = computed(() =>
