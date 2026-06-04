@@ -115,6 +115,8 @@ export default {
       panelStatusTimeline: 'Estados a través del tiempo',
       panelSeverity: 'Severidad',
       panelGeoDevices: 'Mapa y dispositivos',
+      quintanaRooMapTitle: 'Mapa de Quintana Roo',
+      quintanaRooMapSubtitle: 'Vista general del estado con calles y ubicaciones',
       sectionFunctions: 'Funciones y cobertura',
       sectionToplists: 'Distribuciones principales',
       sectionSeverityHttp: 'Severidad y HTTP',

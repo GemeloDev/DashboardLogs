@@ -99,9 +99,9 @@ export default defineConfig((/* ctx */) => {
       open: true, // opens browser window automatically
       proxy: {
         '/api': {
-          target: 'http://187.188.66.56:8040',
+          target: 'https://dashboard-api.grupo-santoro.com.mx',
           changeOrigin: true,
-          secure: false,
+          secure: true,
           logLevel: 'debug',
           onProxyReq: (proxyReq, req) => {
             console.log(
@@ -121,7 +121,7 @@ export default defineConfig((/* ctx */) => {
         },
         // 🚨 NUEVA REGLA PARA SOCKET.IO
         '/ws': {
-          target: 'http://187.188.66.56:8040', // Apunta al servidor
+          target: 'ws://dashboard-api.grupo-santoro.com.mx', // Apunta al servidor
           ws: true, // 🚨 Habilitar soporte para WebSockets
           changeOrigin: true,
           secure: false, // Ignora problemas de SSL en el backend si los hubiera
