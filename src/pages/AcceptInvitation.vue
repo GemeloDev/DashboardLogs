@@ -51,7 +51,7 @@
                   :key="i"
                   ref="inputs"
                   v-model="codigo[i]"
-                  maxlength="1"
+                  maxlength="6"
                   type="text"
                   inputmode="numeric"
                   autocomplete="one-time-code"

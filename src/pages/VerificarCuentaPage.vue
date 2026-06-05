@@ -42,14 +42,18 @@
                     :key="i"
                     ref="inputs"
                     v-model="codigo[i]"
-                    maxlength="1"
+                    maxlength="6"
                     type="text"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    pattern="[0-9]*"
                     outlined
                     dense
                     class="otp-input"
                     input-class="text-center text-h5"
-                    @keyup="moverFoco($event, i)"
-                    @keypress="(e) => !/[0-9]/.test(e.key) && e.preventDefault()"
+                    @update:model-value="actualizarCodigo($event, i)"
+                    @keydown="manejarTeclaCodigo($event, i)"
+                    @paste="pegarCodigo($event, i)"
                   />
                 </div>
                 <!-- Submit button -->
@@ -91,17 +95,62 @@ const inputs = ref([])
 const cargando = ref(false)
 
 const formularioValidado = computed(() => {
-  return codigo.value.join('').length === 6
+  return /^\d{6}$/.test(codigo.value.join(''))
 })
 
+const obtenerDigitos = (valor) => String(valor ?? '').replace(/\D/g, '').slice(0, 6).split('')
 
-const moverFoco = (event, index) => {
-  const key = event.key
-  if (key.match(/^[0-9]$/) && index < 5) {
-    nextTick(() => inputs.value[index + 1].focus())
-  } else if (key === 'Backspace' && index > 0) {
-    nextTick(() => inputs.value[index - 1].focus())
+const enfocarInput = (index) => {
+  const input = inputs.value[index]
+
+  if (input) {
+    nextTick(() => input.focus())
   }
+}
+
+const distribuirCodigo = (valor, index = 0) => {
+  const digitos = obtenerDigitos(valor)
+
+  if (!digitos.length) {
+    codigo.value[index] = ''
+    return
+  }
+
+  digitos.forEach((digito, offset) => {
+    const posicion = index + offset
+    if (posicion < codigo.value.length) {
+      codigo.value[posicion] = digito
+    }
+  })
+
+  const siguienteIndex = Math.min(index + digitos.length, codigo.value.length - 1)
+  enfocarInput(siguienteIndex)
+}
+
+const actualizarCodigo = (valor, index) => {
+  distribuirCodigo(valor, index)
+}
+
+const manejarTeclaCodigo = (event, index) => {
+  const teclasPermitidas = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End']
+  const esAtajo = event.ctrlKey || event.metaKey
+
+  if (esAtajo || teclasPermitidas.includes(event.key)) {
+    if (event.key === 'Backspace' && !codigo.value[index] && index > 0) {
+      codigo.value[index - 1] = ''
+      enfocarInput(index - 1)
+    }
+    return
+  }
+
+  if (!/^\d$/.test(event.key)) {
+    event.preventDefault()
+  }
+}
+
+const pegarCodigo = (event, index) => {
+  event.preventDefault()
+  distribuirCodigo(event.clipboardData?.getData('text') ?? '', index)
 }
 
 const submit = () => {

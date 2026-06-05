@@ -289,6 +289,23 @@ const sortOptions = computed(() => [
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
+const pad2 = (n) => String(n).padStart(2, '0')
+
+function normalizarRangoFechas(range = { from: '', to: '' }) {
+  if (typeof range === 'string') {
+    const value = range.trim()
+    return { from: value, to: value }
+  }
+
+  const from = String(range?.from || '').trim()
+  const to = String(range?.to || '').trim()
+  const single = from || to
+
+  return {
+    from: from || single,
+    to: to || single,
+  }
+}
 
 function mergeUniqueById(target, incoming) {
   const map = new Map((Array.isArray(target) ? target : []).map((x) => [x?.id, x]))
@@ -322,8 +339,7 @@ function splitPayload(payload, { includeServerKeysInClient = false } = {}) {
   }
 
   // Rango de fechas → server-side
-  const from = rangoFechas?.from || ''
-  const to = rangoFechas?.to || ''
+  const { from, to } = normalizarRangoFechas(rangoFechas)
   if (from) serverParams.fromDate = from
   if (to) serverParams.toDate = to
 
@@ -367,6 +383,28 @@ function aplicarFiltrosClientSide(items, payload, { skipServerKeys = true } = {}
   return out
 }
 
+function getLogLocalDate(log) {
+  const raw = log?.eventTime || log?.fechaHoraDia || log?.createdAt || log?.timestamp || ''
+  const date = new Date(raw)
+  if (!Number.isFinite(date.getTime())) return ''
+
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+}
+
+function aplicarRangoFechasLocal(items, serverParams = {}) {
+  const from = serverParams.fromDate || ''
+  const to = serverParams.toDate || ''
+  if (!from && !to) return Array.isArray(items) ? items : []
+
+  const start = from || to
+  const end = to || from
+
+  return (Array.isArray(items) ? items : []).filter((log) => {
+    const localDate = getLogLocalDate(log)
+    return localDate && localDate >= start && localDate <= end
+  })
+}
+
 function getLogTimestamp(log) {
   const raw = log?.eventTime || log?.fechaHoraDia || log?.createdAt || log?.timestamp || ''
   const time = new Date(raw).getTime()
@@ -384,10 +422,13 @@ function ordenarLogs(items) {
 function recomputarVista({ resetPage = true } = {}) {
   rawLogs.value = isChartDataMode.value ? initialScopedLogs.value : baseLogs.value
 
-  const { clientPayload } = splitPayload(lastPayload.value, {
+  const { clientPayload, serverParams } = splitPayload(lastPayload.value, {
     includeServerKeysInClient: isChartDataMode.value,
   })
-  const filtered = aplicarFiltrosClientSide(rawLogs.value, clientPayload, {
+  const effectiveServerParams =
+    serverParams.fromDate || serverParams.toDate ? serverParams : activeServerParams.value
+  const dateFiltered = aplicarRangoFechasLocal(rawLogs.value, effectiveServerParams)
+  const filtered = aplicarFiltrosClientSide(dateFiltered, clientPayload, {
     skipServerKeys: !isChartDataMode.value,
   })
   logs.value = ordenarLogs(filtered)

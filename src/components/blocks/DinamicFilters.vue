@@ -257,9 +257,24 @@ const rangoFechasTexto = computed(() => {
   return filtrosSeleccionados.value.rangoFechas.from || ''
 })
 
-function setRangoFechas(range = { from: '', to: '' }) {
+function normalizarRangoFechas(range = { from: '', to: '' }) {
+  if (typeof range === 'string') {
+    const value = range.trim()
+    return { from: value, to: value }
+  }
+
   const from = String(range?.from || '').trim()
   const to = String(range?.to || '').trim()
+  const single = from || to
+
+  return {
+    from: from || single,
+    to: to || single,
+  }
+}
+
+function setRangoFechas(range = { from: '', to: '' }) {
+  const { from, to } = normalizarRangoFechas(range)
 
   // 1) actualiza el modelo real
   filtrosSeleccionados.value.rangoFechas = { from, to }
@@ -406,7 +421,7 @@ const emitirFiltros = () => {
   const payload = {
     _visibleFields: camposVisibles.value,
     busqueda: filtrosSeleccionados.value.busqueda || '',
-    rangoFechas: filtrosSeleccionados.value.rangoFechas || { from: '', to: '' },
+    rangoFechas: normalizarRangoFechas(filtrosSeleccionados.value.rangoFechas),
   }
 
   filtrosRenderizables.value.forEach((f) => {
@@ -610,8 +625,7 @@ const hidratarDesdeGlobales = () => {
 
   // ✅ 3) rango: SOLO si global trae rango real, si no, NO pises lo que ya eligió el usuario
   if (hasRange(fg.rangoFechas)) {
-    const from = typeof fg.rangoFechas === 'string' ? fg.rangoFechas : fg.rangoFechas.from || ''
-    const to = typeof fg.rangoFechas === 'string' ? '' : fg.rangoFechas.to || ''
+    const { from, to } = normalizarRangoFechas(fg.rangoFechas)
     filtrosSeleccionados.value.rangoFechas = { from, to }
   }
 

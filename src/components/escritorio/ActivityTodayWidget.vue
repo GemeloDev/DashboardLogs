@@ -288,22 +288,49 @@ const errorRateColor = computed(() => {
 
 // ── Helpers de UI ─────────────────────────────────────────────────────────────
 function dotClass(status) {
-  if (status === 'ERROR' || status === 'FAILED' || status === 'REJECTED') return 'today-feed__dot--red'
-  if (status === 'WARN' || status === 'WARNING' || status === 'ALERT') return 'today-feed__dot--orange'
-  if (status === 'OK' || status === 'APPROVED' || status === 'SUCCESS') return 'today-feed__dot--green'
+  const normalized = String(status || '').toUpperCase()
+  if (
+    normalized === 'ERROR' ||
+    normalized === 'FAILED' ||
+    normalized === 'REJECTED' ||
+    normalized === 'RECHAZADO'
+  )
+    return 'today-feed__dot--red'
+  if (normalized === 'WARN' || normalized === 'WARNING' || normalized === 'ALERT') return 'today-feed__dot--orange'
+  if (
+    normalized === 'OK' ||
+    normalized === 'APPROVED' ||
+    normalized === 'APROBADO' ||
+    normalized === 'SUCCESS'
+  )
+    return 'today-feed__dot--green'
   return 'today-feed__dot--grey'
 }
 
 function statusColor(status) {
-  if (status === 'ERROR' || status === 'FAILED' || status === 'REJECTED') return 'red-8'
-  if (status === 'WARN' || status === 'WARNING' || status === 'ALERT') return 'orange-8'
-  if (status === 'OK' || status === 'APPROVED' || status === 'SUCCESS') return 'green-8'
+  const normalized = String(status || '').toUpperCase()
+  if (
+    normalized === 'ERROR' ||
+    normalized === 'FAILED' ||
+    normalized === 'REJECTED' ||
+    normalized === 'RECHAZADO'
+  )
+    return 'red-8'
+  if (normalized === 'WARN' || normalized === 'WARNING' || normalized === 'ALERT') return 'orange-8'
+  if (
+    normalized === 'OK' ||
+    normalized === 'APPROVED' ||
+    normalized === 'APROBADO' ||
+    normalized === 'SUCCESS'
+  )
+    return 'green-8'
   return 'grey-7'
 }
 
 function outcomeColor(outcome) {
-  if (outcome === 'FAILURE') return 'red-9'
-  if (outcome === 'SUCCESS') return 'green-9'
+  const normalized = String(outcome || '').toUpperCase()
+  if (normalized === 'FAILURE' || normalized === 'FALLIDO') return 'red-9'
+  if (normalized === 'SUCCESS' || normalized === 'EXITOSO') return 'green-9'
   return 'grey-7'
 }
 
