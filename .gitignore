@@ -40,9 +40,9 @@ yarn-error.log*
 *.sln
 
 # Environment files
-# .env                  -> No incluir credenciales ni secretos
+.env                  -> No incluir credenciales ni secretos
 .env.development      -> No incluir credenciales ni secretos
-# .env.production       -> No incluir credenciales ni secretos
+.env.production       -> No incluir credenciales ni secretos
 # .env.local            -> NO se sube (overrides locales)
 # .env.*.local          -> NO se sube (overrides locales por ambiente)
 .env.local
