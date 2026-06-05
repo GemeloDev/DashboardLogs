@@ -115,8 +115,6 @@ export default {
       panelStatusTimeline: 'Status over time',
       panelSeverity: 'Severity',
       panelGeoDevices: 'Map and devices',
-      quintanaRooMapTitle: 'Quintana Roo Map',
-      quintanaRooMapSubtitle: 'State overview with streets and locations',
       sectionFunctions: 'Functions and coverage',
       sectionToplists: 'Main distributions',
       sectionSeverityHttp: 'Severity and HTTP',
