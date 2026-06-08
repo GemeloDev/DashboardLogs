@@ -76,7 +76,6 @@
         >
           <!-- Indicador de status -->
           <div class="today-feed__dot" :class="dotClass(log.status)" />
-
           <!-- Contenido -->
           <div class="today-feed__content">
             <div class="today-feed__meta">
@@ -289,22 +288,51 @@ const errorRateColor = computed(() => {
 
 // ── Helpers de UI ─────────────────────────────────────────────────────────────
 function dotClass(status) {
-  if (status === 'ERROR') return 'today-feed__dot--red'
-  if (status === 'WARN') return 'today-feed__dot--orange'
-  if (status === 'OK') return 'today-feed__dot--green'
+  const normalized = String(status || '').toUpperCase()
+  if (
+    normalized === 'ERROR' ||
+    normalized === 'FAILED' ||
+    normalized === 'REJECTED' ||
+    normalized === 'RECHAZADO'
+  )
+    return 'today-feed__dot--red'
+  if (normalized === 'WARN' || normalized === 'WARNING' || normalized === 'ALERT') return 'today-feed__dot--orange'
+  if (
+    normalized === 'OK' ||
+    normalized === 'APPROVED' ||
+    normalized === 'APROBADO' ||
+    normalized === 'EXITO' ||
+    normalized === 'SUCCESS'
+  )
+    return 'today-feed__dot--green'
   return 'today-feed__dot--grey'
 }
 
 function statusColor(status) {
-  if (status === 'ERROR') return 'red-8'
-  if (status === 'WARN') return 'orange-8'
-  if (status === 'OK') return 'green-8'
+  const normalized = String(status || '').toUpperCase()
+  if (
+    normalized === 'ERROR' ||
+    normalized === 'FAILED' ||
+    normalized === 'REJECTED' ||
+    normalized === 'RECHAZADO'
+  )
+    return 'red-8'
+  if (normalized === 'WARN' || normalized === 'WARNING' || normalized === 'ALERT') return 'orange-8'
+  if (
+    normalized === 'OK' ||
+    normalized === 'APPROVED' ||
+    normalized === 'APROBADO' ||
+    normalized === 'EXITO' ||
+    normalized === 'SUCCESS'
+  )
+    return 'green-8'
   return 'grey-7'
 }
 
 function outcomeColor(outcome) {
-  if (outcome === 'FAILURE') return 'red-9'
-  if (outcome === 'SUCCESS') return 'green-9'
+  const normalized = String(outcome || '').toUpperCase()
+  if (normalized === 'FAILURE' || normalized === 'FALLIDO' || normalized === 'FALLO') return 'red-9'
+  if (normalized === 'SUCCESS' || normalized === 'EXITOSO' || normalized === 'EXITO') return 'green-9'
   return 'grey-7'
 }
 

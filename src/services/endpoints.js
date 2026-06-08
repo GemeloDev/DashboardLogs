@@ -67,7 +67,9 @@ export const AUTH = {
   REGISTER: `${BASE_URL}/auth/register`,
   VERIFY_TOKEN: `${BASE_URL}/auth/verify`,
   REFRESH_TOKEN: `${BASE_URL}/auth/refresh`,
-  RESET_PASSWORD: `${BASE_URL}/auth/change-password`,
+  FORGOT_PASSWORD: `${BASE_URL}/auth/forgot-password`,
+  RESET_PASSWORD: `${BASE_URL}/auth/reset-password`,
+  CHANGE_PASSWORD: `${BASE_URL}/auth/change-password`,
   ACCEPT_INVITE: `${BASE_URL}/auth/accept-invite`,
   LOGIN_QR: `${BASE_URL}/auth/qr-login`,
   QR_TOKEN: `${BASE_URL}/auth/qr-token`,
@@ -110,6 +112,7 @@ export const DEVICES = {
 
 export const CATALOGS = {
   API_KEYS: `${BASE_URL}/catalogs/api-keys`,
+  HEALT: `${BASE_URL}/logs/dashboard/systems-health`,
 }
 
 // ─── Panel Santoro (admin interno) ───────────────────────────────────────────

@@ -15,7 +15,8 @@
     "build": "quasar build",
     "build:prod": "quasar build",
     "start": "quasar dev",
-    "postinstall": "quasar prepare"
+    "postinstall": "quasar prepare",
+    "clear": "quasar clean --config"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",

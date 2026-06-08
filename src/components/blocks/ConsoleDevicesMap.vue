@@ -163,7 +163,7 @@ function createCircleImage(fill, { size = 40, stroke = '#fff', ring = false } = 
   ctx.lineWidth = 3
   ctx.strokeStyle = stroke
   ctx.stroke()
-
+ 
   return {
     width: canvas.width,
     height: canvas.height,

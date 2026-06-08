@@ -14,25 +14,25 @@
       <div class="login-container">
         <div class="login-form-container">
           <q-card flat bordered class="login-card">
-            <!-- Token inválido -->
+            <!-- Código inválido -->
             <div v-if="tokenInvalido" class="card-header-section">
               <div class="header-icon-container error">
                 <q-icon name="error_outline" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Invitación inválida</h2>
+              <h2 class="card-title">Código inválido</h2>
               <p class="card-subtitle">
-                El token de invitación es inválido o ha caducado. Serás redirigido al login...
+                El código de recuperación es inválido o ha caducado. Serás redirigido al login...
               </p>
             </div>
 
-            <!-- Token válido -->
+            <!-- Código válido -->
             <div v-else class="card-header-section">
               <div class="header-icon-container">
-                <q-icon name="check" size="1.8rem" class="header-icon" />
+                <q-icon name="lock_reset" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Invitación aceptada</h2>
+              <h2 class="card-title">Restablecer contraseña</h2>
               <p class="card-subtitle">
-                Ingresa tu contraseña y un nombre de usuario para acceder.
+                Ingresa tu correo, el código de recuperación y tu nueva contraseña.
               </p>
             </div>
 
@@ -44,6 +44,26 @@
             </div>
 
             <div class="form-section">
+              <div class="input-group">
+                <label class="input-label">Correo Electrónico</label>
+                <q-input
+                  v-model="resetPasswordValues.email"
+                  outlined
+                  dense
+                  class="premium-input"
+                  placeholder="email@example.com"
+                  :rules="[
+                    (val) => !!val || 'El correo es requerido',
+                    (val) => validarEmail(val) || 'Formato inválido',
+                  ]"
+                  @input="sanitizarEmail"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="alternate_email" class="input-icon" />
+                  </template>
+                </q-input>
+              </div>
+
               <label class="input-label">Código</label>
               <div class="otp-row q-mt-md">
                 <q-input
@@ -70,28 +90,9 @@
             <q-card-section v-if="!tokenInvalido" class="form-section">
               <q-form @submit="submit">
                 <div class="input-group">
-                  <label class="input-label">Nombre de usuario</label>
+                  <label class="input-label">Nueva contraseña</label>
                   <q-input
-                    v-model="acceptInvitation.name"
-                    outlined
-                    dense
-                    class="premium-input"
-                    placeholder="Ingresa un nombre de usuario válido"
-                    :rules="[
-                      (val) => !!val || 'El nombre es requerido',
-                      (val) => val.length >= 2 || 'Mínimo 2 caracteres',
-                    ]"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="person" class="input-icon" />
-                    </template>
-                  </q-input>
-                </div>
-
-                <div class="input-group">
-                  <label class="input-label">Contraseña</label>
-                  <q-input
-                    v-model="acceptInvitation.password"
+                    v-model="resetPasswordValues.password"
                     :type="mostrarPassword ? 'text' : 'password'"
                     outlined
                     dense
@@ -120,7 +121,7 @@
                   </q-input>
                 </div>
 
-                <div v-if="acceptInvitation.password" class="password-strength-container">
+                <div v-if="resetPasswordValues.password" class="password-strength-container">
                   <div class="strength-header">Seguridad de la contraseña</div>
 
                   <div class="strength-indicators">
@@ -155,9 +156,9 @@
                 </div>
 
                 <div class="input-group">
-                  <label class="input-label">Confirmar contraseña</label>
+                  <label class="input-label">Confirmar nueva contraseña</label>
                   <q-input
-                    v-model="acceptInvitation.confirmarPassword"
+                    v-model="resetPasswordValues.confirmarPassword"
                     :type="mostrarConfirmarPassword ? 'text' : 'password'"
                     outlined
                     dense
@@ -165,7 +166,8 @@
                     placeholder="Repite tu contraseña"
                     :rules="[
                       (val) => !!val || 'Confirmar contraseña es requerido',
-                      (val) => val === acceptInvitation.password || 'Las contraseñas no coinciden',
+                      (val) =>
+                        val === resetPasswordValues.password || 'Las contraseñas no coinciden',
                     ]"
                   >
                     <template v-slot:prepend>
@@ -213,20 +215,16 @@
 </template>
 
 <script setup>
-import { acceptInvite } from 'src/services/acceptInviteService'
-// import authService from 'src/services/authService'
+import authService from 'src/services/authService'
 import { ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-// import { generateAndDownloadTenantQR } from 'src/services/qrService'
-// import { storeJWTInCookie } from 'src/services/cookieService'
 
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
 
 const cargando = ref(false)
-const token = ref(route.query.token)
 const tokenInvalido = ref(false)
 const mostrarPassword = ref(false)
 const mostrarConfirmarPassword = ref(false)
@@ -234,13 +232,23 @@ const mensajeExito = ref('')
 const codigo = ref(Array(6).fill(''))
 const inputs = ref([])
 
-const acceptInvitation = ref({
-  codigo: '',
-  name: '',
+const resetPasswordValues = ref({
+  email: typeof route.query.email === 'string' ? route.query.email : '',
   password: '',
   confirmarPassword: '',
-  token: token.value,
 })
+
+const validarEmail = (valor) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor || '')
+
+const sanitizarEmail = () => {
+  if (!resetPasswordValues.value.email) return
+
+  resetPasswordValues.value.email = resetPasswordValues.value.email
+    .trim()
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+}
 
 const obtenerDigitos = (valor) => String(valor ?? '').replace(/\D/g, '').slice(0, 6).split('')
 
@@ -306,7 +314,7 @@ const indicadores = ref({
 })
 
 const evaluarPassword = () => {
-  const { password } = acceptInvitation.value
+  const { password } = resetPasswordValues.value
 
   indicadores.value = {
     longitud: password.length >= 8,
@@ -318,13 +326,13 @@ const evaluarPassword = () => {
 
 const formularioValidado = computed(() => {
   return (
-    codigo.value.join('').length === 6 &&
-    acceptInvitation.value.name.length >= 2 &&
+    validarEmail(resetPasswordValues.value.email) &&
+    /^\d{6}$/.test(codigo.value.join('')) &&
     indicadores.value.longitud &&
     indicadores.value.simbolos &&
     indicadores.value.mayuscula &&
     indicadores.value.numero &&
-    acceptInvitation.value.password === acceptInvitation.value.confirmarPassword
+    resetPasswordValues.value.password === resetPasswordValues.value.confirmarPassword
   )
 })
 
@@ -341,58 +349,54 @@ const submit = async () => {
   cargando.value = true
 
   try {
-    // Preparar payload con token de la URL
     const payload = {
-      name: acceptInvitation.value.name,
-      password: acceptInvitation.value.password,
-      token: codigo.value.join(''),
+      email: resetPasswordValues.value.email,
+      code: codigo.value.join(''),
+      newPassword: resetPasswordValues.value.password,
     }
 
-    // Aceptar invitación
-    const response = await acceptInvite(payload)
+    const response = await authService.resetPassword(payload)
 
-    // Verificar respuesta exitosa
-    if (!response.ok || !response.data) {
-      throw new Error(response.message || 'Error al aceptar invitación')
+    if (!response.success) {
+      const error = new Error(response.message || 'Error al cambiar la contraseña')
+      error.status = response.status
+      throw error
     }
 
-    // Mostrar mensaje de éxito
     mensajeExito.value = `${response.message} ✅`
 
     $q.notify({
       type: 'positive',
-      message: '✅ Usuario activado exitosamente',
+      message: 'Contraseña actualizada correctamente',
       position: 'top',
       timeout: 3000,
     })
 
-    // Redirigir al escritorio
     setTimeout(() => {
       router.push('/login')
     }, 2000)
   } catch (error) {
-    console.error('❌ Error al aceptar invitación:', error)
+    console.error('Error al restablecer contraseña:', error)
 
     // Limpiar formulario
-    acceptInvitation.value.name = ''
-    acceptInvitation.value.password = ''
-    acceptInvitation.value.confirmarPassword = ''
+    resetPasswordValues.value.password = ''
+    resetPasswordValues.value.confirmarPassword = ''
 
-    // Mostrar error específico
     const errorMessage =
-      error.response?.data?.message || error.message || 'Invitación inválida o caducada'
+      error.response?.data?.message || error.message || 'Código inválido o caducado'
 
     mensajeExito.value = ''
 
     $q.notify({
       type: 'negative',
-      message: `❌ ${errorMessage}`,
+      message: errorMessage,
       position: 'top',
       timeout: 5000,
     })
 
-    // Si el token es inválido, redirigir al login
-    if (error.response?.status === 401 || error.response?.status === 404) {
+    const status = error.response?.status || error.status
+
+    if (status === 401 || status === 404) {
       tokenInvalido.value = true
       setTimeout(() => {
         router.push('/login')

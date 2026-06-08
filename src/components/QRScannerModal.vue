@@ -1,15 +1,6 @@
-/**
- * Modal de Escaneo de Código QR
- * Soporta escaneo desde cámara y upload de imagen
- */
+/** * Modal de Escaneo de Código QR * Soporta escaneo desde cámara y upload de imagen */
 <template>
-  <q-dialog
-    v-model="isOpen"
-    @hide="onClose"
-    maximized
-    transition-show="slide-up"
-    transition-hide="slide-down"
-  >
+  <q-dialog v-model="isOpen" @hide="onClose" transition-show="scale" transition-hide="scale">
     <q-card class="qr-scanner-modal">
       <!-- Header -->
       <div class="scanner-shell">
@@ -82,7 +73,7 @@
               </div>
 
               <!-- Loading -->
-              <div v-if="scanning" class="scan-loading">
+              <div v-if="scanning && !cameraActive" class="scan-loading">
                 <q-spinner-dots size="50px" color="cyan" />
                 <p>{{ t('qrScanner.scanning') }}</p>
               </div>
@@ -164,8 +155,53 @@ const scanning = ref(false)
 const videoElement = ref(null)
 const selectedFile = ref(null)
 const imagePreview = ref(null)
+const processingQr = ref(false)
 let scannerControls = null
 let socketInstance = ref(null)
+const QR_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+const tryDecodeBase64 = (value) => {
+  try {
+    const normalized = String(value || '').trim()
+    if (!normalized) return ''
+    return atob(normalized)
+  } catch {
+    return ''
+  }
+}
+
+const extractQrToken = (qrData) => {
+  const rawValue = String(qrData || '').trim()
+  const decodedValue = tryDecodeBase64(rawValue)
+  const candidates = [decodedValue, rawValue].filter(Boolean)
+
+  for (const candidate of candidates) {
+    const qrLoginMatch = candidate.match(/\/qr-login\/([^/?#]+)/)
+    if (qrLoginMatch?.[1]) return qrLoginMatch[1]
+  }
+
+  return candidates.find((candidate) => QR_UUID_PATTERN.test(candidate)) || ''
+}
+
+const notifyInvalidQr = (message = 'Codigo QR invalido. Intenta nuevamente.') => {
+  $q.notify({
+    type: 'warning',
+    message,
+    position: 'top',
+    timeout: 3000,
+  })
+}
+
+const resumeQrScanning = () => {
+  processingQr.value = false
+  if (!isOpen.value || cameraActive.value || initializingCamera.value) return
+
+  setTimeout(() => {
+    if (isOpen.value && !cameraActive.value && !initializingCamera.value) {
+      startCamera({ silent: true })
+    }
+  }, 350)
+}
 
 watch(
   () => props.modelValue,
@@ -185,7 +221,7 @@ watch(isOpen, (val) => {
 /**
  * Inicia la cámara para escanear
  */
-const startCamera = async () => {
+const startCamera = async ({ silent = false } = {}) => {
   try {
     initializingCamera.value = true
     scanning.value = true
@@ -194,6 +230,7 @@ const startCamera = async () => {
     scannerControls = await startQRScanner(
       videoElement.value,
       (qrData) => {
+        console.log('✅ QR escaneado:', qrData)
         onQRScanned(qrData)
       },
       (error) => {
@@ -233,12 +270,15 @@ const startCamera = async () => {
     )
 
     cameraActive.value = true
-    $q.notify({
-      type: 'positive',
-      message: t('qrScanner.cameraStarted'),
-      position: 'top',
-      timeout: 2000,
-    })
+    scanning.value = false
+    if (!silent) {
+      $q.notify({
+        type: 'positive',
+        message: t('qrScanner.cameraStarted'),
+        position: 'top',
+        timeout: 2000,
+      })
+    }
   } catch (error) {
     console.error('❌ Error al iniciar cámara:', error)
     scanning.value = false
@@ -264,16 +304,43 @@ const stopCamera = () => {
  * Callback cuando se escanea un QR
  */
 const onQRScanned = async (qrData) => {
-  if (qrData === '') throw new Error(t('qrScanner.emptyQrError'))
+  if (processingQr.value) return
+  processingQr.value = true
+  console.log('QR detectado:', qrData)
 
-  const token = qrData.split('/qr-login/')[1]
+  stopCamera()
 
-  const payload = {
-    qrToken: token,
+  if (qrData === '') {
+    notifyInvalidQr(t('qrScanner.emptyQrError'))
+    resumeQrScanning()
+    return
   }
 
-  await authService.loginByQR(payload)
+  const qrToken = extractQrToken(qrData)
+  console.log('Token QR normalizado:', qrToken)
 
+  if (!qrToken) {
+    notifyInvalidQr()
+    resumeQrScanning()
+    return
+  }
+
+  const payload = {
+    qrToken,
+  }
+
+  const loginByQR = await authService.loginByQR(payload)
+
+  console.log('Respuesta de loginByQR', loginByQR)
+
+  if (!loginByQR.success) {
+    notifyInvalidQr(loginByQR.message || 'Token QR invalido')
+    resumeQrScanning()
+    return
+  }
+
+  emit('qr-scanned', { qrToken, response: loginByQR })
+  processingQr.value = false
   isOpen.value = false
 }
 
@@ -282,6 +349,7 @@ const onQRScanned = async (qrData) => {
  */
 const onClose = () => {
   stopCamera()
+  processingQr.value = false
   selectedFile.value = null
   imagePreview.value = null
 
@@ -304,20 +372,25 @@ $border-soft: rgba(255, 255, 255, 0.08);
 $border-warm: rgba(233, 113, 50, 0.16);
 
 .qr-scanner-modal {
-  height: 100%;
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100dvh - 112px);
   color: white;
   overflow: hidden;
+  border: 1px solid $border-warm;
+  border-radius: 28px;
   background:
     radial-gradient(circle at top right, rgba(233, 113, 50, 0.2), transparent 28%),
     radial-gradient(circle at bottom left, rgba(124, 58, 237, 0.16), transparent 30%),
     linear-gradient(180deg, $panel-soft 0%, $panel-dark 100%);
+  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.48);
 }
 
 .scanner-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  max-height: calc(100dvh - 112px);
   padding: 18px;
+  overflow-y: auto;
 }
 
 .modal-header {
@@ -372,7 +445,6 @@ $border-warm: rgba(233, 113, 50, 0.16);
 }
 
 .camera-panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -393,7 +465,7 @@ $border-warm: rgba(233, 113, 50, 0.16);
   width: 100%;
   max-width: 540px;
   aspect-ratio: 9/16;
-  max-height: min(68vh, 760px);
+  max-height: min(54vh, 620px);
   overflow: hidden;
   border-radius: 30px;
   border: 1px solid $border-warm;
@@ -587,8 +659,7 @@ $border-warm: rgba(233, 113, 50, 0.16);
   align-items: center;
   justify-content: center;
   color: white;
-  background: rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.16);
 
   p {
     margin-top: 16px;
@@ -688,7 +759,7 @@ $border-warm: rgba(233, 113, 50, 0.16);
   }
 
   .camera-container {
-    max-height: 64vh;
+    max-height: 52vh;
     border-radius: 24px;
   }
 
@@ -705,6 +776,16 @@ $border-warm: rgba(233, 113, 50, 0.16);
 }
 
 @media (max-width: 420px) {
+  .qr-scanner-modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 92px);
+    border-radius: 24px;
+  }
+
+  .scanner-shell {
+    max-height: calc(100dvh - 92px);
+  }
+
   .camera-placeholder {
     padding: 20px;
   }

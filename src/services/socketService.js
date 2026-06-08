@@ -118,7 +118,16 @@ export function initializeSocket(
   onMessageReceived = () => {},
   { endpoint = brokerURL, debug = isDebug, reconnectDelay = 3000 } = {},
 ) {
-  if (stompClient && connected) return stompClient
+  if (stompClient) {
+    const previousClient = stompClient
+    stompClient = null
+    connected = false
+    try {
+      previousClient.deactivate({ force: true })
+    } catch (err) {
+      console.warn('[STOMP] No se pudo cerrar la conexión previa:', err)
+    }
+  }
 
   stompClient = new Client({
     brokerURL: endpoint,
@@ -135,12 +144,16 @@ export function initializeSocket(
       console.log('Suscribiéndose a:', topic)
 
       stompClient.subscribe(topic, (message) => {
-        console.log(`Received:`, JSON.parse(message.body))
         const payload = JSON.parse(message.body)
-        const data = getJWTData(payload.accessToken)
+        console.log('[STOMP] Mensaje recibido en topic:', topic)
+        console.log('[STOMP] Payload completo:', JSON.stringify(payload, null, 2))
+
+        const jwtData = payload.accessToken ? getJWTData(payload.accessToken) : null
+        console.log('[STOMP] JWT decodificado:', JSON.stringify(jwtData, null, 2))
+
         onMessageReceived({
           payload,
-          data,
+          data: jwtData,
         })
       })
     },

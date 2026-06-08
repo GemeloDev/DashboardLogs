@@ -2,12 +2,12 @@
   <div class="flujo-escritorio">
     <!-- KPIs -->
 
-    <!-- Gráficas Mejoradas -->
+    <!-- Graficas Mejoradas -->
     <div class="q-mb-lg">
       <EscritorioGraficasEnhanced @detalle="mostrarDetalle" />
     </div>
 
-    <!-- Modal de detalle de gráfica -->
+    <!-- Modal de detalle de grafica -->
     <EscritorioDetalleModal v-model="modalDetalle" :detalles="detalleSeleccionado" />
   </div>
 </template>
@@ -21,7 +21,7 @@ import EscritorioDetalleModal from './EscritorioDetalleModal.vue'
 const modalDetalle = ref(false)
 const detalleSeleccionado = ref([])
 
-// Función para mostrar detalles de una gráfica
+// Funcion para mostrar detalles de una grafica
 function mostrarDetalle(detalles) {
   console.log('Mostrando detalle:', detalles)
   detalleSeleccionado.value = detalles

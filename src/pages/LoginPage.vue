@@ -61,9 +61,9 @@
 
               <div class="password-row">
                 <label class="input-label">Contraseña</label>
-                <!-- <a href="/login?#/olvide-password" class="forgot-link">
+                <router-link to="/olvide-password" class="forgot-link">
                   ¿Olvidaste tu contraseña?
-                </a> -->
+                </router-link>
               </div>
 
               <div class="input-group">
@@ -133,26 +133,72 @@
 
             <div class="qr-frame-outer">
               <div class="qr-frame-inner">
-                <!-- Estado normal: mostrar QR -->
-                <div v-if="!tenantIdEscaneado" id="qrcode-container" class="qrcode-box"></div>
-
-                <!-- Estado éxito: ocultar QR y mostrar mensaje -->
-                <div v-else class="qr-success-state">
-                  <div class="qr-success-icon">
-                    <q-icon name="check_circle" size="72px" color="positive" />
+                <div id="qrcode-container" class="qrcode-box" :class="`qrcode-box--${qrStatus}`">
+                  <div v-if="qrStatus === 'loading' || qrStatus === 'idle'" class="qr-status-state">
+                    <q-spinner-dots size="54px" color="orange" />
+                    <div class="qr-status-title">Generando código</div>
+                    <div class="qr-status-text">{{ qrMessage }}</div>
                   </div>
 
-                  <div class="qr-success-title">Escaneo correcto</div>
-                  <div class="qr-success-text">Tu organización fue validada correctamente.</div>
+                  <div v-else-if="qrStatus === 'ready'" class="qr-ready-state">
+                    <img :src="qrImageSrc" alt="QR login" width="225" height="225" />
+                  </div>
 
-                  <div class="qr-success-chip">
-                    <q-icon name="verified" size="16px" class="q-mr-xs" />
-                    QR aprobado
+                  <div
+                    v-else-if="qrStatus === 'success'"
+                    class="qr-result-state qr-result-state--success"
+                  >
+                    <div class="qr-result-icon">
+                      <q-icon name="check_circle" size="72px" color="positive" />
+                    </div>
+                    <div class="qr-result-title">Escaneo correcto</div>
+                    <div class="qr-result-text">Tu organización fue validada correctamente.</div>
+                    <div class="qr-result-chip qr-result-chip--success">
+                      <q-icon name="verified" size="16px" class="q-mr-xs" />
+                      QR aprobado
+                    </div>
+                  </div>
+
+                  <div
+                    v-else-if="qrStatus === 'error'"
+                    class="qr-result-state qr-result-state--error"
+                  >
+                    <div class="qr-result-icon">
+                      <q-icon name="error" size="72px" color="negative" />
+                    </div>
+                    <div class="qr-result-title">Código no disponible</div>
+                    <div class="qr-result-text">{{ qrMessage }}</div>
+                    <q-btn
+                      label="Reintentar"
+                      icon="refresh"
+                      unelevated
+                      no-caps
+                      class="qr-retry-btn qr-retry-btn--error"
+                      @click="retryQrGeneration"
+                    />
+                  </div>
+
+                  <div
+                    v-else-if="qrStatus === 'paused'"
+                    class="qr-result-state qr-result-state--paused"
+                  >
+                    <div class="qr-result-icon">
+                      <q-icon name="pause_circle" size="72px" color="warning" />
+                    </div>
+                    <div class="qr-result-title">QR no disponible</div>
+                    <div class="qr-result-text">{{ qrMessage }}</div>
+                    <q-btn
+                      label="Generar"
+                      icon="refresh"
+                      unelevated
+                      no-caps
+                      class="qr-retry-btn"
+                      @click="restartQrCycle"
+                    />
                   </div>
                 </div>
               </div>
             </div>
-
             <div class="quick-steps">
               <div class="quick-step">
                 <q-icon
@@ -212,9 +258,13 @@ const isLoggedIn = ref(false)
 const socketInstance = ref(null)
 
 const qrContent = ref('')
+const qrImageSrc = ref('')
+const qrStatus = ref('idle')
+const qrMessage = ref('Preparando el código QR...')
+const qrRefreshCount = ref(0)
 const timeRemaining = ref(60)
-let intervalId = null
 let countdownId = null
+const QR_REFRESH_LIMIT = 3
 
 const formData = ref({
   email: '',
@@ -275,7 +325,12 @@ const onSubmit = async () => {
     if (loginResult.success) {
       if (loginResult.mustChangePassword) return router.push('/new-password')
       mensajeExito.value = loginResult.message || 'Acceso concedido. Redirigiendo...'
-      setTimeout(() => router.push('/'), 1500)
+      const targetRoute =
+        authService.getAllowedFlow(loginResult.user) === 'santoro'
+          ? '/santoro/inicio'
+          : '/client/escritorio'
+
+      setTimeout(() => router.push(targetRoute), 1500)
     } else {
       mensajeError.value = loginResult.message || 'Credenciales inválidas. Verifica tus datos.'
       cargando.value = false
@@ -288,84 +343,163 @@ const onSubmit = async () => {
 }
 
 const clearTimers = () => {
-  if (intervalId) {
-    clearInterval(intervalId)
-    intervalId = null
-  }
   if (countdownId) {
     clearInterval(countdownId)
     countdownId = null
   }
 }
 
-const handleLoginSuccess = async (data) => {
-  if (data.payload && data.payload.status === 'APPROVED') {
-    const buildSession = authService.buildSession(data)
+const clearQrRuntime = () => {
+  clearTimers()
+  disconnectSocket()
+  socketInstance.value = null
+  qrContent.value = ''
+  qrImageSrc.value = ''
+  timeRemaining.value = 60
+}
 
-    if (!buildSession.success) {
-      $q.notify({
-        type: 'negative',
-        message: buildSession.message,
-        position: 'top',
-        timeout: 2000,
-      })
-      return
-    }
+const extractQrLoginToken = (url = '') => {
+  return String(url).split('/qr-login/')[1]?.split(/[?#]/)[0] || ''
+}
 
-    clearTimers()
+const handleLoginSuccess = async (socketData) => {
+  const { payload, data: jwtData } = socketData
 
-    const container = document.getElementById('qrcode-container')
-    if (container) container.innerHTML = ''
+  const isApproved =
+    payload?.status === 'APPROVED' ||
+    payload?.status === 'SUCCESS' ||
+    jwtData?.status === 'APPROVED' ||
+    jwtData?.status === 'SUCCESS'
 
-    isLoggedIn.value = true
-    tenantIdEscaneado.value = true
-    mensajeExito.value = data.payload.message || 'Acceso concedido. Redirigiendo...'
-
-    const targetRoute =
-      authService.getAllowedFlow(authService.userEmail) === 'santoro'
-        ? '/santoro/empresas'
-        : '/client/escritorio'
-
-    setTimeout(() => {
-      router.push(targetRoute)
-    }, 3000)
+  if (!isApproved) {
+    console.warn(
+      '[QR Login] Mensaje recibido pero sin status aprobado:',
+      payload?.status,
+      jwtData?.status,
+    )
+    return
   }
+
+  const sessionData = {
+    payload: {
+      accessToken: payload?.accessToken,
+      refreshToken: payload?.refreshToken,
+      message: payload?.message,
+    },
+    data: {
+      uid: jwtData?.uid || jwtData?.sub || jwtData?.id,
+      name: jwtData?.name || jwtData?.username,
+      email: jwtData?.email,
+      perms: jwtData?.perms || jwtData?.permissions || [],
+      roles: jwtData?.roles || [],
+      systems: jwtData?.systems || [],
+      tenantId: jwtData?.tenantId || jwtData?.tenant_id || null,
+    },
+  }
+
+  console.log('[QR Login] Datos de sesión construidos:', JSON.stringify(sessionData, null, 2))
+
+  const buildResult = authService.buildSession(sessionData)
+
+  if (!buildResult.success) {
+    $q.notify({
+      type: 'negative',
+      message: buildResult.message,
+      position: 'top',
+      timeout: 2000,
+    })
+    return
+  }
+
+  authService.initializeAuth()
+
+  clearQrRuntime()
+
+  isLoggedIn.value = true
+  tenantIdEscaneado.value = true
+  qrStatus.value = 'success'
+  qrMessage.value = 'Tu organización fue validada correctamente.'
+  mensajeExito.value = payload?.message || 'Acceso concedido. Redirigiendo...'
+
+  const targetRoute =
+    authService.getAllowedFlow(buildResult.user) === 'santoro'
+      ? '/santoro/empresas'
+      : '/client/escritorio'
+
+  setTimeout(() => {
+    router.push(targetRoute)
+  }, 3000)
 }
 
 const drawQrCode = async (content) => {
-  const container = document.getElementById('qrcode-container')
-  if (container) container.innerHTML = ''
-
-  if (!container) return
-
-  const image = document.createElement('img')
-  image.src = await getQRCodeDataUrl(content)
-  image.alt = 'QR login'
-  image.width = 225
-  image.height = 225
-  container.appendChild(image)
+  qrImageSrc.value = await getQRCodeDataUrl(content)
 }
 
 const regenerateQr = async () => {
   if (!showQrPanel.value || tenantIdEscaneado.value) return
 
-  const newContent = await generateNewContent()
-  qrContent.value = newContent.url
-  await drawQrCode(qrContent.value)
+  if (qrRefreshCount.value >= QR_REFRESH_LIMIT) {
+    clearQrRuntime()
+    qrStatus.value = 'paused'
+    qrMessage.value = 'Inactividad detectada. Recarga para generar nuevamente el código QR.'
+    return
+  }
 
-  timeRemaining.value = newContent.expireTime
+  try {
+    qrRefreshCount.value += 1
+    qrStatus.value = 'loading'
+    qrMessage.value = 'Solicitando un nuevo código QR...'
+    qrImageSrc.value = ''
 
-  socketInstance.value = initializeSocket(
-    `qr-login/${newContent.url.split('/qr-login/')[1]}`,
-    handleLoginSuccess,
-  )
+    const newContent = await generateNewContent()
+    const qrToken = extractQrLoginToken(newContent.url)
+
+    if (!qrToken) {
+      throw new Error('El servidor no devolvió un token QR válido.')
+    }
+
+    qrContent.value = newContent.url
+    await drawQrCode(qrContent.value)
+
+    timeRemaining.value = Number(newContent.expireTime) || 60
+    qrStatus.value = 'ready'
+    qrMessage.value = 'Escanea para continuar en móvil.'
+
+    socketInstance.value = initializeSocket(`qr-login/${qrToken}`, handleLoginSuccess)
+  } catch (error) {
+    clearQrRuntime()
+    qrStatus.value = qrRefreshCount.value >= QR_REFRESH_LIMIT ? 'paused' : 'error'
+    qrMessage.value =
+      qrRefreshCount.value >= QR_REFRESH_LIMIT
+        ? 'No se pudo generar el código después de 5 intentos. Puedes intentar otro bloque.'
+        : error?.message ||
+          'No se pudo generar el código QR. Verifica tu conexión e intenta nuevamente.'
+  }
 }
 
 const startCountdown = () => {
-  countdownId = setInterval(() => {
+  clearTimers()
+  countdownId = setInterval(async () => {
+    if (qrStatus.value !== 'ready') return
+
     timeRemaining.value--
-    if (timeRemaining.value < 0) timeRemaining.value = 59
+    if (timeRemaining.value <= 0) {
+      await regenerateQr()
+    }
   }, 1000)
+}
+
+const restartQrCycle = async () => {
+  qrRefreshCount.value = 0
+  tenantIdEscaneado.value = null
+  isLoggedIn.value = false
+  await regenerateQr()
+  startCountdown()
+}
+
+const retryQrGeneration = async () => {
+  await regenerateQr()
+  startCountdown()
 }
 
 onMounted(async () => {
@@ -383,14 +517,11 @@ onMounted(async () => {
     }
   }
 
-  const savedTenantId = localStorage.getItem('qr_tenant_id')
-  if (savedTenantId) {
-    tenantIdEscaneado.value = savedTenantId
-  }
+  localStorage.removeItem('qr_tenant_id')
+  tenantIdEscaneado.value = null
 
   if (showQrPanel.value && !isLoggedIn.value && !tenantIdEscaneado.value) {
     await regenerateQr()
-    intervalId = setInterval(regenerateQr, 120000)
     startCountdown()
   }
 })
@@ -613,7 +744,7 @@ $red: #ef4444;
   font-weight: 600;
 
   &:hover {
-    color: $cyan-light
+    color: $cyan-light;
   }
 }
 
@@ -742,15 +873,18 @@ $red: #ef4444;
   min-width: 220px;
   background: white;
   border-radius: 10px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0 auto;
+  overflow: hidden;
 }
 
-.qr-success-state {
+.qr-ready-state,
+.qr-status-state,
+.qr-result-state {
   width: 220px;
   min-height: 220px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #ffffff 0%, #eefbf4 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -759,35 +893,92 @@ $red: #ef4444;
   text-align: center;
 }
 
-.qr-success-icon {
+.qr-ready-state {
+  padding: 0;
+
+  img {
+    width: 220px;
+    height: 220px;
+    object-fit: contain;
+  }
+}
+
+.qr-meta {
+  width: 100%;
+  padding: 8px 10px 0;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.qr-status-state {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+}
+
+.qr-result-state {
+  border-radius: 16px;
+}
+
+.qr-result-state--success {
+  background: linear-gradient(180deg, #ffffff 0%, #eefbf4 100%);
+}
+
+.qr-result-state--error {
+  background: linear-gradient(180deg, #ffffff 0%, #fff1f2 100%);
+}
+
+.qr-result-state--paused {
+  background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
+}
+
+.qr-result-icon {
   margin-bottom: 12px;
 }
 
-.qr-success-title {
+.qr-status-title,
+.qr-result-title {
   color: #0f172a;
   font-size: 1.2rem;
   font-weight: 800;
   margin-bottom: 6px;
 }
 
-.qr-success-text {
+.qr-status-text,
+.qr-result-text {
   color: #475569;
   font-size: 0.92rem;
   line-height: 1.45;
   margin-bottom: 12px;
 }
 
-.qr-success-chip {
+.qr-result-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
-  border: 1px solid rgba(34, 197, 94, 0.24);
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.qr-result-chip--success {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.24);
+}
+
+.qr-retry-btn {
+  min-height: 38px;
+  margin-top: 4px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, rgba(233, 113, 50, 0.95), rgba(236, 72, 153, 0.82));
+}
+
+.qr-retry-btn--error {
+  background: linear-gradient(135deg, #ef4444, #f97316);
 }
 
 .quick-steps {
