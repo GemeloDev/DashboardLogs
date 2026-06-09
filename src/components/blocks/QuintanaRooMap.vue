@@ -1,9 +1,10 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import Spiderfy from '@nazka/map-gl-js-spiderfy'
 import { useI18n } from 'vue-i18n'
+import { useQuasar } from 'quasar'
 
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
 import quintanaRooGeoJson from 'src/data/quintanaRoo.json'
@@ -12,6 +13,11 @@ maplibregl.setWorkerUrl?.(workerUrl)
 maplibregl.workerUrl = workerUrl
 
 const { t } = useI18n()
+const $q = useQuasar()
+const injectedGeoData = inject('dashboardGeoData', ref(null))
+const injectedDevicesData = inject('dashboardDevicesData', ref(null))
+const logsGlobales = inject('logsGlobales', ref([]))
+const openConsole = inject('openConsole', null)
 
 const props = defineProps({
   points: {
@@ -45,6 +51,7 @@ const HEAT_LAYER_ID = 'qr-events-heat'
 const DEVICE_SOURCE_ID = 'qr-devices-src'
 const DEVICE_CLUSTER_LAYER_ID = 'qr-devices-clusters'
 const DEVICE_POINT_LAYER_ID = 'qr-devices-point'
+const DEVICE_CONSOLE_RADIUS_KM = 5
 
 const mapModeOptions = computed(() => [
   { label: t('dashboard.mapType_points'), value: 'points' },
@@ -52,150 +59,36 @@ const mapModeOptions = computed(() => [
   { label: t('dashboard.mapType_devices'), value: 'devices' },
 ])
 
-const MOCK_POINTS = [
-  { lat: 21.1619, lon: -86.8515, count: 42 },
-  { lat: 21.245, lon: -86.739, count: 16 },
-  { lat: 20.6296, lon: -87.0739, count: 35 },
-  { lat: 20.423, lon: -86.9223, count: 24 },
-  { lat: 20.2114, lon: -87.4654, count: 29 },
-  { lat: 19.577, lon: -88.045, count: 12 },
-  { lat: 19.1817, lon: -88.4791, count: 18 },
-  { lat: 18.6813, lon: -88.3924, count: 11 },
-  { lat: 18.5001, lon: -88.2961, count: 27 },
-  { lat: 18.678, lon: -88.388, count: 9 },
-  { lat: 19.845, lon: -87.478, count: 14 },
-  { lat: 20.655, lon: -87.046, count: 21 },
-]
-
-const MOCK_DEVICES = [
-  {
-    lat: 21.1619,
-    lon: -86.8515,
-    deviceId: 'QR-CUN-001',
-    hostname: 'kiosco-cancun-centro',
-    status: 'ONLINE',
-    ip: '10.20.10.11',
-    locationName: 'Cancun',
-    lastSeen: '2026-06-04T16:30:00Z',
-  },
-  {
-    lat: 21.1619,
-    lon: -86.8515,
-    deviceId: 'QR-CUN-009',
-    hostname: 'sensor-cancun-centro',
-    status: 'OFFLINE',
-    ip: '10.20.10.19',
-    locationName: 'Cancun Centro',
-    lastSeen: '2026-06-04T14:52:00Z',
-  },
-  {
-    lat: 21.1619,
-    lon: -86.8515,
-    deviceId: 'QR-CUN-010',
-    hostname: 'terminal-cancun-centro',
-    status: 'ONLINE',
-    ip: '10.20.10.20',
-    locationName: 'Cancun Centro',
-    lastSeen: '2026-06-04T16:24:00Z',
-  },
-  {
-    lat: 21.245,
-    lon: -86.739,
-    deviceId: 'QR-IMU-002',
-    hostname: 'modulo-isla-mujeres',
-    status: 'ONLINE',
-    ip: '10.20.10.12',
-    locationName: 'Isla Mujeres',
-    lastSeen: '2026-06-04T16:18:00Z',
-  },
-  {
-    lat: 20.6296,
-    lon: -87.0739,
-    deviceId: 'QR-PDC-003',
-    hostname: 'terminal-playa-del-carmen',
-    status: 'ONLINE',
-    ip: '10.20.10.13',
-    locationName: 'Playa del Carmen',
-    lastSeen: '2026-06-04T16:04:00Z',
-  },
-  {
-    lat: 20.423,
-    lon: -86.9223,
-    deviceId: 'QR-COZ-004',
-    hostname: 'punto-cozumel',
-    status: 'OFFLINE',
-    ip: '10.20.10.14',
-    locationName: 'Cozumel',
-    lastSeen: '2026-06-03T22:45:00Z',
-  },
-  {
-    lat: 20.2114,
-    lon: -87.4654,
-    deviceId: 'QR-TUL-005',
-    hostname: 'modulo-tulum',
-    status: 'ONLINE',
-    ip: '10.20.10.15',
-    locationName: 'Tulum',
-    lastSeen: '2026-06-04T15:42:00Z',
-  },
-  {
-    lat: 18.6813,
-    lon: -88.3924,
-    deviceId: 'QR-BAC-006',
-    hostname: 'oficina-bacalar',
-    status: 'OFFLINE',
-    ip: '10.20.10.16',
-    locationName: 'Bacalar',
-    lastSeen: '2026-06-03T18:10:00Z',
-  },
-  {
-    lat: 18.5001,
-    lon: -88.2961,
-    deviceId: 'QR-CTM-007',
-    hostname: 'oficina-chetumal',
-    status: 'ONLINE',
-    ip: '10.20.10.17',
-    locationName: 'Chetumal',
-    lastSeen: '2026-06-04T16:12:00Z',
-  },
-  {
-    lat: 19.577,
-    lon: -88.045,
-    deviceId: 'QR-FCP-008',
-    hostname: 'punto-felipe-carrillo-puerto',
-    status: 'ONLINE',
-    ip: '10.20.10.18',
-    locationName: 'Felipe Carrillo Puerto',
-    lastSeen: '2026-06-04T15:55:00Z',
-  },
-]
-
 const activePoints = computed(() => {
-  const source = props.points?.length ? props.points : MOCK_POINTS
-  return source
-    .map((point) => ({
-      lat: Number(point?.lat),
-      lon: Number(point?.lon ?? point?.lng),
-      count: Number(point?.count ?? point?.weight ?? 1),
-    }))
-    .filter((point) => isValidCoordinate(point.lat, point.lon))
+  const source = props.points?.length ? props.points : injectedGeoData.value?.points || []
+  const grouped = new Map()
+
+  for (const point of source) {
+    const normalized = normalizeGeoPoint(point)
+    if (!normalized || !isInsideQuintanaRoo(normalized.lat, normalized.lon)) continue
+
+    const key = getGeoPointGroupKey(normalized)
+    const current = grouped.get(key)
+    if (current) {
+      current.count += normalized.count
+      continue
+    }
+
+    grouped.set(key, normalized)
+  }
+
+  return [...grouped.values()]
 })
 
 const activeDevices = computed(() => {
-  const source = props.devices?.length ? props.devices : MOCK_DEVICES
+  const source = props.devices?.length ? props.devices : injectedDevicesData.value?.devices || []
   return source
-    .map((device) => ({
-      lat: Number(device?.lat ?? device?.latitude),
-      lon: Number(device?.lon ?? device?.lng ?? device?.longitude),
-      deviceId: device?.deviceId || '',
-      hostname: device?.hostname || '',
-      status: String(device?.status || '').toUpperCase() === 'ONLINE' ? 'ONLINE' : 'OFFLINE',
-      ip: device?.ip || '',
-      locationName: device?.locationName || '',
-      lastSeen: device?.lastSeen || '',
-    }))
-    .filter((device) => isValidCoordinate(device.lat, device.lon))
+    .map(normalizeDevicePoint)
+    .filter((device) => device && isInsideQuintanaRoo(device.lat, device.lon))
 })
+
+const hasActivePoints = computed(() => activePoints.value.length > 0)
+const hasActiveDevices = computed(() => activeDevices.value.length > 0)
 
 const eventsGeojson = computed(() => ({
   type: 'FeatureCollection',
@@ -203,7 +96,11 @@ const eventsGeojson = computed(() => ({
     type: 'Feature',
     id: `event-${index}-${point.lat}-${point.lon}`,
     geometry: { type: 'Point', coordinates: [point.lon, point.lat] },
-    properties: { count: point.count || 1 },
+    properties: {
+      count: point.count || 1,
+      locationName: point.locationName,
+      zoneName: point.zoneName,
+    },
   })),
 }))
 
@@ -216,6 +113,7 @@ const devicesGeojson = computed(() => ({
     properties: {
       deviceId: device.deviceId,
       hostname: device.hostname,
+      system: device.system,
       status: device.status,
       ip: device.ip,
       locationName: device.locationName,
@@ -228,6 +126,250 @@ const devicesGeojson = computed(() => ({
 
 function isValidCoordinate(lat, lon) {
   return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
+}
+
+function normalizeGeoPoint(point = {}) {
+  const lat = Number(point?.lat ?? point?.latitude)
+  const lon = Number(point?.lon ?? point?.lng ?? point?.longitude)
+  if (!isValidCoordinate(lat, lon)) return null
+
+  const count = Number(point?.count ?? point?.weight ?? point?.total ?? point?.records ?? 1)
+  return {
+    lat,
+    lon,
+    count: Number.isFinite(count) && count > 0 ? count : 1,
+    locationName: point?.locationName || point?.location || point?.name || '',
+    zoneName: point?.zoneName || point?.zone || point?.municipality || point?.area || '',
+  }
+}
+
+function getGeoPointGroupKey(point) {
+  const locationKey = String(point.locationName || point.zoneName || '').trim().toUpperCase()
+  return locationKey || `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`
+}
+
+function normalizeDevicePoint(device = {}) {
+  const lat = Number(device?.lat ?? device?.latitude)
+  const lon = Number(device?.lon ?? device?.lng ?? device?.longitude)
+  if (!isValidCoordinate(lat, lon)) return null
+
+  return {
+    lat,
+    lon,
+    deviceId: device?.deviceId || '',
+    hostname: device?.hostname || '',
+    system: device?.system || '',
+    status: isActiveDeviceStatus(device?.status) ? 'ONLINE' : 'OFFLINE',
+    ip: device?.ip || '',
+    locationName: device?.locationName || device?.location || '',
+    lastSeen: device?.lastSeen || '',
+  }
+}
+
+function isActiveDeviceStatus(status) {
+  return ['ONLINE', 'ACTIVE', 'ACTIVO', 'ACTIVA', 'EN_LINEA', 'EN LINEA', 'UP', 'ENABLED'].includes(
+    String(status || '').trim().toUpperCase(),
+  )
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function isInsideQuintanaRoo(lat, lon) {
+  if (!isValidCoordinate(lat, lon)) return false
+
+  return quintanaRooGeoJson.geometry.coordinates.some((polygon) => {
+    const [outerRing, ...holes] = polygon
+    if (!isPointInRing([lon, lat], outerRing)) return false
+    return !holes.some((ring) => isPointInRing([lon, lat], ring))
+  })
+}
+
+function isPointInRing(point, ring = []) {
+  const [x, y] = point
+  let inside = false
+
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]
+    const [xj, yj] = ring[j]
+    const intersects = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi || Number.EPSILON) + xi
+    if (intersects) inside = !inside
+  }
+
+  return inside
+}
+
+const getDeep = (obj, path) => path.split('.').reduce((o, key) => (o ? o[key] : null), obj)
+
+function normalizeCompareValue(value) {
+  return String(value ?? '')
+    .trim()
+    .toUpperCase()
+}
+
+function openConsoleWithGeoSelection(logs, selections = []) {
+  const detail = { dataGrafica: logs, selections }
+  if (typeof openConsole === 'function') return openConsole(detail)
+  window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail }))
+}
+
+function parseGeoLike(value) {
+  if (!value) return null
+
+  if (typeof value === 'object' && value?.type === 'Point' && Array.isArray(value.coordinates)) {
+    const [lng, lat] = value.coordinates.map(Number)
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lon: lng }
+  }
+
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const lat =
+      value.lat ??
+      value.latitude ??
+      (value.coords ? (value.coords.lat ?? value.coords.latitude) : undefined)
+    const lon =
+      value.lng ??
+      value.lon ??
+      value.long ??
+      value.longitude ??
+      (value.coords ? (value.coords.lng ?? value.coords.lon ?? value.coords.longitude) : undefined)
+
+    const parsedLat = Number(lat)
+    const parsedLon = Number(lon)
+    if (Number.isFinite(parsedLat) && Number.isFinite(parsedLon)) return { lat: parsedLat, lon: parsedLon }
+  }
+
+  if (Array.isArray(value) && value.length >= 2) {
+    const a = Number(value[0])
+    const b = Number(value[1])
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+
+    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
+    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
+    if (aIsLat) return { lat: a, lon: b }
+    if (bIsLat) return { lat: b, lon: a }
+  }
+
+  if (typeof value === 'string') {
+    const parts = value.split(',').map((part) => Number(part.trim()))
+    if (parts.length !== 2 || parts.some((part) => !Number.isFinite(part))) return null
+    const [a, b] = parts
+    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
+    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
+    if (aIsLat) return { lat: a, lon: b }
+    if (bIsLat) return { lat: b, lon: a }
+  }
+
+  return null
+}
+
+function parseLogGeo(log) {
+  return (
+    parseGeoLike(log?.geo) ||
+    parseGeoLike(log?.geoCoordinates) ||
+    parseGeoLike(log?.meta?.geoCoordinates) ||
+    null
+  )
+}
+
+function haversineKm(a, b) {
+  const radius = 6371
+  const toRad = (value) => (value * Math.PI) / 180
+  const dLat = toRad(b.lat - a.lat)
+  const dLon = toRad(b.lon - a.lon)
+  const lat1 = toRad(a.lat)
+  const lat2 = toRad(b.lat)
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+  return 2 * radius * Math.asin(Math.sqrt(s))
+}
+
+function buildDeviceLogMatchers(device = {}) {
+  const candidates = [
+    {
+      fieldKey: 'caseId',
+      deviceValue: device.deviceId,
+      logPaths: ['caseId'],
+    },
+    {
+      fieldKey: 'meta.ip',
+      deviceValue: device.ip,
+      logPaths: ['meta.ip', 'ip', 'client.ip', 'request.ip'],
+    },
+    {
+      fieldKey: 'meta.deviceName',
+      deviceValue: device.hostname,
+      logPaths: ['meta.deviceName', 'meta.hostname', 'hostname', 'device.hostname'],
+    },
+    {
+      fieldKey: 'location.name',
+      deviceValue: device.locationName,
+      logPaths: ['location.name', 'locationName'],
+    },
+  ]
+
+  return candidates
+    .map((candidate) => ({
+      ...candidate,
+      normalizedValue: normalizeCompareValue(candidate.deviceValue),
+    }))
+    .filter((candidate) => candidate.normalizedValue)
+}
+
+function findLogsNearDevice(device = {}) {
+  const center = { lat: Number(device?.lat), lon: Number(device?.lon) }
+  if (!Number.isFinite(center.lat) || !Number.isFinite(center.lon)) return []
+
+  return (logsGlobales.value || []).filter((log) => {
+    const point = parseLogGeo(log)
+    return point ? haversineKm(center, point) <= DEVICE_CONSOLE_RADIUS_KM : false
+  })
+}
+
+function matchLogsForDevice(device = {}) {
+  const matchers = buildDeviceLogMatchers(device)
+  if (!matchers.length) {
+    return { logs: findLogsNearDevice(device), selections: [], source: 'proximity' }
+  }
+
+  for (const matcher of matchers) {
+    const logs = (logsGlobales.value || []).filter((log) =>
+      matcher.logPaths.some((path) => normalizeCompareValue(getDeep(log, path)) === matcher.normalizedValue),
+    )
+
+    if (logs.length) {
+      return {
+        logs,
+        selections: [{ fieldKey: matcher.fieldKey, value: matcher.deviceValue }],
+        source: matcher.fieldKey,
+      }
+    }
+  }
+
+  return { logs: findLogsNearDevice(device), selections: [], source: 'proximity' }
+}
+
+function openDeviceLogs(device = {}) {
+  hideDeviceTooltip()
+  const { logs, selections, source } = matchLogsForDevice(device)
+
+  if (logs.length) {
+    openConsoleWithGeoSelection(logs, selections)
+    return
+  }
+
+  $q.notify({
+    type: 'info',
+    position: 'top',
+    message:
+      source === 'proximity'
+        ? 'No se encontraron logs cercanos para ese dispositivo.'
+        : 'No se encontraron logs relacionados a ese dispositivo.',
+  })
 }
 
 function getStateBounds() {
@@ -457,7 +599,7 @@ function buildTooltipDevice(properties = {}) {
     lastSeen: properties.lastSeen ? new Date(properties.lastSeen).toLocaleString() : '-',
     locationName: properties.locationName || '',
     name: properties.hostname || properties.deviceId || '-',
-    statusLabel: isOnline ? t('dashboard.devicesMapOnline') : t('dashboard.devicesMapOffline'),
+    statusLabel: isOnline ? 'Activo' : 'Inactivo',
   }
 }
 
@@ -647,8 +789,8 @@ function initSpiderfy() {
       'icon-ignore-placement': true,
       'icon-size': 1,
     },
-    onLeafClick: () => {
-      hideDeviceTooltip()
+    onLeafClick: (feature) => {
+      if (feature?.properties) openDeviceLogs(feature.properties)
     },
     onLeafHover: (feature, event) => {
       if (!feature) {
@@ -681,12 +823,14 @@ function bindMapEvents() {
     if (!feature) return
     const [lon, lat] = feature.geometry.coordinates
     const count = feature.properties.count
+    const locationName = escapeHtml(feature.properties.locationName || feature.properties.zoneName || '')
     map.getCanvas().style.cursor = 'default'
     eventPopup
       .setLngLat([lon, lat])
       .setHTML(
         `<div class="qrm-event-popup">
           <strong>${t('common.ubication')}</strong><br/>
+          ${locationName ? `${locationName}<br/>` : ''}
           ${lat.toFixed(5)}, ${lon.toFixed(5)}<br/>
           ${t('dashboard.eventsSeriesLabel')}: <b>${count}</b>
         </div>`,
@@ -703,6 +847,11 @@ function bindMapEvents() {
     map.getCanvas().style.cursor = 'pointer'
     const feature = event.features?.[0]
     if (feature) showDeviceTooltip(getTooltipPoint(feature, event), feature.properties || {})
+  })
+
+  map.on('click', DEVICE_POINT_LAYER_ID, (event) => {
+    const feature = event.features?.[0]
+    if (feature) openDeviceLogs(feature.properties || {})
   })
 
   map.on('mouseleave', DEVICE_POINT_LAYER_ID, () => {
@@ -811,6 +960,14 @@ async function initMap() {
 watch(mapMode, applyModeVisibility)
 watch(eventsGeojson, updateEventSourceData)
 watch(devicesGeojson, updateDeviceSourceData)
+watch(
+  [hasActivePoints, hasActiveDevices],
+  ([points, devices]) => {
+    if (!points && devices) mapMode.value = 'devices'
+    if (points && !devices) mapMode.value = 'points'
+  },
+  { immediate: true },
+)
 
 onMounted(initMap)
 
