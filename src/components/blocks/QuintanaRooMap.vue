@@ -51,6 +51,9 @@ const HEAT_LAYER_ID = 'qr-events-heat'
 const DEVICE_SOURCE_ID = 'qr-devices-src'
 const DEVICE_CLUSTER_LAYER_ID = 'qr-devices-clusters'
 const DEVICE_POINT_LAYER_ID = 'qr-devices-point'
+const RASTER_LAYER_ID = 'raster-tiles'
+const STATE_MASK_LAYER_ID = 'qr-mask-fill'
+const STATE_OUTLINE_LAYER_ID = 'qr-outline'
 const DEVICE_CONSOLE_RADIUS_KM = 5
 
 const mapModeOptions = computed(() => [
@@ -571,10 +574,28 @@ function setLayerVisibility(layerId, visible) {
   map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
 }
 
+function setLayerPaint(layerId, property, value) {
+  if (!map?.getLayer(layerId)) return
+  map.setPaintProperty(layerId, property, value)
+}
+
+function applyHeatMapBaseStyle(isHeatMode) {
+  setLayerPaint(RASTER_LAYER_ID, 'raster-opacity', 1)
+  setLayerPaint(RASTER_LAYER_ID, 'raster-saturation', isHeatMode ? -1 : 0)
+  setLayerPaint(RASTER_LAYER_ID, 'raster-contrast', isHeatMode ? 0.45 : 0)
+  setLayerPaint(RASTER_LAYER_ID, 'raster-brightness-min', 0)
+  setLayerPaint(RASTER_LAYER_ID, 'raster-brightness-max', isHeatMode ? 0.2 : 1)
+  setLayerPaint(STATE_MASK_LAYER_ID, 'fill-opacity', isHeatMode ? 0.84 : 0.68)
+  setLayerPaint(STATE_OUTLINE_LAYER_ID, 'line-color', isHeatMode ? '#22c55e' : '#ffffff')
+  setLayerPaint(STATE_OUTLINE_LAYER_ID, 'line-width', isHeatMode ? 2.75 : 2)
+  setLayerPaint(STATE_OUTLINE_LAYER_ID, 'line-opacity', isHeatMode ? 0.95 : 1)
+}
+
 function applyModeVisibility() {
   if (!map || !loaded) return
 
   closeActiveSpiderfy()
+  applyHeatMapBaseStyle(mapMode.value === 'heat')
   setLayerVisibility(EVENT_CLUSTER_LAYER_ID, mapMode.value === 'points')
   setLayerVisibility(EVENT_POINT_LAYER_ID, mapMode.value === 'points')
   setLayerVisibility(HEAT_LAYER_ID, mapMode.value === 'heat')
@@ -647,7 +668,7 @@ function addBaseStateLayers() {
   })
 
   map.addLayer({
-    id: 'qr-mask-fill',
+    id: STATE_MASK_LAYER_ID,
     type: 'fill',
     source: 'qr-mask',
     paint: {
@@ -672,19 +693,23 @@ function addEventLayers() {
     type: 'heatmap',
     source: EVENT_SOURCE_ID,
     paint: {
-      'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0, 100, 1],
-      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 6, 1.5, 10, 4.5, 14, 6.5],
-      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 6, 18, 10, 48, 14, 76],
-      'heatmap-opacity': 0.9,
+      'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0, 1, 0.85, 5, 1],
+      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 6, 3.2, 10, 6, 14, 8.5],
+      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 6, 28, 10, 72, 14, 110],
+      'heatmap-opacity': 0.96,
       'heatmap-color': [
         'interpolate',
         ['linear'],
         ['heatmap-density'],
         0,
         'rgba(34,197,94,0)',
+        0.06,
+        'rgba(34,197,94,0.45)',
         0.25,
         '#22c55e',
-        0.6,
+        0.55,
+        '#facc15',
+        0.82,
         '#f59e0b',
         1,
         '#ef4444',
@@ -805,12 +830,13 @@ function initSpiderfy() {
 
 function addOutlineLayer() {
   map.addLayer({
-    id: 'qr-outline',
+    id: STATE_OUTLINE_LAYER_ID,
     type: 'line',
     source: 'qr-state',
     paint: {
       'line-color': '#ffffff',
       'line-width': 2,
+      'line-opacity': 1,
     },
   })
 }
@@ -924,7 +950,7 @@ async function initMap() {
           attribution: '© OpenStreetMap contributors',
         },
       },
-      layers: [{ id: 'raster-tiles', type: 'raster', source: 'raster-tiles' }],
+      layers: [{ id: RASTER_LAYER_ID, type: 'raster', source: 'raster-tiles' }],
     },
     bounds: STATE_BOUNDS,
     fitBoundsOptions: { padding: 24 },
