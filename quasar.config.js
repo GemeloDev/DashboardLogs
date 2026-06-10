@@ -4,7 +4,7 @@
 import { defineConfig } from '#q-app/wrappers'
 import fs from 'fs'
 
-export default defineConfig((/* ctx */) => {
+export default defineConfig((ctx) => {
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -50,16 +50,7 @@ export default defineConfig((/* ctx */) => {
       // Aquí re-exponemos las variables para que estén disponibles
       // en el código del cliente vía process.env
       // ═══════════════════════════════════════════════════════════════
-      env: {
-        API_BASE_URL: process.env.API_BASE_URL,
-        WS_BASE_URL: process.env.WS_BASE_URL,
-        NODE_ENV: process.env.NODE_ENV,
-        DEBUG_MODE: process.env.DEBUG_MODE,
-        APP_NAME: process.env.APP_NAME,
-        APP_VERSION: process.env.APP_VERSION,
-        API_TIMEOUT: process.env.API_TIMEOUT,
-        SOCKET_TOPIC: process.env.SOCKET_TOPIC,
-      },
+      envFiles: ctx.dev ? ['.env.development', '.env.development.local'] : ['.env.production'],
 
       // vueRouterBase,
       // vueDevtools,
@@ -99,9 +90,7 @@ export default defineConfig((/* ctx */) => {
       open: true, // opens browser window automatically
       proxy: {
         '/api': {
-          target: 'https://dashboard-api.grupo-santoro.com.mx/',
-          // target: 'https://api-logs.grupo-santoro.com.mx/',
-          // target: 'http://187.188.66.56:8040/',
+          target: 'https://dashboard-api.grupo-santoro.com.mx',
           changeOrigin: true,
           secure: true,
           logLevel: 'debug',
@@ -123,12 +112,10 @@ export default defineConfig((/* ctx */) => {
         },
         // 🚨 NUEVA REGLA PARA SOCKET.IO
         '/ws': {
-          target: 'ws://dashboard-api.grupo-santoro.com.mx', // Desplegado de QR
-          // target: 'ws://api-logs.grupo-santoro.com.mx', // Desplegado de TrustValue
-          // target: 'ws://187.188.66.56:8040', // Apunta a servidor local (desarrollo)
+          target: 'wss://dashboard-api.grupo-santoro.com.mx', // Desplegado de QR
           ws: true, // 🚨 Habilitar soporte para WebSockets
           changeOrigin: true,
-          secure: false, // Ignora problemas de SSL en el backend si los hubiera
+          secure: true,
         },
       },
       https: {
