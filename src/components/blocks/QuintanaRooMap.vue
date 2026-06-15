@@ -93,19 +93,30 @@ const activeDevices = computed(() => {
 const hasActivePoints = computed(() => activePoints.value.length > 0)
 const hasActiveDevices = computed(() => activeDevices.value.length > 0)
 
-const eventsGeojson = computed(() => ({
-  type: 'FeatureCollection',
-  features: activePoints.value.map((point, index) => ({
-    type: 'Feature',
-    id: `event-${index}-${point.lat}-${point.lon}`,
-    geometry: { type: 'Point', coordinates: [point.lon, point.lat] },
-    properties: {
-      count: point.count || 1,
-      locationName: point.locationName,
-      zoneName: point.zoneName,
-    },
-  })),
-}))
+const eventsGeojson = computed(() => {
+  const points = activePoints.value
+  const maxCount = points.length ? Math.max(...points.map((p) => p.count || 1)) : 1
+
+  const magOf = (count) => {
+    if (maxCount <= 1) return 1
+    return 1 + ((count - 1) * 5) / (maxCount - 1)
+  }
+
+  return {
+    type: 'FeatureCollection',
+    features: points.map((point, index) => ({
+      type: 'Feature',
+      id: `event-${index}-${point.lat}-${point.lon}`,
+      geometry: { type: 'Point', coordinates: [point.lon, point.lat] },
+      properties: {
+        count: point.count || 1,
+        mag: magOf(point.count || 1),
+        locationName: point.locationName,
+        zoneName: point.zoneName,
+      },
+    })),
+  }
+})
 
 const devicesGeojson = computed(() => ({
   type: 'FeatureCollection',
@@ -693,23 +704,19 @@ function addEventLayers() {
     type: 'heatmap',
     source: EVENT_SOURCE_ID,
     paint: {
-      'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0, 1, 0.85, 5, 1],
-      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 6, 3.2, 10, 6, 14, 8.5],
-      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 6, 28, 10, 72, 14, 110],
-      'heatmap-opacity': 0.96,
+      'heatmap-weight': ['interpolate', ['linear'], ['get', 'mag'], 0, 0, 6, 1],
+      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 6, 1.8, 10, 4.5, 14, 7.5],
+      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 6, 75, 10, 45, 14, 18],
+      'heatmap-opacity': 0.95,
       'heatmap-color': [
         'interpolate',
         ['linear'],
         ['heatmap-density'],
         0,
         'rgba(34,197,94,0)',
-        0.06,
-        'rgba(34,197,94,0.45)',
         0.25,
         '#22c55e',
-        0.55,
-        '#facc15',
-        0.82,
+        0.6,
         '#f59e0b',
         1,
         '#ef4444',
