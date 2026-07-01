@@ -37,7 +37,7 @@
         </div>
         <div class="col-auto">
           <!-- Identificador del expediente -->
-          <q-chip dense color="grey-7" text-color="white" size="sm" icon="tag" class="log-id-chip">
+          <q-chip dense color="grey-7" text-color="white" size="sm" icon="tag" class="log-id-chip selectable-case-id">
             {{ log.caseId }}
           </q-chip>
         </div>
@@ -311,6 +311,11 @@ const deviceLabel = computed(() => {
   will-change: transform;
   contain: layout style;
 
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
@@ -331,6 +336,13 @@ const deviceLabel = computed(() => {
     .log-id-chip {
       font-size: 0.7rem;
     }
+  }
+
+  .selectable-case-id {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
   }
 
   // Secciones enhanced
