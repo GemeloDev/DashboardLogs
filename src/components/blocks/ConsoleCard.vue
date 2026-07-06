@@ -37,7 +37,7 @@
         </div>
         <div class="col-auto">
           <!-- Identificador del expediente -->
-          <q-chip dense color="grey-7" text-color="white" size="sm" icon="tag" class="log-id-chip">
+          <q-chip dense color="grey-7" text-color="white" size="sm" icon="tag" class="log-id-chip selectable-case-id">
             {{ log.caseId }}
           </q-chip>
         </div>
@@ -48,7 +48,7 @@
     <q-card-section class="log-card-content">
       <!-- Información del actor mejorada -->
       <div>
-        <div v-if="log.actor" class="enhanced-section">
+        <div v-if="hasActorInfo" class="enhanced-section">
           <div class="section-header">
             <q-icon name="person" color="green-4" size="20px" class="q-mr-sm" />
             <div class="text-weight-bold text-green-4 section-title">
@@ -76,7 +76,7 @@
         </div>
 
         <!-- Información de la oficina mejorada -->
-        <div v-if="log.location?.id" class="enhanced-section">
+        <div v-if="hasLocationInfo" class="enhanced-section">
           <div class="section-header">
             <q-icon name="business" color="orange-4" size="20px" class="q-mr-sm" />
             <div class="text-weight-bold text-orange-4 section-title">{{ t('consoleSimple.locationSectionTitle') }}</div>
@@ -105,7 +105,7 @@
       </div>
 
       <!-- Información del dispositivo -->
-      <div v-if="log.meta" class="log-device-section enhanced-section q-mt-sm">
+      <div v-if="hasDeviceInfo" class="log-device-section enhanced-section q-mt-sm">
         <div class="section-header">
           <q-icon name="devices" color="purple-4" size="20px" class="q-mr-sm" />
           <div class="text-weight-bold text-purple-4 section-title">{{ t('consoleSimple.systemDevicesTitle') }}</div>
@@ -123,17 +123,17 @@
             <span class="detail-label">{{ t('consoleSimple.ipLabel') }}</span>
             <span class="detail-value">{{ log.meta?.ip || t('consoleSimple.notAvailable') }}</span>
           </div>
-          <div v-if="log.meta?.requestId" class="detail-item">
+          <div v-if="log.correlation?.requestId" class="detail-item">
             <span class="detail-label">{{ t('consoleSimple.requestIdLabel') }}</span>
             <q-chip dense color="purple" text-color="white" size="sm" class="log-id-chip">
-              {{ log.correlation?.requestId || t('consoleSimple.notAvailable') }}
+              {{ log.correlation?.requestId }}
             </q-chip>
           </div>
         </div>
       </div>
 
       <!-- Información acerca del campo "http" -->
-      <div v-if="log.http" class="http-mini-card q-pa-sm q-my-sm rounded-borders">
+      <div v-if="hasHttpInfo" class="http-mini-card q-pa-sm q-my-sm rounded-borders">
         <div class="row items-center q-mb-xs">
           <q-icon name="dns" size="xs" class="q-mr-xs text-blue-3" />
           <div class="text-caption text-blue-3 text-weight-bold text-uppercase">
@@ -166,7 +166,7 @@
         </div>
       </div>
       <!-- Etiquetas | Tags -->
-      <div v-if="log.tags" class="q-mt-sm">
+      <div v-if="hasTags" class="q-mt-sm">
         <div class="row items-center q-mb-xs q-ml-sm">
           <q-icon name="cloud" color="pink" size="18px" class="q-mr-sm" />
           <div class="text-weight-medium text-pink-4">{{ t('consoleSimple.tagsTitle') }}</div>
@@ -283,6 +283,32 @@ const deviceLabel = computed(() => {
   const m = props.log.meta || {}
   return m.deviceId || m.deviceName || (m.platform && m.osVersion ? `${m.platform} ${m.osVersion}` : null) || ''
 })
+
+const hasActorInfo = computed(() => {
+  const a = props.log.actor
+  if (!a) return false
+  return !!(a.fullName || a.username || a.type)
+})
+
+const hasLocationInfo = computed(() => {
+  const l = props.log.location
+  if (!l) return false
+  return !!(l.id || l.name || l.city || l.country)
+})
+
+const hasDeviceInfo = computed(() => {
+  const m = props.log.meta
+  if (!m) return false
+  return !!(deviceLabel.value || m.sourceApp || m.ip || props.log.correlation?.requestId)
+})
+
+const hasHttpInfo = computed(() => {
+  const h = props.log.http
+  if (!h) return false
+  return !!(h.method || h.path || h.statusCode || h.latencyMs != null)
+})
+
+const hasTags = computed(() => Array.isArray(props.log.tags) && props.log.tags.length > 0)
 </script>
 
 <style lang="scss" scoped>
@@ -311,6 +337,11 @@ const deviceLabel = computed(() => {
   will-change: transform;
   contain: layout style;
 
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
@@ -331,6 +362,13 @@ const deviceLabel = computed(() => {
     .log-id-chip {
       font-size: 0.7rem;
     }
+  }
+
+  .selectable-case-id {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
   }
 
   // Secciones enhanced

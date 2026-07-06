@@ -375,6 +375,11 @@ const getSeverityIcon = (val) => {
   color: white;
   box-shadow: 0 28px 64px rgba(0, 0, 0, 0.48);
 
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+
   @media (max-width: 768px) {
     min-width: 94vw;
     max-width: 94vw;
@@ -720,6 +725,11 @@ const getSeverityIcon = (val) => {
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-x: auto;
+
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 /* â”€â”€â”€ JSON content con altura mÃ¡xima uniforme â”€â”€â”€ */
