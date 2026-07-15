@@ -49,6 +49,10 @@ const { t } = useI18n()
   line-height: 1.03;
   font-weight: 900;
   letter-spacing: -0.04em;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 /* En móvil reduce márgenes/padding un poco */

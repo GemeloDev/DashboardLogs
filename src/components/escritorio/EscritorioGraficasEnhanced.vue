@@ -509,7 +509,7 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const $q = useQuasar()
 const apexchart = VueApexCharts
-const DEVICE_CONSOLE_RADIUS_KM = 5
+
 
 const props = defineProps({
   visiblePanels: {
@@ -629,77 +629,6 @@ function openConsoleWithGeoSelection(logs, selections = []) {
   window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail }))
 }
 
-function parseGeoLike(value) {
-  if (!value) return null
-
-  if (typeof value === 'object' && value?.type === 'Point' && Array.isArray(value.coordinates)) {
-    const [lng, lat] = value.coordinates.map(Number)
-    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lon: lng }
-  }
-
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const lat =
-      value.lat ??
-      value.latitude ??
-      (value.coords ? (value.coords.lat ?? value.coords.latitude) : undefined)
-    const lon =
-      value.lng ??
-      value.lon ??
-      value.long ??
-      value.longitude ??
-      (value.coords ? (value.coords.lng ?? value.coords.lon ?? value.coords.longitude) : undefined)
-
-    const parsedLat = Number(lat)
-    const parsedLon = Number(lon)
-    if (Number.isFinite(parsedLat) && Number.isFinite(parsedLon)) {
-      return { lat: parsedLat, lon: parsedLon }
-    }
-  }
-
-  if (Array.isArray(value) && value.length >= 2) {
-    const a = Number(value[0])
-    const b = Number(value[1])
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
-
-    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
-    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
-    if (aIsLat) return { lat: a, lon: b }
-    if (bIsLat) return { lat: b, lon: a }
-  }
-
-  if (typeof value === 'string') {
-    const parts = value.split(',').map((part) => Number(part.trim()))
-    if (parts.length !== 2 || parts.some((part) => !Number.isFinite(part))) return null
-    const [a, b] = parts
-    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
-    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
-    if (aIsLat) return { lat: a, lon: b }
-    if (bIsLat) return { lat: b, lon: a }
-  }
-
-  return null
-}
-
-function parseLogGeo(log) {
-  return (
-    parseGeoLike(log?.geo) ||
-    parseGeoLike(log?.geoCoordinates) ||
-    parseGeoLike(log?.meta?.geoCoordinates) ||
-    null
-  )
-}
-
-function haversineKm(a, b) {
-  const R = 6371
-  const toRad = (x) => (x * Math.PI) / 180
-  const dLat = toRad(b.lat - a.lat)
-  const dLon = toRad(b.lon - a.lon)
-  const lat1 = toRad(a.lat)
-  const lat2 = toRad(b.lat)
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(s))
-}
-
 // Geo â”€â”€
 const geoPoints = computed(() =>
   (geoData.value?.points || []).map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
@@ -723,52 +652,42 @@ const devicePoints = computed(() =>
 )
 
 function buildDeviceLogMatchers(device = {}) {
-  const candidates = [
-    {
-      fieldKey: 'caseId',
-      deviceValue: device.deviceId,
-      logPaths: ['caseId'],
-    },
-    {
-      fieldKey: 'meta.ip',
-      deviceValue: device.ip,
-      logPaths: ['meta.ip', 'ip', 'client.ip', 'request.ip'],
-    },
-    {
-      fieldKey: 'meta.deviceName',
-      deviceValue: device.hostname,
-      logPaths: ['meta.deviceName', 'meta.hostname', 'hostname', 'device.hostname'],
-    },
-    {
-      fieldKey: 'location.name',
-      deviceValue: device.locationName,
-      logPaths: ['location.name', 'locationName'],
-    },
-  ]
+  // Mapeo real observado en los logs del backend:
+  //  - caseId               -> token del dispositivo terminal (TV-...)
+  //  - actor.fullName       -> nombre del usuario (coincide con deviceId/hostname de tipo USER)
+  //  - actor.username       -> username del usuario
+  //  - meta.ip / ip / ...   -> dirección IP, cuando exista
+  // Se omite meta.deviceName porque en estos logs es el modelo del celular
+  // (p. ej. "motorola edge 50 fusion"), no la identidad del dispositivo/usuario.
+  const seen = new Set()
+  const candidates = []
+
+  const addCandidate = (fieldKey, deviceValue, logPaths) => {
+    const normalizedValue = normalizeCompareValue(deviceValue)
+    if (!normalizedValue) return
+    const key = `${fieldKey}|${normalizedValue}`
+    if (seen.has(key)) return
+    seen.add(key)
+    candidates.push({ fieldKey, deviceValue, normalizedValue, logPaths })
+  }
+
+  // 1) Terminales / sesiones: caseId == device.deviceId
+  addCandidate('caseId', device.deviceId, ['caseId'])
+
+  // 2) Usuarios: actor.fullName / actor.username coinciden con deviceId o hostname
+  addCandidate('actor.fullName', device.deviceId, ['actor.fullName'])
+  addCandidate('actor.fullName', device.hostname, ['actor.fullName'])
+  addCandidate('actor.username', device.deviceId, ['actor.username'])
+  addCandidate('actor.username', device.hostname, ['actor.username'])
+
+  // 3) Red: IP del dispositivo
+  addCandidate('meta.ip', device.ip, ['meta.ip', 'ip', 'client.ip', 'request.ip'])
 
   return candidates
-    .map((candidate) => ({
-      ...candidate,
-      normalizedValue: normalizeCompareValue(candidate.deviceValue),
-    }))
-    .filter((candidate) => candidate.normalizedValue)
-}
-
-function findLogsNearDevice(device = {}) {
-  const center = { lat: Number(device?.lat), lon: Number(device?.lon) }
-  if (!Number.isFinite(center.lat) || !Number.isFinite(center.lon)) return []
-
-  return (logsGlobales.value || []).filter((log) => {
-    const point = parseLogGeo(log)
-    return point ? haversineKm(center, point) <= DEVICE_CONSOLE_RADIUS_KM : false
-  })
 }
 
 function matchLogsForDevice(device = {}) {
   const matchers = buildDeviceLogMatchers(device)
-  if (!matchers.length) {
-    return { logs: findLogsNearDevice(device), selections: [], source: 'proximity' }
-  }
 
   for (const matcher of matchers) {
     const logs = (logsGlobales.value || []).filter((log) =>
@@ -784,7 +703,7 @@ function matchLogsForDevice(device = {}) {
     }
   }
 
-  return { logs: findLogsNearDevice(device), selections: [], source: 'proximity' }
+  return { logs: [], selections: [], source: 'none' }
 }
 
 function onDeviceClick(device) {
@@ -799,8 +718,8 @@ function onDeviceClick(device) {
     type: 'info',
     position: 'top',
     message:
-      source === 'proximity'
-        ? 'No se encontraron logs cercanos para ese dispositivo.'
+      source === 'none'
+        ? 'El dispositivo no tiene identificadores suficientes para buscar logs relacionados.'
         : 'No se encontraron logs relacionados a ese dispositivo.',
   })
 }

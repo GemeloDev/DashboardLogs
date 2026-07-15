@@ -4,7 +4,7 @@
 import { defineConfig } from '#q-app/wrappers'
 import fs from 'fs'
 
-export default defineConfig((/* ctx */) => {
+export default defineConfig((ctx) => {
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -43,20 +43,26 @@ export default defineConfig((/* ctx */) => {
       // ═══════════════════════════════════════════════════════════════
       // INYECCIÓN DE VARIABLES DE ENTORNO - VITE DEFINE
       // ═══════════════════════════════════════════════════════════════
-      // Usamos rawDefine para inyectar las variables directamente en el
-      // código en tiempo de build (requerido para Vite)
+      // Quasar lee automáticamente archivos .env según el modo, pero
+      // para asegurar que se carguen los archivos correctos por ambiente
+      // se especifican explicitamente con envFiles.
+      //
+      // Aquí re-exponemos las variables para que estén disponibles
+      // en el código del cliente vía process.env
       // ═══════════════════════════════════════════════════════════════
-      rawDefine: {
-        'process.env': {
-          API_BASE_URL: JSON.stringify(process.env.API_BASE_URL || '/api'),
-          WS_BASE_URL: JSON.stringify(process.env.WS_BASE_URL),
-          NODE_ENV: JSON.stringify(process.env.NODE_ENV || 'production'),
-          DEBUG_MODE: JSON.stringify(process.env.DEBUG_MODE || 'false'),
-          APP_NAME: JSON.stringify(process.env.APP_NAME || 'Dashboard Logs'),
-          APP_VERSION: JSON.stringify(process.env.APP_VERSION || '1.0.0'),
-          API_TIMEOUT: JSON.stringify(process.env.API_TIMEOUT || '30000'),
-          SOCKET_TOPIC: JSON.stringify(process.env.SOCKET_TOPIC || '/topic/qr-login'),
-        },
+      envFiles: ctx.dev ? ['.env.development', '.env.development.local'] : ['.env.production'],
+
+      env: {
+        // En producción se usa el mismo backend que desarrollo (187.188.66.56:8040).
+        // En desarrollo se toman las variables del archivo .env correspondiente.
+        API_BASE_URL: ctx.prod ? 'http://187.188.66.56:8040/api' : process.env.API_BASE_URL,
+        WS_BASE_URL: ctx.prod ? 'ws://187.188.66.56:8040/ws' : process.env.WS_BASE_URL,
+        NODE_ENV: process.env.NODE_ENV,
+        DEBUG_MODE: process.env.DEBUG_MODE,
+        APP_NAME: process.env.APP_NAME,
+        APP_VERSION: process.env.APP_VERSION,
+        API_TIMEOUT: process.env.API_TIMEOUT,
+        SOCKET_TOPIC: process.env.SOCKET_TOPIC,
       },
 
       // vueRouterBase,
@@ -74,7 +80,22 @@ export default defineConfig((/* ctx */) => {
       // polyfillModulePreload: true,
       // distDir
 
-      // extendViteConf (viteConf) {},
+      extendViteConf(viteConf) {
+        // Asegurar que las variables de entorno se reemplacen en el bundle cliente.
+        viteConf.define = viteConf.define || {}
+        viteConf.define['process.env.API_BASE_URL'] = JSON.stringify(
+          ctx.prod ? 'http://187.188.66.56:8040/api' : process.env.API_BASE_URL,
+        )
+        viteConf.define['process.env.WS_BASE_URL'] = JSON.stringify(
+          ctx.prod ? 'ws://187.188.66.56:8040/ws' : process.env.WS_BASE_URL,
+        )
+        viteConf.define['process.env.NODE_ENV'] = JSON.stringify(process.env.NODE_ENV)
+        viteConf.define['process.env.DEBUG_MODE'] = JSON.stringify(process.env.DEBUG_MODE)
+        viteConf.define['process.env.APP_NAME'] = JSON.stringify(process.env.APP_NAME)
+        viteConf.define['process.env.APP_VERSION'] = JSON.stringify(process.env.APP_VERSION)
+        viteConf.define['process.env.API_TIMEOUT'] = JSON.stringify(process.env.API_TIMEOUT)
+        viteConf.define['process.env.SOCKET_TOPIC'] = JSON.stringify(process.env.SOCKET_TOPIC)
+      },
       // viteVuePluginOptions: {},
 
       vitePlugins: [
@@ -99,9 +120,9 @@ export default defineConfig((/* ctx */) => {
         '/api': {
           // target: 'https://dashboard-api.grupo-santoro.com.mx/',
           // target: 'https://api-logs.grupo-santoro.com.mx/',
-          target: 'http://187.188.66.56:8040/',
+          target: 'http://187.188.66.56:8040',
           changeOrigin: true,
-          secure: true,
+          secure: false,
           logLevel: 'debug',
           onProxyReq: (proxyReq, req) => {
             console.log(
@@ -127,6 +148,9 @@ export default defineConfig((/* ctx */) => {
           ws: true, // 🚨 Habilitar soporte para WebSockets
           changeOrigin: true,
           secure: false, // Ignora problemas de SSL en el backend si los hubiera
+          onError: (err, req) => {
+            console.warn('⚠️ WebSocket proxy error:', err.message, req.url)
+          },
         },
       },
       https: (() => {

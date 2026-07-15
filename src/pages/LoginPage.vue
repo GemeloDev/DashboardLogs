@@ -563,6 +563,11 @@ $red: #ef4444;
   align-items: center;
   justify-content: center;
   padding: 24px 20px;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .login-bg {
