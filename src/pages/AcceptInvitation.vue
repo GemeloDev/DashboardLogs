@@ -1,5 +1,8 @@
 <template>
   <div class="login-page">
+    <!-- Language switcher -->
+    <LanguageSwitcher />
+
     <!-- Fondo -->
     <div class="login-bg">
       <div class="bg-blur bg-blur--cyan"></div>
@@ -19,9 +22,9 @@
               <div class="header-icon-container error">
                 <q-icon name="error_outline" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Invitación inválida</h2>
+              <h2 class="card-title">{{ t('auth.invalidInvitation') }}</h2>
               <p class="card-subtitle">
-                El token de invitación es inválido o ha caducado. Serás redirigido al login...
+                {{ t('auth.invalidInvitationSubtitle') }}
               </p>
             </div>
 
@@ -30,9 +33,9 @@
               <div class="header-icon-container">
                 <q-icon name="check" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Invitación aceptada</h2>
+              <h2 class="card-title">{{ t('auth.invitationAccepted') }}</h2>
               <p class="card-subtitle">
-                Ingresa tu contraseña y un nombre de usuario para acceder.
+                {{ t('auth.invitationAcceptedSubtitle') }}
               </p>
             </div>
 
@@ -44,7 +47,7 @@
             </div>
 
             <div class="form-section">
-              <label class="input-label">Código</label>
+              <label class="input-label">{{ t('consoleSimple.codeLabel') }}</label>
               <div class="otp-row q-mt-md">
                 <q-input
                   v-for="(n, i) in 6"
@@ -70,16 +73,16 @@
             <q-card-section v-if="!tokenInvalido" class="form-section">
               <q-form @submit="submit">
                 <div class="input-group">
-                  <label class="input-label">Nombre de usuario</label>
+                  <label class="input-label">{{ t('auth.username') }}</label>
                   <q-input
                     v-model="acceptInvitation.name"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="Ingresa un nombre de usuario válido"
+                    :placeholder="t('auth.usernamePlaceholder')"
                     :rules="[
-                      (val) => !!val || 'El nombre es requerido',
-                      (val) => val.length >= 2 || 'Mínimo 2 caracteres',
+                      (val) => !!val || t('auth.nameRequired'),
+                      (val) => val.length >= 2 || t('auth.min2Chars'),
                     ]"
                   >
                     <template v-slot:prepend>
@@ -89,17 +92,17 @@
                 </div>
 
                 <div class="input-group">
-                  <label class="input-label">Contraseña</label>
+                  <label class="input-label">{{ t('auth.password') }}</label>
                   <q-input
                     v-model="acceptInvitation.password"
                     :type="mostrarPassword ? 'text' : 'password'"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="Mínimo 8 caracteres"
+                    :placeholder="t('auth.passwordPlaceholder')"
                     :rules="[
-                      (val) => !!val || 'La contraseña es requerida',
-                      (val) => val.length >= 8 || 'Mínimo 8 caracteres',
+                      (val) => !!val || t('auth.passwordRequired'),
+                      (val) => val.length >= 8 || t('auth.min8Chars'),
                     ]"
                     @update:model-value="evaluarPassword"
                   >
@@ -121,51 +124,51 @@
                 </div>
 
                 <div v-if="acceptInvitation.password" class="password-strength-container">
-                  <div class="strength-header">Seguridad de la contraseña</div>
+                  <div class="strength-header">{{ t('auth.passwordStrength') }}</div>
 
                   <div class="strength-indicators">
                     <div class="strength-item" :class="{ active: indicadores.longitud }">
                       <q-icon
                         :name="indicadores.longitud ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>8+ caracteres</span>
+                      <span>{{ t('auth.eightChars') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.mayuscula }">
                       <q-icon
                         :name="indicadores.mayuscula ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Mayúscula</span>
+                      <span>{{ t('auth.uppercase') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.numero }">
                       <q-icon
                         :name="indicadores.numero ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Número</span>
+                      <span>{{ t('auth.number') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.simbolos }">
                       <q-icon
                         :name="indicadores.simbolos ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Símbolo</span>
+                      <span>{{ t('auth.symbol') }}</span>
                     </div>
                   </div>
                 </div>
 
                 <div class="input-group">
-                  <label class="input-label">Confirmar contraseña</label>
+                  <label class="input-label">{{ t('auth.confirmNewPassword') }}</label>
                   <q-input
                     v-model="acceptInvitation.confirmarPassword"
                     :type="mostrarConfirmarPassword ? 'text' : 'password'"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="Repite tu contraseña"
+                    :placeholder="t('auth.repeatPassword')"
                     :rules="[
-                      (val) => !!val || 'Confirmar contraseña es requerido',
-                      (val) => val === acceptInvitation.password || 'Las contraseñas no coinciden',
+                      (val) => !!val || t('auth.confirmPasswordRequired'),
+                      (val) => val === acceptInvitation.password || t('auth.passwordsDoNotMatch'),
                     ]"
                   >
                     <template v-slot:prepend>
@@ -187,7 +190,7 @@
 
                 <q-btn
                   type="submit"
-                  label="Verificar"
+                  :label="t('auth.verify')"
                   class="submit-btn"
                   size="lg"
                   unelevated
@@ -196,7 +199,7 @@
                 >
                   <template v-slot:loading>
                     <q-spinner class="on-left" />
-                    Verificando...
+                    {{ t('auth.verifying') }}
                   </template>
                 </q-btn>
               </q-form>
@@ -205,7 +208,7 @@
         </div>
 
         <div class="page-footer">
-          <p>© 2025 Dashboard Logs. Todos los derechos reservados.</p>
+          <p>{{ t('auth.footer') }}</p>
         </div>
       </div>
     </div>
@@ -214,13 +217,13 @@
 
 <script setup>
 import { acceptInvite } from 'src/services/acceptInviteService'
-// import authService from 'src/services/authService'
 import { ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-// import { generateAndDownloadTenantQR } from 'src/services/qrService'
-// import { storeJWTInCookie } from 'src/services/cookieService'
+import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from 'src/components/LanguageSwitcher.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
@@ -332,7 +335,7 @@ const submit = async () => {
   if (!formularioValidado.value) {
     $q.notify({
       type: 'warning',
-      message: 'Por favor completa todos los requisitos de seguridad',
+      message: t('auth.fillSecurityRequirements'),
       position: 'top',
     })
     return
@@ -353,7 +356,7 @@ const submit = async () => {
 
     // Verificar respuesta exitosa
     if (!response.ok || !response.data) {
-      throw new Error(response.message || 'Error al aceptar invitación')
+      throw new Error(response.message || t('auth.acceptInvitationError'))
     }
 
     // Mostrar mensaje de éxito
@@ -361,7 +364,7 @@ const submit = async () => {
 
     $q.notify({
       type: 'positive',
-      message: '✅ Usuario activado exitosamente',
+      message: t('auth.userActivated'),
       position: 'top',
       timeout: 3000,
     })
@@ -380,7 +383,7 @@ const submit = async () => {
 
     // Mostrar error específico
     const errorMessage =
-      error.response?.data?.message || error.message || 'Invitación inválida o caducada'
+      error.response?.data?.message || error.message || t('auth.invalidInvitation')
 
     mensajeExito.value = ''
 

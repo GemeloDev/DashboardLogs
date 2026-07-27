@@ -16,33 +16,33 @@ function unwrapResponse(response) {
 }
 
 export const DashboardService = {
-  async getStats({ system, from, to } = {}) {
+  async getStats({ system, from, to, signal } = {}) {
     const params = cleanParams({ system, from, to })
-    const response = await axiosInstance.get(DASHBOARD.STATS, { params })
+    const response = await axiosInstance.get(DASHBOARD.STATS, { params, signal, timeout: 120000 })
     return unwrapResponse(response)
   },
 
-  async getSeries({ system, from, to } = {}) {
+  async getSeries({ system, from, to, signal } = {}) {
     const params = cleanParams({ system, from, to })
-    const response = await axiosInstance.get(DASHBOARD.SERIES, { params })
+    const response = await axiosInstance.get(DASHBOARD.SERIES, { params, signal, timeout: 120000 })
     return unwrapResponse(response)
   },
 
-  async getHttp({ system, from, to } = {}) {
+  async getHttp({ system, from, to, signal } = {}) {
     const params = cleanParams({ system, from, to })
-    const response = await axiosInstance.get(DASHBOARD.HTTP, { params })
+    const response = await axiosInstance.get(DASHBOARD.HTTP, { params, signal, timeout: 120000 })
     return unwrapResponse(response)
   },
 
-  async getGeo({ system, from, to } = {}) {
+  async getGeo({ system, from, to, signal } = {}) {
     const params = cleanParams({ system, from, to })
-    const response = await axiosInstance.get(DASHBOARD.GEO, { params })
+    const response = await axiosInstance.get(DASHBOARD.GEO, { params, signal, timeout: 120000 })
     return unwrapResponse(response)
   },
 
-  async getDevices({ system, status } = {}) {
+  async getDevices({ system, status, signal } = {}) {
     const params = cleanParams({ system, status })
-    const response = await axiosInstance.get(DEVICES.SUMMARY, { params })
+    const response = await axiosInstance.get(DEVICES.SUMMARY, { params, signal, timeout: 120000 })
     return unwrapResponse(response)
   },
 }

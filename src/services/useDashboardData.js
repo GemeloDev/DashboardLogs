@@ -10,6 +10,13 @@ const httpData    = ref(null)
 const geoData     = ref(null)
 const devicesData = ref(null)
 
+// ─── Errores de los 5 endpoints ──────────────────────────────────────────────
+const statsError   = ref(null)
+const seriesError  = ref(null)
+const httpError    = ref(null)
+const geoError     = ref(null)
+const devicesError = ref(null)
+
 // Solo estos estados son válidos como filtro para el endpoint de dispositivos
 const DEVICE_VALID_STATUSES = new Set(['ONLINE', 'OFFLINE'])
 
@@ -32,6 +39,7 @@ const hasFetchedOnce = ref(false)
 // Cada llamada a fetchAll incrementa `fetchSeq`. Al resolver Promise.allSettled,
 // si el número ya no coincide con el actual se descarta la respuesta (stale).
 let fetchSeq = 0
+let fetchAbortController = null
 
 // ─── Helpers de fecha ─────────────────────────────────────────────────────────
 const toIsoStart = (value) => {
@@ -43,6 +51,25 @@ const toIsoEnd = (value) => {
   const raw = String(value || '').trim()
   if (!raw) return ''
   return raw.includes('T') ? raw : `${raw}T23:59:59Z`
+}
+
+function isCancelError(err) {
+  return (
+    err?.code === 'ERR_CANCELED' ||
+    err?.name === 'CanceledError' ||
+    err?.name === 'AbortError' ||
+    err?.message === 'canceled'
+  )
+}
+
+function formatRequestError(err, endpoint) {
+  if (isCancelError(err)) return null
+  if (err?.code === 'ECONNABORTED') {
+    return `${endpoint}: tiempo de espera agotado`
+  }
+  const message = err?.response?.data?.message || err?.message || 'Error desconocido'
+  const status = err?.response?.status
+  return status ? `${endpoint}: ${message} (${status})` : `${endpoint}: ${message}`
 }
 
 function hasCachedDashboardData() {
@@ -64,6 +91,10 @@ async function fetchAll(filters = {}, options = {}) {
 
   if (!sys) return
 
+  fetchAbortController?.abort()
+  fetchAbortController = new AbortController()
+  const signal = fetchAbortController.signal
+
   const seq = ++fetchSeq
   loading.value = !isIncrementalRefresh
   refreshing.value = isIncrementalRefresh
@@ -76,17 +107,24 @@ async function fetchAll(filters = {}, options = {}) {
     devicesData.value = null
   }
 
+  // Limpiar errores previos al inicio de una nueva carga
+  statsError.value = null
+  seriesError.value = null
+  httpError.value = null
+  geoError.value = null
+  devicesError.value = null
+
   const deviceStatus = DEVICE_VALID_STATUSES.has(String(filters?.values?.status || '').toUpperCase())
     ? String(filters.values.status).toUpperCase()
     : undefined
 
   try {
     const [rStats, rSeries, rHttp, rGeo, rDevices] = await Promise.allSettled([
-      DashboardService.getStats({ system: sys, from, to }),
-      DashboardService.getSeries({ system: sys, from, to }),
-      DashboardService.getHttp({ system: sys, from, to }),
-      DashboardService.getGeo({ system: sys, from, to }),
-      DashboardService.getDevices({ system: sys, status: deviceStatus }),
+      DashboardService.getStats({ system: sys, from, to, signal }),
+      DashboardService.getSeries({ system: sys, from, to, signal }),
+      DashboardService.getHttp({ system: sys, from, to, signal }),
+      DashboardService.getGeo({ system: sys, from, to, signal }),
+      DashboardService.getDevices({ system: sys, status: deviceStatus, signal }),
     ])
 
     if (seq !== fetchSeq) return
@@ -96,6 +134,12 @@ async function fetchAll(filters = {}, options = {}) {
     httpData.value = rHttp.status === 'fulfilled' ? (rHttp.value ?? null) : null
     geoData.value = rGeo.status === 'fulfilled' ? (rGeo.value ?? null) : null
     devicesData.value = rDevices.status === 'fulfilled' ? (rDevices.value ?? null) : null
+
+    statsError.value = rStats.status === 'rejected' ? formatRequestError(rStats.reason, 'stats') : null
+    seriesError.value = rSeries.status === 'rejected' ? formatRequestError(rSeries.reason, 'series') : null
+    httpError.value = rHttp.status === 'rejected' ? formatRequestError(rHttp.reason, 'http') : null
+    geoError.value = rGeo.status === 'rejected' ? formatRequestError(rGeo.reason, 'geo') : null
+    devicesError.value = rDevices.status === 'rejected' ? formatRequestError(rDevices.reason, 'devices') : null
   } catch (err) {
     if (seq !== fetchSeq) return
     console.error('Dashboard fetchAll error:', err?.message || err)
@@ -144,12 +188,18 @@ function unsubscribeSystem() {
 }
 
 function resetDashboardData() {
+  fetchAbortController?.abort()
   unsubscribeSystem()
   statsData.value = null
   seriesData.value = null
   httpData.value = null
   geoData.value = null
   devicesData.value = null
+  statsError.value = null
+  seriesError.value = null
+  httpError.value = null
+  geoError.value = null
+  devicesError.value = null
   loading.value = false
   refreshing.value = false
   newLogsCount.value = 0
@@ -214,6 +264,11 @@ export function useDashboardData() {
     httpData,
     geoData,
     devicesData,
+    statsError,
+    seriesError,
+    httpError,
+    geoError,
+    devicesError,
     hasFetchedOnce,
     fetchAll,
     subscribeSystem,

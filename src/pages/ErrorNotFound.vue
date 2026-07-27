@@ -1,5 +1,8 @@
 <template>
   <div class="error-page">
+    <!-- Language switcher -->
+    <LanguageSwitcher />
+
     <!-- Fondo -->
     <div class="error-bg">
       <div class="bg-blur bg-blur--cyan"></div>
@@ -14,15 +17,15 @@
       <q-card flat bordered class="error-card">
         <div class="error-badge">
           <q-icon name="warning_amber" size="18px" color="cyan" />
-          <span>Error de navegación</span>
+          <span>{{ t('auth.navigationError') }}</span>
         </div>
 
         <div class="error-code">404</div>
 
-        <div class="error-title">Oops. No hay nada aquí...</div>
+        <div class="error-title">{{ t('auth.notFoundTitle') }}</div>
 
         <div class="error-text">
-          La página que intentas abrir no existe, fue movida o la ruta no es válida.
+          {{ t('auth.notFoundSubtitle') }}
         </div>
 
         <div class="error-actions">
@@ -31,7 +34,7 @@
             unelevated
             no-caps
             class="home-btn"
-            label="Ir al inicio"
+            :label="t('auth.goHome')"
             icon="home"
           />
         </div>
@@ -41,7 +44,10 @@
 </template>
 
 <script setup>
-//
+import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from 'src/components/LanguageSwitcher.vue'
+
+const { t } = useI18n()
 </script>
 
 <style lang="scss" scoped>

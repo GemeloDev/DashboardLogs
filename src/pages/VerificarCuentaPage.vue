@@ -1,5 +1,8 @@
 <template>
   <div class="login-page">
+    <!-- Language switcher -->
+    <LanguageSwitcher />
+
     <!-- Geometric background pattern -->
     <div class="background-pattern">
       <div class="shape shape-1"></div>
@@ -26,15 +29,15 @@
               <div class="header-icon-container">
                 <q-icon name="check" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Veríficar Cuenta</h2>
-              <p class="card-subtitle">Proporciona el código que te hicimos llegar por correo.</p>
+              <h2 class="card-title">{{ t('auth.verifyAccount') }}</h2>
+              <p class="card-subtitle">{{ t('auth.verifySubtitle') }}</p>
             </div>
             <!-- Form section -->
             <q-card-section class="form-section">
               <q-form @submit="submit" class="login-form">
                 <!-- Name field (registro only) -->
                 <div class="input-group">
-                  <label class="input-label">Ingrese el Código: </label>
+                  <label class="input-label">{{ t('auth.enterCode') }}</label>
                 </div>
                 <div class="row justify-center q-gutter-sm">
                   <q-input
@@ -59,7 +62,7 @@
                 <!-- Submit button -->
                 <q-btn
                   type="submit"
-                  label="Veríficar"
+                  :label="t('auth.verify')"
                   class="submit-btn"
                   size="lg"
                   unelevated
@@ -68,7 +71,7 @@
                 >
                   <template v-slot:loading>
                     <q-spinner class="on-left" />
-                    Veríficando...
+                    {{ t('auth.verifying') }}
                   </template>
                 </q-btn>
               </q-form>
@@ -79,7 +82,7 @@
 
         <!-- Footer -->
         <div class="page-footer">
-          <p>© 2025 Dashboard Logs. Todos los derechos reservados.</p>
+          <p>{{ t('auth.footer') }}</p>
         </div>
 
       </div>
@@ -89,6 +92,10 @@
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from 'src/components/LanguageSwitcher.vue'
+
+const { t } = useI18n()
 
 const codigo = ref(Array(6).fill(''))
 const inputs = ref([])

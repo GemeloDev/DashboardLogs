@@ -56,3 +56,84 @@ canvas {
 .text-h6 {
   height: 60px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ESTILOS GLOBALES COMPARTIDOS: botones de toolbar y menus glass
+   ═══════════════════════════════════════════════════════════════ */
+
+.toolbar-icon-btn {
+  color: rgba(255, 255, 255, 0.76);
+  border-radius: 12px;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.toolbar-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(233, 113, 50, 0.12);
+}
+
+.toolbar-icon-btn--success {
+  color: #86efac;
+}
+
+.toolbar-icon-btn--purple {
+  color: #c084fc;
+}
+
+.toolbar-icon-btn--utility {
+  min-width: 34px;
+  min-height: 34px;
+}
+
+.glass-tooltip {
+  background: #160b07 !important;
+  color: white !important;
+  border: 1px solid rgba(233, 113, 50, 0.16);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+}
+
+.glass-menu {
+  background:
+    radial-gradient(circle at top left, rgba(233, 113, 50, 0.08), transparent 28%),
+    linear-gradient(160deg, rgba(22, 11, 7, 0.98), rgba(17, 9, 7, 0.96)) !important;
+  color: white !important;
+  border: 1px solid rgba(233, 113, 50, 0.14);
+  border-radius: 18px;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(18px);
+}
+
+.menu-header-label {
+  color: rgba(255, 255, 255, 0.76) !important;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.menu-separator {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.glass-menu-item {
+  color: white;
+  border-radius: 12px;
+  margin: 4px 8px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.glass-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(233, 113, 50, 0.1);
+}
+
+.glass-menu-item.no-hover:hover {
+  background: transparent;
+  border-color: transparent;
+}

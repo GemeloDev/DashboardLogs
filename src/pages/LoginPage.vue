@@ -1,5 +1,8 @@
 <template>
   <div class="login-page">
+    <!-- Language switcher -->
+    <LanguageSwitcher />
+
     <!-- Fondo -->
     <div class="login-bg">
       <div class="bg-grid"></div>
@@ -18,13 +21,13 @@
               <div class="brand-icon-box">
                 <q-icon name="terminal" size="24px" color="white" />
               </div>
-              <div class="brand-name">Consola Logs</div>
+              <div class="brand-name">{{ t('auth.brandName') }}</div>
             </div>
 
             <!-- Título -->
             <div class="hero-copy">
-              <h1 class="hero-title">Iniciar Sesión</h1>
-              <p class="hero-subtitle">Ingresa tus credenciales para acceder al dashboard.</p>
+              <h1 class="hero-title">{{ t('auth.loginTitle') }}</h1>
+              <p class="hero-subtitle">{{ t('auth.loginSubtitle') }}</p>
             </div>
 
             <!-- Formulario -->
@@ -40,16 +43,16 @@
               </div>
 
               <div class="input-group">
-                <label class="input-label">Email</label>
+                <label class="input-label">{{ t('auth.email') }}</label>
                 <q-input
                   v-model="formData.email"
                   outlined
                   dense
                   class="premium-input"
-                  placeholder="ejemplo@consola.io"
+                  :placeholder="t('auth.emailPlaceholder')"
                   :rules="[
-                    (val) => !!val || 'Este campo es requerido',
-                    (val) => validarEmailOTelefono(val) || 'Formato inválido',
+                    (val) => !!val || t('auth.required'),
+                    (val) => validarEmailOTelefono(val) || t('auth.invalidFormat'),
                   ]"
                   @input="sanitizarInput('email')"
                 >
@@ -60,9 +63,9 @@
               </div>
 
               <div class="password-row">
-                <label class="input-label">Contraseña</label>
+                <label class="input-label">{{ t('auth.password') }}</label>
                 <router-link to="/olvide-password" class="forgot-link">
-                  ¿Olvidaste tu contraseña?
+                  {{ t('auth.forgotPassword') }}
                 </router-link>
               </div>
 
@@ -73,10 +76,10 @@
                   outlined
                   dense
                   class="premium-input"
-                  placeholder="Mínimo 8 caracteres"
+                  :placeholder="t('auth.passwordPlaceholder')"
                   :rules="[
-                    (val) => !!val || 'La contraseña es requerida',
-                    (val) => val.length >= 8 || 'Mínimo 8 caracteres',
+                    (val) => !!val || t('auth.passwordRequired'),
+                    (val) => val.length >= 8 || t('auth.min8Chars'),
                   ]"
                   @input="sanitizarInput('password')"
                 >
@@ -100,7 +103,7 @@
 
               <q-btn
                 type="submit"
-                label="Iniciar Sesión"
+                :label="t('auth.loginButton')"
                 class="submit-btn"
                 size="lg"
                 unelevated
@@ -109,7 +112,7 @@
               >
                 <template v-slot:loading>
                   <q-spinner class="on-left" />
-                  Iniciando sesión...
+                  {{ t('auth.loggingIn') }}
                 </template>
               </q-btn>
             </q-form>
@@ -122,12 +125,12 @@
         <!-- Lado derecho -->
         <div v-if="showQrPanel" class="login-right">
           <div class="quick-card">
-            <div class="quick-title">Acceso Rápido</div>
+            <div class="quick-title">{{ t('auth.quickAccess') }}</div>
             <div class="quick-subtitle">
               {{
                 tenantIdEscaneado
-                  ? 'El acceso por código fue validado correctamente'
-                  : 'Escanea para continuar en móvil'
+                  ? t('auth.qrValidated')
+                  : t('auth.scanToContinue')
               }}
             </div>
 
@@ -136,7 +139,7 @@
                 <div id="qrcode-container" class="qrcode-box" :class="`qrcode-box--${qrStatus}`">
                   <div v-if="qrStatus === 'loading' || qrStatus === 'idle'" class="qr-status-state">
                     <q-spinner-dots size="54px" color="orange" />
-                    <div class="qr-status-title">Generando código</div>
+                    <div class="qr-status-title">{{ t('auth.generatingCode') }}</div>
                     <div class="qr-status-text">{{ qrMessage }}</div>
                   </div>
 
@@ -151,11 +154,11 @@
                     <div class="qr-result-icon">
                       <q-icon name="check_circle" size="72px" color="positive" />
                     </div>
-                    <div class="qr-result-title">Escaneo correcto</div>
-                    <div class="qr-result-text">Tu organización fue validada correctamente.</div>
+                    <div class="qr-result-title">{{ t('auth.scanCorrect') }}</div>
+                    <div class="qr-result-text">{{ t('auth.organizationValidated') }}</div>
                     <div class="qr-result-chip qr-result-chip--success">
                       <q-icon name="verified" size="16px" class="q-mr-xs" />
-                      QR aprobado
+                      {{ t('auth.qrApproved') }}
                     </div>
                   </div>
 
@@ -166,10 +169,10 @@
                     <div class="qr-result-icon">
                       <q-icon name="error" size="72px" color="negative" />
                     </div>
-                    <div class="qr-result-title">Código no disponible</div>
+                    <div class="qr-result-title">{{ t('auth.codeNotAvailable') }}</div>
                     <div class="qr-result-text">{{ qrMessage }}</div>
                     <q-btn
-                      label="Reintentar"
+                      :label="t('auth.retry')"
                       icon="refresh"
                       unelevated
                       no-caps
@@ -185,10 +188,10 @@
                     <div class="qr-result-icon">
                       <q-icon name="pause_circle" size="72px" color="warning" />
                     </div>
-                    <div class="qr-result-title">QR no disponible</div>
+                    <div class="qr-result-title">{{ t('auth.qrNotAvailable') }}</div>
                     <div class="qr-result-text">{{ qrMessage }}</div>
                     <q-btn
-                      label="Generar"
+                      :label="t('auth.generate')"
                       icon="refresh"
                       unelevated
                       no-caps
@@ -209,8 +212,8 @@
                 <span>
                   {{
                     tenantIdEscaneado
-                      ? 'Código QR validado correctamente'
-                      : 'Abre la app de Consola Logs'
+                      ? t('auth.codeValidated')
+                      : t('auth.openApp')
                   }}
                 </span>
               </div>
@@ -220,8 +223,8 @@
                 <span>
                   {{
                     tenantIdEscaneado
-                      ? 'Redirigiendo al dashboard'
-                      : 'Verifica tu identidad biométrica'
+                      ? t('auth.redirecting')
+                      : t('auth.verifyIdentity')
                   }}
                 </span>
               </div>
@@ -231,7 +234,7 @@
       </q-card>
 
       <div class="page-footer">
-        <p>© 2025 Dashboard Logs Santoro</p>
+        <p>{{ t('auth.footerSantoro') }}</p>
       </div>
     </div>
   </div>
@@ -241,11 +244,14 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import authService from '../services/authService.js'
 import { generateNewContent, getQRCodeDataUrl } from 'src/services/qrService.js'
 import { disconnectSocket, initializeSocket } from 'src/services/socketService.js'
 import { clearStoredSession, readSession } from 'src/services/sessionStorage.js'
+import LanguageSwitcher from 'src/components/LanguageSwitcher.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const $q = useQuasar()
 
@@ -260,7 +266,7 @@ const socketInstance = ref(null)
 const qrContent = ref('')
 const qrImageSrc = ref('')
 const qrStatus = ref('idle')
-const qrMessage = ref('Preparando el código QR...')
+const qrMessage = ref(t('auth.generatingCode'))
 const qrRefreshCount = ref(0)
 const timeRemaining = ref(60)
 let countdownId = null
@@ -324,7 +330,7 @@ const onSubmit = async () => {
 
     if (loginResult.success) {
       if (loginResult.mustChangePassword) return router.push('/new-password')
-      mensajeExito.value = loginResult.message || 'Acceso concedido. Redirigiendo...'
+      mensajeExito.value = loginResult.message || t('auth.accessGranted')
       const targetRoute =
         authService.getAllowedFlow(loginResult.user) === 'santoro'
           ? '/santoro/inicio'
@@ -332,12 +338,12 @@ const onSubmit = async () => {
 
       setTimeout(() => router.push(targetRoute), 1500)
     } else {
-      mensajeError.value = loginResult.message || 'Credenciales inválidas. Verifica tus datos.'
+      mensajeError.value = loginResult.message || t('auth.invalidCredentials')
       cargando.value = false
     }
   } catch (err) {
     console.error('❌ Error en login:', err)
-    mensajeError.value = 'Error de conexión al iniciar sesión. Verifica tu conexión a internet.'
+    mensajeError.value = t('auth.connectionError')
     cargando.value = false
   }
 }
@@ -418,8 +424,8 @@ const handleLoginSuccess = async (socketData) => {
   isLoggedIn.value = true
   tenantIdEscaneado.value = true
   qrStatus.value = 'success'
-  qrMessage.value = 'Tu organización fue validada correctamente.'
-  mensajeExito.value = payload?.message || 'Acceso concedido. Redirigiendo...'
+  qrMessage.value = t('auth.organizationValidated')
+  mensajeExito.value = payload?.message || t('auth.accessGranted')
 
   const targetRoute =
     authService.getAllowedFlow(buildResult.user) === 'santoro'
@@ -441,14 +447,14 @@ const regenerateQr = async () => {
   if (qrRefreshCount.value >= QR_REFRESH_LIMIT) {
     clearQrRuntime()
     qrStatus.value = 'paused'
-    qrMessage.value = 'Inactividad detectada. Recarga para generar nuevamente el código QR.'
+    qrMessage.value = t('auth.inactivityDetected')
     return
   }
 
   try {
     qrRefreshCount.value += 1
     qrStatus.value = 'loading'
-    qrMessage.value = 'Solicitando un nuevo código QR...'
+    qrMessage.value = t('auth.requestingQr')
     qrImageSrc.value = ''
 
     const newContent = await generateNewContent()
@@ -463,7 +469,7 @@ const regenerateQr = async () => {
 
     timeRemaining.value = Number(newContent.expireTime) || 60
     qrStatus.value = 'ready'
-    qrMessage.value = 'Escanea para continuar en móvil.'
+    qrMessage.value = t('auth.scanToContinueMobile')
 
     socketInstance.value = initializeSocket(`qr-login/${qrToken}`, handleLoginSuccess)
   } catch (error) {
@@ -471,9 +477,8 @@ const regenerateQr = async () => {
     qrStatus.value = qrRefreshCount.value >= QR_REFRESH_LIMIT ? 'paused' : 'error'
     qrMessage.value =
       qrRefreshCount.value >= QR_REFRESH_LIMIT
-        ? 'No se pudo generar el código después de 5 intentos. Puedes intentar otro bloque.'
-        : error?.message ||
-          'No se pudo generar el código QR. Verifica tu conexión e intenta nuevamente.'
+        ? t('auth.tooManyAttempts')
+        : error?.message || t('auth.couldNotGenerate')
   }
 }
 

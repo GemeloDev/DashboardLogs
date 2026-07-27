@@ -95,6 +95,7 @@ export const LOGS = {
   EVENTS_RAW: `${BASE_URL}/logs/events`,
   TIMELINE: `${BASE_URL}/logs/timeline`,
   STATS: `${BASE_URL}/logs/dashboard/stats`,
+  FILTERS_CONFIG: `${BASE_URL}/filters/config`,
 }
 
 export const DASHBOARD = {

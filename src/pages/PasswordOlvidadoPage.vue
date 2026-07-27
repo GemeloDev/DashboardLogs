@@ -1,5 +1,8 @@
 <template>
   <div class="login-page">
+    <!-- Language switcher -->
+    <LanguageSwitcher />
+
     <div class="login-bg">
       <div class="bg-grid"></div>
       <div class="bg-orb orb-1"></div>
@@ -15,10 +18,9 @@
               <div class="header-icon-container">
                 <q-icon name="lock_reset" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Recuperar Cuenta</h2>
+              <h2 class="card-title">{{ t('auth.recoverAccount') }}</h2>
               <p class="card-subtitle">
-                Escribe el correo asociado a tu cuenta para continuar con el proceso de
-                recuperación.
+                {{ t('auth.recoverSubtitle') }}
               </p>
             </div>
 
@@ -35,16 +37,16 @@
                 </div>
 
                 <div class="input-group">
-                  <label class="input-label">Correo Electrónico</label>
+                  <label class="input-label">{{ t('auth.emailLabel') }}</label>
                   <q-input
                     v-model="email"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="ejemplo@correo.com"
+                    :placeholder="t('auth.emailPlaceholderGeneric')"
                     :rules="[
-                      (val) => !!val || 'Este campo es requerido',
-                      (val) => validarEmailOTelefono(val) || 'Formato inválido',
+                      (val) => !!val || t('auth.required'),
+                      (val) => validarEmailOTelefono(val) || t('auth.invalidFormat'),
                     ]"
                     @input="sanitizarInput"
                   >
@@ -56,7 +58,7 @@
 
                 <q-btn
                   type="submit"
-                  label="Enviar instrucciones"
+                  :label="t('auth.sendInstructions')"
                   class="submit-btn"
                   size="lg"
                   unelevated
@@ -65,7 +67,7 @@
                 >
                   <template v-slot:loading>
                     <q-spinner class="on-left" />
-                    Verificando...
+                    {{ t('auth.verifying') }}
                   </template>
                 </q-btn>
               </q-form>
@@ -74,14 +76,14 @@
             <div class="card-footer-section">
               <router-link to="/login" class="back-link">
                 <q-icon name="arrow_back" size="18px" />
-                <span>Volver a iniciar sesión</span>
+                <span>{{ t('auth.backToLogin') }}</span>
               </router-link>
             </div>
           </q-card>
         </div>
 
         <div class="page-footer">
-          <p>© 2025 Dashboard Logs Santoro</p>
+          <p>{{ t('auth.footerSantoro') }}</p>
         </div>
       </div>
     </div>
@@ -90,7 +92,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import authService from '../services/authService'
+import LanguageSwitcher from 'src/components/LanguageSwitcher.vue'
+
+const { t } = useI18n()
 
 const cargando = ref(false)
 const email = ref('')
@@ -127,7 +133,7 @@ const submit = async () => {
   mensajeExito.value = ''
 
   if (!formularioValidado.value) {
-    mensajeError.value = 'Ingresa un correo electrónico válido para continuar.'
+    mensajeError.value = t('auth.invalidFormat')
     return
   }
 
@@ -138,14 +144,14 @@ const submit = async () => {
 
     if (!result.success) {
       mensajeError.value =
-        result.message || 'Ocurrió un error al enviar las instrucciones. Intenta nuevamente.'
+        result.message || t('auth.recoverSubtitle')
       return
     }
 
     mensajeExito.value = result.message
   } catch (error) {
     console.error(' Error en reset password:', error)
-    mensajeError.value = 'Ocurrió un error al enviar las instrucciones. Intenta nuevamente.'
+    mensajeError.value = t('auth.recoverSubtitle')
     return
   } finally {
     cargando.value = false

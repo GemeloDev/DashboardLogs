@@ -208,6 +208,7 @@
 import { useQuasar } from 'quasar'
 import { ref, computed, onMounted, watch, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { FilterMetadataService } from 'src/services/filterMetadataService'
 
 const $q = useQuasar()
 const { t } = useI18n()
@@ -638,6 +639,43 @@ const hidratarDesdeGlobales = () => {
   }
 }
 
+const backendConfigLoaded = ref(false)
+
+const cargarConfigDesdeBackend = async () => {
+  try {
+    loading.value = true
+    const system = filtrosGlobales?.value?.system || null
+    const data = await FilterMetadataService.getFilterConfig(system)
+
+    if (data?.filters && Array.isArray(data.filters)) {
+      configFiltros.value = data.filters.map((f) => ({
+        key: f.key,
+        label: f.label,
+        icon: f.icon || 'filter_alt',
+        options: f.options || [],
+      }))
+
+      const setKeys = new Set(configFiltros.value.map((f) => f.key))
+      camposVisibles.value = camposVisibles.value.filter((k) => setKeys.has(k))
+
+      if (camposVisibles.value.length === 0) {
+        camposVisibles.value = ['status', 'severity', 'eventType', 'outcome'].filter((k) =>
+          setKeys.has(k)
+        )
+      }
+
+      backendConfigLoaded.value = true
+      return true
+    }
+    return false
+  } catch (err) {
+    console.warn('No se pudo cargar config de filtros desde backend, usando fallback local:', err?.message)
+    return false
+  } finally {
+    loading.value = false
+  }
+}
+
 watch(camposVisibles, (nuevos, viejos) => {
   // Encontramos qué campo se eliminó
   const eliminados = viejos.filter((x) => !nuevos.includes(x))
@@ -652,8 +690,21 @@ watch(camposVisibles, (nuevos, viejos) => {
 
 watch(
   sourceItems,
-  (items) => {
-    reconstruirDesdeLogs(items)
+  async (items) => {
+    if (!backendConfigLoaded.value) {
+      const loaded = await cargarConfigDesdeBackend()
+      if (loaded) {
+        if (!hydratedOnce.value) {
+          hidratarDesdeGlobales()
+          hydratedOnce.value = true
+        }
+        return
+      }
+    }
+
+    if (!backendConfigLoaded.value) {
+      reconstruirDesdeLogs(items)
+    }
 
     // ✅ solo una vez (evita que se borre el rango al aplicar filtros)
     if (!hydratedOnce.value) {

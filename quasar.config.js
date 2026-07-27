@@ -117,13 +117,17 @@ export default defineConfig((ctx) => {
       // https: true,
       open: true, // opens browser window automatically
       proxy: {
+        '/filters': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
         '/api': {
           // target: 'https://dashboard-api.grupo-santoro.com.mx/',
           // target: 'https://api-logs.grupo-santoro.com.mx/',
           target: 'http://187.188.66.56:8040',
           changeOrigin: true,
           secure: false,
-          logLevel: 'debug',
+          logLevel: 'debug',  
           onProxyReq: (proxyReq, req) => {
             console.log(
               '🔄 Proxy request:',

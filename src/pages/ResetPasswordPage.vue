@@ -1,5 +1,8 @@
 <template>
   <div class="login-page">
+    <!-- Language switcher -->
+    <LanguageSwitcher />
+
     <!-- Fondo -->
     <div class="login-bg">
       <div class="bg-blur bg-blur--cyan"></div>
@@ -19,9 +22,9 @@
               <div class="header-icon-container error">
                 <q-icon name="error_outline" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Código inválido</h2>
+              <h2 class="card-title">{{ t('auth.invalidCode') }}</h2>
               <p class="card-subtitle">
-                El código de recuperación es inválido o ha caducado. Serás redirigido al login...
+                {{ t('auth.invalidCodeSubtitle') }}
               </p>
             </div>
 
@@ -30,9 +33,9 @@
               <div class="header-icon-container">
                 <q-icon name="lock_reset" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Restablecer contraseña</h2>
+              <h2 class="card-title">{{ t('auth.resetPassword') }}</h2>
               <p class="card-subtitle">
-                Ingresa tu correo, el código de recuperación y tu nueva contraseña.
+                {{ t('auth.resetPasswordSubtitle') }}
               </p>
             </div>
 
@@ -45,16 +48,16 @@
 
             <div class="form-section">
               <div class="input-group">
-                <label class="input-label">Correo Electrónico</label>
+                <label class="input-label">{{ t('auth.emailLabel') }}</label>
                 <q-input
                   v-model="resetPasswordValues.email"
                   outlined
                   dense
                   class="premium-input"
-                  placeholder="email@example.com"
+                  :placeholder="t('auth.emailPlaceholderReset')"
                   :rules="[
-                    (val) => !!val || 'El correo es requerido',
-                    (val) => validarEmail(val) || 'Formato inválido',
+                    (val) => !!val || t('auth.emailRequired'),
+                    (val) => validarEmail(val) || t('auth.invalidFormat'),
                   ]"
                   @input="sanitizarEmail"
                 >
@@ -64,7 +67,7 @@
                 </q-input>
               </div>
 
-              <label class="input-label">Código</label>
+              <label class="input-label">{{ t('consoleSimple.codeLabel') }}</label>
               <div class="otp-row q-mt-md">
                 <q-input
                   v-for="(n, i) in 6"
@@ -90,17 +93,17 @@
             <q-card-section v-if="!tokenInvalido" class="form-section">
               <q-form @submit="submit">
                 <div class="input-group">
-                  <label class="input-label">Nueva contraseña</label>
+                  <label class="input-label">{{ t('auth.newPassword') }}</label>
                   <q-input
                     v-model="resetPasswordValues.password"
                     :type="mostrarPassword ? 'text' : 'password'"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="Mínimo 8 caracteres"
+                    :placeholder="t('auth.passwordPlaceholder')"
                     :rules="[
-                      (val) => !!val || 'La contraseña es requerida',
-                      (val) => val.length >= 8 || 'Mínimo 8 caracteres',
+                      (val) => !!val || t('auth.passwordRequired'),
+                      (val) => val.length >= 8 || t('auth.min8Chars'),
                     ]"
                     @update:model-value="evaluarPassword"
                   >
@@ -122,52 +125,52 @@
                 </div>
 
                 <div v-if="resetPasswordValues.password" class="password-strength-container">
-                  <div class="strength-header">Seguridad de la contraseña</div>
+                  <div class="strength-header">{{ t('auth.passwordStrength') }}</div>
 
                   <div class="strength-indicators">
                     <div class="strength-item" :class="{ active: indicadores.longitud }">
                       <q-icon
                         :name="indicadores.longitud ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>8+ caracteres</span>
+                      <span>{{ t('auth.eightChars') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.mayuscula }">
                       <q-icon
                         :name="indicadores.mayuscula ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Mayúscula</span>
+                      <span>{{ t('auth.uppercase') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.numero }">
                       <q-icon
                         :name="indicadores.numero ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Número</span>
+                      <span>{{ t('auth.number') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.simbolos }">
                       <q-icon
                         :name="indicadores.simbolos ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Símbolo</span>
+                      <span>{{ t('auth.symbol') }}</span>
                     </div>
                   </div>
                 </div>
 
                 <div class="input-group">
-                  <label class="input-label">Confirmar nueva contraseña</label>
+                  <label class="input-label">{{ t('auth.confirmNewPassword') }}</label>
                   <q-input
                     v-model="resetPasswordValues.confirmarPassword"
                     :type="mostrarConfirmarPassword ? 'text' : 'password'"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="Repite tu contraseña"
+                    :placeholder="t('auth.repeatPassword')"
                     :rules="[
-                      (val) => !!val || 'Confirmar contraseña es requerido',
+                      (val) => !!val || t('auth.confirmPasswordRequired'),
                       (val) =>
-                        val === resetPasswordValues.password || 'Las contraseñas no coinciden',
+                        val === resetPasswordValues.password || t('auth.passwordsDoNotMatch'),
                     ]"
                   >
                     <template v-slot:prepend>
@@ -189,7 +192,7 @@
 
                 <q-btn
                   type="submit"
-                  label="Verificar"
+                  :label="t('auth.verify')"
                   class="submit-btn"
                   size="lg"
                   unelevated
@@ -198,7 +201,7 @@
                 >
                   <template v-slot:loading>
                     <q-spinner class="on-left" />
-                    Verificando...
+                    {{ t('auth.verifying') }}
                   </template>
                 </q-btn>
               </q-form>
@@ -207,7 +210,7 @@
         </div>
 
         <div class="page-footer">
-          <p>© 2025 Dashboard Logs. Todos los derechos reservados.</p>
+          <p>{{ t('auth.footer') }}</p>
         </div>
       </div>
     </div>
@@ -219,7 +222,10 @@ import authService from 'src/services/authService'
 import { ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from 'src/components/LanguageSwitcher.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
@@ -340,7 +346,7 @@ const submit = async () => {
   if (!formularioValidado.value) {
     $q.notify({
       type: 'warning',
-      message: 'Por favor completa todos los requisitos de seguridad',
+      message: t('auth.fillSecurityRequirements'),
       position: 'top',
     })
     return
@@ -358,7 +364,7 @@ const submit = async () => {
     const response = await authService.resetPassword(payload)
 
     if (!response.success) {
-      const error = new Error(response.message || 'Error al cambiar la contraseña')
+      const error = new Error(response.message || t('auth.invalidOrExpiredCode'))
       error.status = response.status
       throw error
     }
@@ -367,7 +373,7 @@ const submit = async () => {
 
     $q.notify({
       type: 'positive',
-      message: 'Contraseña actualizada correctamente',
+      message: t('auth.passwordUpdated'),
       position: 'top',
       timeout: 3000,
     })
@@ -383,7 +389,7 @@ const submit = async () => {
     resetPasswordValues.value.confirmarPassword = ''
 
     const errorMessage =
-      error.response?.data?.message || error.message || 'Código inválido o caducado'
+      error.response?.data?.message || error.message || t('auth.invalidOrExpiredCode')
 
     mensajeExito.value = ''
 

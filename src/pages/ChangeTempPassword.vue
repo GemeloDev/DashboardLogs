@@ -1,5 +1,8 @@
 <template>
   <div class="login-page">
+    <!-- Language switcher -->
+    <LanguageSwitcher />
+
     <!-- Fondo -->
     <div class="login-bg">
       <div class="bg-blur bg-blur--cyan"></div>
@@ -19,9 +22,9 @@
               <div class="header-icon-container">
                 <q-icon name="check" size="1.8rem" class="header-icon" />
               </div>
-              <h2 class="card-title">Cambiar contraseña</h2>
+              <h2 class="card-title">{{ t('auth.changePassword') }}</h2>
               <p class="card-subtitle">
-                Ingresa una nueva contraseña y confirmala para acceder al sistema.
+                {{ t('auth.changePasswordSubtitle') }}
               </p>
             </div>
 
@@ -35,17 +38,17 @@
             <q-card-section v-if="!tokenInvalido" class="form-section">
               <q-form @submit="submit">
                 <div class="input-group">
-                  <label class="input-label">Contraseña actual:</label>
+                  <label class="input-label">{{ t('auth.currentPassword') }}</label>
                   <q-input
                     v-model="changePasswordValues.currentPassword"
                     :type="mostrarCurrentPassword ? 'text' : 'password'"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="Mínimo 8 caracteres"
+                    :placeholder="t('auth.passwordPlaceholder')"
                     :rules="[
-                      (val) => !!val || 'La contraseña es requerida',
-                      (val) => val.length >= 8 || 'Mínimo 8 caracteres',
+                      (val) => !!val || t('auth.passwordRequired'),
+                      (val) => val.length >= 8 || t('auth.min8Chars'),
                     ]"
                   >
                     <template v-slot:prepend>
@@ -66,17 +69,17 @@
                 </div>
 
                 <div class="input-group">
-                  <label class="input-label">Nueva contraseña: </label>
+                  <label class="input-label">{{ t('auth.newPassword') }}</label>
                   <q-input
                     v-model="changePasswordValues.password"
                     :type="mostrarPassword ? 'text' : 'password'"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="Mínimo 8 caracteres"
+                    :placeholder="t('auth.passwordPlaceholder')"
                     :rules="[
-                      (val) => !!val || 'La contraseña es requerida',
-                      (val) => val.length >= 8 || 'Mínimo 8 caracteres',
+                      (val) => !!val || t('auth.passwordRequired'),
+                      (val) => val.length >= 8 || t('auth.min8Chars'),
                     ]"
                     @update:model-value="evaluarPassword"
                   >
@@ -98,51 +101,51 @@
                 </div>
 
                 <div v-if="changePasswordValues.password" class="password-strength-container">
-                  <div class="strength-header">Seguridad de la contraseña</div>
+                  <div class="strength-header">{{ t('auth.passwordStrength') }}</div>
 
                   <div class="strength-indicators">
                     <div class="strength-item" :class="{ active: indicadores.longitud }">
                       <q-icon
                         :name="indicadores.longitud ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>8+ caracteres</span>
+                      <span>{{ t('auth.eightChars') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.mayuscula }">
                       <q-icon
                         :name="indicadores.mayuscula ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Mayúscula</span>
+                      <span>{{ t('auth.uppercase') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.numero }">
                       <q-icon
                         :name="indicadores.numero ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Número</span>
+                      <span>{{ t('auth.number') }}</span>
                     </div>
 
                     <div class="strength-item" :class="{ active: indicadores.simbolos }">
                       <q-icon
                         :name="indicadores.simbolos ? 'check_circle' : 'radio_button_unchecked'"
                       />
-                      <span>Símbolo</span>
+                      <span>{{ t('auth.symbol') }}</span>
                     </div>
                   </div>
                 </div>
 
                 <div class="input-group">
-                  <label class="input-label">Confirmar nueva contraseña</label>
+                  <label class="input-label">{{ t('auth.confirmNewPassword') }}</label>
                   <q-input
                     v-model="changePasswordValues.confirmarPassword"
                     :type="mostrarConfirmarPassword ? 'text' : 'password'"
                     outlined
                     dense
                     class="premium-input"
-                    placeholder="Repite tu contraseña"
+                    :placeholder="t('auth.repeatPassword')"
                     :rules="[
-                      (val) => !!val || 'Confirmar contraseña es requerido',
-                      (val) => val === changePasswordValues.password || 'Las contraseñas no coinciden',
+                      (val) => !!val || t('auth.confirmPasswordRequired'),
+                      (val) => val === changePasswordValues.password || t('auth.passwordsDoNotMatch'),
                     ]"
                   >
                     <template v-slot:prepend>
@@ -164,7 +167,7 @@
 
                 <q-btn
                   type="submit"
-                  label="Verificar"
+                  :label="t('auth.verify')"
                   class="submit-btn"
                   size="lg"
                   unelevated
@@ -173,7 +176,7 @@
                 >
                   <template v-slot:loading>
                     <q-spinner class="on-left" />
-                    Verificando...
+                    {{ t('auth.verifying') }}
                   </template>
                 </q-btn>
               </q-form>
@@ -182,7 +185,7 @@
         </div>
 
         <div class="page-footer">
-          <p>© 2025 Dashboard Logs. Todos los derechos reservados.</p>
+          <p>{{ t('auth.footer') }}</p>
         </div>
       </div>
     </div>
@@ -191,10 +194,13 @@
 
 <script setup>
 import { changePassword } from 'src/services/acceptInviteService'
-// import authService from 'src/services/authService'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from 'src/components/LanguageSwitcher.vue'
+
+const { t } = useI18n()
 const router = useRouter()
 const $q = useQuasar()
 
@@ -245,7 +251,7 @@ const submit = async () => {
   if (!formularioValidado.value) {
     $q.notify({
       type: 'warning',
-      message: 'Por favor completa todos los requisitos de seguridad',
+      message: t('auth.fillSecurityRequirements'),
       position: 'top',
     })
     return
@@ -260,12 +266,11 @@ const submit = async () => {
       newPassword: changePasswordValues.value.password,
     }
 
-    // // Aceptar invitación
     const response = await changePassword(payload)
 
     // Verificar respuesta exitosa
     if (!response.ok || !response.data) {
-      throw new Error(response.message || 'Error al cambiar la contraseña, intente nuevamente')
+      throw new Error(response.message || t('auth.changePasswordError'))
     }
 
     // Mostrar mensaje de éxito
@@ -273,7 +278,7 @@ const submit = async () => {
 
     $q.notify({
       type: 'positive',
-      message: '✅ Usuario activado exitosamente',
+      message: t('auth.userActivated'),
       position: 'top',
       timeout: 3000,
     })
@@ -292,7 +297,7 @@ const submit = async () => {
 
     // Mostrar error específico
     const errorMessage =
-      error.response?.data?.message || error.message || 'Invitación inválida o caducada'
+      error.response?.data?.message || error.message || t('auth.invalidInvitation')
 
     mensajeExito.value = ''
 

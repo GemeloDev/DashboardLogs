@@ -442,6 +442,21 @@
     <q-page-container class="app-page-container">
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
         <div class="page-view-shell">
+          <q-banner
+            v-if="dashboardErrors.length && isClientFlow"
+            class="dashboard-errors-banner text-white q-mx-md q-mt-md"
+            rounded
+            dense
+          >
+            <template #avatar>
+              <q-icon name="warning" color="orange" />
+            </template>
+            <div class="text-weight-bold">Algunos datos del dashboard no pudieron cargarse:</div>
+            <ul class="q-my-none q-pl-md">
+              <li v-for="err in dashboardErrors" :key="err">{{ err }}</li>
+            </ul>
+          </q-banner>
+
           <router-view />
 
           <EscritorioConsolaSimple ref="consolaRef" />
@@ -493,6 +508,7 @@ import { CatalogService } from 'src/services/catalogService'
 import { useDashboardData } from 'src/services/useDashboardData'
 import ChartDrivenFilters from 'src/components/blocks/ChartDrivenFilters.vue'
 import { useDashboardSharedStore } from 'src/stores/dashboardShared.store'
+import { useConsoleFiltersStore } from 'src/stores/consoleFilters.store'
 import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
@@ -506,6 +522,8 @@ const detalleModal = ref(null)
 const showSessionQR = ref(false)
 const showDinamicFilters = ref(false)
 const consolaRef = ref(null)
+
+const consoleStore = useConsoleFiltersStore()
 
 const apiKeysPorExpirar = ref([])
 const dashboardStore = useDashboardSharedStore()
@@ -585,6 +603,11 @@ const {
   httpData,
   geoData,
   devicesData,
+  statsError,
+  seriesError,
+  httpError,
+  geoError,
+  devicesError,
   hasFetchedOnce: dashboardHasFetchedOnce,
   fetchAll,
   subscribeSystem,
@@ -600,6 +623,10 @@ let dashboardRecoveryInFlight = false
 let removeNativeAppStateListener = null
 const dashboardReady = ref(false)
 
+const dashboardErrors = computed(() =>
+  [statsError.value, seriesError.value, httpError.value, geoError.value, devicesError.value].filter(Boolean),
+)
+
 provide('dashboardLoading', dashboardLoading)
 provide('dashboardRefreshing', dashboardRefreshing)
 provide('dashboardHasFetchedOnce', dashboardHasFetchedOnce)
@@ -609,6 +636,11 @@ provide('dashboardSeriesData', seriesData)
 provide('dashboardHttpData', httpData)
 provide('dashboardGeoData', geoData)
 provide('dashboardDevicesData', devicesData)
+provide('dashboardStatsError', statsError)
+provide('dashboardSeriesError', seriesError)
+provide('dashboardHttpError', httpError)
+provide('dashboardGeoError', geoError)
+provide('dashboardDevicesError', devicesError)
 
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
@@ -963,6 +995,7 @@ watch(
 )
 
 async function handleDashboardRealtimeRefresh() {
+  if (consoleStore.consoleOpen) return
   await Promise.all([cargarEventosDelSistema(), refreshSystemsCatalog()])
   dashboardStore.announceRealtimeRefresh()
   console.log('[Dashboard] Auto-refresh completado desde WebSocket')
@@ -975,6 +1008,7 @@ function subscribeDashboardSystem(sys = selectedSystem.value) {
 }
 
 async function recoverDashboardConnection(reason = 'focus', options = {}) {
+  if (consoleStore.consoleOpen) return
   if (!isClientFlow.value || !filtros.value.system || dashboardRecoveryInFlight) return
 
   const now = Date.now()
@@ -1130,6 +1164,7 @@ watch(
   () => {
     if (!dashboardReady.value) return
     if (!filtros.value.system) return
+    if (dashboardRecoveryInFlight) return
     fetchAll(filtros.value)
   },
   { immediate: true },
@@ -1141,6 +1176,16 @@ watch(isClientFlow, (isClient) => {
     unsubscribeSystem()
   }
 })
+
+// Refrescar dashboard cuando se cierra la consola y vuelve a estar visible
+watch(
+  () => consoleStore.consoleOpen,
+  (isOpen, wasOpen) => {
+    if (wasOpen && !isOpen) {
+      recoverDashboardConnection('console-closed')
+    }
+  },
+)
 
 onBeforeUnmount(() => {
   window.removeEventListener('focus', handleWindowFocusRecovery)
@@ -1304,41 +1349,7 @@ onMounted(async () => {
   vertical-align: middle;
 }
 
-.toolbar-icon-btn {
-  color: rgba(255, 255, 255, 0.76);
-  border-radius: 12px;
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.toolbar-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 1px rgba(233, 113, 50, 0.12);
-}
-
-.toolbar-icon-btn--success {
-  color: #86efac;
-}
-
-.toolbar-icon-btn--purple {
-  color: #c084fc;
-}
-
-.toolbar-utility-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.toolbar-icon-btn--utility {
-  min-width: 34px;
-  min-height: 34px;
-}
+/* .toolbar-icon-btn* y .glass-menu* se encuentran en src/css/app.scss */
 
 /* USER + SYSTEM */
 .system-dropdown,
@@ -1422,13 +1433,6 @@ onMounted(async () => {
   font-weight: 800;
 }
 
-.glass-tooltip {
-  background: #160b07 !important;
-  color: white !important;
-  border: 1px solid rgba(233, 113, 50, 0.16);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
-}
-
 .filters-dialog-wrap {
   max-width: min(2000px, 99vw);
   max-height: calc(100vh - 80px);
@@ -1436,7 +1440,7 @@ onMounted(async () => {
 }
 
 /* MENUS */
-.glass-menu,
+/* .glass-menu, .glass-menu-item, .menu-header-label y .menu-separator se encuentran en src/css/app.scss */
 .system-dropdown-menu,
 .user-dropdown-menu,
 .q-menu {
@@ -1453,36 +1457,6 @@ onMounted(async () => {
 .system-dropdown-menu {
   min-width: min(330px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
-}
-
-.menu-header-label {
-  color: rgba(255, 255, 255, 0.76) !important;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.menu-separator {
-  background: rgba(255, 255, 255, 0.08) !important;
-}
-
-.glass-menu-item {
-  color: white;
-  border-radius: 12px;
-  margin: 4px 8px;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-  border: 1px solid transparent;
-}
-
-.glass-menu-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(233, 113, 50, 0.1);
-}
-
-.glass-menu-item.no-hover:hover {
-  background: transparent;
-  border-color: transparent;
 }
 
 /* DRAWER */
@@ -1682,6 +1656,18 @@ onMounted(async () => {
   border-top: 1px solid rgba(233, 113, 50, 0.12);
   display: flex;
   justify-content: flex-end;
+}
+
+/* Alertas de errores del dashboard */
+.dashboard-errors-banner {
+  background: rgba(10, 14, 26, 0.96);
+  border: 1px solid rgba(233, 113, 50, 0.2);
+  border-radius: 12px;
+  color: #fff;
+
+  ul li {
+    color: rgba(255, 255, 255, 0.8);
+  }
 }
 
 /* Animaciones */

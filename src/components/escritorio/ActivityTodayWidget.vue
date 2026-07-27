@@ -66,7 +66,7 @@
       </div>
 
       <!-- Feed de logs recientes -->
-      <div v-if="filteredRecentLogs.length" class="today-feed">
+      <div v-if="filteredRecentLogs.length" class="today-feed" :class="{ 'today-feed--popup': popupMode }">
         <div class="today-feed__title q-mb-sm text-grey-5 text-caption">{{ t('dashboard.recentLogs') }}</div>
         <div
           v-for="log in filteredRecentLogs"
@@ -136,7 +136,7 @@ import { DASHBOARD_SECTION_IDS } from 'src/constants/dashboardSections'
 import { useI18n } from 'vue-i18n'
 const { t, locale } = useI18n()
 
-defineProps({
+const props = defineProps({
   popupMode: {
     type: Boolean,
     default: false,
@@ -187,13 +187,15 @@ async function fetchToday(showSpinner = true) {
     const from = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
     const to = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
+    const pageSize = props.popupMode ? 1000 : 8
+
     const response = await axiosInstance.get(LOGS.EVENTS_RAW, {
       params: {
         system: system.value,
         fromDate: from,
         toDate: to,
         page: 0,
-        size: 8,
+        size: pageSize,
         sortBy: 'eventTime',
         sortDir: 'DESC',
       },
@@ -208,8 +210,8 @@ async function fetchToday(showSpinner = true) {
     failures.value = allItems.filter((l) => l.outcome === 'FAILURE' || l.status === 'ERROR').length
     successes.value = allItems.filter((l) => l.outcome === 'SUCCESS' || l.status === 'OK').length
 
-    // Para el error rate real pedimos el total con más items
-    if (data.totalElements > 0) {
+    // En modo popup ya tenemos todos los items; en modo compacto pedimos el total real.
+    if (!props.popupMode && data.totalElements > 0) {
       await fetchKpis(from, to)
     }
   } catch (e) {
@@ -493,6 +495,23 @@ defineExpose({ fetchToday })
 .today-feed {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 12px;
+
+  &--popup {
+    max-height: 60vh;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+    &::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+  }
 
   &__title {
     text-transform: uppercase;
