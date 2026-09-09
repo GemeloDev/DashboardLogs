@@ -304,7 +304,8 @@ function dotClass(status) {
     normalized === 'APPROVED' ||
     normalized === 'APROBADO' ||
     normalized === 'EXITO' ||
-    normalized === 'SUCCESS'
+    normalized === 'SUCCESS' ||
+    normalized === 'COMPLETED'
   )
     return 'today-feed__dot--green'
   return 'today-feed__dot--grey'
@@ -325,7 +326,8 @@ function statusColor(status) {
     normalized === 'APPROVED' ||
     normalized === 'APROBADO' ||
     normalized === 'EXITO' ||
-    normalized === 'SUCCESS'
+    normalized === 'SUCCESS' ||
+    normalized === 'COMPLETED'
   )
     return 'green-8'
   return 'grey-7'
@@ -334,7 +336,7 @@ function statusColor(status) {
 function outcomeColor(outcome) {
   const normalized = String(outcome || '').toUpperCase()
   if (normalized === 'FAILURE' || normalized === 'FALLIDO' || normalized === 'FALLO') return 'red-9'
-  if (normalized === 'SUCCESS' || normalized === 'EXITOSO' || normalized === 'EXITO') return 'green-9'
+  if (normalized === 'SUCCESS' || normalized === 'EXITOSO' || normalized === 'EXITO' || normalized === 'COMPLETED') return 'green-9'
   return 'grey-7'
 }
 

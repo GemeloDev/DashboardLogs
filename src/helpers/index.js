@@ -10,14 +10,16 @@ const formatearFecha = (fecha) => {
   }
 }
 
-const timeAgoIntl = (dateString) => {
-  if (!dateString) return 'Nunca'
+const timeAgoIntl = (dateString, locale = 'es', emptyLabel = 'Nunca') => {
+  if (!dateString) return emptyLabel
 
   const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return emptyLabel
+
   const now = new Date()
   const diffInSeconds = (date - now) / 1000
 
-  const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' })
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
 
   // Definir cortes
   const cutoffs = [

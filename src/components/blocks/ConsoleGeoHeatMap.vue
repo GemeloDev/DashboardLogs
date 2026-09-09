@@ -257,32 +257,7 @@ async function initMap() {
 
   map = new maplibregl.Map({
     container: mapEl.value,
-    style: {
-      version: 8,
-      sources: {
-        'raster-tiles': {
-          type: 'raster',
-          tiles: [
-            'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-          ],
-          tileSize: 256,
-          minzoom: 0,
-          maxzoom: 19,
-          attribution: '© OpenStreetMap contributors',
-        },
-      },
-      layers: [
-        {
-          id: 'simple-tiles',
-          type: 'raster',
-          source: 'raster-tiles',
-        },
-      ],
-      id: 'blank',
-    }, // ✅ mismo mapa base del demo
+    style: 'https://tiles.openfreemap.org/styles/dark',
     center: [Number(lng), Number(lat)],
     zoom: startZoom,
     maxZoom: 18,

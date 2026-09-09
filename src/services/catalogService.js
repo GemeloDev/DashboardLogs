@@ -11,29 +11,22 @@ export class CatalogService {
         axiosInstance.get(CATALOGS.HEALT),
       ])
 
-      // Debug temporal
-      // console.log('[CatalogService] catalog status:', catalogResponse.status)
-      // console.log('[CatalogService] health status:', healthResponse.status)
-      // if (healthResponse.status === 'fulfilled') {
-      //   console.log('[CatalogService] health data:', healthResponse.value.data)
-      // } else {
-      //   console.error('[CatalogService] health error:', healthResponse.reason?.response?.status, healthResponse.reason?.message)
-      // }
-
       const items = catalogResponse.status === 'fulfilled'
               ? (catalogResponse.value.data?.data || []) : []
 
       const healthList = healthResponse.status === 'fulfilled'
               ? (healthResponse.value.data?.data || []) : []
 
-      // Crear mapa de salud por sistema
+      // Crear mapa de salud por sistema (status normalizado para la UI)
       const healthMap = {}
       healthList.forEach(h => {
-        if (h?.system) healthMap[h.system] = h
+        if (h?.system) {
+          healthMap[h.system] = {
+            ...h,
+            status: this._normalizeStatus(h.status),
+          }
+        }
       })
-
-      console.log('[CatalogService] healthMap:', healthMap)
-      console.log(`[CatalogService] Catalogo cargado: ${items.length} sistemas.`)
 
       return {
         sistemas:       this._extractSistemas(items, healthMap),
@@ -47,8 +40,17 @@ export class CatalogService {
     }
   }
 
+  static _normalizeStatus(status) {
+    const s = String(status || '').toUpperCase()
+    if (s === 'CRITICAL' || s === 'ERROR' || s === 'FATAL') return 'CRIT'
+    if (s === 'WARN' || s === 'WARNING') return 'WARN'
+    if (s === 'HEALTHY' || s === 'OK') return 'HEALTHY'
+    if (s === 'INACTIVE') return 'INACTIVE'
+    return s || 'INACTIVE'
+  }
+
   static _extractSistemas(items, healthMap = {}) {
-    return items
+    const sistemas = items
       .map(item => item.name)
       .filter(Boolean)
       .map(name => ({
@@ -57,6 +59,17 @@ export class CatalogService {
         status:    healthMap[name]?.status    || 'INACTIVE',
         errorRate: healthMap[name]?.errorRate || 0,
       }))
+
+    if (sistemas.length) return sistemas
+
+    // Fallback temporal: si el catálogo de sistemas falla o regresa vacío,
+    // derivar la lista directamente desde el endpoint de systems-health.
+    return Object.entries(healthMap).map(([name, h]) => ({
+      value:     name,
+      label:     name,
+      status:    h.status || 'INACTIVE',
+      errorRate: h.errorRate || 0,
+    }))
   }
 
   static _extractNombresSimples(items) {

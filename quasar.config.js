@@ -50,13 +50,30 @@ export default defineConfig((ctx) => {
       // Aquí re-exponemos las variables para que estén disponibles
       // en el código del cliente vía process.env
       // ═══════════════════════════════════════════════════════════════
-      envFiles: ctx.dev ? ['.env.development', '.env.development.local'] : ['.env.production'],
+      envFiles: ctx.dev
+        ? ['.env.development', '.env.development.local']
+        : process.env.DEPLOY_TARGET === 'local'
+          ? ['.env.production', '.env.production.local']
+          : ['.env.production'],
 
       env: {
-        // En producción se usa el mismo backend que desarrollo (187.188.66.56:8040).
-        // En desarrollo se toman las variables del archivo .env correspondiente.
-        API_BASE_URL: ctx.prod ? 'http://187.188.66.56:8040/api' : process.env.API_BASE_URL,
-        WS_BASE_URL: ctx.prod ? 'ws://187.188.66.56:8040/ws' : process.env.WS_BASE_URL,
+        // Las URLs del backend deben estar hardcodeadas en el bloque env porque
+        // process.env no contiene aún los valores de los archivos .env cuando
+        // Quasar evalúa este objeto de configuración.
+        //
+        // Desarrollo: rutas relativas para pasar por el proxy del devServer.
+        // Producción AWS: DEPLOY_TARGET vacío o distinto de 'local'.
+        // Producción mismo servidor: DEPLOY_TARGET='local'.
+        API_BASE_URL: ctx.dev
+          ? '/api'
+          : process.env.DEPLOY_TARGET === 'local'
+            ? 'http://187.188.66.56:8040/api'
+            : 'https://api-logs.grupo-santoro.com.mx/api',
+        WS_BASE_URL: ctx.dev
+          ? '/ws'
+          : process.env.DEPLOY_TARGET === 'local'
+            ? 'ws://187.188.66.56:8040/ws'
+            : 'wss://api-logs.grupo-santoro.com.mx/ws',
         NODE_ENV: process.env.NODE_ENV,
         DEBUG_MODE: process.env.DEBUG_MODE,
         APP_NAME: process.env.APP_NAME,
@@ -81,14 +98,10 @@ export default defineConfig((ctx) => {
       // distDir
 
       extendViteConf(viteConf) {
-        // Asegurar que las variables de entorno se reemplacen en el bundle cliente.
+        // Variables de entorno centralizadas se exponen mediante el bloque `build.env`.
+        // Solo definir aquí las variables que no estén en ese bloque para evitar
+        // sobrescribir valores ya cargados desde los archivos .env.
         viteConf.define = viteConf.define || {}
-        viteConf.define['process.env.API_BASE_URL'] = JSON.stringify(
-          ctx.prod ? 'http://187.188.66.56:8040/api' : process.env.API_BASE_URL,
-        )
-        viteConf.define['process.env.WS_BASE_URL'] = JSON.stringify(
-          ctx.prod ? 'ws://187.188.66.56:8040/ws' : process.env.WS_BASE_URL,
-        )
         viteConf.define['process.env.NODE_ENV'] = JSON.stringify(process.env.NODE_ENV)
         viteConf.define['process.env.DEBUG_MODE'] = JSON.stringify(process.env.DEBUG_MODE)
         viteConf.define['process.env.APP_NAME'] = JSON.stringify(process.env.APP_NAME)
@@ -109,6 +122,37 @@ export default defineConfig((ctx) => {
           },
           { server: false },
         ],
+        // Plugin personalizado para proxy de WebSocket con reescritura del
+        // header Origin. El backend 187.188.66.56:8040 valida Origin y rechaza
+        // orígenes de desarrollo (https://localhost:XXXX). Reescribiendo Origin
+        // al valor del backend, el handshake WebSocket/STOMP se completa.
+        {
+          name: 'websocket-origin-proxy',
+          apply: 'serve',
+          async configureServer(server) {
+            const httpProxy = await import('http-proxy')
+            const proxy = httpProxy.default.createProxyServer({
+              target: 'http://187.188.66.56:8040',
+              changeOrigin: true,
+              ws: true,
+              secure: false,
+            })
+
+            proxy.on('error', (err, req) => {
+              console.warn('⚠️ WebSocket proxy error:', err.message, req.url)
+            })
+
+            proxy.on('proxyReqWs', (proxyReq) => {
+              proxyReq.setHeader('Origin', 'http://187.188.66.56:8040')
+            })
+
+            server.httpServer.on('upgrade', (req, socket, head) => {
+              if (req.url && req.url.startsWith('/ws')) {
+                proxy.ws(req, socket, head)
+              }
+            })
+          },
+        },
       ],
     },
 
@@ -144,18 +188,9 @@ export default defineConfig((ctx) => {
             console.error('❌ Proxy error:', err.message, req.url)
           },
         },
-        // 🚨 NUEVA REGLA PARA SOCKET.IO
-        '/ws': {
-          // target: 'ws://dashboard-api.grupo-santoro.com.mx', // Desplegado de QR
-          // target: 'ws://api-logs.grupo-santoro.com.mx', // Desplegado de TrustValue
-          target: 'ws://187.188.66.56:8040', // Apunta a servidor local (desarrollo)
-          ws: true, // 🚨 Habilitar soporte para WebSockets
-          changeOrigin: true,
-          secure: false, // Ignora problemas de SSL en el backend si los hubiera
-          onError: (err, req) => {
-            console.warn('⚠️ WebSocket proxy error:', err.message, req.url)
-          },
-        },
+        // Proxy WebSocket movido a un plugin Vite personalizado (ver vitePlugins)
+        // porque Vite no propaga correctamente onProxyReqWs para reescribir
+        // el header Origin que el backend de desarrollo rechaza.
       },
       https: (() => {
         const keyPath = 'certs/cpanel/clave.key'

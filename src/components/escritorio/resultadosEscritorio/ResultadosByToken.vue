@@ -147,8 +147,8 @@ const getGradientClass = (status) => {
     // Éxito / Correcto (Green / Positive)
     ALLOWED: 'gradient-green',
     APPROVED: 'gradient-green',
-    COMPLETED: 'green-7',
-    CONFIRMED: 'teal',
+    COMPLETED: 'gradient-green',
+    CONFIRMED: 'gradient-green',
     VALIDATED: 'gradient-green',
     SUCCESS: 'gradient-green',
 

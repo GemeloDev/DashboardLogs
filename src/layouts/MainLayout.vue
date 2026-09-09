@@ -137,7 +137,7 @@
           <q-btn
             flat
             dense
-            round
+          round
             icon="language"
             class="toolbar-icon-btn toolbar-icon-btn--utility"
           >

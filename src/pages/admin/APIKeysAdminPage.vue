@@ -57,7 +57,7 @@
             class="premium-input"
             :options="statusOptions"
             :label="t('santoroAdmin.statusFilterLabel')"
-          >
+          > 
             <template v-slot:prepend>
               <q-icon name="filter_alt" class="input-icon" />
             </template>
@@ -122,9 +122,9 @@
             </q-td>
           </template>
 
-          <template v-slot:body-cell-lastUse="props">
+          <template v-slot:body-cell-lastUsedAt="props">
             <q-td :props="props">
-              {{ formatLastUse(props.row.lastUse) }}
+              {{ formatLastUse(props.row.lastUsedAt) }}
             </q-td>
           </template>
 
@@ -165,6 +165,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
 import { DashboardSantoro } from 'src/services/dashboardSantoro'
+import { timeAgoIntl } from 'src/helpers'
 
 const $q = useQuasar()
 const { t, locale } = useI18n()
@@ -218,9 +219,9 @@ const columns = computed(() => [
     sortable: true,
   },
   {
-    name: 'lastUse',
+    name: 'lastUsedAt',
     label: t('santoroAdmin.lastUseColumn'),
-    field: 'lastUse',
+    field: 'lastUsedAt',
     align: 'left',
     sortable: true,
   },
@@ -306,18 +307,7 @@ const formatDate = (date) => {
   }).format(new Date(date))
 }
 
-const formatLastUse = (value) => {
-  if (!value) return t('santoroAdmin.neverUsed')
-  const parsedDate = new Date(value)
-  if (Number.isNaN(parsedDate.getTime())) return value
-  return new Intl.DateTimeFormat(locale.value, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(parsedDate)
-}
+const formatLastUse = (value) => timeAgoIntl(value, locale.value, t('santoroAdmin.neverUsed'))
 
 const getStatusChipClass = (status) => {
   if (status === 'active') return 'chip-active'
@@ -343,7 +333,7 @@ const loadAPIKeys = async () => {
     return
   }
 
-  rows.value = response.data.content
+  rows.value = response.data.items || response.data.content || []
   $q.notify({
     type: 'positive',
     position: 'top',

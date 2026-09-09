@@ -31,39 +31,9 @@ const mapModeLabel = computed(() =>
 const mapModeIcon = computed(() => (mode.value === 'points' ? 'place' : 'local_fire_department'))
 
 // ---------------- ESTILOS BASE ----------------
-const DARK_TILES = {
-  version: 8,
-  sources: {
-    'raster-tiles': {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      ],
-      tileSize: 256,
-      minzoom: 0,
-      maxzoom: 19,
-      attribution: '© OpenStreetMap contributors',
-    },
-  },
-  layers: [{ id: 'raster-tiles', type: 'raster', source: 'raster-tiles' }],
-}
-
 const MAP_STYLES = {
-  points: {
-    version: 8,
-    sources: {
-      osm: {
-        type: 'raster',
-        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-        tileSize: 256,
-      },
-    },
-    layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
-  },
-  heat: DARK_TILES,
+  points: 'https://tiles.openfreemap.org/styles/liberty',
+  heat: 'https://tiles.openfreemap.org/styles/dark',
 }
 
 // ---------------- GEOJSON ----------------

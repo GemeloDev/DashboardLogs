@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { onSocketConnect, subscribeToNewLogs } from './socketService'
 import DashboardService from 'src/services/dashboardService'
 import authService from './authService'
+import { useConsoleFiltersStore } from 'src/stores/consoleFilters.store'
 
 // ─── Datos de los 5 endpoints ────────────────────────────────────────────────
 const statsData   = ref(null)
@@ -90,6 +91,9 @@ async function fetchAll(filters = {}, options = {}) {
   const isIncrementalRefresh = preserveExistingData && hasCachedDashboardData()
 
   if (!sys) return
+
+  const consoleStore = useConsoleFiltersStore()
+  if (consoleStore.consoleOpen) return
 
   fetchAbortController?.abort()
   fetchAbortController = new AbortController()
