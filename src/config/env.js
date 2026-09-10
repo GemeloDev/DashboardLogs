@@ -30,8 +30,14 @@ export const isProduction = NODE_ENV === 'production'
 export const isDebug = process.env.DEBUG_MODE === 'true' || isDevelopment
 
 // ─── URLs del Backend ─────────────────────────────────────────────
-export const API_BASE_URL = process.env.API_BASE_URL || '/api'
-export const WS_BASE_URL = process.env.WS_BASE_URL || getDefaultWebSocketURL()
+// URL base sanitizada: elimina barras diagonales al final para evitar //.
+const rawApiUrl = (process.env.API_BASE_URL || 'http://187.188.66.56:8040').replace(/\/+$/, '')
+const rawWsUrl = (process.env.WS_BASE_URL || 'ws://187.188.66.56:8040/ws').replace(/\/+$/, '')
+
+// En desarrollo local usamos el proxy de Vite para evitar contenido mixto.
+// En producción u otros ambientes se usa la URL absoluta del backend.
+export const API_BASE_URL = isDevelopment ? '/api' : rawApiUrl
+export const WS_BASE_URL = isDevelopment ? 'ws://187.188.66.56:8040/ws' : rawWsUrl
 
 // ─── Configuración de la Aplicación ──────────────────────────────
 export const APP_NAME = process.env.APP_NAME || 'Dashboard Logs'
@@ -40,28 +46,6 @@ export const API_TIMEOUT = parseInt(process.env.API_TIMEOUT || '30000', 10)
 
 // ─── WebSocket ────────────────────────────────────────────────────
 export const SOCKET_TOPIC = process.env.SOCKET_TOPIC || '/topic/qr-login'
-
-/**
- * Genera la URL de WebSocket basándose en el API_BASE_URL
- * Si no se proporciona WS_BASE_URL, se calcula automáticamente
- */
-function getDefaultWebSocketURL() {
-  // Si API_BASE_URL es relativa, usar el host actual
-  if (API_BASE_URL.startsWith('/')) {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    return `${protocol}//${window.location.host}/ws`
-  }
-
-  try {
-    // Si API_BASE_URL es absoluta, extraer el host y construir WS URL
-    const apiUrl = new URL(API_BASE_URL)
-    const wsProtocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:'
-    return `${wsProtocol}//${apiUrl.host}/ws`
-  } catch {
-    // Fallback si la URL no es válida
-    return 'ws://localhost:8080/ws'
-  }
-}
 
 /**
  * Objeto de configuración global

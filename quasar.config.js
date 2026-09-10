@@ -2,7 +2,6 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file
 
 import { defineConfig } from '#q-app/wrappers'
-import fs from 'fs'
 
 export default defineConfig((ctx) => {
   return {
@@ -116,48 +115,26 @@ export default defineConfig((ctx) => {
     devServer: {
       // https: true,
       open: true, // opens browser window automatically
+      // Proxy transparente para evitar bloqueos de Contenido Mixto en desarrollo local.
+      // Las peticiones locales se reenvían al backend HTTP sin alterar los paths.
       proxy: {
         '/api': {
-          // target: 'https://dashboard-api.grupo-santoro.com.mx/',
-          // target: 'https://api-logs.grupo-santoro.com.mx/',
           target: 'http://187.188.66.56:8040',
           changeOrigin: true,
-          secure: false,
-          logLevel: 'debug',
-          onProxyReq: (proxyReq, req) => {
-            console.log(
-              '🔄 Proxy request:',
-              req.method,
-              req.url,
-              '-> ',
-              proxyReq.host + proxyReq.path,
-            )
-          },
-          onProxyRes: (proxyRes, req) => {
-            console.log('✅ Proxy response:', proxyRes.statusCode, req.url)
-          },
-          onError: (err, req) => {
-            console.error('❌ Proxy error:', err.message, req.url)
-          },
+          timeout: 60000,
+          proxyTimeout: 60000,
         },
-        // 🚨 NUEVA REGLA PARA SOCKET.IO
-        '/ws': {
-          // target: 'ws://dashboard-api.grupo-santoro.com.mx', // Desplegado de QR
-          // target: 'ws://api-logs.grupo-santoro.com.mx', // Desplegado de TrustValue
-          target: 'ws://187.188.66.56:8040', // Apunta a servidor local (desarrollo)
-          ws: true, // 🚨 Habilitar soporte para WebSockets
+        '/auth': {
+          target: 'http://187.188.66.56:8040',
           changeOrigin: true,
-          secure: false, // Ignora problemas de SSL en el backend si los hubiera
-          onError: (err, req) => {
-            console.warn('⚠️ WebSocket proxy error:', err.message, req.url)
-          },
+        },
+        '/ws': {
+          target: 'ws://187.188.66.56:8040',
+          ws: true,
+          changeOrigin: true,
         },
       },
-      https: {
-        key: fs.readFileSync('certs/cpanel/clave.key'),
-        cert: fs.readFileSync('certs/cpanel/cert.crt'),
-        ca: fs.readFileSync('certs/cpanel/csb.cabundle'),
-      },
+      https: false, // Forzar HTTP plano en desarrollo local
       host: '0.0.0.0', // Acepta conexiones desde cualquier IP (PC y celular)
       port: 9000,
       allowedHosts: 'all', // Permite acceso con cualquier hostname

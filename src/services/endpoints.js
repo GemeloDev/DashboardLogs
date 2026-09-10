@@ -66,7 +66,7 @@ export const AUTH = {
   LOGOUT: `${BASE_URL}/auth/logout`,
   REGISTER: `${BASE_URL}/auth/register`,
   VERIFY_TOKEN: `${BASE_URL}/auth/verify`,
-  REFRESH_TOKEN: `${BASE_URL}/auth/refresh`,
+  REFRESH_TOKEN: `${BASE_URL}/auth/refresh-token`,
   FORGOT_PASSWORD: `${BASE_URL}/auth/forgot-password`,
   RESET_PASSWORD: `${BASE_URL}/auth/reset-password`,
   CHANGE_PASSWORD: `${BASE_URL}/auth/change-password`,
@@ -112,7 +112,7 @@ export const DEVICES = {
 
 export const CATALOGS = {
   API_KEYS: `${BASE_URL}/catalogs/api-keys`,
-  HEALT: `${BASE_URL}/logs/dashboard/systems-health`,
+  SYSTEMS_HEALTH: `${BASE_URL}/catalogs/systems-health`,
 }
 
 // ─── Panel Santoro (admin interno) ───────────────────────────────────────────
@@ -135,6 +135,14 @@ export const EVA = {
   CATALOGS_SYSTEMS: `${BASE_URL}/ai/catalogs/systems`,
   alertExplain: (id) => `${BASE_URL}/ai/alerts/${id}/explain/operator`,
   ticketDraft: (id) => `${BASE_URL}/ai/alerts/${id}/ticket/draft`,
+}
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+export const ANALYTICS = {
+  EXECUTIVE_SUMMARY: `${BASE_URL}/analytics/executive-summary`,
+  TOP_FRICTIONAL_EVENTS: `${BASE_URL}/analytics/top-frictional-events`,
+  EXPLAIN_ERROR: `${BASE_URL}/ai/explain-error`,
 }
 
 // ─── WebSocket ────────────────────────────────────────────────────────────────

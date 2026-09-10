@@ -4,10 +4,16 @@ const DASHBOARD_SYNC_CHANNEL = 'dashboard-multipanel-sync-v1'
 const DASHBOARD_POSTMESSAGE_TYPE = 'dashboard-sync-payload'
 const DASHBOARD_POSTMESSAGE_REQUEST = 'dashboard-sync-request'
 
+const getTodayRange = () => {
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return { from: today, to: today, option: 'today' }
+}
+
 const EMPTY_FILTERS = () => ({
   system: '',
   busqueda: '',
-  rangoFechas: { from: '', to: '' },
+  rangoFechas: getTodayRange(),
   visibleFields: [],
   values: {},
 })
@@ -44,19 +50,34 @@ const getPopupRegistry = () => {
   return window.__dashboardPopupRegistry
 }
 
-const normalizeFilters = (filters = {}) => ({
-  system: String(filters?.system || '').trim(),
-  busqueda: String(filters?.busqueda || ''),
-  rangoFechas: {
-    from: String(filters?.rangoFechas?.from || ''),
-    to: String(filters?.rangoFechas?.to || ''),
-  },
-  visibleFields: Array.isArray(filters?.visibleFields) ? [...filters.visibleFields] : [],
-  values:
-    filters?.values && typeof filters.values === 'object' && !Array.isArray(filters.values)
-      ? { ...filters.values }
-      : {},
-})
+const normalizeFilters = (filters = {}) => {
+  const from = String(filters?.rangoFechas?.from || '')
+  const to = String(filters?.rangoFechas?.to || '')
+  const hasExplicitFullHistory =
+    filters?.rangoFechas?.range === 'ALL' || filters?.rangoFechas?.option === 'all'
+  const defaultRange = getTodayRange()
+  const option = String(
+    filters?.rangoFechas?.option || (from || to ? 'custom' : defaultRange.option),
+  )
+  const fullHistory =
+    hasExplicitFullHistory || option === 'all'
+
+  return {
+    system: String(filters?.system || '').trim(),
+    busqueda: String(filters?.busqueda || ''),
+    rangoFechas: {
+      from: fullHistory ? '' : from || defaultRange.from,
+      to: fullHistory ? '' : to || defaultRange.to,
+      option: fullHistory ? 'all' : option,
+      range: fullHistory ? 'ALL' : undefined,
+    },
+    visibleFields: Array.isArray(filters?.visibleFields) ? [...filters.visibleFields] : [],
+    values:
+      filters?.values && typeof filters.values === 'object' && !Array.isArray(filters.values)
+        ? { ...filters.values }
+        : {},
+  }
+}
 
 const toStructuredCloneSafe = (value, fallback) => {
   try {

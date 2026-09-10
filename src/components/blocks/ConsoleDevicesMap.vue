@@ -4,6 +4,12 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import Spiderfy from '@nazka/map-gl-js-spiderfy'
 import { useI18n } from 'vue-i18n'
+import {
+  consolidateMapDevices,
+  getEventRawDate,
+  getMinutesDiff,
+  getMapEventTimestamp,
+} from 'src/composables/useMapData'
 
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
 
@@ -14,18 +20,21 @@ const { t } = useI18n()
 
 const props = defineProps({
   devices: { type: Array, default: () => [] },
+  logs: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['select-device'])
 
 const mapEl = ref(null)
 const tooltip = ref({ visible: false, x: 0, y: 0, device: null })
+const statusClock = ref(Date.now())
 let map = null
 let spiderfy = null
 let resizeObserver = null
 let loaded = false
 let clusterCountMarkers = new Map()
 let pendingSourceUpdateFrame = null
+let statusClockInterval = null
 
 const DEVICE_SOURCE_ID = 'devices-src'
 const CLUSTER_LAYER_ID = 'devices-clusters'
@@ -47,18 +56,188 @@ const BASE_STYLE = {
   layers: [{ id: 'raster-tiles', type: 'raster', source: 'raster-tiles' }],
 }
 
+const SEVERITY = {
+  STABLE: 'STABLE',
+  WARNING: 'WARNING',
+  CRITICAL: 'CRITICAL',
+  LOGIN_ATTEMPT: 'LOGIN_ATTEMPT',
+}
+
+const SEVERITY_COLORS = {
+  [SEVERITY.STABLE]: '#22c55e',
+  [SEVERITY.WARNING]: '#F97316',
+  [SEVERITY.CRITICAL]: '#ef4444',
+  [SEVERITY.LOGIN_ATTEMPT]: '#A855F7',
+}
+
+const DEVICE_CATEGORY = {
+  OPERATING: 'OPERATING',
+  INCIDENTS: 'INCIDENTS',
+  INACTIVE: 'INACTIVE',
+  LOGIN_ATTEMPT: 'LOGIN_ATTEMPT',
+}
+
+const DEVICE_STATE = {
+  [DEVICE_CATEGORY.OPERATING]: {
+    status: 'OPERANDO_NORMAL',
+    severity: SEVERITY.STABLE,
+    color: SEVERITY_COLORS[SEVERITY.STABLE],
+    label: 'Operando Normal',
+    pulsing: true,
+  },
+  [DEVICE_CATEGORY.INCIDENTS]: {
+    status: 'INCIDENT',
+    severity: SEVERITY.CRITICAL,
+    color: SEVERITY_COLORS[SEVERITY.CRITICAL],
+    label: 'Con Incidentes',
+    pulsing: true,
+  },
+  [DEVICE_CATEGORY.INACTIVE]: {
+    status: 'INACTIVE',
+    severity: SEVERITY.WARNING,
+    color: SEVERITY_COLORS[SEVERITY.WARNING],
+    label: 'Inactivo / Sin Red',
+    pulsing: false,
+  },
+  [DEVICE_CATEGORY.LOGIN_ATTEMPT]: {
+    status: 'LOGIN_ATTEMPT',
+    severity: SEVERITY.LOGIN_ATTEMPT,
+    color: SEVERITY_COLORS[SEVERITY.LOGIN_ATTEMPT],
+    label: 'Intento de Sesión',
+  },
+}
+
+function isFailedLog(log = {}) {
+  const outcome = String(log?.outcome || '').toUpperCase()
+  const status = String(log?.status || '').toUpperCase()
+  const level = String(log?.level || '').toUpperCase()
+  const severity = String(log?.severity || '').toUpperCase()
+  return (
+    log?.isError === true ||
+    outcome === 'FAILURE' ||
+    status === 'REJECTED' ||
+    status === 'ERROR' ||
+    level === 'ERROR' ||
+    level === 'CRITICAL' ||
+    severity === 'ERROR' ||
+    severity === 'CRITICAL'
+  )
+}
+
+function getLogTimestamp(log = {}) {
+  return getMapEventTimestamp(log)
+}
+
+function getUserLatestLog(device = {}) {
+  const events = Array.isArray(device?.events) ? device.events : device?.recentLogs || []
+  return events.reduce((latest, event) => {
+    if (!latest) return event
+    return getLogTimestamp(event) > getLogTimestamp(latest) ? event : latest
+  }, null)
+}
+
+function calculateDeviceStatus(device = {}) {
+  const events = Array.isArray(device?.events) ? device.events : device?.recentLogs || []
+  const lastLog = getUserLatestLog(device)
+  const lastTime = getEventRawDate(lastLog) || device?.lastEventTime || device?.lastSeen
+  const minutesAgo = getMinutesDiff(lastTime, statusClock.value)
+
+  console.log(
+    `[MAPA DEBUG] Dispositivo: ${device?.actorName || device?.name || device?.deviceId || device?.id || '-'} | Último Log: ${lastTime || '-'} | Hace: ${minutesAgo} mins`,
+  )
+
+  if (minutesAgo > 15) {
+    return { ...DEVICE_STATE[DEVICE_CATEGORY.INACTIVE], category: DEVICE_CATEGORY.INACTIVE, lastLog }
+  }
+
+  const hasRecentError = events.some(
+    (event) =>
+      getMinutesDiff(getEventRawDate(event), statusClock.value) <= 15 && isFailedLog(event),
+  )
+  if (hasRecentError) {
+    return { ...DEVICE_STATE[DEVICE_CATEGORY.INCIDENTS], category: DEVICE_CATEGORY.INCIDENTS, lastLog }
+  }
+
+  return {
+    ...DEVICE_STATE[DEVICE_CATEGORY.OPERATING],
+    status: 'OPERANDO_NORMAL',
+    label: 'Operando Normal',
+    category: DEVICE_CATEGORY.OPERATING,
+    lastLog,
+  }
+}
+
+function getDeviceSeverity(device = {}) {
+  return device?.realtimeState?.severity || calculateDeviceStatus(device).severity
+}
+
+const realtimeDevices = computed(() =>
+  consolidateMapDevices(props.devices, props.logs).map((device) => {
+    const realtimeState = calculateDeviceStatus(device)
+    const latest = realtimeState.lastLog || {}
+    const latestLat = Number(latest?.lat ?? latest?.latitude ?? latest?.location?.latitude)
+    const latestLon = Number(
+      latest?.lon ?? latest?.lng ?? latest?.longitude ?? latest?.location?.longitude,
+    )
+
+    return {
+      ...device,
+      lat: Number.isFinite(latestLat) ? latestLat : device?.lat,
+      lon: Number.isFinite(latestLon) ? latestLon : device?.lon,
+      lastSeen:
+        latest?.eventTime ||
+        latest?.fechaHoraDia ||
+        latest?.createdAt ||
+        latest?.timestamp ||
+        device?.lastSeen ||
+        '',
+      realtimeState,
+    }
+  }),
+)
+
 const validDevices = computed(() =>
-  (props.devices || []).filter((d) => {
+  realtimeDevices.value.filter((d) => {
     const lat = Number(d?.lat)
     const lon = Number(d?.lon)
     return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
   }),
 )
 
+const DEVICE_FILTER = {
+  ALL: 'all',
+  INCIDENTS: 'incidents',
+  NORMAL: 'normal',
+  INACTIVE: 'inactive',
+}
+
+const activeFilter = ref(DEVICE_FILTER.ALL)
+
+const filteredDevices = computed(() => {
+  if (activeFilter.value === DEVICE_FILTER.ALL) return validDevices.value
+
+  return validDevices.value.filter((device) => {
+    const category = device.realtimeState.category
+
+    switch (activeFilter.value) {
+      case DEVICE_FILTER.INCIDENTS:
+        return category === DEVICE_CATEGORY.INCIDENTS
+      case DEVICE_FILTER.NORMAL:
+        return category === DEVICE_CATEGORY.OPERATING
+      case DEVICE_FILTER.INACTIVE:
+        return category === DEVICE_CATEGORY.INACTIVE
+      default:
+        return true
+    }
+  })
+})
+
 const devicesGeojson = computed(() => ({
   type: 'FeatureCollection',
-  features: validDevices.value.map((device, index) => {
-    const status = String(device?.status || '').toUpperCase() === 'ONLINE' ? 'ONLINE' : 'OFFLINE'
+  features: filteredDevices.value.map((device, index) => {
+    const realtimeState = device.realtimeState
+    const status = realtimeState.status
+    const severity = realtimeState.severity
     return {
       type: 'Feature',
       id: device?.deviceId || `${index}-${device?.lat}-${device?.lon}`,
@@ -68,9 +247,18 @@ const devicesGeojson = computed(() => ({
         hostname: device?.hostname || '',
         system: device?.system || '',
         status,
+        severity,
+        category: realtimeState.category,
+        actorName: device?.actorName || '',
+        statusLabel: realtimeState.label,
+        pulsing: realtimeState.pulsing === true,
+        hasError: realtimeState.category === DEVICE_CATEGORY.INCIDENTS,
+        errorCount: Number(device?.errorCount || 0),
+        errorRate: Number(device?.errorRate || 0),
         ip: device?.ip || '',
         locationName: device?.locationName || '',
         lastSeen: device?.lastSeen || '',
+        isLoginAttempt: false,
         lat: Number(device.lat),
         lon: Number(device.lon),
       },
@@ -84,6 +272,10 @@ function emitDeviceSelection(properties = {}) {
     hostname: properties.hostname || '',
     system: properties.system || '',
     status: properties.status || '',
+    severity: properties.severity || SEVERITY.STABLE,
+    hasError: properties.hasError === true || properties.hasError === 'true',
+    errorCount: Number(properties.errorCount || 0),
+    errorRate: Number(properties.errorRate || 0),
     ip: properties.ip || '',
     locationName: properties.locationName || '',
     lastSeen: properties.lastSeen || '',
@@ -93,15 +285,32 @@ function emitDeviceSelection(properties = {}) {
 }
 
 function buildTooltipDevice(properties = {}) {
-  const isOnline = properties.status === 'ONLINE'
+  const severity = properties.severity || SEVERITY.STABLE
+  const color = SEVERITY_COLORS[severity]
+  const [statusLabel, severityLabel = ''] = String(properties.statusLabel || '').split('•')
   return {
-    color: isOnline ? '#22c55e' : '#ef4444',
+    color,
     deviceId: properties.deviceId || '-',
     ip: properties.ip || '-',
     lastSeen: properties.lastSeen ? new Date(properties.lastSeen).toLocaleString() : '-',
     locationName: properties.locationName || '',
-    name: properties.hostname || properties.deviceId || '-',
-    statusLabel: isOnline ? t('dashboard.devicesMapOnline') : t('dashboard.devicesMapOffline'),
+    name:
+      properties.actorName ||
+      (properties.isLoginAttempt === true || properties.isLoginAttempt === 'true'
+        ? `Dispositivo: ${String(properties.deviceId || '').replace(/^EE-/i, '').toLowerCase()}`
+        : properties.hostname || properties.deviceId || '-'),
+    statusLabel: statusLabel.trim(),
+    severityLabel: severityLabel.trim(),
+    severity,
+    isLoginAttempt: properties.isLoginAttempt === true || properties.isLoginAttempt === 'true',
+    latestLoginType: properties.latestLoginType || '',
+    latestLoginTime: properties.latestLoginTime
+      ? new Date(properties.latestLoginTime).toLocaleTimeString('es-MX', {
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      : '',
+    failedLoginCount: Number(properties.failedLoginCount || 0),
   }
 }
 
@@ -137,7 +346,12 @@ function closeActiveSpiderfy() {
   initSpiderfy()
 }
 
-function createCircleImage(fill, { size = 40, stroke = '#fff', ring = false } = {}) {
+
+
+function createCircleImage(
+  fill,
+  { size = 40, stroke = '#fff', ring = false, pulse = false, key = false } = {},
+) {
   const canvas = document.createElement('canvas')
   const scale = window.devicePixelRatio || 1
   canvas.width = size * scale
@@ -146,11 +360,20 @@ function createCircleImage(fill, { size = 40, stroke = '#fff', ring = false } = 
   ctx.scale(scale, scale)
 
   const center = size / 2
-  if (ring) {
+  if (pulse) {
+    ctx.beginPath()
+    ctx.arc(center, center, size * 0.42, 0, Math.PI * 2)
+    ctx.fillStyle = fill
+    ctx.globalAlpha = 0.22
+    ctx.fill()
+    ctx.globalAlpha = 1
+  }
+
+  if (ring || pulse) {
     ctx.beginPath()
     ctx.arc(center, center, size * 0.38, 0, Math.PI * 2)
     ctx.strokeStyle = fill
-    ctx.globalAlpha = 0.35
+    ctx.globalAlpha = pulse ? 0.55 : 0.35
     ctx.lineWidth = 3
     ctx.stroke()
     ctx.globalAlpha = 1
@@ -163,7 +386,23 @@ function createCircleImage(fill, { size = 40, stroke = '#fff', ring = false } = 
   ctx.lineWidth = 3
   ctx.strokeStyle = stroke
   ctx.stroke()
- 
+
+  if (key) {
+    ctx.strokeStyle = '#fff'
+    ctx.fillStyle = '#fff'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(center - 3, center - 2, 3, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(center, center)
+    ctx.lineTo(center + 6, center + 6)
+    ctx.lineTo(center + 8, center + 4)
+    ctx.moveTo(center + 4, center + 4)
+    ctx.lineTo(center + 6, center + 2)
+    ctx.stroke()
+  }
+
   return {
     width: canvas.width,
     height: canvas.height,
@@ -202,10 +441,24 @@ function ensureImages() {
   if (!map) return
 
   const images = {
-    'device-online': createCircleImage('#22c55e', { ring: true }),
-    'device-offline': createCircleImage('#ef4444'),
-    'device-cluster-online': createClusterImage(['#22c55e', '#16a34a']),
-    'device-cluster-offline': createClusterImage(['#ef4444', '#b91c1c']),
+    'device-stable': createCircleImage(SEVERITY_COLORS[SEVERITY.STABLE], {
+      ring: true,
+      pulse: true,
+    }),
+    'device-warning': createCircleImage(SEVERITY_COLORS[SEVERITY.WARNING], { ring: true }),
+    'device-critical': createCircleImage(SEVERITY_COLORS[SEVERITY.CRITICAL], { pulse: true }),
+    'device-login-attempt': createCircleImage(SEVERITY_COLORS[SEVERITY.LOGIN_ATTEMPT], {
+      ring: true,
+      pulse: true,
+      key: true,
+    }),
+    'device-cluster-stable': createClusterImage([SEVERITY_COLORS[SEVERITY.STABLE], '#16a34a']),
+    'device-cluster-warning': createClusterImage([SEVERITY_COLORS[SEVERITY.WARNING], '#d97706']),
+    'device-cluster-critical': createClusterImage([SEVERITY_COLORS[SEVERITY.CRITICAL], '#b91c1c']),
+    'device-cluster-login-attempt': createClusterImage([
+      SEVERITY_COLORS[SEVERITY.LOGIN_ATTEMPT],
+      '#7e22ce',
+    ]),
     'device-cluster-mixed': createClusterImage(['#3b82f6', '#1d4ed8']),
   }
 
@@ -224,9 +477,26 @@ function addLayers() {
     clusterMaxZoom: 16,
     clusterRadius: 60,
     clusterProperties: {
-      online: ['+', ['case', ['==', ['get', 'status'], 'ONLINE'], 1, 0]],
+      online: ['+', ['case', ['==', ['get', 'status'], 'OPERANDO_NORMAL'], 1, 0]],
+      critical: ['+', ['case', ['==', ['get', 'severity'], SEVERITY.CRITICAL], 1, 0]],
+      warning: ['+', ['case', ['==', ['get', 'severity'], SEVERITY.WARNING], 1, 0]],
+      stable: ['+', ['case', ['==', ['get', 'severity'], SEVERITY.STABLE], 1, 0]],
+      loginAttempts: ['+', ['case', ['==', ['get', 'severity'], SEVERITY.LOGIN_ATTEMPT], 1, 0]],
     },
   })
+
+  const clusterSeverityIcon = [
+    'case',
+    ['>', ['get', 'loginAttempts'], 0],
+    'device-cluster-login-attempt',
+    ['>', ['get', 'critical'], 0],
+    'device-cluster-critical',
+    ['>', ['get', 'warning'], 0],
+    'device-cluster-warning',
+    ['>', ['get', 'stable'], 0],
+    'device-cluster-stable',
+    'device-cluster-mixed',
+  ]
 
   map.addLayer({
     id: CLUSTER_LAYER_ID,
@@ -234,19 +504,23 @@ function addLayers() {
     source: DEVICE_SOURCE_ID,
     filter: ['has', 'point_count'],
     layout: {
-      'icon-image': [
-        'case',
-        ['==', ['get', 'online'], ['get', 'point_count']],
-        'device-cluster-online',
-        ['==', ['get', 'online'], 0],
-        'device-cluster-offline',
-        'device-cluster-mixed',
-      ],
+      'icon-image': clusterSeverityIcon,
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
       'icon-size': 1,
     },
   })
+
+  const pointSeverityIcon = [
+    'case',
+    ['==', ['get', 'severity'], SEVERITY.LOGIN_ATTEMPT],
+    'device-login-attempt',
+    ['==', ['get', 'severity'], SEVERITY.CRITICAL],
+    'device-critical',
+    ['==', ['get', 'severity'], SEVERITY.WARNING],
+    'device-warning',
+    'device-stable',
+  ]
 
   map.addLayer({
     id: POINT_LAYER_ID,
@@ -254,7 +528,7 @@ function addLayers() {
     source: DEVICE_SOURCE_ID,
     filter: ['!', ['has', 'point_count']],
     layout: {
-      'icon-image': ['case', ['==', ['get', 'status'], 'ONLINE'], 'device-online', 'device-offline'],
+      'icon-image': pointSeverityIcon,
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
       'icon-size': 1,
@@ -264,6 +538,11 @@ function addLayers() {
   bindMapEvents()
   initSpiderfy()
   fitBounds()
+}
+
+function handleDeviceClick(properties = {}, point = null) {
+  if (point) showDeviceTooltip(point, properties)
+  emitDeviceSelection(properties)
 }
 
 function initSpiderfy() {
@@ -277,14 +556,25 @@ function initSpiderfy() {
     spiralOptions: { legLengthStart: 32, legLengthFactor: 2.4, leavesSeparation: 32 },
     renderMethod: '3D',
     spiderLeavesLayout: {
-      'icon-image': ['case', ['==', ['get', 'status'], 'ONLINE'], 'device-online', 'device-offline'],
+      'icon-image': [
+        'case',
+        ['==', ['get', 'severity'], SEVERITY.LOGIN_ATTEMPT],
+        'device-login-attempt',
+        ['==', ['get', 'severity'], SEVERITY.CRITICAL],
+        'device-critical',
+        ['==', ['get', 'severity'], SEVERITY.WARNING],
+        'device-warning',
+        'device-stable',
+      ],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
       'icon-size': 1,
     },
     onLeafClick: (feature) => {
-      hideDeviceTooltip()
-      emitDeviceSelection(feature?.properties || {})
+      handleDeviceClick(
+        feature?.properties || {},
+        getTooltipPoint(feature),
+      )
     },
     onLeafHover: (feature, event) => {
       if (!feature) {
@@ -303,8 +593,7 @@ function bindMapEvents() {
   map.on('click', POINT_LAYER_ID, (event) => {
     const feature = event.features?.[0]
     if (feature) {
-      hideDeviceTooltip()
-      emitDeviceSelection(feature.properties || {})
+      handleDeviceClick(feature.properties || {}, getTooltipPoint(feature, event))
     }
   })
 
@@ -410,6 +699,25 @@ function fitBounds() {
   map.fitBounds(bounds, { padding: 50, maxZoom: 12, duration: 0 })
 }
 
+function fitBoundsToIncidents() {
+  const incidentDevices = validDevices.value.filter((device) => {
+    const severity = getDeviceSeverity(device)
+    return severity === SEVERITY.CRITICAL
+  })
+
+  if (!incidentDevices.length) return
+
+  if (incidentDevices.length === 1) {
+    const device = incidentDevices[0]
+    map?.easeTo({ center: [Number(device.lon), Number(device.lat)], zoom: 13, duration: 700 })
+    return
+  }
+
+  const bounds = new maplibregl.LngLatBounds()
+  incidentDevices.forEach((device) => bounds.extend([Number(device.lon), Number(device.lat)]))
+  map?.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 700 })
+}
+
 async function initMap() {
   await nextTick()
   if (!mapEl.value || map) return
@@ -443,9 +751,24 @@ async function initMap() {
 
 watch(devicesGeojson, updateSourceData)
 
-onMounted(initMap)
+watch(activeFilter, (filter) => {
+  if (filter === DEVICE_FILTER.INCIDENTS) {
+    nextTick(() => setTimeout(fitBoundsToIncidents, 150))
+  }
+})
+
+onMounted(() => {
+  statusClockInterval = setInterval(() => {
+    statusClock.value = Date.now()
+  }, 30_000)
+  initMap()
+})
 
 onBeforeUnmount(() => {
+  if (statusClockInterval) {
+    clearInterval(statusClockInterval)
+    statusClockInterval = null
+  }
   if (pendingSourceUpdateFrame) {
     cancelAnimationFrame(pendingSourceUpdateFrame)
     pendingSourceUpdateFrame = null
@@ -466,6 +789,51 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="cdm-map-shell">
+    <div class="cdm-filter-bar row items-center q-gutter-sm q-mb-md">
+      <q-btn
+        dense
+        no-caps
+        unelevated
+        :color="activeFilter === DEVICE_FILTER.ALL ? 'primary' : 'grey-8'"
+        text-color="white"
+        label="Todos"
+        class="cdm-filter-btn"
+        @click="activeFilter = DEVICE_FILTER.ALL"
+      />
+      <q-btn
+        dense
+        no-caps
+        unelevated
+        :color="activeFilter === DEVICE_FILTER.INCIDENTS ? 'negative' : 'grey-8'"
+        text-color="white"
+        icon="warning"
+        label="Con Incidentes"
+        class="cdm-filter-btn"
+        @click="activeFilter = DEVICE_FILTER.INCIDENTS"
+      />
+      <q-btn
+        dense
+        no-caps
+        unelevated
+        :color="activeFilter === DEVICE_FILTER.NORMAL ? 'positive' : 'grey-8'"
+        text-color="white"
+        icon="check_circle"
+        label="Operando Normal"
+        class="cdm-filter-btn"
+        @click="activeFilter = DEVICE_FILTER.NORMAL"
+      />
+      <q-btn
+        dense
+        no-caps
+        unelevated
+        :color="activeFilter === DEVICE_FILTER.INACTIVE ? 'orange-8' : 'grey-8'"
+        text-color="white"
+        icon="wifi_off"
+        label="Inactivos / Sin Red"
+        class="cdm-filter-btn"
+        @click="activeFilter = DEVICE_FILTER.INACTIVE"
+      />
+    </div>
     <div ref="mapEl" class="cdm-map" />
     <div
       v-if="tooltip.visible && tooltip.device"
@@ -477,6 +845,17 @@ onBeforeUnmount(() => {
         <strong class="cdm-popup__name">{{ tooltip.device.name }}</strong>
       </div>
       <div class="cdm-popup__id">{{ tooltip.device.deviceId }}</div>
+      <template v-if="tooltip.device.isLoginAttempt">
+        <div class="cdm-popup__row">
+          Último intento: {{ tooltip.device.latestLoginType || '-' }}
+          <span v-if="tooltip.device.latestLoginTime">({{ tooltip.device.latestLoginTime }})</span>
+        </div>
+        <div class="cdm-popup__status" :style="{ color: tooltip.device.color }">
+          <div class="cdm-popup__login-badge">Intento de Sesión</div>
+          {{ tooltip.device.failedLoginCount }} intentos fallidos en este punto
+        </div>
+      </template>
+      <template v-else>
       <div class="cdm-popup__row">
         <span class="cdm-popup__label">{{ t('dashboard.devicesMapIp') }}:</span>
         {{ tooltip.device.ip }}
@@ -491,7 +870,11 @@ onBeforeUnmount(() => {
       </div>
       <div class="cdm-popup__status" :style="{ color: tooltip.device.color }">
         {{ tooltip.device.statusLabel }}
+        <span v-if="tooltip.device.severityLabel" class="cdm-popup__severity">
+          • {{ tooltip.device.severityLabel }}
+        </span>
       </div>
+      </template>
     </div>
   </div>
 </template>
@@ -499,6 +882,17 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .cdm-map-shell {
   position: relative;
+}
+
+.cdm-filter-bar {
+  flex-wrap: wrap;
+}
+
+.cdm-filter-btn {
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .cdm-map {
@@ -582,6 +976,20 @@ onBeforeUnmount(() => {
     font-size: 12px;
     font-weight: 700;
     margin-top: 8px;
+  }
+
+  &__severity {
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  &__login-badge {
+    background: #a855f7;
+    border-radius: 999px;
+    color: #fff;
+    display: inline-block;
+    margin-bottom: 6px;
+    padding: 3px 8px;
   }
 }
 </style>

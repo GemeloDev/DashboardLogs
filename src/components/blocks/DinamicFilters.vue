@@ -473,8 +473,13 @@ function applyChartFilter(fieldKey, value) {
   emitirFiltros()
 }
 
+function setBusqueda(value = '') {
+  filtrosSeleccionados.value.busqueda = String(value)
+  emitirFiltros()
+}
+
 //  Ya está el defineExpose
-defineExpose({ applyChartFilter, setRangoFechas })
+defineExpose({ applyChartFilter, setRangoFechas, setBusqueda })
 
 // A. Función recursiva para obtener claves tipo "office.officeName"
 function obtenerClavesProfundas(obj, prefix = '') {

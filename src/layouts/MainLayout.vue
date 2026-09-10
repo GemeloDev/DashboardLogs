@@ -43,6 +43,52 @@
             <q-tooltip class="glass-tooltip">{{ t('layout.quickFilters') }}</q-tooltip>
           </q-btn>
 
+          <q-select
+            ref="auditSearchRef"
+            v-if="isClientFlow"
+            v-model="selectedAuditUser"
+            dark
+            dense
+            outlined
+            use-input
+            hide-selected
+            fill-input
+            clearable
+            input-debounce="300"
+            :options="auditUserOptions"
+            :loading="auditSearchLoading"
+            option-label="_auditLabel"
+            placeholder="Auditar usuario..."
+            class="audit-user-search"
+            popup-content-class="audit-user-search-menu"
+            aria-label="Auditar usuario"
+            @filter="filterAuditUsers"
+            @focus="loadRecentAuditUsers"
+            @update:model-value="selectAuditUser"
+          >
+            <template #prepend><q-icon name="person_search" size="20px" /></template>
+            <template #no-option>
+              <q-item
+                ><q-item-section class="text-grey-5">Sin coincidencias</q-item-section></q-item
+              >
+            </template>
+            <template #option="scope">
+              <q-item v-bind="scope.itemProps">
+                <q-item-section avatar>
+                  <q-avatar color="deep-purple-7" text-color="white" size="34px">
+                    {{ scope.opt._auditInitials }}
+                  </q-avatar>
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>{{ scope.opt._auditName }}</q-item-label>
+                  <q-item-label caption class="text-grey-5"
+                    >@{{ scope.opt._auditUsername }}</q-item-label
+                  >
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+
           <q-btn
             v-if="isClientFlow"
             flat
@@ -142,41 +188,41 @@
             class="toolbar-icon-btn toolbar-icon-btn--utility"
           >
             <q-menu fit anchor="bottom middle" self="top middle" class="glass-menu">
-                <q-list class="language-dropdown-menu" style="min-width: 180px">
-                  <q-item-label header class="menu-header-label">{{
-                    t('common.language')
-                  }}</q-item-label>
+              <q-list class="language-dropdown-menu" style="min-width: 180px">
+                <q-item-label header class="menu-header-label">{{
+                  t('common.language')
+                }}</q-item-label>
 
-                  <q-separator class="menu-separator" />
+                <q-separator class="menu-separator" />
 
-                  <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('es')">
-                    <q-item-section avatar style="min-width: 32px">
-                      <span style="font-size: 20px">🇲🇽</span>
-                    </q-item-section>
-                    <q-item-section>
-                      <q-item-label class="text-white">{{
-                        t('layout.languageSpanish')
-                      }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side top v-if="locale === 'es'">
-                      <q-icon name="check" color="positive" />
-                    </q-item-section>
-                  </q-item>
+                <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('es')">
+                  <q-item-section avatar style="min-width: 32px">
+                    <span style="font-size: 20px">🇲🇽</span>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white">{{
+                      t('layout.languageSpanish')
+                    }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side top v-if="locale === 'es'">
+                    <q-icon name="check" color="positive" />
+                  </q-item-section>
+                </q-item>
 
-                  <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('en')">
-                    <q-item-section avatar style="min-width: 32px">
-                      <span style="font-size: 20px">🇺🇸</span>
-                    </q-item-section>
-                    <q-item-section>
-                      <q-item-label class="text-white">{{
-                        t('layout.languageEnglish')
-                      }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side top v-if="locale === 'en'">
-                      <q-icon name="check" color="positive" />
-                    </q-item-section>
-                  </q-item>
-                </q-list>
+                <q-item clickable v-close-popup class="glass-menu-item" @click="setLocale('en')">
+                  <q-item-section avatar style="min-width: 32px">
+                    <span style="font-size: 20px">🇺🇸</span>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-white">{{
+                      t('layout.languageEnglish')
+                    }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side top v-if="locale === 'en'">
+                    <q-icon name="check" color="positive" />
+                  </q-item-section>
+                </q-item>
+              </q-list>
             </q-menu>
           </q-btn>
 
@@ -187,23 +233,21 @@
             unelevated
             class="system-dropdown"
             dropdown-icon="expand_more"
+            @show="initGlobalColors"
           >
-            <!-- Label con indicador de salud del sistema seleccionado -->
-            <template #label>
-              <span
-                class="system-dot"
-                :class="
-                  'system-dot--' + (healthMap[selectedSystem]?.status || 'inactive').toLowerCase()
-                "
+            <!-- Label con indicador de salud del sistema seleccionado (basado en últimas 24h) -->
+            <template v-slot:label>
+              <q-badge
+                rounded
+                class="q-mr-xs system-health-badge"
+                :class="{
+                  'system-health-badge--active':
+                    (systemColorsMap[selectedSystem] || 'warning') !== 'grey-6',
+                }"
+                :color="systemColorsMap[selectedSystem] || 'warning'"
               />
               <span class="system-selected">
                 <span class="system-selected__name">{{ selectedSystem }}</span>
-                <span
-                  class="system-selected__status"
-                  :class="errorRateTextClass(healthMap[selectedSystem]?.status)"
-                >
-                  {{ selectedSystemStatusLabel }}
-                </span>
               </span>
             </template>
 
@@ -214,45 +258,37 @@
                 clickable
                 v-close-popup
                 class="glass-menu-item"
-                @click="selectedSystem = sys.value"
+                @click="selectSystem(sys.value)"
               >
                 <q-item-section avatar style="min-width: 24px">
-                  <span
-                    class="system-dot"
-                    :class="'system-dot--' + (sys.status || 'inactive').toLowerCase()"
+                  <q-badge
+                    rounded
+                    class="q-mr-sm system-health-badge"
+                    :class="{
+                      'system-health-badge--active':
+                        (systemColorsMap[sys.system || sys.value || sys] || 'grey-6') !== 'grey-6',
+                    }"
+                    :color="systemColorsMap[sys.system || sys.value || sys] || 'grey-6'"
                   />
                 </q-item-section>
                 <q-item-section class="system-option-content">
                   <q-item-label class="text-white system-option-name">{{ sys.label }}</q-item-label>
-                  <q-item-label caption class="system-option-status">
-                    <span :class="errorRateTextClass(sys.status)">
-                      {{ formatSystemStatusText(sys.status, sys.errorRate) }}
-                    </span>
-                  </q-item-label>
-                </q-item-section>
-                <q-item-section side class="system-option-rate">
-                  <span :class="errorRateTextClass(sys.status)">
-                    {{
-                      !sys.status || sys.status === 'INACTIVE'
-                        ? t('layout.noActivity')
-                        : formatSystemErrorRate(sys.errorRate)
-                    }}
-                  </span>
                 </q-item-section>
               </q-item>
             </q-list>
           </q-btn-dropdown>
 
           <!-- Menú usuario -->
-          <q-btn-dropdown
-            flat
-            dense
-            no-caps
-            :label="$q.screen.gt.xs ? userInfo.nombre : ''"
-            icon="account_circle"
-            dropdown-icon="expand_more"
-            class="user-dropdown"
-          >
+          <q-btn-dropdown flat dense no-caps dropdown-icon="expand_more" class="user-dropdown">
+            <template v-slot:label>
+              <div class="row items-center no-wrap">
+                <q-icon name="account_circle" size="24px" />
+                <span v-if="$q.screen.gt.xs" class="q-ml-sm ellipsis">
+                  {{ userInfo.nombre }}
+                </span>
+              </div>
+            </template>
+
             <q-list class="user-dropdown-menu">
               <q-item class="glass-menu-item no-hover">
                 <q-item-section avatar>
@@ -440,33 +476,39 @@
 
     <!-- CONTENIDO -->
     <q-page-container class="app-page-container">
-      <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-        <div class="page-view-shell">
-          <router-view />
+      <router-view v-slot="{ Component, route: currentRoute }">
+        <transition
+          appear
+          mode="out-in"
+          enter-active-class="animated fadeIn"
+          leave-active-class="animated fadeOut"
+        >
+          <div :key="currentRoute.fullPath" class="page-view-shell">
+            <component :is="Component" />
+          </div>
+        </transition>
+      </router-view>
 
-          <EscritorioConsolaSimple ref="consolaRef" />
+      <EscritorioConsolaSimple ref="consolaRef" />
 
-          <EscritorioDetalleModal
-            :model-value="modalVisible"
-            :detalle="detalleModal"
-            @update:model-value="modalVisible = $event"
-          />
-        </div>
-      </transition>
+      <EscritorioDetalleModal
+        :model-value="modalVisible"
+        :detalle="detalleModal"
+        @update:model-value="modalVisible = $event"
+      />
     </q-page-container>
 
     <EvaFloatingButton />
     <EvaWidget />
     <EvaWorkspace />
+    <UserAuditDialog v-model="showUserAudit" :user="auditUser" @open-timeline="openUserTimeline" />
   </q-layout>
 </template>
 
 <script setup>
-import { ref, provide, onMounted, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, provide, onMounted, computed, watch, watchEffect, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
-import { Capacitor } from '@capacitor/core'
-import { App as CapacitorApp } from '@capacitor/app'
 
 // Importanto la IA
 import EvaFloatingButton from 'src/components/ai/EvaFloatingButton.vue'
@@ -478,8 +520,7 @@ import EscritorioDetalleModal from '../components/escritorio/EscritorioDetalleMo
 import {
   subscribeToAlerts,
   connectSocket,
-  ensureSocketConnected,
-  restartSocketConnection,
+  isSocketConnected,
   disconnectSocket,
 } from 'src/services/socketService'
 import authService from '../services/authService.js'
@@ -488,7 +529,9 @@ import QRScannerModal from 'src/components/QRScannerModal.vue'
 import { ApiKeyService } from 'src/services/apiKeys'
 import { ChartDataService } from 'src/services/chartDataService'
 import EvaWorkspace from 'src/components/ai/EvaWorkspace.vue'
-import { CatalogService } from 'src/services/catalogService'
+import { CatalogService, catalogSystems, systemColorsMap } from 'src/services/catalogService'
+import { axiosInstance } from 'src/services/axiosConfig'
+import UserAuditDialog from 'src/components/UserAuditDialog.vue'
 
 import { useDashboardData } from 'src/services/useDashboardData'
 import ChartDrivenFilters from 'src/components/blocks/ChartDrivenFilters.vue'
@@ -506,16 +549,155 @@ const detalleModal = ref(null)
 const showSessionQR = ref(false)
 const showDinamicFilters = ref(false)
 const consolaRef = ref(null)
+const auditSearchRef = ref(null)
+const selectedAuditUser = ref(null)
+const auditUserOptions = ref([])
+const auditSearchLoading = ref(false)
+const showUserAudit = ref(false)
+const auditUser = ref(null)
+let auditSearchSequence = 0
+
+function normalizeAuditUsers(payload) {
+  const candidates =
+    payload?.content || payload?.users || payload?.results || payload?.items || payload
+  if (!Array.isArray(candidates)) return []
+  return candidates.map((user, index) => {
+    const name = String(
+      user?.name ||
+        user?.fullName ||
+        user?.displayName ||
+        user?.nombre ||
+        user?.username ||
+        'Usuario',
+    )
+    const username = String(user?.username || user?.userName || user?.email || user?.usuario || '')
+    return {
+      ...user,
+      _auditName: name,
+      _auditUsername: username,
+      _auditLabel: username ? `${name} · ${username}` : name,
+      _auditInitials:
+        name
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((part) => part[0]?.toUpperCase())
+          .join('') || String(index + 1),
+    }
+  })
+}
+
+async function filterAuditUsers(value, update, abort) {
+  const query = String(value || '').trim()
+  if (!query && auditSearchLoading.value) {
+    update(() => {})
+    return
+  }
+  const sequence = ++auditSearchSequence
+
+  auditSearchLoading.value = true
+  try {
+    const { data } = await axiosInstance.get('/api/analytics/users/quick-audit', {
+      params: { query },
+    })
+    if (sequence !== auditSearchSequence) return abort()
+    update(() => {
+      auditUserOptions.value = normalizeAuditUsers(data?.data ?? data)
+    })
+  } catch (error) {
+    if (sequence !== auditSearchSequence) return abort()
+    console.error('[MainLayout] Error en auditoría rápida:', error)
+    update(() => {
+      auditUserOptions.value = []
+    })
+    $q.notify({ type: 'negative', message: 'No fue posible buscar usuarios.', position: 'top' })
+  } finally {
+    if (sequence === auditSearchSequence) auditSearchLoading.value = false
+  }
+}
+
+async function loadRecentAuditUsers() {
+  if (auditSearchLoading.value) {
+    auditSearchRef.value?.showPopup()
+    return
+  }
+  const sequence = ++auditSearchSequence
+  auditSearchLoading.value = true
+  try {
+    const { data } = await axiosInstance.get('/api/analytics/users/quick-audit', {
+      params: { query: '' },
+    })
+    if (sequence !== auditSearchSequence) return
+    auditUserOptions.value = normalizeAuditUsers(data?.data ?? data)
+    auditSearchRef.value?.showPopup()
+  } catch (error) {
+    if (sequence !== auditSearchSequence) return
+    console.error('[MainLayout] Error cargando usuarios recientes:', error)
+    auditUserOptions.value = []
+    $q.notify({
+      type: 'negative',
+      message: 'No fue posible cargar los usuarios recientes.',
+      position: 'top',
+    })
+  } finally {
+    if (sequence === auditSearchSequence) auditSearchLoading.value = false
+  }
+}
+
+function selectAuditUser(user) {
+  if (!user) return
+  openUserAudit(user)
+  selectedAuditUser.value = null
+}
+
+function openUserAudit(user) {
+  if (!user) return
+  auditUser.value = normalizeAuditUsers([user])[0] || user
+  showUserAudit.value = true
+}
+
+function openUserTimeline(user) {
+  const searchTerm =
+    user?._auditUsername ||
+    user?.username ||
+    user?.userName ||
+    user?.email ||
+    user?._auditName ||
+    user?.name
+  if (!searchTerm) {
+    $q.notify({ type: 'warning', message: 'El usuario no tiene un identificador para consultar.' })
+    return
+  }
+  openConsole({ searchTerm, displayName: user?._auditName || user?.name || searchTerm })
+}
 
 const apiKeysPorExpirar = ref([])
 const dashboardStore = useDashboardSharedStore()
 
 dashboardStore.initSync()
 
-const systems = ref([])
-const healthMap = ref({})
+const systemOptions = computed(() =>
+  catalogSystems.value.map((system) => {
+    const code = String(system?.code || system?.systemCode || system?.value || '').trim()
+    return {
+      ...system,
+      label: system?.name || system?.label || code,
+      value: code,
+    }
+  }),
+)
+const systems = systemOptions
+let systemsHealthInterval = null
+let systemSelectionInFlight = false
 
-const allowedSystemNames = computed(() => authService.user?.authz?.systems || [])
+const activeTenantKey = computed(() =>
+  String(
+    authService.user?.tenantId ||
+      authService.user?.authz?.tenantId ||
+      authService.user?.organization?.id ||
+      '',
+  ),
+)
 const selectedSystem = computed({
   get: () => String(dashboardStore.filtros?.system || ''),
   set: (value) => dashboardStore.setSystem(value || ''),
@@ -524,11 +706,23 @@ const selectedSystem = computed({
 const logsGlobales = ref([])
 const MS_DIA = 1000 * 60 * 60 * 24
 
+const getDefaultDashboardRange = () => {
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return { from: today, to: today, option: 'today' }
+}
+
 const filtros = ref({
   system: dashboardStore.filtros?.system || '',
   rangoFechas: {
     from: dashboardStore.filtros?.rangoFechas?.from || '',
     to: dashboardStore.filtros?.rangoFechas?.to || '',
+    option:
+      dashboardStore.filtros?.rangoFechas?.option ||
+      (dashboardStore.filtros?.rangoFechas?.from || dashboardStore.filtros?.rangoFechas?.to
+        ? 'custom'
+        : 'today'),
+    range: dashboardStore.filtros?.rangoFechas?.range || undefined,
   },
   busqueda: dashboardStore.filtros?.busqueda || '',
   visibleFields: Array.isArray(dashboardStore.filtros?.visibleFields)
@@ -549,16 +743,6 @@ const toolbarOrganizationName = computed(() =>
   isSantoroFlow.value ? t('layout.santoroPanel') : userInfo.value.organization,
 )
 
-const selectedSystemStatusLabel = computed(() => {
-  const health = healthMap.value[selectedSystem.value] || {}
-  return formatSystemStatusText(health.status, health.errorRate)
-})
-
-const filterAuthorizedSystems = (catalogSystems = []) => {
-  const allowed = new Set(allowedSystemNames.value)
-  return catalogSystems.filter((system) => allowed.has(system?.value))
-}
-
 const resolveSelectedSystem = (candidate = selectedSystem.value) => {
   const availableSystems = systems.value.map((system) => system.value)
   const prefs = authService.loadPrefs()
@@ -571,33 +755,32 @@ const resolveSelectedSystem = (candidate = selectedSystem.value) => {
     return prefs.system
   }
 
-  return allowedSystemNames.value.find((system) => availableSystems.includes(system)) || ''
+  return availableSystems[0] || ''
 }
 
 const eventosRaw = ref([]) // lo que llega del backend (ya filtrado por system)
 const loadingLogs = ref(false) // puedes mantener el mismo nombre
+let logsAbortController = null
 
 const {
   loading: dashboardLoading,
   refreshing: dashboardRefreshing,
   statsData,
+  todayStatsData,
   seriesData,
   httpData,
   geoData,
   devicesData,
   hasFetchedOnce: dashboardHasFetchedOnce,
   fetchAll,
+  cancelPendingDashboardRequests,
   subscribeSystem,
   unsubscribeSystem,
   resetDashboardData,
   refreshTick: dashboardRefreshTick,
 } = useDashboardData()
 
-const DASHBOARD_RECOVERY_COOLDOWN_MS = 10000
 const DASHBOARD_SESSION_OWNER_KEY = 'dashboardSessionOwner'
-let lastDashboardRecoveryAt = 0
-let dashboardRecoveryInFlight = false
-let removeNativeAppStateListener = null
 const dashboardReady = ref(false)
 
 provide('dashboardLoading', dashboardLoading)
@@ -605,6 +788,7 @@ provide('dashboardRefreshing', dashboardRefreshing)
 provide('dashboardHasFetchedOnce', dashboardHasFetchedOnce)
 provide('dashboardRefreshTick', dashboardRefreshTick)
 provide('dashboardStatsData', statsData)
+provide('dashboardTodayStatsData', todayStatsData)
 provide('dashboardSeriesData', seriesData)
 provide('dashboardHttpData', httpData)
 provide('dashboardGeoData', geoData)
@@ -613,6 +797,7 @@ provide('dashboardDevicesData', devicesData)
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
 provide('openConsole', openConsole)
+provide('openUserAudit', openUserAudit)
 provide('loadingLogs', loadingLogs)
 
 const aplicarFiltroRangoFechas = () => {
@@ -645,30 +830,38 @@ const cargarEventosDelSistema = async () => {
     return
   }
 
+  logsAbortController?.abort()
+  logsAbortController = new AbortController()
+  const { signal } = logsAbortController
   loadingLogs.value = true
   try {
     const resp = await ChartDataService.getLogsEvents({
       system: selectedSystem.value,
       page: 0,
-      size: 10000, // tamaño recomendable
+      size: 50,
+      fromDate: filtros.value?.rangoFechas?.from,
+      toDate: filtros.value?.rangoFechas?.to,
+      signal,
     })
 
     eventosRaw.value = resp?.items || []
     aplicarFiltroRangoFechas()
   } catch (e) {
+    if (e?.code === 'ERR_CANCELED' || e?.name === 'CanceledError') return
     console.error('❌ Error al cargar eventos: ', e)
     eventosRaw.value = []
     logsGlobales.value = []
   } finally {
-    loadingLogs.value = false
+    if (logsAbortController?.signal === signal) {
+      logsAbortController = null
+      loadingLogs.value = false
+    }
   }
 }
 
-const refreshSystemsCatalog = async () => {
+const refreshSystemsCatalog = async (healthFilters = {}) => {
   try {
-    const catalogs = await CatalogService.fetchCatalogs()
-    systems.value = filterAuthorizedSystems(catalogs.sistemas)
-    healthMap.value = catalogs.healthMap || {}
+    await CatalogService.fetchCatalogs(healthFilters)
 
     const nextSystem = resolveSelectedSystem()
     if (nextSystem !== selectedSystem.value) {
@@ -771,24 +964,39 @@ const handleQRScanned = (payload) => {
   })
 }
 
-function errorRateTextClass(status) {
-  if (status === 'CRIT') return 'text-red-4'
-  if (status === 'WARN') return 'text-orange-4'
-  if (status === 'HEALTHY') return 'text-green-4'
-  return 'text-grey-5'
+function localStatsColor(stats) {
+  const total = Number(stats?.totalEvents || 0)
+  const rate = Number(stats?.errorRate || 0)
+  if (total === 0) return 'grey-6'
+  if (rate > 10) return 'negative'
+  if (rate > 0) return 'warning'
+  return 'positive'
 }
 
-function formatSystemErrorRate(rate) {
-  return `${((rate || 0) * 100).toFixed(1)}${t('layout.errorRateShort')}`
+async function initGlobalColors() {
+  try {
+    await CatalogService.loadSystemColors(getTodayHealthRange())
+
+    const activeKey = String(selectedSystem.value || '')
+      .toUpperCase()
+      .trim()
+    if (activeKey && statsData.value) {
+      systemColorsMap[activeKey] = localStatsColor(statsData.value)
+    }
+  } catch (error) {
+    console.error('Error cargando semáforo global:', error)
+  }
 }
 
-function formatSystemStatusText(status, rate) {
-  if (!status || status === 'INACTIVE') return t('layout.noActivity')
-  if (status === 'HEALTHY') return `OK · ${formatSystemErrorRate(rate)}`
-  if (status === 'WARN') return `Alerta · ${formatSystemErrorRate(rate)}`
-  if (status === 'CRIT') return `Critico · ${formatSystemErrorRate(rate)}`
-  return formatSystemErrorRate(rate)
-}
+watchEffect(() => {
+  const activeKey = String(selectedSystem.value || '')
+    .toUpperCase()
+    .trim()
+  const stats = statsData.value
+  if (!activeKey || !stats) return
+  // Actualiza sólo el sistema visible; las demás claves permanecen intactas.
+  systemColorsMap[activeKey] = localStatsColor(stats)
+})
 
 function formatApiKeyRotationText(days) {
   return days === 1
@@ -817,6 +1025,24 @@ function toggleDinamicFilters() {
 function openConsole(selection = null) {
   if (!consolaRef.value?.abrirConsola) {
     $q.notify({ message: t('notifications.errorOpenConsole'), color: 'negative' })
+    return
+  }
+
+  if (selection?.deviceId) {
+    consolaRef.value.abrirConsolaPorDispositivo?.(
+      selection.deviceId,
+      selection.displayName || selection.deviceId,
+    )
+    return
+  }
+
+  // ✅ Búsqueda flexible por dispositivo/usuario desde el mapa
+  if (selection?.searchTerm) {
+    consolaRef.value.abrirConsolaConBusqueda?.(
+      selection.searchTerm,
+      selection.extraParams || {},
+      selection.displayName || '',
+    )
     return
   }
 
@@ -866,15 +1092,14 @@ function resetClientDashboardState() {
 
   eventosRaw.value = []
   logsGlobales.value = []
-  systems.value = []
-  healthMap.value = {}
+  CatalogService.clearCache()
   apiKeysPorExpirar.value = []
   showDinamicFilters.value = false
   modalVisible.value = false
 
   filtros.value = {
     system: '',
-    rangoFechas: { from: '', to: '' },
+    rangoFechas: { from: '', to: '', option: 'all', range: 'ALL' },
     busqueda: '',
     visibleFields: [],
     values: {},
@@ -914,7 +1139,9 @@ const dashboardQueryKey = computed(() => {
   const sys = String(filtros.value?.system || '').trim()
   const from = filtros.value?.rangoFechas?.from || ''
   const to = filtros.value?.rangoFechas?.to || ''
-  return `${sys}|${from}|${to}`
+  const option = filtros.value?.rangoFechas?.option || ''
+  const range = filtros.value?.rangoFechas?.range || ''
+  return `${sys}|${from}|${to}|${option}|${range}`
 })
 
 watch(
@@ -930,6 +1157,10 @@ watch(
       rangoFechas: {
         from: nextFilters?.rangoFechas?.from || '',
         to: nextFilters?.rangoFechas?.to || '',
+        option:
+          nextFilters?.rangoFechas?.option ||
+          (nextFilters?.rangoFechas?.from || nextFilters?.rangoFechas?.to ? 'custom' : 'all'),
+        range: nextFilters?.rangoFechas?.range || undefined,
       },
       visibleFields: Array.isArray(nextFilters?.visibleFields)
         ? [...nextFilters.visibleFields]
@@ -952,7 +1183,7 @@ watch(
 )
 
 watch(
-  [systems, allowedSystemNames],
+  systemOptions,
   () => {
     const nextSystem = resolveSelectedSystem()
     if (nextSystem !== selectedSystem.value) {
@@ -962,72 +1193,88 @@ watch(
   { immediate: true },
 )
 
+watch(activeTenantKey, async (nextTenant, previousTenant) => {
+  if (!previousTenant || nextTenant === previousTenant || !isClientFlow.value) return
+
+  // Una organización nunca puede heredar sistemas, colores o selección del
+  // tenant anterior. La nueva carga queda aislada por el JWT activo.
+  dashboardReady.value = false
+  unsubscribeSystem()
+  resetDashboardData()
+  CatalogService.clearCache()
+  selectedSystem.value = ''
+  filtros.value.system = ''
+  await initializeClientDashboard()
+})
+
 async function handleDashboardRealtimeRefresh() {
-  await Promise.all([cargarEventosDelSistema(), refreshSystemsCatalog()])
+  // La salud global se actualiza directamente desde /topic/system-health.
+  // Aquí sólo se refresca el listado de eventos del sistema activo.
+  await cargarEventosDelSistema()
   dashboardStore.announceRealtimeRefresh()
   console.log('[Dashboard] Auto-refresh completado desde WebSocket')
 }
 
+function handleDashboardRealtimeLog(newLog = {}) {
+  const deviceId = String(newLog?.meta?.deviceId || newLog?.deviceId || '').trim()
+  if (!deviceId) return
+
+  const eventKey =
+    newLog?.id ||
+    newLog?.eventId ||
+    `${deviceId}|${newLog?.eventType || ''}|${newLog?.eventTime || newLog?.timestamp || ''}`
+  const exists = eventosRaw.value.some((event) => {
+    const currentDeviceId = String(event?.meta?.deviceId || event?.deviceId || '').trim()
+    const currentKey =
+      event?.id ||
+      event?.eventId ||
+      `${currentDeviceId}|${event?.eventType || ''}|${event?.eventTime || event?.timestamp || ''}`
+    return currentKey === eventKey
+  })
+  if (exists) return
+
+  eventosRaw.value = [newLog, ...eventosRaw.value]
+  aplicarFiltroRangoFechas()
+}
+
 function subscribeDashboardSystem(sys = selectedSystem.value) {
   if (!isClientFlow.value || !sys) return
-  ensureSocketConnected()
-  subscribeSystem(sys, () => filtros.value, handleDashboardRealtimeRefresh)
+  if (!isSocketConnected()) return
+  subscribeSystem(
+    sys,
+    () => filtros.value,
+    handleDashboardRealtimeRefresh,
+    handleDashboardRealtimeLog,
+  )
 }
 
-async function recoverDashboardConnection(reason = 'focus', options = {}) {
-  if (!isClientFlow.value || !filtros.value.system || dashboardRecoveryInFlight) return
+function getTodayHealthRange() {
+  const now = new Date()
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return { from: startOfDay.toISOString(), to: now.toISOString() }
+}
 
-  const now = Date.now()
-  if (!options.bypassCooldown && now - lastDashboardRecoveryAt < DASHBOARD_RECOVERY_COOLDOWN_MS)
-    return
+async function silentFetchSystemsHealth() {
+  await CatalogService.loadGlobalMenuHealth(getTodayHealthRange())
+}
 
-  lastDashboardRecoveryAt = now
-  dashboardRecoveryInFlight = true
+async function selectSystem(system) {
+  const nextSystem = String(system || '').trim()
+  if (!nextSystem) return
+
+  systemSelectionInFlight = true
+  cancelPendingDashboardRequests()
+  logsAbortController?.abort()
+  resetDashboardData()
+  filtros.value.rangoFechas = getDefaultDashboardRange()
+  selectedSystem.value = nextSystem
+  filtros.value.system = nextSystem
 
   try {
-    if (options.restartSocket) {
-      await restartSocketConnection()
-    } else {
-      ensureSocketConnected()
-    }
-
-    subscribeDashboardSystem(filtros.value.system)
-    await Promise.all([
-      fetchAll(filtros.value, { preserveExistingData: true }),
-      cargarEventosDelSistema(),
-    ])
-  } catch (err) {
-    console.error(`[Dashboard] Error al recuperar conexión WebSocket (${reason}):`, err)
+    await Promise.all([fetchAll(filtros.value), cargarEventosDelSistema()])
+    subscribeDashboardSystem(nextSystem)
   } finally {
-    dashboardRecoveryInFlight = false
-  }
-}
-
-function handleWindowFocusRecovery() {
-  recoverDashboardConnection('focus')
-}
-
-function handleVisibilityRecovery() {
-  if (document.visibilityState === 'visible') {
-    recoverDashboardConnection('visibility')
-  }
-}
-
-async function setupNativeAppStateRecovery() {
-  if (!Capacitor.isNativePlatform()) return
-
-  const handle = await CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-    if (!isActive) return
-
-    recoverDashboardConnection('capacitor-app-state', {
-      restartSocket: true,
-      bypassCooldown: true,
-    })
-  })
-
-  removeNativeAppStateListener = () => {
-    handle.remove()
-    removeNativeAppStateListener = null
+    systemSelectionInFlight = false
   }
 }
 
@@ -1035,19 +1282,21 @@ async function initializeClientDashboard() {
   dashboardReady.value = false
   checkApiKeysExpirations()
 
-  const sessionOwner =
-    authService.user?.id || authService.user?.email || authService.user?.organization?.id || ''
+  // La entrada al dashboard siempre comienza con una consulta acotada.
+  filtros.value.rangoFechas = getDefaultDashboardRange()
+  dashboardStore.patchFilters({ rangoFechas: filtros.value.rangoFechas })
+
+  const sessionOwner = `${activeTenantKey.value}|${authService.user?.id || authService.user?.email || ''}`
   const previousOwner = localStorage.getItem(DASHBOARD_SESSION_OWNER_KEY)
 
   if (sessionOwner && previousOwner !== sessionOwner) {
     resetDashboardData()
     eventosRaw.value = []
     logsGlobales.value = []
-    systems.value = []
-    healthMap.value = {}
+    CatalogService.clearCache()
     filtros.value = {
       system: '',
-      rangoFechas: { from: '', to: '' },
+      rangoFechas: getDefaultDashboardRange(),
       busqueda: '',
       visibleFields: [],
       values: {},
@@ -1056,7 +1305,9 @@ async function initializeClientDashboard() {
     localStorage.setItem(DASHBOARD_SESSION_OWNER_KEY, sessionOwner)
   }
 
-  await refreshSystemsCatalog()
+  // Una sola precarga acotada al día actual; fetchCatalogs conserva sus
+  // fallbacks y no bloquea la interfaz si salud no está disponible.
+  await refreshSystemsCatalog(getTodayHealthRange())
 
   const nextSystem = resolveSelectedSystem()
   if (nextSystem) {
@@ -1072,9 +1323,6 @@ async function initializeClientDashboard() {
   connectSocket()
   subscribeDashboardSystem(nextSystem)
 
-  // Esperar un momento para que la conexion se establezca
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-
   await requestNotificationPermission()
 
   const tenantId =
@@ -1082,7 +1330,7 @@ async function initializeClientDashboard() {
     authService.user?.authz?.tenantId ||
     authService.user?.organization?.id
 
-  if (tenantId) {
+  if (tenantId && isSocketConnected()) {
     subscribeToAlerts(tenantId, handleCritAlert)
   }
 }
@@ -1104,6 +1352,8 @@ watch(
 
     authService.savePrefs(currentFlow.value, sys)
 
+    if (systemSelectionInFlight) return
+
     if (isClientFlow.value) {
       cargarEventosDelSistema()
 
@@ -1120,6 +1370,7 @@ watch(
   () => {
     if (isClientFlow.value && dashboardReady.value) {
       aplicarFiltroRangoFechas()
+      silentFetchSystemsHealth()
     }
   },
   { immediate: true },
@@ -1130,6 +1381,7 @@ watch(
   () => {
     if (!dashboardReady.value) return
     if (!filtros.value.system) return
+    if (systemSelectionInFlight) return
     fetchAll(filtros.value)
   },
   { immediate: true },
@@ -1143,9 +1395,9 @@ watch(isClientFlow, (isClient) => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('focus', handleWindowFocusRecovery)
-  document.removeEventListener('visibilitychange', handleVisibilityRecovery)
-  removeNativeAppStateListener?.()
+  if (systemsHealthInterval) clearInterval(systemsHealthInterval)
+  logsAbortController?.abort()
+  cancelPendingDashboardRequests()
   unsubscribeSystem()
 })
 
@@ -1197,10 +1449,8 @@ function handleCritAlert(alert) {
 }
 
 onMounted(async () => {
-  window.addEventListener('focus', handleWindowFocusRecovery)
-  document.addEventListener('visibilitychange', handleVisibilityRecovery)
-  await setupNativeAppStateRecovery()
-
+  connectSocket()
+  systemsHealthInterval = setInterval(silentFetchSystemsHealth, 30_000)
   const defaultFlow = authService.getAllowedFlow()
   const defaultRoute = defaultFlow === 'santoro' ? '/santoro/empresas' : '/client/escritorio'
 
@@ -1340,6 +1590,30 @@ onMounted(async () => {
   min-height: 34px;
 }
 
+.audit-user-search {
+  width: clamp(190px, 19vw, 290px);
+  flex: 0 1 290px;
+}
+
+.audit-user-search .q-field__control {
+  min-height: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.audit-user-search .q-field__native,
+.audit-user-search .q-field__input {
+  color: #fff;
+  font-size: 0.86rem;
+}
+
+.audit-user-search-menu {
+  color: #fff;
+  background: #12131b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* USER + SYSTEM */
 .system-dropdown,
 .user-dropdown {
@@ -1372,10 +1646,9 @@ onMounted(async () => {
 .system-selected {
   display: inline-flex;
   min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   margin-left: 8px;
-  line-height: 1.05;
+  line-height: 1;
 }
 
 .system-selected__name {
@@ -1387,17 +1660,6 @@ onMounted(async () => {
   font-weight: 800;
 }
 
-.system-selected__status {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 10px;
-  font-weight: 700;
-  opacity: 0.92;
-}
-
 .system-option-content {
   min-width: 0;
 }
@@ -1407,18 +1669,6 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 800;
-}
-
-.system-option-status {
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.system-option-rate {
-  flex: 0 0 auto;
-  padding-left: 10px;
-  font-size: 10px;
   font-weight: 800;
 }
 
@@ -1722,6 +1972,21 @@ onMounted(async () => {
 
 /* MÓVIL */
 @media (max-width: 599px) {
+  .audit-user-search {
+    width: 46px;
+    flex-basis: 46px;
+  }
+
+  .audit-user-search:not(.q-field--focused) .q-field__native,
+  .audit-user-search:not(.q-field--focused) .q-field__append {
+    display: none;
+  }
+
+  .audit-user-search.q-field--focused {
+    width: min(260px, 72vw);
+    flex-basis: min(260px, 72vw);
+  }
+
   .app-header {
     padding-top: env(safe-area-inset-top, 0px);
   }
@@ -1809,14 +2074,6 @@ onMounted(async () => {
     padding-right: 8px;
   }
 
-  .system-selected__status {
-    font-size: 9px;
-  }
-
-  .system-option-rate {
-    display: none;
-  }
-
   .mobile-scroll-row::-webkit-scrollbar {
     display: none;
   }
@@ -1863,30 +2120,29 @@ onMounted(async () => {
   background: linear-gradient(180deg, #ff9d67 0%, #a855f7 100%);
 }
 
-/* Indicador de salud por sistema */
-.system-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
+/* Indicador reactivo de salud por sistema */
+.system-health-badge {
+  width: 9px;
+  min-width: 9px;
+  height: 9px;
+  min-height: 9px;
+  padding: 0;
   flex-shrink: 0;
-  vertical-align: middle;
 }
 
-.system-dot--healthy {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+.system-health-badge--active {
+  animation: selector-dot-pulse 2.4s ease-in-out infinite;
 }
-.system-dot--warn {
-  background: #f97316;
-  box-shadow: 0 0 6px rgba(249, 115, 22, 0.6);
-}
-.system-dot--crit {
-  background: #ef4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
-  animation: pulse-dot 1.5s infinite;
-}
-.system-dot--inactive {
-  background: #6b7280;
+
+@keyframes selector-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
 }
 </style>

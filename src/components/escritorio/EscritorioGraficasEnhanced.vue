@@ -15,7 +15,7 @@
             <div>
               <div class="hero-side-title">{{ t('dashboard.topFunctions') }}</div>
               <div class="hero-side-subtitle">
-                {{ funcUsage.items.length + ' ' + t('dashboard.mostActivities') }}
+                {{ t('dashboard.periodLogsProcessed', { count: formatMetric(funcUsage.total) }) }}
               </div>
             </div>
 
@@ -24,8 +24,10 @@
               :section-id="DASHBOARD_SECTION_IDS.FUNCTIONS"
             />
             <div class="hero-total-pill">
-              <div class="hero-total-pill__label">{{ t('dashboard.totalProccessed') }}</div>
-              <div class="hero-total-pill__value">{{ funcUsage.total }}</div>
+              <div class="hero-total-pill__label">
+                {{ t('dashboard.historicalTotalDatabase') }}
+              </div>
+              <div class="hero-total-pill__value">{{ formatMetric(historicalTotalLogs) }}</div>
             </div>
           </div>
 
@@ -140,8 +142,8 @@
         <div class="row items-center q-mb-md">
           <q-icon name="apartment" color="cyan" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">{{ t('common.locations') }}</div>
-            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.topLocations') }}</div>
+            <div class="toplist-title">Top Oficinas / Sucursales</div>
+            <div class="toplist-subtitle text-grey-5">Lugares físicos desde donde se usa la app</div>
           </div>
           <q-space />
           <DashboardPopoutButton
@@ -181,9 +183,9 @@
         <div class="row items-center q-mb-md">
           <q-icon name="sell" color="purple" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">{{ t('common.tags') }}</div>
+            <div class="toplist-title">Origen de Tráfico</div>
             <div class="toplist-subtitle text-grey-5">
-              {{ t('dashboard.distributionBySystem') }}
+              Distribución de librerías y componentes (Axios, Auth, UI)
             </div>
           </div>
           <q-space />
@@ -224,8 +226,8 @@
         <div class="row items-center q-mb-md">
           <q-icon name="insights" color="pink" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">{{ t('dashboard.eventsResults') }}</div>
-            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.topOutcomes') }}</div>
+            <div class="toplist-title">Estatus de Transacciones</div>
+            <div class="toplist-subtitle text-grey-5">Proporción de operaciones.</div>
           </div>
           <q-space />
           <DashboardPopoutButton
@@ -277,7 +279,11 @@
             :section-id="DASHBOARD_SECTION_IDS.STATUS"
           />
         </div>
-        <div class="status-line-wrap" :class="{ 'status-line-wrap--popup': popupMode }">
+        <div
+          id="chart-estados"
+          class="status-line-wrap"
+          :class="{ 'status-line-wrap--popup': popupMode }"
+        >
           <apexchart
             type="line"
             height="100%"
@@ -295,7 +301,7 @@
       !loading &&
       (
         shouldShowPanel(DASHBOARD_PANEL_IDS.SEVERITY) ||
-        (shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData)
+        shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP)
       )
     "
     class="row q-col-gutter-md q-mb-md items-stretch"
@@ -313,7 +319,7 @@
           </div>
           <q-space />
           <DashboardPopoutButton
-            v-if="showInternalPopouts && !hasVisibleHttpPanel"
+            v-if="showInternalPopouts && !shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP)"
             :section-id="DASHBOARD_SECTION_IDS.SEVERITY_HTTP"
           />
         </div>
@@ -324,15 +330,20 @@
     </div>
 
     <div
-      v-if="hasVisibleHttpPanel"
+      v-if="shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP)"
       :class="halfColumnClass"
     >
       <q-card flat bordered class="toplist-card q-pa-lg text-white" style="height: 100%">
         <div class="row items-center q-mb-md">
-          <q-icon name="http" color="cyan" size="18px" class="q-mr-sm" />
+          <q-icon name="crisis_alert" color="cyan" size="18px" class="q-mr-sm" />
           <div>
-            <div class="toplist-title">{{ t('dashboard.http') }}</div>
-            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.substitleHttp') }}</div>
+            <div class="toplist-title">
+              {{ t('dashboard.operationImpact') }}
+              <q-icon name="info" size="16px" class="q-ml-xs text-grey-6" style="cursor: pointer">
+                <q-tooltip>Estimación del número de personas afectadas por fallos en el sistema y el tiempo de retraso acumulado en sus tareas diarias.</q-tooltip>
+              </q-icon>
+            </div>
+            <div class="toplist-subtitle text-grey-5">{{ t('dashboard.operationImpactSubtitle') }}</div>
           </div>
           <q-space />
           <DashboardPopoutButton
@@ -340,12 +351,119 @@
             :section-id="DASHBOARD_SECTION_IDS.SEVERITY_HTTP"
           />
         </div>
-        <div class="http-radar-wrap">
-          <canvas ref="httpRadarCanvas"></canvas>
+        <div class="impact-widget">
+          <div class="impact-grid">
+            <div
+              class="impact-cell impact-cell--clickable"
+              role="button"
+              tabindex="0"
+              @click="showAffectedUsersModal = true"
+              @keydown.enter="showAffectedUsersModal = true"
+              @keydown.space.prevent="showAffectedUsersModal = true"
+            >
+              <q-icon name="groups" size="28px" class="text-orange impact-cell__icon" />
+              <div class="impact-cell__value">{{ operationImpact.affectedUsers }}</div>
+              <div class="impact-cell__label">{{ t('dashboard.affectedUsersToday') }}</div>
+            </div>
+            <div class="impact-cell">
+              <q-icon name="timer" size="28px" class="text-cyan impact-cell__icon" />
+              <div class="impact-cell__value">{{ operationImpact.delayMinutes }} min</div>
+              <div class="impact-cell__label">{{ t('dashboard.estimatedDelay') }}</div>
+            </div>
+            <div class="impact-cell impact-cell--wide">
+              <div class="impact-cell__label">{{ t('dashboard.serviceStatus') }}</div>
+              <q-badge
+                :color="healthColor(operationImpact.status)"
+                class="impact-status-badge text-weight-bold q-mt-xs"
+              >
+                <span class="impact-pulse" :class="healthPulseClass(operationImpact.status)" />
+                {{ operationImpact.statusLabel }}
+              </q-badge>
+            </div>
+          </div>
+          <div class="impact-caption text-grey-5 q-mt-md">
+            {{ t('dashboard.operationImpactCaption') }}
+          </div>
         </div>
       </q-card>
     </div>
   </div>
+
+  <q-dialog
+    v-model="showAffectedUsersModal"
+    transition-show="scale"
+    transition-hide="scale"
+  >
+    <q-card class="affected-users-dialog">
+      <q-card-section class="row items-center justify-between q-pb-none">
+        <div class="row items-center no-wrap">
+          <q-icon name="warning" color="warning" size="24px" class="q-mr-sm" />
+          <div>
+            <div class="text-h5 text-bold text-white">Impacto en Usuarios</div>
+            <div class="text-caption text-grey-5">
+              Usuarios con fallos registrados.
+            </div>
+          </div>
+        </div>
+        <q-btn
+          v-close-popup
+          icon="close"
+          flat
+          round
+          dense
+          color="grey-5"
+          aria-label="Cerrar"
+        />
+      </q-card-section>
+
+      <q-separator class="q-my-md bg-grey-9" />
+
+      <q-card-section class="q-pa-md affected-users-dialog__body">
+        <q-list
+          v-if="affectedUsersTodayList.length"
+          separator
+          class="affected-users-list rounded-borders"
+        >
+          <q-item
+            v-for="user in affectedUsersTodayList"
+            :key="user.key"
+            class="q-py-md"
+          >
+            <q-item-section avatar>
+              <q-avatar
+                color="red-10"
+                text-color="red-4"
+                icon="person_off"
+                font-size="20px"
+              />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="text-subtitle2 text-bold text-white">
+                {{ user.fullName || user.username }}
+              </q-item-label>
+              <q-item-label caption class="text-grey-5">
+                Usuario:
+                <span class="text-grey-3">{{ user.username || user.fullName }}</span>
+              </q-item-label>
+            </q-item-section>
+            <q-item-section side>
+              <q-badge color="red-9" class="text-bold q-pa-xs">
+                {{ user.errorCount }}
+                {{ user.errorCount === 1 ? 'error hoy' : 'errores hoy' }}
+              </q-badge>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <div v-else class="text-grey-5 text-center q-py-lg">
+          No hay usuarios con fallos registrados hoy.
+        </div>
+      </q-card-section>
+
+      <q-card-actions align="right" class="q-pa-md bg-dark-page">
+        <q-btn v-close-popup label="Entendido" color="primary" flat no-caps />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 
   <!-- Series: por Dí­a, Semana y Mes -->
   <div
@@ -478,6 +596,7 @@
     <ConsoleDevicesMap
       v-if="mapView === 'devices'"
       :devices="devicePoints"
+      :logs="activeLogs"
       @select-device="onDeviceClick"
     />
   </div>
@@ -509,7 +628,6 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const $q = useQuasar()
 const apexchart = VueApexCharts
-const DEVICE_CONSOLE_RADIUS_KM = 5
 
 const props = defineProps({
   visiblePanels: {
@@ -532,8 +650,18 @@ const props = defineProps({
 
 // Injects â”€â”€
 const filtrosGlobales = inject('filtrosGlobales', ref({}))
-const openConsole = inject('openConsole', null)
 const logsGlobales = inject('logsGlobales', ref([]))
+const openConsole = inject('openConsole', null)
+const selectedSystem = computed(() => String(filtrosGlobales.value?.system || '').trim())
+const isTrustValueSelected = computed(() => selectedSystem.value === 'TRUSTVALUE')
+const activeLogs = computed(() =>
+  (Array.isArray(logsGlobales.value) ? logsGlobales.value : []).filter(
+    (log) =>
+      !selectedSystem.value ||
+      !String(log?.system || '').trim() ||
+      String(log.system).trim() === selectedSystem.value,
+  ),
+)
 
 // Estado Ãºnico de carga
 const loading = inject('dashboardLoading', ref(false))
@@ -547,6 +675,7 @@ const geoData = inject('dashboardGeoData', ref(null))
 const devicesData = inject('dashboardDevicesData', ref(null))
 
 const activityWidgetRef = ref(null)
+const showAffectedUsersModal = ref(false)
 const visiblePanelSet = computed(() =>
   props.visiblePanels?.length ? new Set(props.visiblePanels) : null,
 )
@@ -556,11 +685,118 @@ const halfColumnClass = computed(() => (props.popupMode ? 'col-12' : 'col-12 col
 const thirdColumnClass = computed(() => (props.popupMode ? 'col-12' : 'col-12 col-md-4'))
 
 // Flags derivados de la API
-const hasHttpData = computed(() => !!httpData.value?.latencyByStatusAndMethod?.length)
-const hasVisibleHttpPanel = computed(() => shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) && hasHttpData.value)
 const severityColumnClass = computed(() =>
-  props.popupMode || !hasVisibleHttpPanel.value ? 'col-12' : 'col-12 col-md-6',
+  props.popupMode || !shouldShowPanel(DASHBOARD_PANEL_IDS.HTTP) ? 'col-12' : 'col-12 col-md-6',
 )
+
+function healthColor(status) {
+  switch (status) {
+    case 'CRITICAL':
+      return 'negative'
+    case 'WARNING':
+      return 'warning'
+    case 'STABLE':
+      return 'positive'
+    default:
+      return 'grey'
+  }
+}
+
+function healthPulseClass(status) {
+  switch (status) {
+    case 'CRITICAL':
+      return 'impact-pulse--critical'
+    case 'WARNING':
+      return 'impact-pulse--warning'
+    case 'STABLE':
+      return 'impact-pulse--stable'
+    default:
+      return ''
+  }
+}
+
+const operationImpact = computed(() => {
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+
+  const logsTodayOnly = activeLogs.value.filter((log) => {
+    const rawDate =
+      log?.timestamp ||
+      log?.createdAt ||
+      log?.date ||
+      log?.eventTime ||
+      log?.fechaHoraDia
+    const logDate = new Date(rawDate)
+    const isToday = Number.isFinite(logDate.getTime()) && logDate >= startOfToday
+    const isCurrentSystem =
+      !selectedSystem.value ||
+      !String(log?.system || '').trim() ||
+      String(log.system).trim() === selectedSystem.value
+    const outcome = String(log?.outcome || '').toUpperCase()
+    const status = String(log?.status || '').toUpperCase()
+    const level = String(log?.level || '').toUpperCase()
+    const isError =
+      outcome === 'FAILURE' ||
+      status === 'REJECTED' ||
+      level === 'ERROR' ||
+      level === 'CRITICAL'
+
+    return isToday && isCurrentSystem && isError
+  })
+
+  const affectedUsersMap = new Map()
+
+  logsTodayOnly.forEach((log) => {
+    const username = String(log?.actor?.username || log?.username || '').trim()
+    const fullName = String(log?.actor?.fullName || log?.actorName || '').trim()
+    const name = fullName || username
+    if (!name) return
+
+    const key = String(
+      log?.actor?.username ||
+      log?.actor?.fullName ||
+      log?.actorName ||
+      log?.username,
+    )
+      .trim()
+      .toLowerCase()
+    const current = affectedUsersMap.get(key) || {
+      key,
+      name,
+      username,
+      fullName,
+      errorCount: 0,
+      systems: new Set(),
+    }
+    current.errorCount += 1
+    if (log?.system || selectedSystem.value) {
+      current.systems.add(String(log?.system || selectedSystem.value))
+    }
+    affectedUsersMap.set(key, current)
+  })
+
+  const users = [...affectedUsersMap.values()]
+    .map((user) => ({
+      ...user,
+      systems: [...user.systems],
+    }))
+    .sort((a, b) => b.errorCount - a.errorCount || a.name.localeCompare(b.name))
+  const affectedUsers = affectedUsersMap.size
+
+  const hasImpact = affectedUsers > 0
+  const status = hasImpact ? 'WARNING' : 'STABLE'
+
+  return {
+    affectedUsers,
+    delayMinutes: affectedUsers * 5,
+    status,
+    statusLabel: hasImpact ? 'Atención Requerida' : 'Operando con normalidad',
+    statusColor: hasImpact ? 'warning' : 'positive',
+    users,
+  }
+})
+
+const affectedUsersTodayList = computed(() => operationImpact.value.users)
 const hasGeoData = computed(() => !!geoData.value?.points?.length)
 const normalizeDeviceFilterValue = (value) =>
   String(value ?? '')
@@ -615,194 +851,81 @@ function openConsoleWithSelection(selection) {
   window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail: selection }))
 }
 
-const getDeep = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : null), obj)
-
-function normalizeCompareValue(value) {
-  return String(value ?? '')
-    .trim()
-    .toUpperCase()
-}
-
-function openConsoleWithGeoSelection(logs, selections = []) {
-  const detail = { dataGrafica: logs, selections }
-  if (typeof openConsole === 'function') return openConsole(detail)
-  window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail }))
-}
-
-function parseGeoLike(value) {
-  if (!value) return null
-
-  if (typeof value === 'object' && value?.type === 'Point' && Array.isArray(value.coordinates)) {
-    const [lng, lat] = value.coordinates.map(Number)
-    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lon: lng }
-  }
-
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const lat =
-      value.lat ??
-      value.latitude ??
-      (value.coords ? (value.coords.lat ?? value.coords.latitude) : undefined)
-    const lon =
-      value.lng ??
-      value.lon ??
-      value.long ??
-      value.longitude ??
-      (value.coords ? (value.coords.lng ?? value.coords.lon ?? value.coords.longitude) : undefined)
-
-    const parsedLat = Number(lat)
-    const parsedLon = Number(lon)
-    if (Number.isFinite(parsedLat) && Number.isFinite(parsedLon)) {
-      return { lat: parsedLat, lon: parsedLon }
-    }
-  }
-
-  if (Array.isArray(value) && value.length >= 2) {
-    const a = Number(value[0])
-    const b = Number(value[1])
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
-
-    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
-    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
-    if (aIsLat) return { lat: a, lon: b }
-    if (bIsLat) return { lat: b, lon: a }
-  }
-
-  if (typeof value === 'string') {
-    const parts = value.split(',').map((part) => Number(part.trim()))
-    if (parts.length !== 2 || parts.some((part) => !Number.isFinite(part))) return null
-    const [a, b] = parts
-    const aIsLat = Math.abs(a) <= 90 && Math.abs(b) <= 180
-    const bIsLat = Math.abs(b) <= 90 && Math.abs(a) <= 180
-    if (aIsLat) return { lat: a, lon: b }
-    if (bIsLat) return { lat: b, lon: a }
-  }
-
-  return null
-}
-
-function parseLogGeo(log) {
-  return (
-    parseGeoLike(log?.geo) ||
-    parseGeoLike(log?.geoCoordinates) ||
-    parseGeoLike(log?.meta?.geoCoordinates) ||
-    null
-  )
-}
-
-function haversineKm(a, b) {
-  const R = 6371
-  const toRad = (x) => (x * Math.PI) / 180
-  const dLat = toRad(b.lat - a.lat)
-  const dLon = toRad(b.lon - a.lon)
-  const lat1 = toRad(a.lat)
-  const lat2 = toRad(b.lat)
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(s))
-}
-
 // Geo â”€â”€
 const geoPoints = computed(() =>
-  (geoData.value?.points || []).map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
+  (geoData.value?.points || [])
+    .filter(
+      (p) =>
+        !isTrustValueSelected.value || p.system == null || p.system === 'TRUSTVALUE',
+    )
+    .map((p) => ({ lat: p.lat, lon: p.lon, weight: p.count })),
 )
 
 // Dispositivos â”€
 const devicePoints = computed(() =>
   (devicesData.value?.devices || [])
     .filter((d) => matchesSelectedDevice(d) && isValidDeviceForMap(d))
+    .filter((d) => !isTrustValueSelected.value || d.system === 'TRUSTVALUE')
     .map((d) => ({
       lat: +d.latitude,
       lon: +d.longitude,
       deviceId: d.deviceId,
       hostname: d.hostname || '',
+      name: d.name || '',
       system: d.system || '',
       status: d.status || 'OFFLINE',
+      hasError: d.hasError,
+      errorCount: d.errorCount,
+      errorRate: d.errorRate,
       ip: d.ip || '',
       locationName: d.locationName || '',
       lastSeen: d.lastSeen || '',
+      username: d.username || d.userName || '',
+      actorUsername: d.actorUsername || d.actor_username || '',
+      actorName: d.actorName || d.fullName || d.userFullName || '',
+      userId: d.userId || d.user_id || '',
+      lastStatus: d.lastStatus || d.lastOutcome || '',
+      recentLogs: Array.isArray(d.recentLogs) ? d.recentLogs : [],
     })),
 )
 
-function buildDeviceLogMatchers(device = {}) {
-  const candidates = [
-    {
-      fieldKey: 'caseId',
-      deviceValue: device.deviceId,
-      logPaths: ['caseId'],
-    },
-    {
-      fieldKey: 'meta.ip',
-      deviceValue: device.ip,
-      logPaths: ['meta.ip', 'ip', 'client.ip', 'request.ip'],
-    },
-    {
-      fieldKey: 'meta.deviceName',
-      deviceValue: device.hostname,
-      logPaths: ['meta.deviceName', 'meta.hostname', 'hostname', 'device.hostname'],
-    },
-    {
-      fieldKey: 'location.name',
-      deviceValue: device.locationName,
-      logPaths: ['location.name', 'locationName'],
-    },
-  ]
-
-  return candidates
-    .map((candidate) => ({
-      ...candidate,
-      normalizedValue: normalizeCompareValue(candidate.deviceValue),
-    }))
-    .filter((candidate) => candidate.normalizedValue)
+function buildDeviceDisplayName(device = {}) {
+  const name =
+    device.actorName ||
+    device.fullName ||
+    device.username ||
+    device.actorUsername ||
+    device.name ||
+    device.hostname ||
+    device.deviceId ||
+    ''
+  return String(name).trim()
 }
 
-function findLogsNearDevice(device = {}) {
-  const center = { lat: Number(device?.lat), lon: Number(device?.lon) }
-  if (!Number.isFinite(center.lat) || !Number.isFinite(center.lon)) return []
-
-  return (logsGlobales.value || []).filter((log) => {
-    const point = parseLogGeo(log)
-    return point ? haversineKm(center, point) <= DEVICE_CONSOLE_RADIUS_KM : false
-  })
+function normalizeMapDeviceId(device = {}) {
+  return String(device?.deviceId || device?.id || '')
+    .trim()
+    .replace(/^ESC-/i, '')
 }
 
-function matchLogsForDevice(device = {}) {
-  const matchers = buildDeviceLogMatchers(device)
-  if (!matchers.length) {
-    return { logs: findLogsNearDevice(device), selections: [], source: 'proximity' }
+function openDeviceLog(device) {
+  const deviceId = normalizeMapDeviceId(device)
+  const displayName = buildDeviceDisplayName(device)
+  if (!deviceId) {
+    $q.notify({
+      type: 'info',
+      position: 'top',
+      message: 'No se pudo determinar un identificador para buscar logs de este dispositivo.',
+    })
+    return
   }
-
-  for (const matcher of matchers) {
-    const logs = (logsGlobales.value || []).filter((log) =>
-      matcher.logPaths.some((path) => normalizeCompareValue(getDeep(log, path)) === matcher.normalizedValue),
-    )
-
-    if (logs.length) {
-      return {
-        logs,
-        selections: [{ fieldKey: matcher.fieldKey, value: matcher.deviceValue }],
-        source: matcher.fieldKey,
-      }
-    }
-  }
-
-  return { logs: findLogsNearDevice(device), selections: [], source: 'proximity' }
+  const detail = { deviceId, displayName }
+  if (typeof openConsole === 'function') return openConsole(detail)
+  window.dispatchEvent(new CustomEvent('santoro-abrir-consola', { detail }))
 }
 
 function onDeviceClick(device) {
-  const { logs, selections, source } = matchLogsForDevice(device)
-
-  if (logs.length) {
-    openConsoleWithGeoSelection(logs, selections)
-    return
-  }
-
-  $q.notify({
-    type: 'info',
-    position: 'top',
-    message:
-      source === 'proximity'
-        ? 'No se encontraron logs cercanos para ese dispositivo.'
-        : 'No se encontraron logs relacionados a ese dispositivo.',
-  })
+  openDeviceLog(device)
 }
 
 const hasMapData = computed(() => hasGeoData.value || hasDevicesData.value)
@@ -935,8 +1058,13 @@ const toApiTopList = (rows, { topN = 4 } = {}) => {
 }
 
 // funcUsage
+const formatMetric = (value) => new Intl.NumberFormat('es-MX').format(Number(value || 0))
+const historicalTotalLogs = computed(() =>
+  Number(statsData.value?.totalHistoricalLogs ?? statsData.value?.totalProcessedLogs ?? 0),
+)
+
 const funcUsage = computed(() => {
-  const totalFromApi = Number(statsData.value?.total || 0)
+  const totalFromApi = Number(statsData.value?.totalEvents ?? statsData.value?.total ?? 0)
   const source = filterStatRowsByKey(statsData.value?.topEventTypes, 'eventType')
   const hasEventTypeFilter = !!normalizeFilterValue(activeValueFilters.value?.eventType)
   const total = hasEventTypeFilter
@@ -1070,10 +1198,10 @@ let severityPieChart = null
 const SEVERITY_ORDER = ['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL', 'CRITICAL', 'N/A']
 const SEVERITY_COLORS = {
   DEBUG: '#94a3b8',
-  INFO: '#22d3ee',
+  INFO: '#1AC8ED',
   WARN: '#ff9f43',
   WARNING: '#ff9f43',
-  ERROR: '#ef4444',
+  ERROR: '#F5222D',
   FATAL: '#ff5c8a',
   CRITICAL: '#a78bfa',
   'N/A': '#6b7280',
@@ -1133,7 +1261,7 @@ async function renderSeverityPieChart() {
         if (severity) openConsoleWithFilter('severity', severity)
       },
       plugins: {
-        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
+        legend: { display: false },
         tooltip: {
           titleColor: '#fff',
           bodyColor: '#fff',
@@ -1141,89 +1269,6 @@ async function renderSeverityPieChart() {
             label: (ctx) =>
               `${ctx.label}: ${Number(ctx.parsed || 0)} (${Math.round((ctx.parsed / total) * 1000) / 10}%)`,
           },
-        },
-      },
-    },
-  })
-}
-
-// HTTP Radar (Chart.js)
-const httpRadarCanvas = ref(null)
-let httpRadarChart = null
-
-const HTTP_METHOD_COLORS = {
-  GET: '#22d3ee',
-  POST: '#a78bfa',
-  PUT: '#ff5c8a',
-  DELETE: '#fbbf24',
-}
-
-function buildHttpRadarFromApi(items = []) {
-  const statusSet = new Set()
-  const methodSet = new Set()
-  const map = {}
-
-  items.forEach(({ statusCode, method, p95Ms }) => {
-    statusSet.add(statusCode)
-    methodSet.add(method)
-    if (!map[method]) map[method] = {}
-    map[method][statusCode] = p95Ms
-  })
-
-  const labels = Array.from(statusSet).sort()
-  const datasets = Array.from(methodSet).map((method) => ({
-    label: method,
-    data: labels.map((code) => map[method]?.[code] || 0),
-    borderColor: HTTP_METHOD_COLORS[method] || '#999',
-    backgroundColor: (HTTP_METHOD_COLORS[method] || '#999') + '33',
-  }))
-
-  return { labels, datasets }
-}
-
-async function renderHttpRadar() {
-  await nextTick()
-  const el = httpRadarCanvas.value
-  if (!el) return
-
-  if (httpRadarChart) {
-    httpRadarChart.destroy()
-    httpRadarChart = null
-  }
-
-  if (!httpData.value?.latencyByStatusAndMethod?.length) return
-
-  httpRadarChart = new Chart(el, {
-    type: 'radar',
-    data: buildHttpRadarFromApi(httpData.value.latencyByStatusAndMethod),
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      onClick: (_, elements) => {
-        if (!elements.length) return
-        const el = elements[0]
-        const ds = httpRadarChart.data.datasets[el.datasetIndex]
-        const code = httpRadarChart.data.labels[el.index]
-        openConsole?.([
-          { fieldKey: 'http.method', value: ds.label },
-          { fieldKey: 'http.statusCode', value: code },
-        ])
-      },
-      plugins: {
-        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.75)', boxWidth: 10 } },
-        tooltip: {
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          callbacks: { label: (ctx) => `${ctx.dataset.label}: p95 ${ctx.parsed.r} ms` },
-        },
-      },
-      scales: {
-        r: {
-          beginAtZero: true,
-          ticks: { color: 'rgb(255,255,255)', backdropColor: 'transparent', backdropPadding: 0 },
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          angleLines: { color: 'rgba(255,255,255,0.06)' },
-          pointLabels: { color: 'rgba(255,255,255,0.75)' },
         },
       },
     },
@@ -1512,7 +1557,6 @@ function monthRange(dateStr) {
 async function redrawCharts() {
   renderCoverageDonutChart()
   renderSeverityPieChart()
-  if (hasHttpData.value) renderHttpRadar()
 }
 
 const redrawKey = computed(() =>
@@ -1538,7 +1582,6 @@ watch(
 onBeforeUnmount(() => {
   coverageDonutChart?.destroy()
   severityPieChart?.destroy()
-  httpRadarChart?.destroy()
 })
 </script>
 
@@ -2006,12 +2049,130 @@ onBeforeUnmount(() => {
   height: 100% !important;
 }
 
-.http-radar-wrap {
-  height: 520px;
+.impact-widget {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 380px;
 }
-.http-radar-wrap canvas {
-  width: 100% !important;
-  height: 100% !important;
+
+.impact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.impact-cell {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.055);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  &--wide {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &--clickable {
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid rgba(249, 115, 22, 0.9);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.affected-users-dialog {
+  width: 480px;
+  max-width: 90vw;
+  max-height: 80vh;
+  color: #fff;
+  background: #18191c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.affected-users-dialog__body {
+  max-height: 56vh;
+  overflow-y: auto;
+}
+
+.affected-users-list {
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+
+  :deep(.q-item) {
+    transition: background 0.18s ease;
+  }
+
+  :deep(.q-item:hover) {
+    background: rgba(255, 255, 255, 0.035);
+  }
+}
+
+.impact-cell__icon {
+  margin-bottom: 8px;
+}
+
+.impact-cell__value {
+  color: #fff;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.impact-cell__label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+.impact-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 1rem;
+  border-radius: 10px;
+}
+
+.impact-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+  animation: pulse 1.6s infinite;
+}
+
+.impact-pulse--critical {
+  color: #ff4d4f;
+}
+
+.impact-pulse--warning {
+  color: #ffcc00;
+}
+
+.impact-pulse--stable {
+  color: #21ba45;
+}
+
+.impact-caption {
+  font-size: 0.8rem;
+  text-align: center;
 }
 
 .chart-wrap {

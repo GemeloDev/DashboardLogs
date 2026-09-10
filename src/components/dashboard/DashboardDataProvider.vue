@@ -35,6 +35,7 @@ const {
   loading: dashboardLoading,
   refreshing: dashboardRefreshing,
   statsData,
+  todayStatsData,
   seriesData,
   httpData,
   geoData,
@@ -52,6 +53,7 @@ provide('dashboardRefreshing', dashboardRefreshing)
 provide('dashboardHasFetchedOnce', dashboardHasFetchedOnce)
 provide('dashboardRefreshTick', dashboardRefreshTick)
 provide('dashboardStatsData', statsData)
+provide('dashboardTodayStatsData', todayStatsData)
 provide('dashboardSeriesData', seriesData)
 provide('dashboardHttpData', httpData)
 provide('dashboardGeoData', geoData)
@@ -108,10 +110,14 @@ async function cargarEventosDelSistema() {
   loadingLogs.value = true
 
   try {
+    const range = dashboardStore.filtros?.rangoFechas || {}
+    const today = new Date().toISOString().split('T')[0]
     const response = await ChartDataService.getLogsEvents({
       system,
       page: 0,
-      size: 10000,
+      size: 50,
+      fromDate: range.from || range.to || today,
+      toDate: range.to || range.from || today,
     })
 
     eventosRaw.value = response?.items || []
@@ -132,6 +138,28 @@ async function refreshFromRealtime() {
     fetchAll(dashboardStore.filtros, { preserveExistingData: true }),
     cargarEventosDelSistema(),
   ])
+}
+
+function applyRealtimeLog(newLog = {}) {
+  const deviceId = String(newLog?.meta?.deviceId || newLog?.deviceId || '').trim()
+  if (!deviceId) return
+
+  const eventKey =
+    newLog?.id ||
+    newLog?.eventId ||
+    `${deviceId}|${newLog?.eventType || ''}|${newLog?.eventTime || newLog?.timestamp || ''}`
+  const exists = eventosRaw.value.some((event) => {
+    const currentDeviceId = String(event?.meta?.deviceId || event?.deviceId || '').trim()
+    const currentKey =
+      event?.id ||
+      event?.eventId ||
+      `${currentDeviceId}|${event?.eventType || ''}|${event?.eventTime || event?.timestamp || ''}`
+    return currentKey === eventKey
+  })
+  if (exists) return
+
+  eventosRaw.value = [newLog, ...eventosRaw.value]
+  aplicarFiltroRangoFechas()
 }
 
 watch(
@@ -165,10 +193,15 @@ watch(
 
     if (!props.realtimeOwner) return
 
-    subscribeSystem(system, () => dashboardStore.filtros, async () => {
-      await cargarEventosDelSistema()
-      dashboardStore.announceRealtimeRefresh()
-    })
+    subscribeSystem(
+      system,
+      () => dashboardStore.filtros,
+      async () => {
+        await cargarEventosDelSistema()
+        dashboardStore.announceRealtimeRefresh()
+      },
+      applyRealtimeLog,
+    )
   },
   { immediate: true },
 )

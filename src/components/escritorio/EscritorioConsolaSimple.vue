@@ -24,6 +24,18 @@
               >
                 {{ t('consoleSimple.eventsCounter', { visible: logs.length, total: serverTotalElements }) }}
               </q-chip>
+              <q-btn
+                v-if="logs.length"
+                dense
+                unelevated
+                no-caps
+                :color="timelineMode ? 'orange-9' : 'dark'"
+                :text-color="timelineMode ? 'white' : 'grey-4'"
+                :icon="timelineMode ? 'view_module' : 'view_timeline'"
+                :label="timelineMode ? t('consoleSimple.timelineToggleOff') : t('consoleSimple.timelineToggle')"
+                class="q-ml-sm timeline-toggle-btn"
+                @click="timelineMode = !timelineMode"
+              />
             </div>
           </div>
 
@@ -118,7 +130,13 @@
         </div>
 
         <div v-else>
-          <div class="row justify-center items-stretch q-gutter-sm">
+          <ConsoleJourneyTimeline
+            v-if="timelineMode"
+            :logs="logs"
+            :selected-actor-name="selectedActorName"
+            @click-log="!authService.hasRole('VIEWER') ? mostrarDetalleLog($event) : ''"
+          />
+          <div v-else class="row justify-center items-stretch q-gutter-sm">
             <div
               v-for="(log, index) in logsPaginados"
               :key="log.id || index"
@@ -129,7 +147,7 @@
           </div>
         </div>
       </q-card-section>
-      <div class="pagination-section">
+      <div v-if="!timelineMode" class="pagination-section">
         <div class="row items-center justify-between q-col-gutter-md">
           <div class="col-12 col-sm-6 col-md-4">
             <div class="pagination-info text-caption text-grey-4">
@@ -197,6 +215,7 @@ import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
 import DinamicFilters from '../blocks/DinamicFilters.vue'
 import ConsoleCard from '../blocks/ConsoleCard.vue'
+import ConsoleJourneyTimeline from '../blocks/ConsoleJourneyTimeline.vue'
 import DetailDialog from '../blocks/DetailDialog.vue'
 import { ChartDataService } from 'src/services/chartDataService'
 import { useConsoleFiltersStore } from 'src/stores/consoleFilters.store'
@@ -221,6 +240,8 @@ const filtrosToggle = ref(true)
 const modalDetalle = ref(false)
 const logSeleccionado = ref(null)
 const filtroRef = ref(null)
+const timelineMode = ref(false)
+const selectedActorName = ref('')
 
 // ─── DATOS ────────────────────────────────────────────────────────────────────
 const baseLogs = ref([])       // lo que regresa el backend (ya filtrado por server params)
@@ -669,6 +690,115 @@ const abrirConsolaConDataYFiltros = async (dataGrafica = [], selections = []) =>
   }
 }
 
+const abrirConsolaConBusqueda = async (searchTerm, extraParams = {}, displayName = '') => {
+  if (!searchTerm) {
+    await abrirConsola()
+    return
+  }
+
+  selectedActorName.value = displayName || searchTerm
+  isChartDataMode.value = false
+  initialScopedLogs.value = []
+  baseLogs.value = []
+  resetServerPaging()
+
+  loading.value = true
+  let items = []
+  let usedFallback = false
+
+  try {
+    const params = {
+      system: currentSystem.value,
+      page: 0,
+      size: pageSize.value,
+      search: searchTerm,
+      actorName: displayName || searchTerm,
+      ...extraParams,
+    }
+    const resp = await ChartDataService.getLogsEvents(params)
+    items = Array.isArray(resp?.items) ? resp.items : []
+
+    if (!items.length) {
+      console.warn('⚠️ No se hallaron logs estrictos, cargando últimos logs del sistema...')
+      const fallbackResp = await ChartDataService.getLogsEvents({
+        system: currentSystem.value,
+        page: 0,
+        size: pageSize.value,
+      })
+      items = Array.isArray(fallbackResp?.items) ? fallbackResp.items : []
+      usedFallback = true
+    }
+  } catch (err) {
+    console.error('Error al obtener logs del dispositivo:', err)
+    $q.notify({ type: 'negative', message: t('consoleSimple.loadingLogsError') || 'Error cargando logs' })
+    return
+  } finally {
+    loading.value = false
+  }
+
+  isChartDataMode.value = true
+  initialScopedLogs.value = items
+  serverTotalElements.value = items.length
+  serverTotalPages.value = 1
+  serverPage.value = 0
+  lastPayload.value = null
+  recomputarVista()
+
+  consoleStore.consoleOpen = true
+  filtrosToggle.value = true
+  paginaActual.value = 1
+
+  if (usedFallback) {
+    $q.notify({
+      type: 'warning',
+      position: 'top',
+      message: t('consoleSimple.searchFallbackMessage') || 'No se encontraron coincidencias exactas; mostrando logs recientes.',
+    })
+  }
+
+  await nextTick()
+  const ok = await ensureDinamicFiltersReady()
+  if (ok) {
+    filtroRef.value?.setBusqueda?.(selectedActorName.value)
+  }
+
+  setTimeout(() => { filtrosToggle.value = false }, 600)
+}
+
+const abrirConsolaPorDispositivo = async (deviceId, displayName = '') => {
+  if (!deviceId) {
+    await abrirConsola()
+    return
+  }
+
+  selectedActorName.value = displayName || deviceId
+  isChartDataMode.value = false
+  initialScopedLogs.value = []
+  baseLogs.value = []
+  resetServerPaging()
+  loading.value = true
+
+  try {
+    const resp = await ChartDataService.getLogsEvents({ deviceId })
+    const items = Array.isArray(resp?.items) ? resp.items : []
+    isChartDataMode.value = true
+    initialScopedLogs.value = items
+    serverTotalElements.value = Number(resp?.totalElements ?? resp?.totalItems ?? items.length)
+    serverTotalPages.value = 1
+    serverPage.value = 0
+    lastPayload.value = null
+    recomputarVista()
+    consoleStore.consoleOpen = true
+    filtrosToggle.value = false
+    paginaActual.value = 1
+  } catch (err) {
+    console.error('Error al obtener la bitácora del dispositivo:', err)
+    $q.notify({ type: 'negative', message: 'Error cargando la bitácora del dispositivo' })
+  } finally {
+    loading.value = false
+  }
+}
+
 // ─── HANDLER FILTROS DESDE DinamicFilters ─────────────────────────────────────
 const onFiltrosPayload = async (payload) => {
   lastPayload.value = payload
@@ -697,6 +827,7 @@ const onClearFiltersAbsolute = async () => {
   lastPayload.value = null
   isChartDataMode.value = false
   initialScopedLogs.value = []
+  selectedActorName.value = ''
   paginaActual.value = 1
   resetActiveServerParams()
   await cargarPaginaInicial()
@@ -752,6 +883,8 @@ const cerrarConsola = () => {
   initialScopedLogs.value = []
   lastPayload.value = null
   isChartDataMode.value = false
+  selectedActorName.value = ''
+  timelineMode.value = false
   resetServerPaging()
   resetActiveServerParams()
 }
@@ -799,6 +932,8 @@ defineExpose({
   abrirConsolaConFiltro,
   abrirConsolaConFiltros,
   abrirConsolaConDataYFiltros,
+  abrirConsolaConBusqueda,
+  abrirConsolaPorDispositivo,
   cerrarConsola,
 })
 </script>
