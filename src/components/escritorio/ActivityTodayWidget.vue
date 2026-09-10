@@ -66,7 +66,7 @@
       </div>
 
       <!-- Feed de logs recientes -->
-      <div v-if="filteredRecentLogs.length" class="today-feed">
+      <div v-if="filteredRecentLogs.length" class="today-feed" :class="{ 'today-feed--popup': popupMode }">
         <div class="today-feed__title q-mb-sm text-grey-5 text-caption">{{ t('dashboard.recentLogs') }}</div>
         <div
           v-for="log in filteredRecentLogs"
@@ -136,7 +136,7 @@ import { DASHBOARD_SECTION_IDS } from 'src/constants/dashboardSections'
 import { useI18n } from 'vue-i18n'
 const { t, locale } = useI18n()
 
-defineProps({
+const props = defineProps({
   popupMode: {
     type: Boolean,
     default: false,
@@ -188,13 +188,15 @@ async function fetchActivity(showSpinner = true) {
   try {
     const { from, to } = selectedRange()
 
+    const pageSize = props.popupMode ? 1000 : 8
+
     const response = await axiosInstance.get(LOGS.EVENTS_RAW, {
       params: {
         system: system.value,
         fromDate: from,
         toDate: to,
         page: 0,
-        size: 8,
+        size: pageSize,
         sortBy: 'eventTime',
         sortDir: 'DESC',
       },
@@ -381,7 +383,7 @@ function statusColor(status) {
 function outcomeColor(outcome) {
   const normalized = String(outcome || '').toUpperCase()
   if (normalized === 'FAILURE' || normalized === 'FALLIDO' || normalized === 'FALLO') return 'red-9'
-  if (normalized === 'SUCCESS' || normalized === 'EXITOSO' || normalized === 'EXITO') return 'green-9'
+  if (normalized === 'SUCCESS' || normalized === 'EXITOSO' || normalized === 'EXITO' || normalized === 'COMPLETED') return 'green-9'
   return 'grey-7'
 }
 
@@ -555,6 +557,23 @@ defineExpose({ fetchToday: fetchActivity })
 .today-feed {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 12px;
+
+  &--popup {
+    max-height: 60vh;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+    &::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+  }
 
   &__title {
     text-transform: uppercase;

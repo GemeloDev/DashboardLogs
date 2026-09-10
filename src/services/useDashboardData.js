@@ -4,6 +4,7 @@ import { onSocketConnect, subscribeToNewLogs, subscribeToTopic } from './socketS
 import DashboardService from 'src/services/dashboardService'
 import { CatalogService } from 'src/services/catalogService'
 import authService from './authService'
+import { useConsoleFiltersStore } from 'src/stores/consoleFilters.store'
 
 // ─── Datos de los 5 endpoints ────────────────────────────────────────────────
 const statsData = ref(null)
@@ -15,6 +16,13 @@ const devicesData = ref(null)
 const attendanceAnomaliesData = ref(null)
 const catalogHealthMap = ref({})
 export const dashboardCache = reactive({})
+
+// ─── Errores de los 5 endpoints ──────────────────────────────────────────────
+const statsError   = ref(null)
+const seriesError  = ref(null)
+const httpError    = ref(null)
+const geoError     = ref(null)
+const devicesError = ref(null)
 
 // Solo estos estados son válidos como filtro para el endpoint de dispositivos
 const DEVICE_VALID_STATUSES = new Set(['ONLINE', 'OFFLINE'])
@@ -582,6 +590,7 @@ function unsubscribeSystem() {
 }
 
 function resetDashboardData() {
+  fetchAbortController?.abort()
   unsubscribeSystem()
   cancelPendingDashboardRequests()
   statsData.value = null

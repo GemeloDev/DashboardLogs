@@ -1,91 +1,59 @@
 # ═══════════════════════════════════════════════════════════════
-# GitLab CI/CD Pipeline - Deploy to Santoro FTP
-# ═══════════════════════════════════════════════════════════════
-#
-# Se ejecuta automáticamente cuando haces push a la rama 'development'
-#
-# Fases:
-#   1. build  - Instala dependencias y genera el build de producción
-#   2. deploy - Sube los archivos al servidor FTP
-#
-# Variables requeridas (Settings > CI/CD > Variables):
-#   - FTP_SERVER   : Dirección del servidor FTP
-#   - FTP_USERNAME : Usuario FTP
-#   - FTP_PASSWORD : Contraseña FTP (marcada como "masked")
-#
+# GitLab CI/CD Pipeline - Frontend Quasar a S3 + CloudFront
 # ═══════════════════════════════════════════════════════════════
 
-# Definir las etapas del pipeline
 stages:
   - build
   - deploy
 
-# Configuración global de caché para node_modules
-cache:
-  key:
-    files:
-      - package-lock.json
-  paths:
-    - node_modules/
-
-# ───────────────────────────────────────────────────────────────
-# STAGE 1: BUILD
-# ───────────────────────────────────────────────────────────────
 build:
   stage: build
-  image: node:18
-
-  # Solo ejecutar en la rama development
+  image: node:20
   only:
     - development
 
   before_script:
-    - echo "📦 Checkout de código"
+    - echo "Checkout de codigo"
     - node --version
     - npm --version
 
   script:
-    - echo "🔧 Instalar dependencias"
-    - npm ci
-
-    - echo "🏗️ Build de producción"
-    - npm run build
-
-    - echo "✅ Build completado exitosamente"
+    - echo "Instalando dependencias"
+    - npm install
+    - echo "Build de produccion"
+    - NODE_ENV=production npm run build
+    - echo "Build completado exitosamente"
     - ls -la dist/spa/
 
   artifacts:
-    name: 'dashboard-logs-$CI_COMMIT_SHORT_SHA'
+    name: "dashboard-logs-$CI_COMMIT_SHORT_SHA"
     paths:
       - dist/spa/
     expire_in: 1 hour
 
-# ───────────────────────────────────────────────────────────────
-# STAGE 2: DEPLOY
-# ───────────────────────────────────────────────────────────────
 deploy:
   stage: deploy
-  image: alpine:latest
-
-  # Solo ejecutar en la rama development
+  image: ubuntu:latest
   only:
     - development
-
   dependencies:
     - build
 
   before_script:
-    - echo "📡 Preparando despliegue FTP"
-    - apk add --no-cache lftp curl
+    - apt-get update -y
+    - apt-get install -y curl unzip
+    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    - unzip awscliv2.zip
+    - ./aws/install
+    - rm -rf awscliv2.zip aws
 
   script:
-    - echo "🗑️ Eliminar xd.txt remoto si existe"
-    - curl -v --ftp-ssl -k -u "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER/xd.txt" -Q "DELE xd.txt" || true
-    - echo "🚀 Subida de archivos por FTP"
-    - echo "📍 Servidor $FTP_SERVER"
-    - echo "👤 Usuario $FTP_USERNAME"
-    - lftp -c "set ssl:verify-certificate no; set ftp:ssl-allow no; open -u $FTP_USERNAME,$FTP_PASSWORD ftp://$FTP_SERVER:21; mirror --reverse --verbose --delete --exclude .htaccess --exclude web.config --exclude .ftpquota --exclude certs/ --exclude .git/ dist/spa/ /; bye"
-    - echo "✅ Despliegue completado"
+    - echo "Subiendo archivos a S3"
+    - aws s3 sync dist/spa/ s3://$S3_FRONTEND_BUCKET/ --delete --region $AWS_DEFAULT_REGION
+    - echo "Archivos subidos exitosamente"
+    - echo "Invalidando cache de CloudFront"
+    - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
+    - echo "Cache invalidado - cambios visibles en ~1-2 minutos"
 
   environment:
     name: production

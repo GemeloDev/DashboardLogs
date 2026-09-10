@@ -194,7 +194,119 @@ export default {
   },
   activity: {},
   admin: {},
-  auth: {},
+  auth: {
+    // General / footer
+    footer: '© 2025 Dashboard Logs. Todos los derechos reservados.',
+    footerSantoro: '© 2025 Dashboard Logs Santoro',
+
+    // Validación compartida
+    required: 'Este campo es requerido',
+    invalidFormat: 'Formato inválido',
+    passwordRequired: 'La contraseña es requerida',
+    min8Chars: 'Mínimo 8 caracteres',
+    nameRequired: 'El nombre es requerido',
+    min2Chars: 'Mínimo 2 caracteres',
+    confirmPasswordRequired: 'Confirmar contraseña es requerido',
+    passwordsDoNotMatch: 'Las contraseñas no coinciden',
+    emailRequired: 'El correo es requerido',
+
+    // Fortaleza de contraseña
+    passwordStrength: 'Seguridad de la contraseña',
+    eightChars: '8+ caracteres',
+    uppercase: 'Mayúscula',
+    number: 'Número',
+    symbol: 'Símbolo',
+
+    // Botones / acciones compartidas
+    verify: 'Verificar',
+    verifying: 'Verificando...',
+    sendInstructions: 'Enviar instrucciones',
+    backToLogin: 'Volver a iniciar sesión',
+    continue: 'Continuar',
+
+    // LoginPage
+    loginTitle: 'Iniciar Sesión',
+    loginSubtitle: 'Ingresa tus credenciales para acceder al dashboard.',
+    email: 'Email',
+    emailPlaceholder: "ejemplo{'@'}consola.io",
+    password: 'Contraseña',
+    passwordPlaceholder: 'Mínimo 8 caracteres',
+    loginButton: 'Iniciar Sesión',
+    loggingIn: 'Iniciando sesión...',
+    forgotPassword: '¿Olvidaste tu contraseña?',
+    accessGranted: 'Acceso concedido. Redirigiendo...',
+    invalidCredentials: 'Credenciales inválidas. Verifica tus datos.',
+    connectionError: 'Error de conexión al iniciar sesión. Verifica tu conexión a internet.',
+    brandName: 'Consola Logs',
+
+    // QR / acceso rápido
+    quickAccess: 'Acceso Rápido',
+    qrValidated: 'El acceso por código fue validado correctamente',
+    scanToContinue: 'Escanea para continuar en móvil',
+    generatingCode: 'Generando código',
+    requestingQr: 'Solicitando un nuevo código QR...',
+    scanToContinueMobile: 'Escanea para continuar en móvil.',
+    scanCorrect: 'Escaneo correcto',
+    organizationValidated: 'Tu organización fue validada correctamente.',
+    qrApproved: 'QR aprobado',
+    codeNotAvailable: 'Código no disponible',
+    retry: 'Reintentar',
+    generate: 'Generar',
+    qrNotAvailable: 'QR no disponible',
+    inactivityDetected: 'Inactividad detectada. Recarga para generar nuevamente el código QR.',
+    couldNotGenerate: 'No se pudo generar el código QR. Verifica tu conexión e intenta nuevamente.',
+    tooManyAttempts: 'No se pudo generar el código después de 5 intentos. Puedes intentar otro bloque.',
+    openApp: 'Abre la app de Consola Logs',
+    codeValidated: 'Código QR validado correctamente',
+    verifyIdentity: 'Verifica tu identidad biométrica',
+    redirecting: 'Redirigiendo al dashboard',
+
+    // PasswordOlvidadoPage
+    recoverAccount: 'Recuperar Cuenta',
+    recoverSubtitle: 'Escribe el correo asociado a tu cuenta para continuar con el proceso de recuperación.',
+    emailPlaceholderGeneric: "ejemplo{'@'}correo.com",
+
+    // ResetPasswordPage
+    resetPassword: 'Restablecer contraseña',
+    resetPasswordSubtitle: 'Ingresa tu correo, el código de recuperación y tu nueva contraseña.',
+    invalidCode: 'Código inválido',
+    invalidCodeSubtitle: 'El código de recuperación es inválido o ha caducado. Serás redirigido al login...',
+    emailLabel: 'Correo Electrónico',
+    emailPlaceholderReset: "email{'@'}example.com",
+    newPassword: 'Nueva contraseña',
+    confirmNewPassword: 'Confirmar nueva contraseña',
+    repeatPassword: 'Repite tu contraseña',
+    passwordUpdated: 'Contraseña actualizada correctamente',
+    fillSecurityRequirements: 'Por favor completa todos los requisitos de seguridad',
+    invalidOrExpiredCode: 'Código inválido o caducado',
+
+    // VerificarCuentaPage
+    verifyAccount: 'Verificar Cuenta',
+    verifySubtitle: 'Proporciona el código que te hicimos llegar por correo.',
+    enterCode: 'Ingrese el Código:',
+
+    // AcceptInvitation
+    invalidInvitation: 'Invitación inválida',
+    invalidInvitationSubtitle: 'El token de invitación es inválido o ha caducado. Serás redirigido al login...',
+    invitationAccepted: 'Invitación aceptada',
+    invitationAcceptedSubtitle: 'Ingresa tu contraseña y un nombre de usuario para acceder.',
+    username: 'Nombre de usuario',
+    usernamePlaceholder: 'Ingresa un nombre de usuario válido',
+    userActivated: 'Usuario activado exitosamente',
+    acceptInvitationError: 'Error al aceptar invitación',
+
+    // ChangeTempPassword
+    changePassword: 'Cambiar contraseña',
+    changePasswordSubtitle: 'Ingresa una nueva contraseña y confirmala para acceder al sistema.',
+    currentPassword: 'Contraseña actual',
+    changePasswordError: 'Error al cambiar la contraseña, intente nuevamente',
+
+    // ErrorNotFound
+    navigationError: 'Error de navegación',
+    notFoundTitle: 'Oops. No hay nada aquí...',
+    notFoundSubtitle: 'La página que intentas abrir no existe, fue movida o la ruta no es válida.',
+    goHome: 'Ir al inicio',
+  },
   notifications: {
     apiNotify: '🚨 Tienes notificaciones nuevas sobre tus API Keys!',
     qrScanned: '✅ Inicio de Sesión por QR realizado!',
@@ -607,7 +719,7 @@ export default {
     unavailable: '—',
     usersLoaded: 'Usuarios obtenidos correctamente.',
     controlCenterTitle: 'Centro de Control',
-    santoroTitle: 'Centro de Control Santoro',
+    santoroTitle: 'Centro de Control Santorini',
     santoroSubtitle: 'Administra usuarios, empresas y API Keys desde una consola central con visibilidad operativa y accesos rápidos.',
     newCompanyButton: 'Nueva empresa',
     systemSummaryTitle: 'Resumen del sistema',

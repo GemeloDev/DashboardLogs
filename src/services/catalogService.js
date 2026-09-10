@@ -252,9 +252,6 @@ export class CatalogService {
 
       const resolvedSystems = this._extractSistemas(catalogSystems.value, healthMap)
 
-      console.log('[CatalogService] healthMap:', healthMap)
-      console.log(`[CatalogService] Catalogo cargado: ${items.length} sistemas.`)
-
       return {
         sistemas: resolvedSystems,
         sistemasSimple: this._extractNombresSimples(resolvedSystems),
@@ -269,6 +266,15 @@ export class CatalogService {
         healthMap: globalMenuHealth.value,
       }
     }
+  }
+
+  static _normalizeStatus(status) {
+    const s = String(status || '').toUpperCase()
+    if (s === 'CRITICAL' || s === 'ERROR' || s === 'FATAL') return 'CRIT'
+    if (s === 'WARN' || s === 'WARNING') return 'WARN'
+    if (s === 'HEALTHY' || s === 'OK') return 'HEALTHY'
+    if (s === 'INACTIVE') return 'INACTIVE'
+    return s || 'INACTIVE'
   }
 
   static _extractSistemas(items, healthMap = {}) {

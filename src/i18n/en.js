@@ -195,7 +195,119 @@ export default {
   },
   activity: {},
   admin: {},
-  auth: {},
+  auth: {
+    // General / footer
+    footer: '© 2025 Dashboard Logs. All rights reserved.',
+    footerSantoro: '© 2025 Dashboard Logs Santoro',
+
+    // Shared validation
+    required: 'This field is required',
+    invalidFormat: 'Invalid format',
+    passwordRequired: 'Password is required',
+    min8Chars: 'Minimum 8 characters',
+    nameRequired: 'Name is required',
+    min2Chars: 'Minimum 2 characters',
+    confirmPasswordRequired: 'Confirm password is required',
+    passwordsDoNotMatch: 'Passwords do not match',
+    emailRequired: 'Email is required',
+
+    // Password strength
+    passwordStrength: 'Password strength',
+    eightChars: '8+ characters',
+    uppercase: 'Uppercase',
+    number: 'Number',
+    symbol: 'Symbol',
+
+    // Buttons / shared actions
+    verify: 'Verify',
+    verifying: 'Verifying...',
+    sendInstructions: 'Send instructions',
+    backToLogin: 'Back to sign in',
+    continue: 'Continue',
+
+    // LoginPage
+    loginTitle: 'Sign In',
+    loginSubtitle: 'Enter your credentials to access the dashboard.',
+    email: 'Email',
+    emailPlaceholder: "example{'@'}console.io",
+    password: 'Password',
+    passwordPlaceholder: 'Minimum 8 characters',
+    loginButton: 'Sign In',
+    loggingIn: 'Signing in...',
+    forgotPassword: 'Forgot your password?',
+    accessGranted: 'Access granted. Redirecting...',
+    invalidCredentials: 'Invalid credentials. Please check your details.',
+    connectionError: 'Connection error signing in. Please check your internet connection.',
+    brandName: 'Console Logs',
+
+    // QR / quick access
+    quickAccess: 'Quick Access',
+    qrValidated: 'Code access was validated successfully',
+    scanToContinue: 'Scan to continue on mobile',
+    generatingCode: 'Generating code',
+    requestingQr: 'Requesting a new QR code...',
+    scanToContinueMobile: 'Scan to continue on mobile.',
+    scanCorrect: 'Scan successful',
+    organizationValidated: 'Your organization was validated successfully.',
+    qrApproved: 'QR approved',
+    codeNotAvailable: 'Code not available',
+    retry: 'Retry',
+    generate: 'Generate',
+    qrNotAvailable: 'QR not available',
+    inactivityDetected: 'Inactivity detected. Reload to generate the QR code again.',
+    couldNotGenerate: 'Could not generate the QR code. Please check your connection and try again.',
+    tooManyAttempts: 'Could not generate the code after 5 attempts. You can try another block.',
+    openApp: 'Open the Console Logs app',
+    codeValidated: 'QR code validated successfully',
+    verifyIdentity: 'Verify your biometric identity',
+    redirecting: 'Redirecting to dashboard',
+
+    // PasswordOlvidadoPage
+    recoverAccount: 'Recover Account',
+    recoverSubtitle: 'Enter the email associated with your account to continue with the recovery process.',
+    emailPlaceholderGeneric: "example{'@'}email.com",
+
+    // ResetPasswordPage
+    resetPassword: 'Reset password',
+    resetPasswordSubtitle: 'Enter your email, recovery code, and your new password.',
+    invalidCode: 'Invalid code',
+    invalidCodeSubtitle: 'The recovery code is invalid or has expired. You will be redirected to sign in...',
+    emailLabel: 'Email',
+    emailPlaceholderReset: "email{'@'}example.com",
+    newPassword: 'New password',
+    confirmNewPassword: 'Confirm new password',
+    repeatPassword: 'Repeat your password',
+    passwordUpdated: 'Password updated successfully',
+    fillSecurityRequirements: 'Please complete all security requirements',
+    invalidOrExpiredCode: 'Invalid or expired code',
+
+    // VerificarCuentaPage
+    verifyAccount: 'Verify Account',
+    verifySubtitle: 'Provide the code we sent you by email.',
+    enterCode: 'Enter Code:',
+
+    // AcceptInvitation
+    invalidInvitation: 'Invalid invitation',
+    invalidInvitationSubtitle: 'The invitation token is invalid or has expired. You will be redirected to sign in...',
+    invitationAccepted: 'Invitation accepted',
+    invitationAcceptedSubtitle: 'Enter your password and a username to access.',
+    username: 'Username',
+    usernamePlaceholder: 'Enter a valid username',
+    userActivated: 'User activated successfully',
+    acceptInvitationError: 'Error accepting invitation',
+
+    // ChangeTempPassword
+    changePassword: 'Change password',
+    changePasswordSubtitle: 'Enter a new password and confirm it to access the system.',
+    currentPassword: 'Current password',
+    changePasswordError: 'Error changing password, please try again',
+
+    // ErrorNotFound
+    navigationError: 'Navigation error',
+    notFoundTitle: 'Oops. There is nothing here...',
+    notFoundSubtitle: 'The page you are trying to open does not exist, was moved, or the route is not valid.',
+    goHome: 'Go home',
+  },
   notifications: {
     apiNotify: 'You have new notifications about your API Keys!',
     qrScanned: 'QR sign-in completed successfully!',

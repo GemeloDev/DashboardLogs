@@ -183,7 +183,7 @@
           <q-btn
             flat
             dense
-            round
+          round
             icon="language"
             class="toolbar-icon-btn toolbar-icon-btn--utility"
           >
@@ -536,6 +536,7 @@ import UserAuditDialog from 'src/components/UserAuditDialog.vue'
 import { useDashboardData } from 'src/services/useDashboardData'
 import ChartDrivenFilters from 'src/components/blocks/ChartDrivenFilters.vue'
 import { useDashboardSharedStore } from 'src/stores/dashboardShared.store'
+import { useConsoleFiltersStore } from 'src/stores/consoleFilters.store'
 import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
@@ -671,6 +672,8 @@ function openUserTimeline(user) {
   openConsole({ searchTerm, displayName: user?._auditName || user?.name || searchTerm })
 }
 
+const consoleStore = useConsoleFiltersStore()
+
 const apiKeysPorExpirar = ref([])
 const dashboardStore = useDashboardSharedStore()
 
@@ -771,6 +774,11 @@ const {
   httpData,
   geoData,
   devicesData,
+  statsError,
+  seriesError,
+  httpError,
+  geoError,
+  devicesError,
   hasFetchedOnce: dashboardHasFetchedOnce,
   fetchAll,
   cancelPendingDashboardRequests,
@@ -783,6 +791,10 @@ const {
 const DASHBOARD_SESSION_OWNER_KEY = 'dashboardSessionOwner'
 const dashboardReady = ref(false)
 
+const dashboardErrors = computed(() =>
+  [statsError.value, seriesError.value, httpError.value, geoError.value, devicesError.value].filter(Boolean),
+)
+
 provide('dashboardLoading', dashboardLoading)
 provide('dashboardRefreshing', dashboardRefreshing)
 provide('dashboardHasFetchedOnce', dashboardHasFetchedOnce)
@@ -793,6 +805,11 @@ provide('dashboardSeriesData', seriesData)
 provide('dashboardHttpData', httpData)
 provide('dashboardGeoData', geoData)
 provide('dashboardDevicesData', devicesData)
+provide('dashboardStatsError', statsError)
+provide('dashboardSeriesError', seriesError)
+provide('dashboardHttpError', httpError)
+provide('dashboardGeoError', geoError)
+provide('dashboardDevicesError', devicesError)
 
 provide('logsGlobales', logsGlobales)
 provide('filtrosGlobales', filtros)
@@ -1394,6 +1411,16 @@ watch(isClientFlow, (isClient) => {
   }
 })
 
+// Refrescar dashboard cuando se cierra la consola y vuelve a estar visible
+watch(
+  () => consoleStore.consoleOpen,
+  (isOpen, wasOpen) => {
+    if (wasOpen && !isOpen) {
+      recoverDashboardConnection('console-closed')
+    }
+  },
+)
+
 onBeforeUnmount(() => {
   if (systemsHealthInterval) clearInterval(systemsHealthInterval)
   logsAbortController?.abort()
@@ -1554,41 +1581,7 @@ onMounted(async () => {
   vertical-align: middle;
 }
 
-.toolbar-icon-btn {
-  color: rgba(255, 255, 255, 0.76);
-  border-radius: 12px;
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.toolbar-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 1px rgba(233, 113, 50, 0.12);
-}
-
-.toolbar-icon-btn--success {
-  color: #86efac;
-}
-
-.toolbar-icon-btn--purple {
-  color: #c084fc;
-}
-
-.toolbar-utility-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.toolbar-icon-btn--utility {
-  min-width: 34px;
-  min-height: 34px;
-}
+/* .toolbar-icon-btn* y .glass-menu* se encuentran en src/css/app.scss */
 
 .audit-user-search {
   width: clamp(190px, 19vw, 290px);
@@ -1686,7 +1679,7 @@ onMounted(async () => {
 }
 
 /* MENUS */
-.glass-menu,
+/* .glass-menu, .glass-menu-item, .menu-header-label y .menu-separator se encuentran en src/css/app.scss */
 .system-dropdown-menu,
 .user-dropdown-menu,
 .q-menu {
@@ -1703,36 +1696,6 @@ onMounted(async () => {
 .system-dropdown-menu {
   min-width: min(330px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
-}
-
-.menu-header-label {
-  color: rgba(255, 255, 255, 0.76) !important;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.menu-separator {
-  background: rgba(255, 255, 255, 0.08) !important;
-}
-
-.glass-menu-item {
-  color: white;
-  border-radius: 12px;
-  margin: 4px 8px;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-  border: 1px solid transparent;
-}
-
-.glass-menu-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(233, 113, 50, 0.1);
-}
-
-.glass-menu-item.no-hover:hover {
-  background: transparent;
-  border-color: transparent;
 }
 
 /* DRAWER */
@@ -1932,6 +1895,18 @@ onMounted(async () => {
   border-top: 1px solid rgba(233, 113, 50, 0.12);
   display: flex;
   justify-content: flex-end;
+}
+
+/* Alertas de errores del dashboard */
+.dashboard-errors-banner {
+  background: rgba(10, 14, 26, 0.96);
+  border: 1px solid rgba(233, 113, 50, 0.2);
+  border-radius: 12px;
+  color: #fff;
+
+  ul li {
+    color: rgba(255, 255, 255, 0.8);
+  }
 }
 
 /* Animaciones */

@@ -158,7 +158,10 @@ export const useDashboardSharedStore = defineStore('dashboardShared', {
       }
 
       if (!focusSyncAttached) {
-        window.addEventListener('focus', () => store.syncFromStorage())
+        // El evento 'focus' ya es manejado por recoverDashboardConnection en
+        // MainLayout.vue; ejecutar syncFromStorage aquí provoca un segundo
+        // fetchAll concurrente. Se conserva visibilitychange para sincronizar
+        // cuando la pestaña pasa de oculta a visible.
         document.addEventListener('visibilitychange', () => {
           if (document.visibilityState === 'visible') {
             store.syncFromStorage()

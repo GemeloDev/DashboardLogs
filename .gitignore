@@ -31,7 +31,9 @@ certs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-docs/
+
+# Test coverage
+coverage/
 
 # Editor directories and files
 .idea

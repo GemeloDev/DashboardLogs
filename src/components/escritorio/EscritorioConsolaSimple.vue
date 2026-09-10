@@ -250,6 +250,7 @@ const rawLogs = ref([])        // fuente para DinamicFilters (= baseLogs, ya no 
 const logs = ref([])           // vista final tras filtros client-side
 const lastPayload = ref(null)  // último payload de DinamicFilters
 
+
 // Filtros server-side activos (para detectar cambios y decidir re-fetch)
 const activeServerParams = ref({
   fromDate: '',
